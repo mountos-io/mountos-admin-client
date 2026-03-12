@@ -13,6 +13,7 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import { formatBytes, formatQuota, quotaPercent } from '$lib/core/utils/format'
   import type { Volume } from '$lib/core/api/types'
+  import { handleApiError, showSuccessToast } from '$lib/core/utils/toast'
 
   const store = useVolumes()
   const id = $derived(Number($page.params.id))
@@ -28,7 +29,6 @@
   let genResult = $state<{ apiKey: string; apiSecret: string } | null>(null)
   let revokeKey = $state('')
   let quotaInput = $state('')
-  let actionError = $state('')
 
   $effect(() => {
     if (Number.isNaN(id)) { loading = false; return }
@@ -55,30 +55,30 @@
   async function generateKeys() {
     const uid = Number(genUserId)
     if (!genUserId || Number.isNaN(uid)) return
-    actionError = ''
     try {
       genResult = await store.generateApiKeys(id, { userId: uid })
-    } catch (e: unknown) { actionError = e instanceof Error ? e.message : 'Failed to generate keys' }
+      showSuccessToast('API keys generated')
+    } catch (e: unknown) { handleApiError(e, 'Failed to generate keys') }
   }
 
   async function handleRevokeKey() {
     if (!revokeKey) return
-    actionError = ''
     try {
       await store.revokeApiKey(id, revokeKey)
       revokeKey = ''
+      showSuccessToast('API key revoked')
       await reload()
-    } catch (e: unknown) { actionError = e instanceof Error ? e.message : 'Failed to revoke key' }
+    } catch (e: unknown) { handleApiError(e, 'Failed to revoke key') }
   }
 
   async function updateQuota() {
     const limit = Number(quotaInput)
     if (isNaN(limit) || limit < 0) return
-    actionError = ''
     try {
       await store.updateQuota(id, limit)
+      showSuccessToast('Quota updated')
       await reload()
-    } catch (e: unknown) { actionError = e instanceof Error ? e.message : 'Failed to update quota' }
+    } catch (e: unknown) { handleApiError(e, 'Failed to update quota') }
   }
 </script>
 
@@ -154,10 +154,6 @@
         </Card>
       {/if}
     </div>
-
-    {#if actionError}
-      <p class="text-sm text-destructive">{actionError}</p>
-    {/if}
 
     <Separator />
 

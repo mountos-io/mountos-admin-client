@@ -4,6 +4,7 @@
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import Shell from '$lib/components/layout/Shell.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import { Toaster } from '$lib/components/ui/sonner'
 
   const auth = useAuth()
   const accountStore = useAccounts()
@@ -42,3 +43,4 @@
     {#if children}{@render children()}{/if}
   </Shell>
 {/if}
+<Toaster />
