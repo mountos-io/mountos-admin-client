@@ -1,0 +1,46 @@
+import type { AuthAdapter, UserInfo } from './adapter.js'
+
+export interface CookieAuthConfig {
+  loginUrl: string
+  logoutUrl: string
+  userEndpoint: string
+}
+
+export class CookieAuthAdapter implements AuthAdapter {
+  private user: UserInfo | null = null
+  private checked = false
+
+  constructor(private config: CookieAuthConfig) {}
+
+  isAuthenticated(): boolean {
+    return this.user !== null
+  }
+
+  async signIn(): Promise<void> {
+    window.location.href = this.config.loginUrl
+  }
+
+  async signOut(): Promise<void> {
+    this.user = null
+    this.checked = false
+    window.location.href = this.config.logoutUrl
+  }
+
+  async getUser(): Promise<UserInfo | null> {
+    if (this.checked) return this.user
+    try {
+      const res = await fetch(this.config.userEndpoint, { credentials: 'include' })
+      if (res.ok) {
+        this.user = await res.json()
+        this.checked = true
+      }
+    } catch {
+      this.user = null
+    }
+    return this.user
+  }
+
+  async getRequestHeaders(): Promise<Record<string, string>> {
+    return {}
+  }
+}

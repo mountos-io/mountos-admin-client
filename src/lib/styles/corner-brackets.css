@@ -1,0 +1,396 @@
+/* Corner Bracket Design System */
+/* Inspired by technical/cyberpunk UI aesthetics */
+
+@layer components {
+  /* Corner brackets - Standard (12px) */
+  .corner-brackets {
+    position: relative;
+  }
+
+  /* Standard fixed-size corners - positioned OUTSIDE the border */
+  .corner-brackets::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background:
+      /* Top-left corner */
+      linear-gradient(to right, currentColor 20px, transparent 20px) 0 0 / 20px 2px,
+      linear-gradient(to bottom, currentColor 20px, transparent 20px) 0 0 / 2px 20px,
+      /* Top-right corner */ linear-gradient(to left, currentColor 20px, transparent 20px) 100% 0 /
+        20px 2px,
+      linear-gradient(to bottom, currentColor 20px, transparent 20px) 100% 0 / 2px 20px,
+      /* Bottom-left corner */ linear-gradient(to right, currentColor 20px, transparent 20px) 0
+        100% / 20px 2px,
+      linear-gradient(to top, currentColor 20px, transparent 20px) 0 100% / 2px 20px,
+      /* Bottom-right corner */ linear-gradient(to left, currentColor 20px, transparent 20px) 100%
+        100% / 20px 2px,
+      linear-gradient(to top, currentColor 20px, transparent 20px) 100% 100% / 2px 20px;
+    background-repeat: no-repeat;
+    color: oklch(0.4 0.002 200);
+    pointer-events: none;
+  }
+
+  /* Dynamic corners - scale with card width */
+  .corner-brackets-dynamic::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background:
+      linear-gradient(
+          to right,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        0 0 / clamp(24px, 8%, 60px) 2px,
+      linear-gradient(
+          to bottom,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        0 0 / 2px clamp(24px, 8%, 60px),
+      linear-gradient(
+          to left,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        100% 0 / clamp(24px, 8%, 60px) 2px,
+      linear-gradient(
+          to bottom,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        100% 0 / 2px clamp(24px, 8%, 60px),
+      linear-gradient(
+          to right,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        0 100% / clamp(24px, 8%, 60px) 2px,
+      linear-gradient(to top, currentColor clamp(24px, 8%, 60px), transparent clamp(24px, 8%, 60px))
+        0 100% / 2px clamp(24px, 8%, 60px),
+      linear-gradient(
+          to left,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        100% 100% / clamp(24px, 8%, 60px) 2px,
+      linear-gradient(to top, currentColor clamp(24px, 8%, 60px), transparent clamp(24px, 8%, 60px))
+        100% 100% / 2px clamp(24px, 8%, 60px);
+    background-repeat: no-repeat;
+    color: oklch(0.4 0.002 200);
+    pointer-events: none;
+  }
+
+  .dark .corner-brackets::before {
+    color: oklch(0.35 0.002 200);
+  }
+
+  /* Large corner brackets */
+  .corner-brackets-lg {
+    position: relative;
+  }
+
+  .corner-brackets-lg::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background:
+      linear-gradient(
+          to right,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        0 0 / clamp(24px, 8%, 60px) 2px,
+      linear-gradient(
+          to bottom,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        0 0 / 2px clamp(24px, 8%, 60px),
+      linear-gradient(
+          to left,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        100% 0 / clamp(24px, 8%, 60px) 2px,
+      linear-gradient(
+          to bottom,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        100% 0 / 2px clamp(24px, 8%, 60px),
+      linear-gradient(
+          to right,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        0 100% / clamp(24px, 8%, 60px) 2px,
+      linear-gradient(to top, currentColor clamp(24px, 8%, 60px), transparent clamp(24px, 8%, 60px))
+        0 100% / 2px clamp(24px, 8%, 60px),
+      linear-gradient(
+          to left,
+          currentColor clamp(24px, 8%, 60px),
+          transparent clamp(24px, 8%, 60px)
+        )
+        100% 100% / clamp(24px, 8%, 60px) 2px,
+      linear-gradient(to top, currentColor clamp(24px, 8%, 60px), transparent clamp(24px, 8%, 60px))
+        100% 100% / 2px clamp(24px, 8%, 60px);
+    background-repeat: no-repeat;
+    color: oklch(0.4 0.002 200);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Fixed-size large corners */
+  .corner-brackets-lg-fixed::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    background:
+      linear-gradient(to right, currentColor 32px, transparent 32px) 0 0 / 32px 2px,
+      linear-gradient(to bottom, currentColor 32px, transparent 32px) 0 0 / 2px 32px,
+      linear-gradient(to left, currentColor 32px, transparent 32px) 100% 0 / 32px 2px,
+      linear-gradient(to bottom, currentColor 32px, transparent 32px) 100% 0 / 2px 32px,
+      linear-gradient(to right, currentColor 32px, transparent 32px) 0 100% / 32px 2px,
+      linear-gradient(to top, currentColor 32px, transparent 32px) 0 100% / 2px 32px,
+      linear-gradient(to left, currentColor 32px, transparent 32px) 100% 100% / 32px 2px,
+      linear-gradient(to top, currentColor 32px, transparent 32px) 100% 100% / 2px 32px;
+    background-repeat: no-repeat;
+    color: oklch(0.4 0.002 200);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .dark .corner-brackets-lg::before {
+    color: oklch(0.35 0.002 200);
+  }
+
+  .dark .corner-brackets-dynamic::before {
+    color: oklch(0.35 0.002 200);
+  }
+
+  .dark .corner-brackets-lg-fixed::before {
+    color: oklch(0.35 0.002 200);
+  }
+
+  /* Hover and focus states - primary color */
+  .corner-brackets,
+  .corner-brackets-lg,
+  .corner-brackets-lg-fixed,
+  .corner-brackets-dynamic {
+    --bracket-active: rgb(198, 107, 61);
+    --bracket-active: oklch(0.61 0.14 39);
+  }
+
+  .dark .corner-brackets,
+  .dark .corner-brackets-lg,
+  .dark .corner-brackets-lg-fixed,
+  .dark .corner-brackets-dynamic {
+    --bracket-active: oklch(0.73 0.17 84.429);
+  }
+
+  @supports selector(:has(*)) {
+    .corner-brackets:is(:hover, :focus-within, :has(:focus-visible))::before,
+    .corner-brackets-lg:is(:hover, :focus-within, :has(:focus-visible))::before,
+    .corner-brackets-lg-fixed:is(:hover, :focus-within, :has(:focus-visible))::before,
+    .corner-brackets-dynamic:is(:hover, :focus-within, :has(:focus-visible))::before {
+      color: var(--bracket-active);
+    }
+  }
+
+  @supports not selector(:has(*)) {
+    .corner-brackets:is(:hover, :focus-within)::before,
+    .corner-brackets-lg:is(:hover, :focus-within)::before,
+    .corner-brackets-lg-fixed:is(:hover, :focus-within)::before,
+    .corner-brackets-dynamic:is(:hover, :focus-within)::before {
+      color: var(--bracket-active);
+    }
+  }
+
+  /* Corner plus sign - positioned at top-right */
+  .corner-plus {
+    position: relative;
+  }
+
+  .corner-plus::after {
+    content: "+";
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1;
+    color: oklch(0.4 0.002 200);
+    background: oklch(0.94 0.03 94.63);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .dark .corner-plus::after {
+    color: oklch(0.5 0.002 200);
+    background: oklch(0.15 0 0);
+  }
+
+  .corner-plus:hover::after {
+    color: oklch(0.65 0.18 45);
+  }
+
+  .dark .corner-plus:hover::after {
+    color: oklch(0.73 0.17 84.429);
+  }
+
+  /* Corner plus at bottom-left */
+  .corner-plus-bl::after {
+    content: "+";
+    position: absolute;
+    bottom: -1px;
+    left: -1px;
+    top: auto;
+    right: auto;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 1;
+    color: oklch(0.4 0.002 200);
+    background: oklch(0.94 0.03 94.63);
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .dark .corner-plus-bl::after {
+    color: oklch(0.5 0.002 200);
+    background: oklch(0.15 0 0);
+  }
+
+  .corner-plus-bl:hover::after {
+    color: oklch(0.65 0.18 45);
+  }
+
+  .dark .corner-plus-bl:hover::after {
+    color: oklch(0.73 0.17 84.429);
+  }
+
+  /* Technical grid pattern background */
+  .tech-grid {
+    background-image:
+      linear-gradient(oklch(0.3 0.002 200) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.3 0.002 200) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: -1px -1px;
+  }
+
+  .dark .tech-grid {
+    background-image:
+      linear-gradient(oklch(0.15 0.002 200) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.15 0.002 200) 1px, transparent 1px);
+  }
+
+  /* Dashed connecting lines */
+  .dashed-connector {
+    border: none;
+    border-top: 1px dashed oklch(0.3 0.002 200);
+    opacity: 0.5;
+  }
+
+  .dark .dashed-connector {
+    border-top-color: oklch(0.35 0.002 200);
+  }
+
+  /* Minimal borders */
+  .border-minimal {
+    border: 1px solid oklch(0.3 0.002 200);
+  }
+
+  .dark .border-minimal {
+    border-color: oklch(0.25 0.002 200);
+  }
+
+  /* Cyberpunk skewed corners */
+  .cyberpunk-skewed {
+    position: relative;
+    clip-path: polygon(
+      0 20px,
+      20px 0,
+      100% 0,
+      100% calc(100% - 20px),
+      calc(100% - 20px) 100%,
+      0 100%
+    );
+  }
+
+  .cyberpunk-skewed-inner {
+    padding: 2rem;
+  }
+
+  .cyberpunk-skewed::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(135deg, currentColor 2px, transparent 2px) 0 0 / 28px 28px,
+      linear-gradient(-45deg, currentColor 2px, transparent 2px) 100% 100% / 28px 28px;
+    background-repeat: no-repeat;
+    color: oklch(0.4 0.002 200);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .dark .cyberpunk-skewed::before {
+    color: oklch(0.35 0.002 200);
+  }
+
+  .cyberpunk-skewed:hover::before {
+    color: oklch(0.65 0.18 45);
+  }
+
+  .dark .cyberpunk-skewed:hover::before {
+    color: oklch(0.73 0.17 84.429);
+  }
+
+  /* Large variant with more pronounced skew */
+  .cyberpunk-skewed-lg {
+    position: relative;
+    clip-path: polygon(
+      0 32px,
+      32px 0,
+      100% 0,
+      100% calc(100% - 32px),
+      calc(100% - 32px) 100%,
+      0 100%
+    );
+  }
+
+  .cyberpunk-skewed-lg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(135deg, currentColor 2px, transparent 2px) 0 0 / 45px 45px,
+      linear-gradient(-45deg, currentColor 2px, transparent 2px) 100% 100% / 45px 45px;
+    background-repeat: no-repeat;
+    color: oklch(0.4 0.002 200);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .dark .cyberpunk-skewed-lg::before {
+    color: oklch(0.35 0.002 200);
+  }
+
+  .cyberpunk-skewed-lg:hover::before {
+    color: oklch(0.65 0.18 45);
+  }
+
+  .dark .cyberpunk-skewed-lg:hover::before {
+    color: oklch(0.73 0.17 84.429);
+  }
+}
