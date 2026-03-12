@@ -5,13 +5,22 @@
 
   const store = useAccounts()
   let dropdownOpen = $state(false)
+
+  function onWindowClick() {
+    if (dropdownOpen) dropdownOpen = false
+  }
 </script>
 
-<div class="relative">
+<svelte:window onclick={onWindowClick} />
+<!-- svelte-ignore a11y_click_events_have_key_events -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<div class="relative" onclick={(e) => e.stopPropagation()}>
   <Button
     variant="outline"
     class="w-full justify-between text-left"
     onclick={() => dropdownOpen = !dropdownOpen}
+    aria-expanded={dropdownOpen}
+    aria-haspopup="listbox"
   >
     <span class="truncate text-sm">
       {store.selectedAccount?.name ?? 'Select account'}
@@ -22,9 +31,11 @@
   </Button>
 
   {#if dropdownOpen}
-    <div class="absolute left-0 top-full z-50 mt-1 w-full rounded-md border bg-popover p-1 shadow-md">
+    <div class="absolute left-0 top-full z-50 mt-1 w-full rounded-md border bg-popover p-1 shadow-md" role="listbox">
       {#each store.accounts as account}
         <button
+          role="option"
+          aria-selected={account.id === store.selectedAccountId}
           class={cn(
             'flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent',
             account.id === store.selectedAccountId && 'bg-accent',

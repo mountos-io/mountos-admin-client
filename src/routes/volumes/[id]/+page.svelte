@@ -20,13 +20,15 @@
   let volume = $state<Volume | null>(null)
   let loading = $state(true)
   let stats = $state<{ diskSize: number; activeSize: number; size: number } | null>(null)
-  let confirmOpen = $state(false)
-  let confirmAction = $state<{ title: string; desc: string; action: () => Promise<void> }>({ title: '', desc: '', action: async () => {} })
+  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
+    open: false, title: '', desc: '', action: async () => {},
+  })
 
   let genUserId = $state('')
   let genResult = $state<{ apiKey: string; apiSecret: string } | null>(null)
   let revokeKey = $state('')
   let quotaInput = $state('')
+  let actionError = $state('')
 
   $effect(() => {
     if (Number.isNaN(id)) { loading = false; return }
@@ -47,28 +49,36 @@
   }
 
   function confirm(title: string, desc: string, action: () => Promise<void>) {
-    confirmAction = { title, desc, action: async () => { await action(); await reload(); confirmOpen = false } }
-    confirmOpen = true
+    confirmAction = { open: true, title, desc, action: async () => { await action(); await reload() } }
   }
 
   async function generateKeys() {
     const uid = Number(genUserId)
     if (!genUserId || Number.isNaN(uid)) return
-    genResult = await store.generateApiKeys(id, { userId: uid })
+    actionError = ''
+    try {
+      genResult = await store.generateApiKeys(id, { userId: uid })
+    } catch (e: unknown) { actionError = e instanceof Error ? e.message : 'Failed to generate keys' }
   }
 
   async function handleRevokeKey() {
     if (!revokeKey) return
-    await store.revokeApiKey(id, revokeKey)
-    revokeKey = ''
-    await reload()
+    actionError = ''
+    try {
+      await store.revokeApiKey(id, revokeKey)
+      revokeKey = ''
+      await reload()
+    } catch (e: unknown) { actionError = e instanceof Error ? e.message : 'Failed to revoke key' }
   }
 
   async function updateQuota() {
     const limit = Number(quotaInput)
     if (isNaN(limit) || limit < 0) return
-    await store.updateQuota(id, limit)
-    await reload()
+    actionError = ''
+    try {
+      await store.updateQuota(id, limit)
+      await reload()
+    } catch (e: unknown) { actionError = e instanceof Error ? e.message : 'Failed to update quota' }
   }
 </script>
 
@@ -145,6 +155,10 @@
       {/if}
     </div>
 
+    {#if actionError}
+      <p class="text-sm text-destructive">{actionError}</p>
+    {/if}
+
     <Separator />
 
     <Card>
@@ -197,4 +211,4 @@
     <p class="text-muted-foreground">Volume not found.</p>
   {/if}
 </div>
-<ConfirmDialog bind:open={confirmOpen} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />

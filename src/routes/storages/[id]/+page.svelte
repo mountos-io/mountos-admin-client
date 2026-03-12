@@ -13,7 +13,9 @@
   const id = $derived(Number($page.params.id))
   let storage = $state<Storage | null>(null)
   let loading = $state(true)
-  let confirmOpen = $state(false)
+  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
+    open: false, title: '', desc: '', action: async () => {},
+  })
 
   $effect(() => {
     if (Number.isNaN(id)) { loading = false; return }
@@ -21,11 +23,8 @@
     store.getStorage(id).then(s => { storage = s }).catch(() => { storage = null }).finally(() => { loading = false })
   })
 
-  async function toggleActive() {
-    if (!storage) return
-    storage.isActive ? await store.deactivateStorage(id) : await store.activateStorage(id)
+  async function reload() {
     storage = await store.getStorage(id)
-    confirmOpen = false
   }
 </script>
 
@@ -60,7 +59,15 @@
         {/if}
       </CardContent>
       <CardFooter>
-        <Button variant={storage.isActive ? 'outline' : 'default'} size="sm" onclick={() => confirmOpen = true}>
+        <Button variant={storage.isActive ? 'outline' : 'default'} size="sm" onclick={() => {
+          const active = storage!.isActive
+          confirmAction = {
+            open: true,
+            title: active ? 'Deactivate' : 'Activate',
+            desc: `${active ? 'Deactivate' : 'Activate'} "${storage!.name}"?`,
+            action: async () => { active ? await store.deactivateStorage(id) : await store.activateStorage(id); await reload() },
+          }
+        }}>
           {storage.isActive ? 'Deactivate' : 'Activate'}
         </Button>
       </CardFooter>
@@ -69,4 +76,4 @@
     <p class="text-muted-foreground">Storage not found.</p>
   {/if}
 </div>
-<ConfirmDialog bind:open={confirmOpen} title={storage?.isActive ? 'Deactivate' : 'Activate'} description={`${storage?.isActive ? 'Deactivate' : 'Activate'} "${storage?.name}"?`} onConfirm={toggleActive} />
+<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />
