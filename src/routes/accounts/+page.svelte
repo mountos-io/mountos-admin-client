@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
@@ -8,21 +10,32 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { formatDate } from '$lib/core/utils/format'
+  import { showErrorToast } from '$lib/core/utils/toast'
   import Plus from '@lucide/svelte/icons/plus'
 
   const store = useAccounts()
+  const auth = useAuth()
   const prefs = usePreferences()
 
-  $effect(() => { store.fetchAccounts(1, prefs.pageSize) })
+  $effect(() => {
+    if (!auth.loading && !auth.can('accounts', 'read')) {
+      showErrorToast('Access denied')
+      goto('/', { replaceState: true })
+      return
+    }
+    store.fetchAccounts(1, prefs.pageSize)
+  })
 </script>
 
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h2 class="text-2xl font-bold tracking-tight">Accounts</h2>
-    <Button href="/accounts/create" size="sm" class="gap-1.5">
-      <Plus class="h-4 w-4" />
-      Create Account
-    </Button>
+    {#if auth.can('accounts', 'create')}
+      <Button href="/accounts/create" size="sm" class="gap-1.5">
+        <Plus class="h-4 w-4" />
+        Create Account
+      </Button>
+    {/if}
   </div>
 
   {#if store.loading}

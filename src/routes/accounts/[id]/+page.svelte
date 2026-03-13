@@ -1,17 +1,28 @@
 <script lang="ts">
   import { page } from '$app/stores'
+  import { goto } from '$app/navigation'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
   import { Button } from '$lib/components/ui/button'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import { formatDate } from '$lib/core/utils/format'
+  import { showErrorToast } from '$lib/core/utils/toast'
   import { features } from '$lib/config/features'
   import type { Account } from '$lib/core/api/types'
 
   const store = useAccounts()
+  const auth = useAuth()
   const id = $derived(Number($page.params.id))
+
+  $effect(() => {
+    if (!auth.loading && !auth.can('accounts', 'read')) {
+      showErrorToast('Access denied')
+      goto('/', { replaceState: true })
+    }
+  })
   let account = $state<Account | null>(null)
   let loading = $state(true)
   let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
@@ -60,20 +71,22 @@
             <p class="mt-1 text-sm">{formatDate(account.createdAt)}</p>
           </div>
         </CardContent>
-        <CardFooter class="gap-2">
-          {#if account.isActive}
-            <Button variant="outline" size="sm" onclick={() => confirm('Deactivate', `Deactivate "${account!.name}"?`, () => act(() => store.deactivateAccount(id)))}>Deactivate</Button>
-          {:else}
-            <Button variant="outline" size="sm" onclick={() => confirm('Activate', `Activate "${account!.name}"?`, () => act(() => store.activateAccount(id)))}>Activate</Button>
-          {/if}
-          {#if features.accountLock}
-            {#if account.locked}
-              <Button variant="outline" size="sm" onclick={() => confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)))}>Unlock</Button>
+        {#if auth.can('accounts', 'update')}
+          <CardFooter class="gap-2">
+            {#if account.isActive}
+              <Button variant="outline" size="sm" onclick={() => confirm('Deactivate', `Deactivate "${account!.name}"?`, () => act(() => store.deactivateAccount(id)))}>Deactivate</Button>
             {:else}
-              <Button variant="destructive" size="sm" onclick={() => confirm('Lock', `Lock "${account!.name}"?`, () => act(() => store.lockAccount(id)))}>Lock</Button>
+              <Button variant="outline" size="sm" onclick={() => confirm('Activate', `Activate "${account!.name}"?`, () => act(() => store.activateAccount(id)))}>Activate</Button>
             {/if}
-          {/if}
-        </CardFooter>
+            {#if features.accountLock}
+              {#if account.locked}
+                <Button variant="outline" size="sm" onclick={() => confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)))}>Unlock</Button>
+              {:else}
+                <Button variant="destructive" size="sm" onclick={() => confirm('Lock', `Lock "${account!.name}"?`, () => act(() => store.lockAccount(id)))}>Lock</Button>
+              {/if}
+            {/if}
+          </CardFooter>
+        {/if}
       </Card>
 
       {#if account.vendorInfo}

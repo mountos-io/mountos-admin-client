@@ -2,6 +2,7 @@
   import { usePreferences, type Theme, type FontSize } from '$lib/stores/preferences.svelte'
   import { useSettingsModal, type SettingsTab } from '$lib/stores/settings-modal.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { vendorSettingsTabs, vendorSettingsModalSize } from '$vendor/config/settings'
   import * as Dialog from '$lib/components/ui/dialog'
   import { Button } from '$lib/components/ui/button'
   import { cn } from '$lib/utils'
@@ -16,11 +17,21 @@
   const modal = useSettingsModal()
   const accountStore = useAccounts()
 
-  const tabs: { id: SettingsTab; label: string; icon: typeof Sun }[] = [
+  const maxWidth = vendorSettingsModalSize?.maxWidth ?? '600px'
+  const minHeight = vendorSettingsModalSize?.minHeight ?? '360px'
+
+  const builtinTabs: { id: SettingsTab; label: string; icon: typeof Sun }[] = [
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
     { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
   ]
+
+  const allTabs = $derived([
+    ...builtinTabs,
+    ...vendorSettingsTabs.map(vt => ({ id: vt.id as SettingsTab, label: vt.label, icon: vt.icon })),
+  ])
+
+  const activeVendorTab = $derived(vendorSettingsTabs.find(vt => vt.id === modal.tab))
 
   const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
     { value: 'light', label: 'Light', icon: Sun },
@@ -46,14 +57,14 @@
 </script>
 
 <Dialog.Dialog bind:open={modal.open}>
-  <Dialog.DialogContent class="sm:max-w-[600px] p-0 gap-0">
+  <Dialog.DialogContent class="p-0 gap-0" style="max-width: {maxWidth}">
     <Dialog.DialogHeader class="px-6 pt-6 pb-4 border-b">
       <Dialog.DialogTitle>Settings</Dialog.DialogTitle>
       <Dialog.DialogDescription class="sr-only">Application settings</Dialog.DialogDescription>
     </Dialog.DialogHeader>
-    <div class="flex min-h-[360px]">
+    <div class="flex" style="min-height: {minHeight}">
       <nav class="w-44 shrink-0 border-r p-2 space-y-0.5">
-        {#each tabs as t}
+        {#each allTabs as t}
           {@const Icon = t.icon}
           <button
             class={cn(
@@ -160,6 +171,10 @@
               </div>
             {/each}
           </div>
+
+        {:else if activeVendorTab}
+          {@const VendorComponent = activeVendorTab.component}
+          <VendorComponent />
         {/if}
       </div>
     </div>

@@ -1,11 +1,24 @@
-import type { UserInfo } from '$lib/core/auth/adapter'
+import type { Capabilities, UserInfo } from '$lib/core/auth/adapter'
+import { authorize, type Action } from '$lib/core/auth/authorize'
 import { authAdapter } from '$lib/config/auth'
+import { showErrorToast } from '$lib/core/utils/toast'
 
 let user = $state<UserInfo | null>(null)
 let loading = $state(true)
 let initialized = $state(false)
 
 const authenticated = $derived(user !== null)
+const capabilities = $derived<Capabilities>(user?.capabilities ?? {})
+
+function can(resource: string, action: Action): boolean {
+  return authorize(capabilities, resource, action, user)
+}
+
+function guard(resource: string, action: Action): boolean {
+  if (can(resource, action)) return true
+  showErrorToast('Not authorized')
+  return false
+}
 
 async function init() {
   if (initialized) return
@@ -32,6 +45,9 @@ export function useAuth() {
     get user() { return user },
     get loading() { return loading },
     get authenticated() { return authenticated },
+    get capabilities() { return capabilities },
+    can,
+    guard,
     init,
     signIn,
     signOut,

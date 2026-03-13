@@ -1,16 +1,27 @@
 <script lang="ts">
   import { page } from '$app/stores'
+  import { goto } from '$app/navigation'
   import { useStorages } from '$lib/core/stores/storages.svelte'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
   import { Button } from '$lib/components/ui/button'
   import { Badge } from '$lib/components/ui/badge'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import { showErrorToast } from '$lib/core/utils/toast'
   import type { Storage } from '$lib/core/api/types'
 
   const store = useStorages()
+  const auth = useAuth()
   const id = $derived(Number($page.params.id))
+
+  $effect(() => {
+    if (!auth.loading && !auth.can('storages', 'read')) {
+      showErrorToast('Access denied')
+      goto('/', { replaceState: true })
+    }
+  })
   let storage = $state<Storage | null>(null)
   let loading = $state(true)
   let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
@@ -58,19 +69,22 @@
           </div>
         {/if}
       </CardContent>
-      <CardFooter>
-        <Button variant={storage.isActive ? 'outline' : 'default'} size="sm" onclick={() => {
-          const active = storage!.isActive
-          confirmAction = {
-            open: true,
-            title: active ? 'Deactivate' : 'Activate',
-            desc: `${active ? 'Deactivate' : 'Activate'} "${storage!.name}"?`,
-            action: async () => { active ? await store.deactivateStorage(id) : await store.activateStorage(id); await reload() },
-          }
-        }}>
-          {storage.isActive ? 'Deactivate' : 'Activate'}
-        </Button>
-      </CardFooter>
+      {#if auth.can('storages', 'update')}
+        <CardFooter>
+          <Button variant={storage.isActive ? 'outline' : 'default'} size="sm" onclick={() => {
+            if (!auth.guard('storages', 'update')) return
+            const active = storage!.isActive
+            confirmAction = {
+              open: true,
+              title: active ? 'Deactivate' : 'Activate',
+              desc: `${active ? 'Deactivate' : 'Activate'} "${storage!.name}"?`,
+              action: async () => { active ? await store.deactivateStorage(id) : await store.activateStorage(id); await reload() },
+            }
+          }}>
+            {storage.isActive ? 'Deactivate' : 'Activate'}
+          </Button>
+        </CardFooter>
+      {/if}
     </Card>
   {:else}
     <p class="text-muted-foreground">Storage not found.</p>

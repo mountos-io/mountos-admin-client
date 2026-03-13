@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import { useNodes } from '$lib/core/stores/nodes.svelte'
   import { useRegions } from '$lib/core/stores/regions.svelte'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
   import { Badge } from '$lib/components/ui/badge'
@@ -9,15 +11,24 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { formatRelative } from '$lib/core/utils/format'
+  import { showErrorToast } from '$lib/core/utils/toast'
 
   const nodeStore = useNodes()
   const regionStore = useRegions()
+  const auth = useAuth()
 
   let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
     open: false, title: '', desc: '', action: async () => {},
   })
 
-  $effect(() => { regionStore.fetchRegions() })
+  $effect(() => {
+    if (!auth.loading && !auth.can('serviceNodes', 'read')) {
+      showErrorToast('Access denied')
+      goto('/', { replaceState: true })
+      return
+    }
+    regionStore.fetchRegions()
+  })
 
   function selectRegion(regionId: number) {
     nodeStore.fetchNodes(regionId)
@@ -75,22 +86,26 @@
             </TableCell>
             <TableCell>
               <div class="flex gap-1">
-                {#if node.status !== 'draining'}
-                  <Button variant="outline" size="sm" onclick={() => confirm(
-                    'Drain Node', `Drain node "${node.nodeId}"?`,
-                    () => nodeStore.drainNode(nodeStore.selectedRegionId!, node.nodeId),
-                  )}>Drain</Button>
+                {#if auth.can('serviceNodes', 'update')}
+                  {#if node.status !== 'draining'}
+                    <Button variant="outline" size="sm" onclick={() => confirm(
+                      'Drain Node', `Drain node "${node.nodeId}"?`,
+                      () => nodeStore.drainNode(nodeStore.selectedRegionId!, node.nodeId),
+                    )}>Drain</Button>
+                  {/if}
+                  {#if !node.isActive}
+                    <Button variant="outline" size="sm" onclick={() => confirm(
+                      'Activate Node', `Activate node "${node.nodeId}"?`,
+                      () => nodeStore.activateNode(nodeStore.selectedRegionId!, node.nodeId),
+                    )}>Activate</Button>
+                  {/if}
                 {/if}
-                {#if !node.isActive}
-                  <Button variant="outline" size="sm" onclick={() => confirm(
-                    'Activate Node', `Activate node "${node.nodeId}"?`,
-                    () => nodeStore.activateNode(nodeStore.selectedRegionId!, node.nodeId),
-                  )}>Activate</Button>
+                {#if auth.can('serviceNodes', 'delete')}
+                  <Button variant="destructive" size="sm" onclick={() => confirm(
+                    'Remove Node', `Remove node "${node.nodeId}"? This cannot be undone.`,
+                    () => nodeStore.removeNode(nodeStore.selectedRegionId!, node.nodeId),
+                  )}>Remove</Button>
                 {/if}
-                <Button variant="destructive" size="sm" onclick={() => confirm(
-                  'Remove Node', `Remove node "${node.nodeId}"? This cannot be undone.`,
-                  () => nodeStore.removeNode(nodeStore.selectedRegionId!, node.nodeId),
-                )}>Remove</Button>
               </div>
             </TableCell>
           </TableRow>

@@ -1,8 +1,9 @@
 <script lang="ts">
   import { page } from '$app/stores'
   import { cn } from '$lib/utils.js'
-  import { navigation } from '$lib/config/navigation'
+  import { navigation, navFilter } from '$lib/config/navigation'
   import { features } from '$lib/config/features'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import AccountSwitcher from './AccountSwitcher.svelte'
   import type { Component } from 'svelte'
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
@@ -13,8 +14,11 @@
   import Database from '@lucide/svelte/icons/database'
   import ScrollText from '@lucide/svelte/icons/scroll-text'
   import Server from '@lucide/svelte/icons/server'
+  import Box from '@lucide/svelte/icons/box'
 
   let { collapsed = false }: { collapsed?: boolean } = $props()
+
+  const auth = useAuth()
 
   const iconMap: Record<string, Component> = {
     'layout-dashboard': LayoutDashboard, 'building-2': Building2,
@@ -23,7 +27,9 @@
   }
 
   const visibleNav = $derived(
-    navigation.filter(item => !item.feature || features[item.feature])
+    navigation.filter(item =>
+      navFilter ? navFilter(item, auth.capabilities) : (!item.feature || features[item.feature])
+    )
   )
 </script>
 
@@ -38,7 +44,7 @@
   </div>
   <nav aria-label="Main navigation" class={cn('flex-1 space-y-1 py-2', collapsed ? 'px-1.5' : 'px-3')}>
     {#each visibleNav as item}
-      {@const Icon = iconMap[item.icon]}
+      {@const Icon = item.iconComponent ?? iconMap[item.icon] ?? Box}
       {@const active = $page.url.pathname === item.href || (item.href !== '/' && $page.url.pathname.startsWith(item.href + '/'))}
       <a
         href={item.href}

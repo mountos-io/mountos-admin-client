@@ -1,9 +1,12 @@
+export type Capabilities = Record<string, number>
+
 export interface UserInfo {
   id: string
   name: string
   email?: string
   avatar?: string
-  roles?: string[]
+  role: string
+  capabilities: Capabilities
 }
 
 export interface AuthAdapter {

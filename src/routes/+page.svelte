@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import AccountIcon from '$lib/components/shared/AccountIcon.svelte'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
 
   const accountStore = useAccounts()
@@ -15,8 +16,13 @@
       <Card>
         <CardHeader><CardTitle>Account</CardTitle></CardHeader>
         <CardContent>
-          <p class="text-lg font-medium">{account.name}</p>
-          <div class="mt-2"><StatusBadge active={account.isActive} locked={account.locked} /></div>
+          <div class="flex items-center gap-3">
+            <AccountIcon {account} size={40} />
+            <div>
+              <p class="text-lg font-medium">{account.name}</p>
+              <div class="mt-1"><StatusBadge active={account.isActive} locked={account.locked} /></div>
+            </div>
+          </div>
         </CardContent>
       </Card>
       <Card>

@@ -4,6 +4,7 @@
   import { Button } from '$lib/components/ui/button'
   import * as Dialog from '$lib/components/ui/dialog'
   import Input from '$lib/components/ui/input/input.svelte'
+  import AccountIcon from '$lib/components/shared/AccountIcon.svelte'
   import Check from '@lucide/svelte/icons/check'
   import Plus from '@lucide/svelte/icons/plus'
 
@@ -33,12 +34,17 @@
   aria-haspopup="dialog"
 >
   {#if collapsed}
-    <span class="text-xs font-bold">
-      {store.selectedAccount?.name?.[0]?.toUpperCase() ?? '?'}
-    </span>
+    {#if store.selectedAccount}
+      <AccountIcon account={store.selectedAccount} size={24} />
+    {:else}
+      <span class="text-xs font-bold">?</span>
+    {/if}
   {:else}
-    <span class="truncate text-sm">
-      {store.selectedAccount?.name ?? 'Select account'}
+    <span class="flex items-center gap-2 truncate">
+      {#if store.selectedAccount}
+        <AccountIcon account={store.selectedAccount} size={20} />
+      {/if}
+      <span class="truncate text-sm">{store.selectedAccount?.name ?? 'Select account'}</span>
     </span>
     <svg class="h-4 w-4 shrink-0 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="m6 9 6 6 6-6" />
@@ -68,6 +74,7 @@
           )}
           onclick={() => select(account.id)}
         >
+          <AccountIcon {account} size={20} />
           <span class="flex-1 text-left truncate">{account.name}</span>
           {#if account.id === store.selectedAccountId}
             <Check class="h-4 w-4 text-primary" />

@@ -1,11 +1,12 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
-  import { navigation } from '$lib/config/navigation'
+  import { navigation, navFilter } from '$lib/config/navigation'
   import { features } from '$lib/config/features'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
+  import { vendorSettingsTabs } from '$vendor/config/settings'
   import * as Command from '$lib/components/ui/command'
   import type { Component } from 'svelte'
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
@@ -21,6 +22,7 @@
   import Plus from '@lucide/svelte/icons/plus'
   import LogOut from '@lucide/svelte/icons/log-out'
   import UserIcon from '@lucide/svelte/icons/user'
+  import Box from '@lucide/svelte/icons/box'
 
   let { open = $bindable(false) }: { open?: boolean } = $props()
 
@@ -36,7 +38,9 @@
   }
 
   const visibleNav = $derived(
-    navigation.filter(item => !item.feature || features[item.feature])
+    navigation.filter(item =>
+      navFilter ? navFilter(item, auth.capabilities) : (!item.feature || features[item.feature])
+    )
   )
 
   function run(action: () => void) {
@@ -56,7 +60,7 @@
 
     <Command.CommandGroup heading="Navigation">
       {#each visibleNav as item}
-        {@const Icon = iconMap[item.icon]}
+        {@const Icon = item.iconComponent ?? iconMap[item.icon] ?? Box}
         <Command.CommandItem value={item.label} onSelect={() => nav(item.href)}>
           {#if Icon}<Icon class="mr-2 h-4 w-4" />{/if}
           {item.label}
@@ -77,15 +81,30 @@
         Toggle Sidebar
         <Command.CommandShortcut>⌘B</Command.CommandShortcut>
       </Command.CommandItem>
-      <Command.CommandItem value="Create Account" onSelect={() => nav('/accounts/create')}>
-        <Plus class="mr-2 h-4 w-4" />
-        Create Account
-      </Command.CommandItem>
+      {#if auth.can('accounts', 'create')}
+        <Command.CommandItem value="Create Account" onSelect={() => nav('/accounts/create')}>
+          <Plus class="mr-2 h-4 w-4" />
+          Create Account
+        </Command.CommandItem>
+      {/if}
       <Command.CommandItem value="Sign Out" onSelect={() => run(() => auth.signOut())}>
         <LogOut class="mr-2 h-4 w-4" />
         Sign Out
       </Command.CommandItem>
     </Command.CommandGroup>
+
+    {#if vendorSettingsTabs.length > 0}
+      <Command.CommandSeparator />
+      <Command.CommandGroup heading="Settings">
+        {#each vendorSettingsTabs as vt}
+          {@const VIcon = vt.icon}
+          <Command.CommandItem value="Settings: {vt.label}" onSelect={() => run(() => settingsModal.show(vt.id))}>
+            {#if VIcon}<VIcon class="mr-2 h-4 w-4" />{/if}
+            {vt.label}
+          </Command.CommandItem>
+        {/each}
+      </Command.CommandGroup>
+    {/if}
 
     {#if accountStore.accounts.length > 0}
       <Command.CommandSeparator />

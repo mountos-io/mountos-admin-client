@@ -20,8 +20,9 @@ const privateKey = await crypto.subtle.importKey(
 const sub = process.argv[2] ?? 'test-user'
 const name = process.argv[3] ?? 'Test User'
 const email = process.argv[4] ?? 'test@localhost'
+const role = process.argv[5] ?? 'superadmin'
 
-const token = await new jose.SignJWT({ name, email })
+const token = await new jose.SignJWT({ name, email, role })
   .setProtectedHeader({ alg: 'EdDSA' })
   .setSubject(sub)
   .setAudience('mountos/dashboard')

@@ -1,3 +1,4 @@
-import type { NavItem } from '$lib/config/navigation'
+import type { NavItem, NavFilter } from '$lib/config/navigation'
 
-export const vendorNavigation: NavItem[] | undefined = undefined
+export const vendorNavItems: NavItem[] | undefined = undefined
+export const vendorNavFilter: NavFilter | undefined = undefined

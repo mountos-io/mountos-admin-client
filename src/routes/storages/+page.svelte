@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import { useStorages } from '$lib/core/stores/storages.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
@@ -9,13 +11,22 @@
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import { showErrorToast } from '$lib/core/utils/toast'
 
   const storageStore = useStorages()
   const accountStore = useAccounts()
+  const auth = useAuth()
   const prefs = usePreferences()
   const accountId = $derived(accountStore.selectedAccountId)
 
-  $effect(() => { if (accountId) storageStore.fetchStorages(accountId, 1, prefs.pageSize) })
+  $effect(() => {
+    if (!auth.loading && !auth.can('storages', 'read')) {
+      showErrorToast('Access denied')
+      goto('/', { replaceState: true })
+      return
+    }
+    if (accountId) storageStore.fetchStorages(accountId, 1, prefs.pageSize)
+  })
 </script>
 
 <div class="space-y-4">

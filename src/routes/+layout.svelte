@@ -25,7 +25,12 @@
     exchanging = true
     progress = 20
     try {
-      const res = await fetch(`/api/me?token=${encodeURIComponent(vendorToken)}`)
+      const res = await fetch('/api/auth/exchange', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: vendorToken }),
+        credentials: 'same-origin',
+      })
       progress = 60
       if (!res.ok) {
         exchangeError = 'Authentication failed'

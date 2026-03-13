@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import { useAuditLogs } from '$lib/core/stores/audit.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
   import { Badge } from '$lib/components/ui/badge'
@@ -8,9 +10,11 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { formatRelative } from '$lib/core/utils/format'
+  import { showErrorToast } from '$lib/core/utils/toast'
 
   const store = useAuditLogs()
   const accountStore = useAccounts()
+  const auth = useAuth()
   const accountId = $derived(accountStore.selectedAccountId)
 
   let subject = $state('')
@@ -18,6 +22,11 @@
   let expanded = $state<Set<number>>(new Set())
 
   $effect(() => {
+    if (!auth.loading && !auth.can('auditLogs', 'read')) {
+      showErrorToast('Access denied')
+      goto('/', { replaceState: true })
+      return
+    }
     const acctId = accountId ?? undefined
     store.fetchLogs({ accountId: acctId, subject: appliedSubject || undefined, reset: true })
   })
