@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/bun'
-import { vendorAuth } from './middleware'
+import { auth, vendorMiddlewares } from './middleware'
 import { proxy } from './proxy'
 
 const app = new Hono()
@@ -8,8 +8,11 @@ const app = new Hono()
 // Health check
 app.get('/health', (c) => c.json({ status: 'ok' }))
 
-// Vendor auth middleware for proxy routes
-app.use('/api/proxy/*', vendorAuth)
+// Vendor middlewares (CSRF, rate limiting, etc.)
+for (const mw of vendorMiddlewares) app.use(mw)
+
+// Auth for API routes
+app.use('/api/*', auth)
 
 // Proxy routes (signed forwarding to appserv)
 app.route('/', proxy)

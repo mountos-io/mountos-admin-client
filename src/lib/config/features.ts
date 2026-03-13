@@ -1,4 +1,5 @@
-// VENDOR EDITS HERE
+import { vendorFeatures } from '$vendor/config/features'
+
 export interface FeatureFlags {
   accounts: boolean
   users: boolean
@@ -14,7 +15,7 @@ export interface FeatureFlags {
   allAccountsView: boolean
 }
 
-export const features: FeatureFlags = {
+const defaults: FeatureFlags = {
   accounts: true,
   users: true,
   regions: true,
@@ -28,3 +29,5 @@ export const features: FeatureFlags = {
   accountLock: true,
   allAccountsView: false,
 }
+
+export const features: FeatureFlags = { ...defaults, ...vendorFeatures }

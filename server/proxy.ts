@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { MountOSAdmin } from '@mountos-app/admin-sdk'
+import type { AdminUser } from './types'
 
 const APPSERV_URL = process.env.MOUNTOS_APPSERV_URL ?? 'http://localhost:8080'
 const PRIVATE_KEY = process.env.MOUNTOS_PRIVATE_KEY ?? ''
@@ -29,7 +30,7 @@ proxy.all('/api/proxy/v1/*', async (c) => {
       'Content-Type': c.req.header('content-type') ?? 'application/json',
     }
 
-    const adminUser = c.get('mountosUser') as { id: string; name: string; email?: string } | undefined
+    const adminUser = c.get('mountosUser') as AdminUser | undefined
     if (adminUser) {
       headers['X-MountOS-Admin-User'] = btoa(JSON.stringify(adminUser))
     }

@@ -1,5 +1,5 @@
-// VENDOR EDITS HERE
 import type { FeatureFlags } from './features'
+import { vendorNavigation } from '$vendor/config/navigation'
 
 export interface NavItem {
   label: string
@@ -8,7 +8,7 @@ export interface NavItem {
   feature?: keyof FeatureFlags
 }
 
-export const navigation: NavItem[] = [
+const defaults: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'layout-dashboard' },
   { label: 'Accounts', href: '/accounts', icon: 'building-2', feature: 'accounts' },
   { label: 'Users', href: '/users', icon: 'users', feature: 'users' },
@@ -18,3 +18,5 @@ export const navigation: NavItem[] = [
   { label: 'Audit Log', href: '/audit', icon: 'scroll-text', feature: 'auditLogs' },
   { label: 'Nodes', href: '/nodes', icon: 'server', feature: 'serviceNodes' },
 ]
+
+export const navigation: NavItem[] = vendorNavigation ?? defaults

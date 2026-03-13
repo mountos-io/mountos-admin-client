@@ -1,5 +1,6 @@
 <script lang="ts">
   import '../app.css'
+  import { appConfig } from '$lib/config/app'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import Shell from '$lib/components/layout/Shell.svelte'
@@ -23,6 +24,10 @@
     }).catch(() => {})
   })
 </script>
+
+<svelte:head>
+  <link rel="icon" href={appConfig.faviconUrl} />
+</svelte:head>
 
 {#if auth.loading}
   <div class="flex h-screen items-center justify-center">

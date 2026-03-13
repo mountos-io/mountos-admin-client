@@ -19,7 +19,7 @@ dev-all: ## Run dev server with proxy
 	npm run dev:all
 
 gen: ## Generate browser client from SDK
-	cd ../mountos-admin-sdk && make gen-browser
+	bun run gen/browser-client.ts
 
 clean: ## Remove build artifacts
 	rm -rf .svelte-kit build node_modules
