@@ -59,6 +59,9 @@ class DashboardAuth {
     this.config = { ...defaults, ...vendorAuthConfig }
   }
 
+  get sessionTTL() { return this.config.sessionTTL }
+  get refreshTTL() { return this.config.refreshTTL }
+
   async init() {
     this.vendorPub = await importEd25519PublicKey('VENDOR2DASHBOARD_VERIFICATION_KEY', process.env.VENDOR2DASHBOARD_VERIFICATION_KEY!)
     this.sessionKey = await importEd25519PrivateKey('DASHBOARD_SIGNING_KEY', process.env.DASHBOARD_SIGNING_KEY!)

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
@@ -7,14 +8,22 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { formatDate } from '$lib/core/utils/format'
+  import Plus from '@lucide/svelte/icons/plus'
 
   const store = useAccounts()
+  const prefs = usePreferences()
 
-  $effect(() => { store.fetchAccounts() })
+  $effect(() => { store.fetchAccounts(1, prefs.pageSize) })
 </script>
 
 <div class="space-y-4">
-  <h2 class="text-2xl font-bold tracking-tight">Accounts</h2>
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold tracking-tight">Accounts</h2>
+    <Button href="/accounts/create" size="sm" class="gap-1.5">
+      <Plus class="h-4 w-4" />
+      Create Account
+    </Button>
+  </div>
 
   {#if store.loading}
     <LoadingSpinner />
@@ -41,6 +50,6 @@
         {/each}
       </TableBody>
     </Table>
-    <Pagination currentPage={store.currentPage} totalPages={store.totalPages} onPageChange={(p) => store.fetchAccounts(p)} />
+    <Pagination currentPage={store.currentPage} totalPages={store.totalPages} onPageChange={(p) => store.fetchAccounts(p, prefs.pageSize)} />
   {/if}
 </div>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { useRegions } from '$lib/core/stores/regions.svelte'
+  import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
@@ -10,11 +11,12 @@
   import { formatDate } from '$lib/core/utils/format'
 
   const store = useRegions()
+  const prefs = usePreferences()
   let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
     open: false, title: '', desc: '', action: async () => {},
   })
 
-  $effect(() => { store.fetchRegions() })
+  $effect(() => { store.fetchRegions(1, prefs.pageSize) })
 
   function toggle(region: { id: number; name: string; isActive: boolean }) {
     const act = region.isActive ? 'Deactivate' : 'Activate'
@@ -54,7 +56,7 @@
         {/each}
       </TableBody>
     </Table>
-    <Pagination currentPage={store.currentPage} totalPages={store.totalPages} onPageChange={(p) => store.fetchRegions(p)} />
+    <Pagination currentPage={store.currentPage} totalPages={store.totalPages} onPageChange={(p) => store.fetchRegions(p, prefs.pageSize)} />
   {/if}
 </div>
 <ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />

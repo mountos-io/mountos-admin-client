@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useStorages } from '$lib/core/stores/storages.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
   import { Badge } from '$lib/components/ui/badge'
@@ -11,9 +12,10 @@
 
   const storageStore = useStorages()
   const accountStore = useAccounts()
+  const prefs = usePreferences()
   const accountId = $derived(accountStore.selectedAccountId)
 
-  $effect(() => { if (accountId) storageStore.fetchStorages(accountId) })
+  $effect(() => { if (accountId) storageStore.fetchStorages(accountId, 1, prefs.pageSize) })
 </script>
 
 <div class="space-y-4">
@@ -47,6 +49,6 @@
         {/each}
       </TableBody>
     </Table>
-    <Pagination currentPage={storageStore.currentPage} totalPages={storageStore.totalPages} onPageChange={(p) => accountId && storageStore.fetchStorages(accountId, p)} />
+    <Pagination currentPage={storageStore.currentPage} totalPages={storageStore.totalPages} onPageChange={(p) => accountId && storageStore.fetchStorages(accountId, p, prefs.pageSize)} />
   {/if}
 </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useVolumes } from '$lib/core/stores/volumes.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
@@ -11,9 +12,10 @@
 
   const volumeStore = useVolumes()
   const accountStore = useAccounts()
+  const prefs = usePreferences()
   const accountId = $derived(accountStore.selectedAccountId)
 
-  $effect(() => { if (accountId) volumeStore.fetchVolumes(accountId) })
+  $effect(() => { if (accountId) volumeStore.fetchVolumes(accountId, 1, prefs.pageSize) })
 </script>
 
 <div class="space-y-4">
@@ -45,6 +47,6 @@
         {/each}
       </TableBody>
     </Table>
-    <Pagination currentPage={volumeStore.currentPage} totalPages={volumeStore.totalPages} onPageChange={(p) => accountId && volumeStore.fetchVolumes(accountId, p)} />
+    <Pagination currentPage={volumeStore.currentPage} totalPages={volumeStore.totalPages} onPageChange={(p) => accountId && volumeStore.fetchVolumes(accountId, p, prefs.pageSize)} />
   {/if}
 </div>

@@ -6,6 +6,7 @@
   import { authAdapter } from '$lib/config/auth'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { usePreferences } from '$lib/stores/preferences.svelte'
   import { TokenAuthAdapter } from '$lib/core/auth/token'
   import Shell from '$lib/components/layout/Shell.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
@@ -13,6 +14,7 @@
 
   const auth = useAuth()
   const accountStore = useAccounts()
+  const prefs = usePreferences()
 
   let { children } = $props()
   let exchanging = $state(false)
@@ -57,8 +59,16 @@
     auth.init().then(() => {
       if (auth.authenticated) {
         accountStore.fetchAccounts().then(() => {
-          if (accountStore.accounts.length === 1) {
-            accountStore.selectAccount(accountStore.accounts[0].id)
+          const accounts = accountStore.accounts
+          if (accounts.length === 0 && $page.url.pathname !== '/accounts/create') {
+            goto('/accounts/create', { replaceState: true })
+            return
+          }
+          if (accounts.length === 1) {
+            accountStore.selectAccount(accounts[0].id)
+          } else if (prefs.defaultAccountId !== null) {
+            const found = accounts.find(a => a.id === prefs.defaultAccountId)
+            if (found) accountStore.selectAccount(found.id)
           }
         }).catch(() => {})
       }

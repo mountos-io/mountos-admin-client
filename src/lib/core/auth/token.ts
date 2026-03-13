@@ -37,12 +37,13 @@ export class TokenAuthAdapter implements AuthAdapter {
 
   async signOut(): Promise<void> {
     this.clearTokens()
+    try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}
     window.location.href = this.config.logoutUrl
   }
 
   async getUser(): Promise<UserInfo | null> {
     const token = sessionStorage.getItem(this.tokenKey)
-    if (!token) return null
+    if (!token) return this.bootstrapFromCookie()
     try {
       const res = await fetch(this.config.userEndpoint, {
         headers: { Authorization: `Bearer ${token}` },
@@ -54,6 +55,18 @@ export class TokenAuthAdapter implements AuthAdapter {
       if (res.status === 401) return await this.tryRefresh()
     } catch {}
     return null
+  }
+
+  private async bootstrapFromCookie(): Promise<UserInfo | null> {
+    try {
+      const res = await fetch(this.config.userEndpoint)
+      if (!res.ok) return null
+      const data = await res.json()
+      if (data.token) this.storeTokens(data.token, data.refreshToken)
+      return data.user ?? data
+    } catch {
+      return null
+    }
   }
 
   async getRequestHeaders(): Promise<Record<string, string>> {

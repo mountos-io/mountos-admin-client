@@ -29,11 +29,4 @@ const token = await new jose.SignJWT({ name, email })
   .setExpirationTime('60s')
   .sign(privateKey)
 
-// Derive public key for VENDOR2DASHBOARD_VERIFICATION_KEY
-const jwk = await crypto.subtle.exportKey('jwk', privateKey)
-const pubBytes = Buffer.from(jwk.x!, 'base64url')
-console.log('VENDOR2DASHBOARD_VERIFICATION_KEY:', pubBytes.toString('base64'))
-console.log()
-console.log('Token:', token)
-console.log()
-console.log(`URL: http://localhost:5173/?token=${token}`)
+console.log(`http://localhost:5173?token=${token}`)

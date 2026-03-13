@@ -1,6 +1,7 @@
 <script lang="ts">
   import { useUsers } from '$lib/core/stores/users.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
@@ -8,9 +9,10 @@
 
   const userStore = useUsers()
   const accountStore = useAccounts()
+  const prefs = usePreferences()
   const accountId = $derived(accountStore.selectedAccountId)
 
-  $effect(() => { if (accountId) userStore.fetchUsers(accountId) })
+  $effect(() => { if (accountId) userStore.fetchUsers(accountId, 1, prefs.pageSize) })
 </script>
 
 <div class="space-y-4">
@@ -41,6 +43,6 @@
         {/each}
       </TableBody>
     </Table>
-    <Pagination currentPage={userStore.currentPage} totalPages={userStore.totalPages} onPageChange={(p) => accountId && userStore.fetchUsers(accountId, p)} />
+    <Pagination currentPage={userStore.currentPage} totalPages={userStore.totalPages} onPageChange={(p) => accountId && userStore.fetchUsers(accountId, p, prefs.pageSize)} />
   {/if}
 </div>
