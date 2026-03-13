@@ -25,13 +25,13 @@ const COOKIE_SESSION = 'mountos_session'
 const COOKIE_REFRESH = 'mountos_refresh'
 
 function setTokenCookies(c: Context, token: string, refreshToken: string) {
-  const opts = { httpOnly: true, sameSite: 'Lax' as const, path: '/', secure: process.env.NODE_ENV === 'production' }
+  const opts = { httpOnly: true, sameSite: 'Strict' as const, path: '/', secure: process.env.NODE_ENV !== 'development' }
   setCookie(c, COOKIE_SESSION, token, { ...opts, maxAge: dashboardAuth.sessionTTL })
   setCookie(c, COOKIE_REFRESH, refreshToken, { ...opts, maxAge: dashboardAuth.refreshTTL })
 }
 
 function clearTokenCookies(c: Context) {
-  const opts = { httpOnly: true, sameSite: 'Lax' as const, path: '/', secure: process.env.NODE_ENV === 'production' }
+  const opts = { httpOnly: true, sameSite: 'Strict' as const, path: '/', secure: process.env.NODE_ENV !== 'development' }
   deleteCookie(c, COOKIE_SESSION, opts)
   deleteCookie(c, COOKIE_REFRESH, opts)
 }

@@ -37,7 +37,7 @@ export class TokenAuthAdapter implements AuthAdapter {
 
   async signOut(): Promise<void> {
     this.clearTokens()
-    try { await fetch('/api/auth/logout', { method: 'POST' }) } catch {}
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }) } catch {}
     window.location.href = this.config.logoutUrl
   }
 
@@ -59,7 +59,7 @@ export class TokenAuthAdapter implements AuthAdapter {
 
   private async bootstrapFromCookie(): Promise<UserInfo | null> {
     try {
-      const res = await fetch(this.config.userEndpoint)
+      const res = await fetch(this.config.userEndpoint, { credentials: 'same-origin' })
       if (!res.ok) return null
       const data = await res.json()
       if (data.token) this.storeTokens(data.token, data.refreshToken)
