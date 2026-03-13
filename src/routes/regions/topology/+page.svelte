@@ -24,6 +24,8 @@
 
   let viewMode = $state<ViewMode>('rack')
   let selectedRaft = $state<string | null>(null)
+  let hoverRaft = $state<string | null>(null)
+  let svgTip = $state<{ node: DemoNode; x: number; y: number } | null>(null)
 
   function toggleRaft(name: string) {
     selectedRaft = selectedRaft === name ? null : name
@@ -94,9 +96,7 @@
       groups.set(node.raftGroup, list)
     }
     return [...groups.entries()].map(([name, members]) => ({
-      name,
-      ...RAFT_STYLES[name],
-      members,
+      name, ...RAFT_STYLES[name], members,
       leader: members.find(m => m.isRaftLeader),
       count: members.length,
     }))
@@ -104,17 +104,70 @@
 
   const statelessNodes = $derived(nodes.filter(n => !n.raftGroup))
 
-  function isDimmed(node: DemoNode): boolean {
-    return selectedRaft !== null && node.raftGroup !== selectedRaft
+  // SVG topology layout
+  const topo = $derived.by(() => {
+    const padL = 105, padT = 65, padR = 45, padB = 50
+    const colGap = 175, rowGap = 85
+    const rc = racks.length, sc = serviceTypes.length
+    const w = padL + (rc - 1) * colGap + padR
+    const h = padT + (sc - 1) * rowGap + padB
+    const rx = racks.map((_, i) => padL + i * colGap)
+    const svcRows = serviceTypes.map((st, i) => ({ type: st, y: padT + i * rowGap }))
+    const sy: Record<string, number> = Object.fromEntries(svcRows.map(r => [r.type, r.y]))
+
+    const npos = nodes
+      .map(node => {
+        const ri = racks.findIndex(r => r.address === node.advertiseAddr)
+        return ri >= 0 && sy[node.serviceType] != null
+          ? { node, x: rx[ri], y: sy[node.serviceType] }
+          : null
+      })
+      .filter((p): p is { node: DemoNode; x: number; y: number } => p !== null)
+
+    const conns: Array<{ path: string; color: string; group: string }> = []
+    for (const g of raftGroups) {
+      if (!g.leader) continue
+      const lp = npos.find(p => p.node.nodeId === g.leader!.nodeId)
+      if (!lp) continue
+      for (const m of g.members) {
+        if (m.nodeId === g.leader!.nodeId) continue
+        const mp = npos.find(p => p.node.nodeId === m.nodeId)
+        if (!mp) continue
+        const dx = Math.abs(mp.x - lp.x)
+        const arc = -Math.min(dx * 0.2, 40)
+        const mx = (mp.x + lp.x) / 2
+        conns.push({ path: `M${mp.x},${mp.y} Q${mx},${mp.y + arc} ${lp.x},${lp.y}`, color: g.color, group: g.name })
+      }
+    }
+    return { w, h, rx, svcRows, npos, conns }
+  })
+
+  const activeFilter = $derived(selectedRaft ?? hoverRaft)
+
+  function nodeOpacity(node?: DemoNode): number {
+    if (!node || !activeFilter) return 1
+    if (node.raftGroup === activeFilter) return 1
+    return selectedRaft ? 0.08 : 0.25
   }
 
-  function matrixNode(serviceType: string, addr: string): DemoNode | undefined {
-    return nodes.find(n => n.serviceType === serviceType && n.advertiseAddr === addr)
+  function nodeGlow(node: DemoNode): string {
+    if (!node.raftGroup) return 'none'
+    const s = RAFT_STYLES[node.raftGroup]
+    if (node.isRaftLeader) return `0 0 10px ${s.color}, 0 0 3px ${s.color}`
+    if (activeFilter === node.raftGroup) return `0 0 6px ${s.color}`
+    return 'none'
   }
 
-  function rackForAddr(addr: string): string {
+  function matrixNode(svc: string, addr: string) {
+    return nodes.find(n => n.serviceType === svc && n.advertiseAddr === addr)
+  }
+
+  function rackForAddr(addr: string) {
     return racks.find(r => r.address === addr)?.name ?? addr
   }
+
+  function enterNode(node: DemoNode) { if (node.raftGroup) hoverRaft = node.raftGroup }
+  function leaveNode() { hoverRaft = null }
 
   const stats = {
     total: nodes.length,
@@ -130,7 +183,7 @@
     <div>
       <div class="flex items-center gap-3">
         <h2 class="text-2xl font-bold tracking-tight">Region Topology</h2>
-        <Badge variant="secondary" class="text-[10px]">DEMO</Badge>
+        <Badge variant="secondary" class="text-[10px] tracking-widest">DEMO</Badge>
       </div>
       <div class="mt-1 flex items-center gap-2 text-sm">
         <span class="font-mono text-muted-foreground">{region.name}</span>
@@ -141,11 +194,8 @@
     </div>
     <div class="flex gap-1">
       {#each [['rack', 'Rack'], ['matrix', 'Matrix'], ['raft', 'RAFT']] as [mode, label]}
-        <Button
-          variant={viewMode === mode ? 'default' : 'outline'}
-          size="sm"
-          onclick={() => viewMode = mode as ViewMode}
-        >{label}</Button>
+        <Button variant={viewMode === mode ? 'default' : 'outline'} size="sm"
+          onclick={() => viewMode = mode as ViewMode}>{label}</Button>
       {/each}
     </div>
   </div>
@@ -168,14 +218,16 @@
   <div class="flex flex-wrap items-center gap-2">
     {#each raftGroups as group}
       <button
-        class="flex items-center gap-2 rounded-sm border px-3 py-1.5 text-xs transition-all cursor-pointer"
+        class="raft-pill flex items-center gap-2 rounded-sm border px-3 py-1.5 text-xs transition-all cursor-pointer"
         style:border-color={selectedRaft === group.name ? group.color : undefined}
         style:background={selectedRaft === group.name ? group.bgColor : undefined}
         style:outline={selectedRaft === group.name ? `2px solid ${group.color}` : 'none'}
         style:outline-offset="1px"
         onclick={() => toggleRaft(group.name)}
+        onmouseenter={() => hoverRaft = group.name}
+        onmouseleave={() => hoverRaft = null}
       >
-        <span class="h-2.5 w-2.5 rounded-sm shrink-0" style:background={group.color}></span>
+        <span class="led-indicator h-2.5 w-2.5 rounded-sm shrink-0" style:background={group.color} style:--led={group.color}></span>
         <span class="font-medium">{group.label}</span>
         <span class="text-muted-foreground">{group.count}</span>
         {#if group.leader}
@@ -191,11 +243,11 @@
 
   <Separator />
 
-  <!-- Rack View -->
+  <!-- ==================== RACK VIEW ==================== -->
   {#if viewMode === 'rack'}
     <div class="grid gap-6 md:grid-cols-2">
       {#each racks as rack}
-        <Card cornerBrackets>
+        <Card cornerBrackets class="overflow-hidden">
           <CardHeader>
             <div class="flex items-center justify-between">
               <CardTitle class="text-base">{rack.name}</CardTitle>
@@ -211,32 +263,34 @@
                 <span style:color={STATUS_COLORS.inactive}>{rack.inactive} inactive</span>
               {/if}
             </div>
-            <!-- Health bar -->
             <div class="flex h-1 w-full overflow-hidden rounded-full bg-muted">
-              {#if rack.active > 0}
-                <div style="width: {(rack.active / rack.total) * 100}%; background: {STATUS_COLORS.active}"></div>
-              {/if}
-              {#if rack.draining > 0}
-                <div style="width: {(rack.draining / rack.total) * 100}%; background: {STATUS_COLORS.draining}"></div>
-              {/if}
-              {#if rack.inactive > 0}
-                <div style="width: {(rack.inactive / rack.total) * 100}%; background: {STATUS_COLORS.inactive}"></div>
-              {/if}
+              {#if rack.active > 0}<div style="width: {(rack.active / rack.total) * 100}%; background: {STATUS_COLORS.active}"></div>{/if}
+              {#if rack.draining > 0}<div style="width: {(rack.draining / rack.total) * 100}%; background: {STATUS_COLORS.draining}"></div>{/if}
+              {#if rack.inactive > 0}<div style="width: {(rack.inactive / rack.total) * 100}%; background: {STATUS_COLORS.inactive}"></div>{/if}
             </div>
           </CardHeader>
-          <CardContent class="space-y-1">
-            {#each rack.nodes as node}
-              <div
-                class="flex items-center gap-2 rounded-sm px-2 py-1.5 transition-opacity duration-200"
-                style:border-left="3px solid {node.raftGroup ? RAFT_STYLES[node.raftGroup].color : 'transparent'}"
-                style:background={node.raftGroup ? RAFT_STYLES[node.raftGroup].bgColor : undefined}
-                style:opacity={isDimmed(node) ? 0.15 : 1}
+          <CardContent class="pt-0">
+            {#each rack.nodes as node, ni}
+              <div role="listitem"
+                class="node-slot flex items-center gap-2.5 px-3 py-2.5 transition-all duration-200"
+                class:node-slot-last={ni === rack.nodes.length - 1}
+                style:border-left="4px solid {node.raftGroup ? RAFT_STYLES[node.raftGroup].color : 'oklch(0.5 0 0 / 0.12)'}"
+                style:opacity={nodeOpacity(node)}
+                style:box-shadow={nodeGlow(node)}
+                onmouseenter={() => enterNode(node)}
+                onmouseleave={leaveNode}
               >
-                <span class="h-2 w-2 rounded-full shrink-0" style:background={STATUS_COLORS[node.status]}></span>
-                <span class="font-mono text-xs flex-1 truncate">{node.nodeId}</span>
+                <!-- Status LED -->
+                <span class="relative flex h-2.5 w-2.5 shrink-0">
+                  <span class="absolute inset-0 rounded-full" style:background={STATUS_COLORS[node.status]}></span>
+                  {#if node.status === 'active'}
+                    <span class="absolute inset-0 rounded-full ping-led" style:background={STATUS_COLORS[node.status]}></span>
+                  {/if}
+                </span>
+                <span class="font-mono text-xs flex-1 truncate tracking-tight">{node.nodeId}</span>
                 <Badge variant="outline" class="text-[10px] px-1.5 py-0 shrink-0">{node.serviceType}</Badge>
                 {#if node.isRaftLeader}
-                  <Badge variant="primary" class="text-[10px] px-1.5 py-0 shrink-0">LEADER</Badge>
+                  <Badge variant="primary" class="text-[10px] px-1.5 py-0 shrink-0 leader-badge">LEADER</Badge>
                 {/if}
                 {#if node.status === 'draining'}
                   <Badge variant="warning" class="text-[10px] px-1.5 py-0 shrink-0">DRAINING</Badge>
@@ -251,7 +305,7 @@
       {/each}
     </div>
 
-  <!-- Matrix View -->
+  <!-- ==================== MATRIX VIEW ==================== -->
   {:else if viewMode === 'matrix'}
     <div class="overflow-x-auto">
       <Table>
@@ -269,23 +323,31 @@
         <TableBody>
           {#each serviceTypes as serviceType}
             <TableRow>
-              <TableCell>
-                <Badge variant="outline">{serviceType}</Badge>
-              </TableCell>
+              <TableCell><Badge variant="outline">{serviceType}</Badge></TableCell>
               {#each racks as rack}
                 {@const node = matrixNode(serviceType, rack.address)}
+                {@const cellBg = node?.raftGroup
+                  ? RAFT_STYLES[node.raftGroup].bgColor
+                  : !node ? 'repeating-linear-gradient(45deg,transparent,transparent 4px,oklch(0.5 0 0/0.04) 4px,oklch(0.5 0 0/0.04) 5px)' : 'transparent'}
                 <TableCell
-                  class="transition-opacity duration-200"
-                  style="background: {node?.raftGroup ? RAFT_STYLES[node.raftGroup].bgColor : 'transparent'}; opacity: {node && isDimmed(node) ? 0.15 : 1}"
+                  class="transition-all duration-200"
+                  style="background: {cellBg}; opacity: {nodeOpacity(node)}"
+                  onmouseenter={() => { if (node) enterNode(node) }}
+                  onmouseleave={leaveNode}
                 >
                   {#if node}
                     <div class="flex items-center gap-1.5">
-                      <span class="h-2 w-2 rounded-full shrink-0" style:background={STATUS_COLORS[node.status]}></span>
+                      <span class="relative flex h-2 w-2 shrink-0">
+                        <span class="absolute inset-0 rounded-full" style:background={STATUS_COLORS[node.status]}></span>
+                        {#if node.status === 'active'}
+                          <span class="absolute inset-0 rounded-full ping-led" style:background={STATUS_COLORS[node.status]}></span>
+                        {/if}
+                      </span>
                       <span class="font-mono text-xs">{node.nodeId}</span>
                     </div>
                     <div class="flex gap-1 mt-1">
                       {#if node.isRaftLeader}
-                        <Badge variant="primary" class="text-[10px] px-1 py-0">LEADER</Badge>
+                        <Badge variant="primary" class="text-[10px] px-1 py-0 leader-badge">LEADER</Badge>
                       {/if}
                       {#if node.status === 'draining'}
                         <Badge variant="warning" class="text-[10px] px-1 py-0">DRAINING</Badge>
@@ -295,7 +357,7 @@
                       {/if}
                     </div>
                   {:else}
-                    <span class="text-muted-foreground/40 text-xs">--</span>
+                    <span class="text-muted-foreground/30 text-xs">--</span>
                   {/if}
                 </TableCell>
               {/each}
@@ -305,104 +367,287 @@
       </Table>
     </div>
 
-  <!-- RAFT View -->
+  <!-- ==================== RAFT TOPOLOGY SVG ==================== -->
   {:else}
-    <div class="space-y-6">
-      {#each raftGroups as group}
-        <Card
-          cornerBrackets
-          class="transition-opacity duration-200"
-          style="opacity: {selectedRaft !== null && selectedRaft !== group.name ? 0.3 : 1}"
-        >
-          <CardHeader>
-            <div class="flex items-center gap-3">
-              <span class="h-3 w-3 rounded-sm shrink-0" style:background={group.color}></span>
-              <CardTitle class="text-base">{group.label} RAFT Group</CardTitle>
-              <Badge variant="outline" class="font-mono text-xs">{group.name}</Badge>
-            </div>
-            <div class="flex items-center gap-3 text-xs text-muted-foreground">
-              <span>{group.count} members</span>
-              {#if group.leader}
-                <span>Leader: <span class="font-mono font-medium text-foreground">{group.leader.nodeId}</span></span>
-                <span>@ {rackForAddr(group.leader.advertiseAddr)}</span>
-              {/if}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div class="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {#each group.members as node}
-                <div
-                  class="rounded-sm border p-3 transition-all"
-                  style:border-color={node.isRaftLeader ? group.color : undefined}
-                  style:background={group.bgColor}
-                  style:border-left="3px solid {group.color}"
-                >
-                  <div class="flex items-center gap-2 mb-2">
-                    <span class="h-2 w-2 rounded-full shrink-0" style:background={STATUS_COLORS[node.status]}></span>
-                    <span class="font-mono text-xs font-medium truncate">{node.nodeId}</span>
-                  </div>
-                  <div class="space-y-1 text-xs text-muted-foreground">
-                    <div class="font-mono">{rackForAddr(node.advertiseAddr)}</div>
-                    <div class="font-mono text-[10px]">{node.advertiseAddr}</div>
-                  </div>
-                  <div class="flex gap-1 mt-2">
-                    {#if node.isRaftLeader}
-                      <Badge variant="primary" class="text-[10px] px-1.5 py-0">LEADER</Badge>
-                    {/if}
-                    {#if node.status === 'draining'}
-                      <Badge variant="warning" class="text-[10px] px-1.5 py-0">DRAINING</Badge>
-                    {/if}
-                    {#if !node.isActive}
-                      <Badge variant="secondary" class="text-[10px] px-1.5 py-0">DOWN</Badge>
-                    {/if}
-                    {#if node.status === 'active' && !node.isRaftLeader}
-                      <Badge variant="success" class="text-[10px] px-1.5 py-0">FOLLOWER</Badge>
-                    {/if}
-                  </div>
-                </div>
-              {/each}
-            </div>
-          </CardContent>
-        </Card>
-      {/each}
+    <div class="topo-container overflow-x-auto rounded-sm p-3">
+      <svg
+        viewBox="0 0 {topo.w} {topo.h}"
+        class="w-full"
+        role="img" aria-label="RAFT topology diagram"
+        style="min-width: 620px; max-height: 500px;"
+      >
+        <defs>
+          <!-- Tech grid -->
+          <pattern id="tgrid" width="24" height="24" patternUnits="userSpaceOnUse">
+            <path d="M 24 0 L 0 0 0 24" fill="none" stroke="var(--color-foreground)" stroke-width="0.3" stroke-opacity="0.05" />
+          </pattern>
+          <!-- Glow filter -->
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="5" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+          <filter id="glow-soft">
+            <feGaussianBlur stdDeviation="3" result="b" />
+            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
+        </defs>
 
-      <!-- Stateless nodes -->
-      {#if statelessNodes.length > 0}
-        <Card>
-          <CardHeader>
-            <div class="flex items-center gap-3">
-              <span class="h-3 w-3 rounded-sm shrink-0 bg-muted-foreground/30"></span>
-              <CardTitle class="text-base">Stateless Services</CardTitle>
-            </div>
-            <p class="text-xs text-muted-foreground">{statelessNodes.length} nodes not participating in RAFT consensus</p>
-          </CardHeader>
-          <CardContent>
-            <div class="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {#each statelessNodes as node}
-                <div
-                  class="rounded-sm border p-3"
-                  style:opacity={selectedRaft !== null ? 0.3 : 1}
-                >
-                  <div class="flex items-center gap-2 mb-2">
-                    <span class="h-2 w-2 rounded-full shrink-0" style:background={STATUS_COLORS[node.status]}></span>
-                    <span class="font-mono text-xs font-medium truncate">{node.nodeId}</span>
-                  </div>
-                  <div class="space-y-1 text-xs text-muted-foreground">
-                    <div><Badge variant="outline" class="text-[10px] px-1.5 py-0">{node.serviceType}</Badge></div>
-                    <div class="font-mono">{rackForAddr(node.advertiseAddr)}</div>
-                    <div class="font-mono text-[10px]">{node.advertiseAddr}</div>
-                  </div>
-                  {#if !node.isActive}
-                    <div class="mt-2">
-                      <Badge variant="secondary" class="text-[10px] px-1.5 py-0">DOWN</Badge>
-                    </div>
-                  {/if}
-                </div>
-              {/each}
-            </div>
-          </CardContent>
-        </Card>
-      {/if}
+        <!-- Background grid pattern -->
+        <rect width="100%" height="100%" fill="url(#tgrid)" />
+
+        <!-- Dashed guide lines -->
+        {#each topo.svcRows as row}
+          <line x1="70" y1={row.y} x2={topo.w - 20} y2={row.y}
+            stroke="var(--color-border)" stroke-opacity="0.25" stroke-dasharray="3 6" />
+        {/each}
+        {#each topo.rx as x}
+          <line x1={x} y1="52" x2={x} y2={topo.h - 15}
+            stroke="var(--color-border)" stroke-opacity="0.25" stroke-dasharray="3 6" />
+        {/each}
+
+        <!-- Rack column pillars -->
+        {#each racks as rack, i}
+          <rect
+            x={topo.rx[i] - 68} y="8" width="136" height={topo.h - 16}
+            rx="3" fill="var(--color-foreground)" fill-opacity="0.02"
+            stroke="var(--color-border)" stroke-opacity="0.12" stroke-width="0.5"
+          />
+          <text x={topo.rx[i]} y="28" text-anchor="middle"
+            font-size="11" font-weight="600" fill="var(--color-foreground)">{rack.name}</text>
+          <text x={topo.rx[i]} y="43" text-anchor="middle"
+            font-size="8.5" font-family="ui-monospace, monospace" fill="var(--color-muted-foreground)">{rack.address}</text>
+        {/each}
+
+        <!-- Service row labels -->
+        {#each topo.svcRows as row}
+          <text x="10" y={row.y + 4} font-size="10" fill="var(--color-muted-foreground)">{row.type}</text>
+        {/each}
+
+        <!-- RAFT connections (glow + animated dash) -->
+        {#each topo.conns as conn}
+          {@const dim = activeFilter !== null && activeFilter !== conn.group}
+          <path d={conn.path} fill="none"
+            stroke={conn.color} stroke-width="8" opacity={dim ? 0.01 : 0.1}
+            filter={dim ? undefined : 'url(#glow-soft)'} />
+          <path d={conn.path} fill="none"
+            stroke={conn.color} stroke-width={dim ? 0.7 : 1.5}
+            stroke-dasharray="6 3" opacity={dim ? 0.08 : 0.75}
+            class="conn-flow" />
+        {/each}
+
+        <!-- Nodes -->
+        {#each topo.npos as { x, y, node }}
+          {@const dim = activeFilter !== null && node.raftGroup !== activeFilter}
+          {@const r = node.isRaftLeader ? 14 : 10}
+          {@const rstyle = node.raftGroup ? RAFT_STYLES[node.raftGroup] : null}
+          <g class="topo-node" role="button" tabindex="0"
+            style="opacity: {dim ? 0.1 : 1}; transition: opacity 0.3s ease;"
+            onpointerenter={(e: PointerEvent) => { enterNode(node); svgTip = { node, x: e.clientX, y: e.clientY } }}
+            onpointermove={(e: PointerEvent) => { if (svgTip) svgTip = { node, x: e.clientX, y: e.clientY } }}
+            onpointerleave={() => { leaveNode(); svgTip = null }}
+            onclick={() => { if (node.raftGroup) toggleRaft(node.raftGroup) }}
+            onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' && node.raftGroup) toggleRaft(node.raftGroup) }}
+          >
+            <!-- Outer RAFT ring -->
+            {#if rstyle}
+              <circle cx={x} cy={y} r={r + 7} fill="none"
+                stroke={rstyle.color} stroke-width={node.isRaftLeader ? 2.5 : 1}
+                opacity={node.isRaftLeader ? 0.8 : 0.2} />
+            {/if}
+
+            <!-- Leader outer glow -->
+            {#if node.isRaftLeader && rstyle && !dim}
+              <circle cx={x} cy={y} r={r + 3} fill={rstyle.color} opacity="0.15"
+                filter="url(#glow)" class="leader-glow-svg" />
+            {/if}
+
+            <!-- Main status circle -->
+            <circle cx={x} cy={y} r={r} fill={STATUS_COLORS[node.status]} />
+
+            <!-- Active heartbeat ping -->
+            {#if node.status === 'active' && !dim}
+              <circle cx={x} cy={y} r={r} fill="none"
+                stroke={STATUS_COLORS.active} stroke-width="1">
+                <animate attributeName="r" from="{r}" to="{r + 14}" dur="2.5s" repeatCount="indefinite" />
+                <animate attributeName="opacity" from="0.45" to="0" dur="2.5s" repeatCount="indefinite" />
+              </circle>
+            {/if}
+
+            <!-- Leader "L" marker -->
+            {#if node.isRaftLeader}
+              <text x={x} y={y + 4} text-anchor="middle"
+                font-size="11" font-weight="700" fill="white"
+                style="text-shadow: 0 1px 2px oklch(0 0 0 / 0.5);">L</text>
+            {/if}
+
+            <!-- Node ID label -->
+            <text x={x} y={y + r + 15} text-anchor="middle"
+              font-size="7.5" font-family="ui-monospace, monospace"
+              fill="var(--color-muted-foreground)">{node.nodeId}</text>
+
+            <!-- Status label for non-active -->
+            {#if node.status !== 'active'}
+              <text x={x} y={y + r + 24} text-anchor="middle"
+                font-size="7" font-weight="600"
+                fill={STATUS_COLORS[node.status]}>{node.status.toUpperCase()}</text>
+            {/if}
+
+            <!-- Invisible hover target -->
+            <circle cx={x} cy={y} r="24" fill="transparent" class="cursor-pointer" />
+          </g>
+        {/each}
+      </svg>
     </div>
+
+    <!-- Stateless nodes (below SVG) -->
+    {#if statelessNodes.length > 0}
+      <Card class="mt-4">
+        <CardHeader>
+          <div class="flex items-center gap-3">
+            <span class="h-3 w-3 rounded-sm shrink-0 bg-muted-foreground/30"></span>
+            <CardTitle class="text-base">Stateless Services</CardTitle>
+            <span class="text-xs text-muted-foreground">{statelessNodes.length} nodes, no RAFT</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div class="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {#each statelessNodes as node}
+              <div role="listitem"
+                class="node-slot-card rounded-sm border p-3 transition-all duration-200"
+                style:opacity={activeFilter !== null ? 0.2 : 1}
+                onmouseenter={() => enterNode(node)}
+                onmouseleave={leaveNode}
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="relative flex h-2 w-2 shrink-0">
+                    <span class="absolute inset-0 rounded-full" style:background={STATUS_COLORS[node.status]}></span>
+                    {#if node.status === 'active'}
+                      <span class="absolute inset-0 rounded-full ping-led" style:background={STATUS_COLORS[node.status]}></span>
+                    {/if}
+                  </span>
+                  <span class="font-mono text-xs font-medium truncate">{node.nodeId}</span>
+                </div>
+                <div class="space-y-1 text-xs text-muted-foreground">
+                  <div><Badge variant="outline" class="text-[10px] px-1.5 py-0">{node.serviceType}</Badge></div>
+                  <div class="font-mono">{rackForAddr(node.advertiseAddr)}</div>
+                  <div class="font-mono text-[10px]">{node.advertiseAddr}</div>
+                </div>
+                {#if !node.isActive}
+                  <div class="mt-2"><Badge variant="secondary" class="text-[10px] px-1.5 py-0">DOWN</Badge></div>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        </CardContent>
+      </Card>
+    {/if}
   {/if}
 </div>
+
+<!-- SVG Tooltip -->
+{#if svgTip}
+  <div
+    class="fixed z-50 pointer-events-none rounded-sm border bg-card px-3 py-2 shadow-lg"
+    style:left="{svgTip.x + 16}px"
+    style:top="{svgTip.y - 12}px"
+  >
+    <div class="font-mono text-xs font-semibold">{svgTip.node.nodeId}</div>
+    <div class="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
+      <div>Service: <span class="text-foreground">{svgTip.node.serviceType}</span></div>
+      <div>Status: <span style:color={STATUS_COLORS[svgTip.node.status]}>{svgTip.node.status}</span></div>
+      <div>Rack: <span class="text-foreground font-mono">{rackForAddr(svgTip.node.advertiseAddr)}</span></div>
+      {#if svgTip.node.raftGroup}
+        <div>RAFT: <span class="text-foreground">{svgTip.node.raftGroup}</span>
+          {#if svgTip.node.isRaftLeader}<span class="font-semibold text-foreground ml-1">LEADER</span>{/if}
+        </div>
+      {/if}
+    </div>
+  </div>
+{/if}
+
+<style>
+  /* Connection flow animation */
+  .conn-flow {
+    animation: dash-flow 0.9s linear infinite;
+  }
+  @keyframes dash-flow {
+    to { stroke-dashoffset: -9; }
+  }
+
+  /* Status LED ping */
+  .ping-led {
+    animation: ping-slow 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  @keyframes ping-slow {
+    0% { opacity: 0.5; transform: scale(1); }
+    75%, 100% { opacity: 0; transform: scale(2.8); }
+  }
+
+  /* RAFT legend LED glow */
+  .led-indicator {
+    animation: led-pulse 3s ease-in-out infinite;
+    box-shadow: 0 0 3px var(--led);
+  }
+  @keyframes led-pulse {
+    0%, 100% { box-shadow: 0 0 3px var(--led); }
+    50% { box-shadow: 0 0 10px var(--led), 0 0 3px var(--led); }
+  }
+
+  /* Leader badge shimmer */
+  :global(.leader-badge) {
+    animation: badge-glow 2.5s ease-in-out infinite;
+  }
+  @keyframes badge-glow {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.3); }
+  }
+
+  /* SVG leader glow pulse */
+  .leader-glow-svg {
+    animation: svg-glow 2.5s ease-in-out infinite;
+  }
+  @keyframes svg-glow {
+    0%, 100% { opacity: 0.12; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Node slot styling */
+  .node-slot {
+    border-bottom: 1px dashed oklch(0.5 0 0 / 0.1);
+    cursor: default;
+  }
+  :global(.dark) .node-slot {
+    border-bottom-color: oklch(0.5 0 0 / 0.2);
+  }
+  .node-slot-last {
+    border-bottom: none;
+  }
+  .node-slot:hover {
+    background: oklch(0.5 0 0 / 0.03);
+  }
+  :global(.dark) .node-slot:hover {
+    background: oklch(0.5 0 0 / 0.08);
+  }
+
+  .node-slot-card:hover {
+    background: oklch(0.5 0 0 / 0.03);
+  }
+
+  /* Topo SVG container with animated gradient border */
+  .topo-container {
+    background:
+      linear-gradient(var(--color-card), var(--color-card)) padding-box,
+      linear-gradient(135deg, oklch(0.55 0.18 260), oklch(0.65 0.18 55), oklch(0.55 0.15 175), oklch(0.55 0.18 260)) border-box;
+    border: 1.5px solid transparent;
+    background-size: 100% 100%, 400% 400%;
+    animation: border-shift 6s ease-in-out infinite;
+  }
+  @keyframes border-shift {
+    0%, 100% { background-position: 0 0, 0% 0%; }
+    33% { background-position: 0 0, 100% 0%; }
+    66% { background-position: 0 0, 100% 100%; }
+  }
+
+  /* Topology node cursor */
+  .topo-node { cursor: pointer; }
+</style>
