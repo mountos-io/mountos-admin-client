@@ -7,8 +7,15 @@ if (!raw) {
 }
 
 const seed = Buffer.from(raw, 'base64')
-const pem = toPkcs8Pem(seed)
-const privateKey = await jose.importPKCS8(pem, 'EdDSA')
+const pkcs8Der = Buffer.concat([
+  Buffer.from('302e020100300506032b657004220420', 'hex'),
+  seed,
+])
+
+// Import as extractable so we can derive the public key
+const privateKey = await crypto.subtle.importKey(
+  'pkcs8', pkcs8Der, { name: 'Ed25519' }, true, ['sign'],
+)
 
 const sub = process.argv[2] ?? 'test-user'
 const name = process.argv[3] ?? 'Test User'
@@ -23,16 +30,10 @@ const token = await new jose.SignJWT({ name, email })
   .sign(privateKey)
 
 // Derive public key for VENDOR2DASHBOARD_VERIFICATION_KEY
-const pubJwk = await jose.exportJWK(await jose.importPKCS8(pem, 'EdDSA'))
-const pubBytes = Buffer.from(pubJwk.x!, 'base64url')
+const jwk = await crypto.subtle.exportKey('jwk', privateKey)
+const pubBytes = Buffer.from(jwk.x!, 'base64url')
 console.log('VENDOR2DASHBOARD_VERIFICATION_KEY:', pubBytes.toString('base64'))
 console.log()
 console.log('Token:', token)
 console.log()
 console.log(`URL: http://localhost:5173/?token=${token}`)
-
-function toPkcs8Pem(seed: Buffer): string {
-  const prefix = Buffer.from('302e020100300506032b657004220420', 'hex')
-  const der = Buffer.concat([prefix, seed])
-  return `-----BEGIN PRIVATE KEY-----\n${der.toString('base64')}\n-----END PRIVATE KEY-----`
-}
