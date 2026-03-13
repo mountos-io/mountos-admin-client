@@ -1,9 +1,9 @@
 import type { AuthAdapter } from '$lib/core/auth/adapter'
-import { CookieAuthAdapter } from '$lib/core/auth/cookie'
+import { TokenAuthAdapter } from '$lib/core/auth/token'
 import { appConfig } from './app'
 import { vendorAuthAdapter } from '$vendor/config/auth'
 
-const defaults: AuthAdapter = new CookieAuthAdapter({
+const defaults: AuthAdapter = new TokenAuthAdapter({
   loginUrl: appConfig.loginUrl,
   logoutUrl: appConfig.logoutUrl,
   userEndpoint: '/api/me',

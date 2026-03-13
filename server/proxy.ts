@@ -3,10 +3,10 @@ import { MountOSAdmin } from '@mountos-app/admin-sdk'
 import type { AdminUser } from './types'
 
 const APPSERV_URL = process.env.MOUNTOS_APPSERV_URL ?? 'http://localhost:8080'
-const PRIVATE_KEY = process.env.MOUNTOS_PRIVATE_KEY ?? ''
-
-if (!PRIVATE_KEY) {
-  console.warn('MOUNTOS_PRIVATE_KEY not set — proxy requests will fail')
+const PRIVATE_KEY = process.env.MOUNTOS_SDK_SIGNING_KEY!
+const keyBytes = Buffer.from(PRIVATE_KEY, 'base64')
+if (PRIVATE_KEY.length !== 44 || keyBytes.length !== 32) {
+  throw new Error(`MOUNTOS_SDK_SIGNING_KEY: expected 44-char base64 (32 bytes), got ${PRIVATE_KEY.length} chars / ${keyBytes.length} bytes`)
 }
 
 // SDK instance for JWT signing; we use its request method to forward
