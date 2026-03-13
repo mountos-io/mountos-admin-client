@@ -1,9 +1,9 @@
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser'
+import { authAdapter } from '$lib/config/auth'
 import type { WebAuthnState } from '$lib/core/auth/adapter'
 
-interface StoredCredential {
+interface ClientCredential {
   id: string
-  publicKey: string
   counter: number
   transports: string[]
   label: string
@@ -13,13 +13,12 @@ interface StoredCredential {
 
 let enrolled = $state(false)
 let credentialCount = $state(0)
-let credentials = $state<StoredCredential[]>([])
+let credentials = $state<ClientCredential[]>([])
 let loading = $state(false)
 
 async function api(path: string, method = 'GET', body?: unknown) {
-  const token = sessionStorage.getItem('mountos_token')
-  const headers: Record<string, string> = {}
-  if (token) headers['Authorization'] = `Bearer ${token}`
+  const authHeaders = await authAdapter.getRequestHeaders()
+  const headers: Record<string, string> = { ...authHeaders }
   if (body) headers['Content-Type'] = 'application/json'
   const res = await fetch(`/api/webauthn${path}`, {
     method,
@@ -31,7 +30,8 @@ async function api(path: string, method = 'GET', body?: unknown) {
     const data = await res.json().catch(() => ({}))
     throw new Error(data.message ?? `WebAuthn request failed (${res.status})`)
   }
-  return res.json()
+  const text = await res.text()
+  return text ? JSON.parse(text) : null
 }
 
 export function useWebAuthn() {
@@ -49,7 +49,7 @@ export function useWebAuthn() {
     async fetchCredentials() {
       loading = true
       try {
-        credentials = await api('/credentials')
+        credentials = (await api('/credentials')) ?? []
         credentialCount = credentials.length
         enrolled = credentials.length > 0
       } finally {

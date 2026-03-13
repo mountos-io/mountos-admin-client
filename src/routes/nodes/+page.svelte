@@ -6,7 +6,6 @@
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
   import { Badge } from '$lib/components/ui/badge'
-  import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
@@ -35,7 +34,10 @@
   }
 
   function confirm(title: string, desc: string, action: () => Promise<void>, stepUp = false) {
-    confirmAction = { open: true, title, desc, action, stepUp }
+    confirmAction = {
+      open: true, title, desc, stepUp,
+      action: async () => { await action(); if (nodeStore.selectedRegionId) nodeStore.fetchNodes(nodeStore.selectedRegionId) },
+    }
   }
 </script>
 

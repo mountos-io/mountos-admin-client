@@ -1,6 +1,7 @@
 let token: string | null = null
 
 export function setStepUpToken(t: string) { token = t }
+export function clearStepUpToken() { token = null }
 
 export function getStepUpHeaders(): Record<string, string> {
   if (!token) return {}

@@ -28,7 +28,7 @@ await dashboardAuth.init()
 const webauthnConfig: WebAuthnConfig = {
   rpId: process.env.WEBAUTHN_RP_ID ?? 'localhost',
   rpName: process.env.WEBAUTHN_RP_NAME ?? 'mountOS Dashboard',
-  origin: process.env.WEBAUTHN_ORIGIN ?? 'http://localhost:5173',
+  origin: (process.env.WEBAUTHN_ORIGIN ?? 'http://localhost:5173').replace(/\/+$/, ''),
   ...vendorWebAuthnConfig,
 }
 const webauthnManager = new WebAuthnManager(dashboardAuth.redisClient, webauthnConfig)
@@ -172,7 +172,7 @@ app.post('/api/auth/logout', async (c) => {
 
 app.use('/api/*', auth)
 
-// WebAuthn endpoints (after auth)
+// WebAuthn ceremony endpoints (before step-up — chicken-and-egg)
 app.post('/api/webauthn/register/options', async (c) => {
   const user = c.get('mountosUser')
   const existing = await webauthnManager.listCredentials(user.id)
@@ -184,10 +184,10 @@ app.post('/api/webauthn/register/verify', async (c) => {
   try {
     const { response, label } = await c.req.json()
     const user = c.get('mountosUser')
-    const cred = await webauthnManager.verifyRegistration(user.id, response, label || 'Security Key')
+    const { publicKey: _, ...cred } = await webauthnManager.verifyRegistration(user.id, response, label || 'Security Key')
     return c.json(cred)
-  } catch (e: unknown) {
-    return c.json({ status: 'failure', message: (e as Error).message }, 400)
+  } catch {
+    return c.json({ status: 'failure', message: 'registration failed' }, 400)
   }
 })
 
@@ -203,8 +203,8 @@ app.post('/api/webauthn/authenticate/verify', async (c) => {
     const user = c.get('mountosUser')
     const stepUpToken = await webauthnManager.verifyAuthentication(user.id, response)
     return c.json({ stepUpToken })
-  } catch (e: unknown) {
-    return c.json({ status: 'failure', message: (e as Error).message }, 400)
+  } catch {
+    return c.json({ status: 'failure', message: 'authentication failed' }, 400)
   }
 })
 
@@ -214,6 +214,7 @@ app.get('/api/webauthn/credentials', async (c) => {
   return c.json(creds.map(({ publicKey: _, ...c }) => c))
 })
 
+// Credential management — session auth only, no step-up (per design: lost key recovery via session)
 app.delete('/api/webauthn/credentials/:id', async (c) => {
   const user = c.get('mountosUser')
   const ok = await webauthnManager.deleteCredential(user.id, c.req.param('id'))
@@ -226,8 +227,8 @@ app.patch('/api/webauthn/credentials/:id', async (c) => {
     const user = c.get('mountosUser')
     await webauthnManager.renameCredential(user.id, c.req.param('id'), label)
     return c.json({ status: 'ok' })
-  } catch (e: unknown) {
-    return c.json({ status: 'failure', message: (e as Error).message }, 400)
+  } catch {
+    return c.json({ status: 'failure', message: 'rename failed' }, 400)
   }
 })
 

@@ -21,6 +21,7 @@
   import Check from '@lucide/svelte/icons/check'
   import X from '@lucide/svelte/icons/x'
 
+  const MAX_CREDENTIALS = 4
   const prefs = usePreferences()
   const modal = useSettingsModal()
   const accountStore = useAccounts()
@@ -40,6 +41,15 @@
   let registering = $state(false)
   let editingId = $state<string | null>(null)
   let editLabel = $state('')
+  let pendingDeleteId = $state<string | null>(null)
+
+  function resetSecurityState() {
+    editingId = null
+    editLabel = ''
+    newKeyLabel = ''
+    registering = false
+    pendingDeleteId = null
+  }
 
   function startRename(id: string, currentLabel: string) {
     editingId = id
@@ -59,11 +69,13 @@
     cancelRename()
   }
 
-  async function handleDelete(id: string) {
+  async function confirmDelete() {
+    if (!pendingDeleteId) return
     try {
-      await webauthn.deleteCredential(id)
+      await webauthn.deleteCredential(pendingDeleteId)
       showSuccessToast('Credential removed')
     } catch (e: unknown) { handleApiError(e, 'Delete failed') }
+    pendingDeleteId = null
   }
 
   async function handleRegister() {
@@ -78,6 +90,7 @@
 
   $effect(() => {
     if (modal.open && modal.tab === 'security') webauthn.fetchCredentials()
+    if (!modal.open) resetSecurityState()
   })
 
   const allTabs = $derived([
@@ -242,13 +255,25 @@
                     <div class="flex items-center justify-between rounded-md border px-3 py-2">
                       {#if editingId === cred.id}
                         <div class="flex items-center gap-2 flex-1 mr-2">
-                          <Input bind:value={editLabel} class="h-7 text-sm" />
-                          <button class="text-muted-foreground hover:text-foreground" onclick={() => confirmRename(cred.id)}>
+                          <Input
+                            bind:value={editLabel}
+                            class="h-7 text-sm"
+                            onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter') confirmRename(cred.id); if (e.key === 'Escape') cancelRename() }}
+                          />
+                          <button class="text-muted-foreground hover:text-foreground" aria-label="Save" onclick={() => confirmRename(cred.id)}>
                             <Check class="h-4 w-4" />
                           </button>
-                          <button class="text-muted-foreground hover:text-foreground" onclick={cancelRename}>
+                          <button class="text-muted-foreground hover:text-foreground" aria-label="Cancel" onclick={cancelRename}>
                             <X class="h-4 w-4" />
                           </button>
+                        </div>
+                      {:else if pendingDeleteId === cred.id}
+                        <div class="flex items-center justify-between flex-1">
+                          <p class="text-sm text-destructive">Remove "{cred.label}"?</p>
+                          <div class="flex items-center gap-2">
+                            <Button variant="destructive" size="sm" onclick={confirmDelete}>Remove</Button>
+                            <Button variant="outline" size="sm" onclick={() => pendingDeleteId = null}>Cancel</Button>
+                          </div>
                         </div>
                       {:else}
                         <div class="flex-1 min-w-0">
@@ -261,10 +286,10 @@
                           </p>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
-                          <button class="text-muted-foreground hover:text-foreground p-1" onclick={() => startRename(cred.id, cred.label)}>
+                          <button class="text-muted-foreground hover:text-foreground p-1" aria-label="Rename" onclick={() => startRename(cred.id, cred.label)}>
                             <Pencil class="h-3.5 w-3.5" />
                           </button>
-                          <button class="text-muted-foreground hover:text-destructive p-1" onclick={() => handleDelete(cred.id)}>
+                          <button class="text-muted-foreground hover:text-destructive p-1" aria-label="Delete" onclick={() => pendingDeleteId = cred.id}>
                             <Trash2 class="h-3.5 w-3.5" />
                           </button>
                         </div>
@@ -274,7 +299,7 @@
                 </div>
               {/if}
 
-              {#if webauthn.credentials.length < 4}
+              {#if webauthn.credentials.length < MAX_CREDENTIALS}
                 <div class="space-y-3">
                   <h4 class="text-sm font-medium">Register New Key</h4>
                   <div class="flex items-end gap-2">

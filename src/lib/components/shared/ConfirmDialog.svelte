@@ -3,7 +3,7 @@
   import { Button } from '$lib/components/ui/button'
   import { handleApiError } from '$lib/core/utils/toast'
   import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
-  import { setStepUpToken } from '$lib/core/api/stepup'
+  import { setStepUpToken, clearStepUpToken } from '$lib/core/api/stepup'
   import Shield from '@lucide/svelte/icons/shield'
 
   let { open = $bindable(false), title, description, confirmLabel = 'Confirm', variant = 'default', requireStepUp = false, onConfirm }: {
@@ -21,9 +21,11 @@
   let stepUpPhase = $state(false)
   let stepUpError = $state('')
 
-  function resetStepUp() {
+  function resetAll() {
     stepUpPhase = false
     stepUpError = ''
+    loading = false
+    clearStepUpToken()
   }
 
   async function handleConfirm() {
@@ -37,7 +39,7 @@
     try {
       await onConfirm()
       open = false
-      resetStepUp()
+      resetAll()
     } catch (e: unknown) {
       handleApiError(e, 'Operation failed')
     } finally {
@@ -50,12 +52,15 @@
     stepUpError = ''
     try {
       const token = await webauthn.authenticate()
+      if (!open) return
       setStepUpToken(token)
       await onConfirm()
       open = false
-      resetStepUp()
+      resetAll()
     } catch (e: unknown) {
-      stepUpError = (e instanceof Error) ? e.message : 'Verification failed'
+      clearStepUpToken()
+      if (!open) return
+      stepUpError = e instanceof Error ? e.message : 'Verification failed'
     } finally {
       loading = false
     }
@@ -63,11 +68,11 @@
 
   function handleClose() {
     open = false
-    resetStepUp()
+    resetAll()
   }
 </script>
 
-<Dialog.Root bind:open onOpenChange={(v) => { if (!v) resetStepUp() }}>
+<Dialog.Root bind:open onOpenChange={(v) => { if (!v) resetAll() }}>
   <Dialog.Content>
     <Dialog.Header>
       <Dialog.Title>{title}</Dialog.Title>

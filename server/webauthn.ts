@@ -22,6 +22,60 @@ function validateLabel(label: unknown): string {
   return label
 }
 
+// Lua scripts for atomic credential mutations
+const LUA_DELETE = `
+local raw = redis.call('GET', KEYS[1])
+if not raw then return 0 end
+local creds = cjson.decode(raw)
+local filtered = {}
+local found = false
+for _, c in ipairs(creds) do
+  if c.id ~= ARGV[1] then filtered[#filtered+1] = c else found = true end
+end
+if not found then return 0 end
+if #filtered == 0 then redis.call('DEL', KEYS[1])
+else redis.call('SET', KEYS[1], cjson.encode(filtered)) end
+return 1`
+
+const LUA_RENAME = `
+local raw = redis.call('GET', KEYS[1])
+if not raw then return 0 end
+local creds = cjson.decode(raw)
+for _, c in ipairs(creds) do
+  if c.id == ARGV[1] then
+    c.label = ARGV[2]
+    redis.call('SET', KEYS[1], cjson.encode(creds))
+    return 1
+  end
+end
+return 0`
+
+const LUA_ADD = `
+local raw = redis.call('GET', KEYS[1])
+local creds = raw and cjson.decode(raw) or {}
+local max = tonumber(ARGV[1])
+if #creds >= max then
+  table.sort(creds, function(a, b) return a.lastUsedAt < b.lastUsedAt end)
+  table.remove(creds, 1)
+end
+creds[#creds+1] = cjson.decode(ARGV[2])
+redis.call('SET', KEYS[1], cjson.encode(creds))
+return 1`
+
+const LUA_UPDATE_COUNTER = `
+local raw = redis.call('GET', KEYS[1])
+if not raw then return 0 end
+local creds = cjson.decode(raw)
+for _, c in ipairs(creds) do
+  if c.id == ARGV[1] then
+    c.counter = tonumber(ARGV[2])
+    c.lastUsedAt = ARGV[3]
+    redis.call('SET', KEYS[1], cjson.encode(creds))
+    return 1
+  end
+end
+return 0`
+
 export class WebAuthnManager {
   constructor(private redis: Redis, private config: WebAuthnConfig) {}
 
@@ -31,28 +85,21 @@ export class WebAuthnManager {
   }
 
   async hasCredentials(userId: string): Promise<boolean> {
-    return await this.redis.exists(KEY_CREDS(userId)) === 1
+    const raw = await this.redis.get(KEY_CREDS(userId))
+    if (!raw) return false
+    const creds = JSON.parse(raw)
+    return Array.isArray(creds) && creds.length > 0
   }
 
   async deleteCredential(userId: string, credentialId: string): Promise<boolean> {
-    const creds = await this.listCredentials(userId)
-    const filtered = creds.filter(c => c.id !== credentialId)
-    if (filtered.length === creds.length) return false
-    if (filtered.length === 0) {
-      await this.redis.del(KEY_CREDS(userId))
-    } else {
-      await this.redis.set(KEY_CREDS(userId), JSON.stringify(filtered))
-    }
-    return true
+    const result = await this.redis.eval(LUA_DELETE, 1, KEY_CREDS(userId), credentialId)
+    return result === 1
   }
 
   async renameCredential(userId: string, credentialId: string, label: unknown): Promise<void> {
     const validated = validateLabel(label)
-    const creds = await this.listCredentials(userId)
-    const cred = creds.find(c => c.id === credentialId)
-    if (!cred) throw new Error('credential not found')
-    cred.label = validated
-    await this.redis.set(KEY_CREDS(userId), JSON.stringify(creds))
+    const result = await this.redis.eval(LUA_RENAME, 1, KEY_CREDS(userId), credentialId, validated)
+    if (result === 0) throw new Error('credential not found')
   }
 
   async generateRegistrationOptions(userId: string, userName: string, existing: StoredCredential[]) {
@@ -106,18 +153,13 @@ export class WebAuthnManager {
       lastUsedAt: now,
     }
 
-    const creds = await this.listCredentials(userId)
-    if (creds.length >= MAX_CREDENTIALS) {
-      creds.sort((a, b) => a.lastUsedAt.localeCompare(b.lastUsedAt))
-      creds.shift()
-    }
-    creds.push(stored)
-    await this.redis.set(KEY_CREDS(userId), JSON.stringify(creds))
+    await this.redis.eval(LUA_ADD, 1, KEY_CREDS(userId), MAX_CREDENTIALS, JSON.stringify(stored))
     return stored
   }
 
   async generateAuthenticationOptions(userId: string) {
     const creds = await this.listCredentials(userId)
+    if (creds.length === 0) throw new Error('no credentials registered')
     const options = await generateAuthenticationOptions({
       rpID: this.config.rpId,
       allowCredentials: creds.map(c => ({
@@ -160,9 +202,11 @@ export class WebAuthnManager {
     })
     if (!verification.verified) throw new Error('authentication verification failed')
 
-    cred.counter = verification.authenticationInfo.newCounter
-    cred.lastUsedAt = new Date().toISOString()
-    await this.redis.set(KEY_CREDS(userId), JSON.stringify(creds))
+    const now = new Date().toISOString()
+    await this.redis.eval(
+      LUA_UPDATE_COUNTER, 1, KEY_CREDS(userId),
+      credId, verification.authenticationInfo.newCounter, now,
+    )
 
     const token = crypto.randomUUID()
     await this.redis.set(KEY_STEPUP(token), userId, 'EX', STEPUP_TTL)
