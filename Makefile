@@ -1,22 +1,25 @@
-.PHONY: dev build check proxy dev-all gen clean
+.PHONY: help dev build check proxy dev-all gen clean
 
-dev:
+help: ## Show available targets
+	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
+
+dev: ## Run dev server
 	npm run dev
 
-build:
+build: ## Build for production
 	npm run build
 
-check:
+check: ## Type-check
 	npm run check
 
-proxy:
+proxy: ## Run proxy server
 	npm run proxy
 
-dev-all:
+dev-all: ## Run dev server with proxy
 	npm run dev:all
 
-gen:
+gen: ## Generate browser client from SDK
 	cd ../mountos-admin-sdk && make gen-browser
 
-clean:
+clean: ## Remove build artifacts
 	rm -rf .svelte-kit build node_modules
