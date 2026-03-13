@@ -42,6 +42,8 @@
   let editingId = $state<string | null>(null)
   let editLabel = $state('')
   let pendingDeleteId = $state<string | null>(null)
+  let deleteLoading = $state(false)
+  let deleteError = $state('')
 
   function resetSecurityState() {
     editingId = null
@@ -49,6 +51,8 @@
     newKeyLabel = ''
     registering = false
     pendingDeleteId = null
+    deleteLoading = false
+    deleteError = ''
   }
 
   function startRename(id: string, currentLabel: string) {
@@ -71,11 +75,18 @@
 
   async function confirmDelete() {
     if (!pendingDeleteId) return
+    deleteLoading = true
+    deleteError = ''
     try {
-      await webauthn.deleteCredential(pendingDeleteId)
+      const token = await webauthn.authenticate()
+      await webauthn.deleteCredential(pendingDeleteId, token)
       showSuccessToast('Credential removed')
-    } catch (e: unknown) { handleApiError(e, 'Delete failed') }
-    pendingDeleteId = null
+      pendingDeleteId = null
+    } catch (e: unknown) {
+      deleteError = e instanceof Error ? e.message : 'Verification failed'
+    } finally {
+      deleteLoading = false
+    }
   }
 
   async function handleRegister() {
@@ -268,12 +279,23 @@
                           </button>
                         </div>
                       {:else if pendingDeleteId === cred.id}
-                        <div class="flex items-center justify-between flex-1">
-                          <p class="text-sm text-destructive">Remove "{cred.label}"?</p>
-                          <div class="flex items-center gap-2">
-                            <Button variant="destructive" size="sm" onclick={confirmDelete}>Remove</Button>
-                            <Button variant="outline" size="sm" onclick={() => pendingDeleteId = null}>Cancel</Button>
+                        <div class="flex flex-col gap-2 flex-1">
+                          <div class="flex items-center justify-between">
+                            {#if deleteLoading}
+                              <p class="text-sm text-muted-foreground">Touch your security key...</p>
+                            {:else}
+                              <p class="text-sm text-destructive">Remove "{cred.label}"?</p>
+                            {/if}
+                            <div class="flex items-center gap-2 shrink-0">
+                              <Button variant="destructive" size="sm" disabled={deleteLoading} onclick={confirmDelete}>
+                                {deleteLoading ? 'Verifying...' : deleteError ? 'Retry' : 'Remove'}
+                              </Button>
+                              <Button variant="outline" size="sm" disabled={deleteLoading} onclick={() => { pendingDeleteId = null; deleteError = '' }}>Cancel</Button>
+                            </div>
                           </div>
+                          {#if deleteError}
+                            <p class="text-xs text-destructive">{deleteError}</p>
+                          {/if}
                         </div>
                       {:else}
                         <div class="flex-1 min-w-0">

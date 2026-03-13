@@ -16,9 +16,9 @@ let credentialCount = $state(0)
 let credentials = $state<ClientCredential[]>([])
 let loading = $state(false)
 
-async function api(path: string, method = 'GET', body?: unknown) {
+async function api(path: string, method = 'GET', body?: unknown, extraHeaders?: Record<string, string>) {
   const authHeaders = await authAdapter.getRequestHeaders()
-  const headers: Record<string, string> = { ...authHeaders }
+  const headers: Record<string, string> = { ...authHeaders, ...extraHeaders }
   if (body) headers['Content-Type'] = 'application/json'
   const res = await fetch(`/api/webauthn${path}`, {
     method,
@@ -73,8 +73,9 @@ export function useWebAuthn() {
       return stepUpToken
     },
 
-    async deleteCredential(id: string) {
-      await api(`/credentials/${encodeURIComponent(id)}`, 'DELETE')
+    async deleteCredential(id: string, stepUpToken?: string) {
+      const headers = stepUpToken ? { 'X-StepUp-Token': stepUpToken } : undefined
+      await api(`/credentials/${encodeURIComponent(id)}`, 'DELETE', undefined, headers)
       credentials = credentials.filter(c => c.id !== id)
       credentialCount = credentials.length
       enrolled = credentials.length > 0

@@ -4,6 +4,7 @@ import type { WebAuthnManager } from './webauthn'
 
 const DEFAULTS: StepUpRule[] = [
   { method: 'DELETE', pattern: /^\/api\/proxy\/v1\// },
+  { method: 'DELETE', pattern: /^\/api\/webauthn\/credentials\// },
   { method: 'POST', pattern: /^\/api\/proxy\/v1\/.*\/lock$/ },
   { method: 'POST', pattern: /^\/api\/proxy\/v1\/.*\/unlock$/ },
   { method: 'POST', pattern: /^\/api\/proxy\/v1\/.*\/api-keys\/revoke$/ },

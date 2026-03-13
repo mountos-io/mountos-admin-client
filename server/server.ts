@@ -214,13 +214,6 @@ app.get('/api/webauthn/credentials', async (c) => {
   return c.json(creds.map(({ publicKey: _, ...c }) => c))
 })
 
-// Credential management — session auth only, no step-up (per design: lost key recovery via session)
-app.delete('/api/webauthn/credentials/:id', async (c) => {
-  const user = c.get('mountosUser')
-  const ok = await webauthnManager.deleteCredential(user.id, c.req.param('id'))
-  return ok ? c.json({ status: 'ok' }) : c.json({ status: 'not_found' }, 404)
-})
-
 app.patch('/api/webauthn/credentials/:id', async (c) => {
   try {
     const { label } = await c.req.json()
@@ -233,6 +226,12 @@ app.patch('/api/webauthn/credentials/:id', async (c) => {
 })
 
 app.use('/api/*', stepUpMiddleware)
+
+app.delete('/api/webauthn/credentials/:id', async (c) => {
+  const user = c.get('mountosUser')
+  const ok = await webauthnManager.deleteCredential(user.id, c.req.param('id'))
+  return ok ? c.json({ status: 'ok' }) : c.json({ status: 'not_found' }, 404)
+})
 if (vendorAuthzMiddleware) app.use('/api/*', vendorAuthzMiddleware)
 app.route('/', proxy)
 
