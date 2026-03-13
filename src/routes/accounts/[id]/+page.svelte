@@ -5,6 +5,7 @@
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
   import { Button } from '$lib/components/ui/button'
+  import AccountIcon from '$lib/components/shared/AccountIcon.svelte'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
@@ -25,8 +26,8 @@
   })
   let account = $state<Account | null>(null)
   let loading = $state(true)
-  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
-    open: false, title: '', desc: '', action: async () => {},
+  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void>; stepUp: boolean }>({
+    open: false, title: '', desc: '', action: async () => {}, stepUp: false,
   })
 
   $effect(() => {
@@ -35,8 +36,8 @@
     store.getAccount(id).then(a => { account = a }).catch(() => { account = null }).finally(() => { loading = false })
   })
 
-  function confirm(title: string, desc: string, action: () => Promise<void>) {
-    confirmAction = { open: true, title, desc, action }
+  function confirm(title: string, desc: string, action: () => Promise<void>, stepUp = false) {
+    confirmAction = { open: true, title, desc, action, stepUp }
   }
 
   async function act(fn: () => Promise<void>) {
@@ -56,7 +57,12 @@
   {:else if account}
     <div class="grid gap-6 md:grid-cols-2">
       <Card>
-        <CardHeader><CardTitle>{account.name}</CardTitle></CardHeader>
+        <CardHeader>
+          <div class="flex items-center gap-3">
+            <AccountIcon {account} size={36} />
+            <CardTitle>{account.name}</CardTitle>
+          </div>
+        </CardHeader>
         <CardContent class="space-y-3">
           <div>
             <span class="text-sm text-muted-foreground">Status</span>
@@ -80,9 +86,9 @@
             {/if}
             {#if features.accountLock}
               {#if account.locked}
-                <Button variant="outline" size="sm" onclick={() => confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)))}>Unlock</Button>
+                <Button variant="outline" size="sm" onclick={() => confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)), auth.webauthnEnrolled)}>Unlock</Button>
               {:else}
-                <Button variant="destructive" size="sm" onclick={() => confirm('Lock', `Lock "${account!.name}"?`, () => act(() => store.lockAccount(id)))}>Lock</Button>
+                <Button variant="destructive" size="sm" onclick={() => confirm('Lock', `Lock "${account!.name}"?`, () => act(() => store.lockAccount(id)), auth.webauthnEnrolled)}>Lock</Button>
               {/if}
             {/if}
           </CardFooter>
@@ -103,4 +109,4 @@
   {/if}
 </div>
 
-<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} requireStepUp={confirmAction.stepUp} onConfirm={confirmAction.action} />

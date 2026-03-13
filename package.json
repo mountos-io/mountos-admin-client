@@ -15,6 +15,7 @@
     "@mountos-app/admin-sdk": "file:../mountos-admin-sdk/ts",
     "hono": "^4.7.0",
     "ioredis": "^5.10.0",
+    "@simplewebauthn/server": "^13.1.1",
     "jose": "^6.2.1"
   },
   "devDependencies": {
@@ -34,6 +35,7 @@
     "tailwind-variants": "^1.0.0",
     "tailwindcss": "^4.1.0",
     "tw-animate-css": "^1.2.0",
+    "@simplewebauthn/browser": "^13.1.0",
     "typescript": "^5.7.0",
     "vite": "^6.0.0",
     "yaml": "^2.8.2"

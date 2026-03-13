@@ -1,4 +1,4 @@
-export type SettingsTab = 'appearance' | 'preferences' | 'shortcuts' | (string & {})
+export type SettingsTab = 'appearance' | 'preferences' | 'shortcuts' | 'security' | (string & {})
 
 let open = $state(false)
 let tab = $state<SettingsTab>('appearance')

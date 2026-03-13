@@ -2,6 +2,9 @@ import type { Capabilities, UserInfo } from '$lib/core/auth/adapter'
 import { authorize, type Action } from '$lib/core/auth/authorize'
 import { authAdapter } from '$lib/config/auth'
 import { showErrorToast } from '$lib/core/utils/toast'
+import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
+
+const webauthn = useWebAuthn()
 
 let user = $state<UserInfo | null>(null)
 let loading = $state(true)
@@ -9,6 +12,7 @@ let initialized = $state(false)
 
 const authenticated = $derived(user !== null)
 const capabilities = $derived<Capabilities>(user?.capabilities ?? {})
+const webauthnEnrolled = $derived(webauthn.enrolled)
 
 function can(resource: string, action: Action): boolean {
   return authorize(capabilities, resource, action, user)
@@ -25,6 +29,7 @@ async function init() {
   loading = true
   try {
     user = await authAdapter.getUser()
+    webauthn.setEnrollmentState(user?.webauthn)
   } finally {
     loading = false
     initialized = true
@@ -46,6 +51,7 @@ export function useAuth() {
     get loading() { return loading },
     get authenticated() { return authenticated },
     get capabilities() { return capabilities },
+    get webauthnEnrolled() { return webauthnEnrolled },
     can,
     guard,
     init,

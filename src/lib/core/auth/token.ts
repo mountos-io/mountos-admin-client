@@ -1,4 +1,4 @@
-import type { AuthAdapter, Capabilities, UserInfo } from './adapter.js'
+import type { AuthAdapter, Capabilities, UserInfo, WebAuthnState } from './adapter.js'
 
 export interface TokenAuthConfig {
   loginUrl: string
@@ -17,6 +17,7 @@ function toUserInfo(data: Record<string, unknown>): UserInfo {
     avatar: u.avatar as string | undefined,
     role: (u.role as string) ?? 'l2admin',
     capabilities: (data.capabilities ?? {}) as Capabilities,
+    webauthn: data.webauthn as WebAuthnState | undefined,
   }
 }
 

@@ -6,16 +6,25 @@
   import * as Dialog from '$lib/components/ui/dialog'
   import { Button } from '$lib/components/ui/button'
   import { cn } from '$lib/utils'
+  import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
+  import { handleApiError, showSuccessToast } from '$lib/core/utils/toast'
+  import { Input } from '$lib/components/ui/input'
   import Sun from '@lucide/svelte/icons/sun'
   import Moon from '@lucide/svelte/icons/moon'
   import Monitor from '@lucide/svelte/icons/monitor'
   import Palette from '@lucide/svelte/icons/palette'
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal'
   import Keyboard from '@lucide/svelte/icons/keyboard'
+  import Shield from '@lucide/svelte/icons/shield'
+  import Pencil from '@lucide/svelte/icons/pencil'
+  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import Check from '@lucide/svelte/icons/check'
+  import X from '@lucide/svelte/icons/x'
 
   const prefs = usePreferences()
   const modal = useSettingsModal()
   const accountStore = useAccounts()
+  const webauthn = useWebAuthn()
 
   const maxWidth = vendorSettingsModalSize?.maxWidth ?? '600px'
   const minHeight = vendorSettingsModalSize?.minHeight ?? '360px'
@@ -24,7 +33,52 @@
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
     { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+    { id: 'security', label: 'Security', icon: Shield },
   ]
+
+  let newKeyLabel = $state('')
+  let registering = $state(false)
+  let editingId = $state<string | null>(null)
+  let editLabel = $state('')
+
+  function startRename(id: string, currentLabel: string) {
+    editingId = id
+    editLabel = currentLabel
+  }
+
+  function cancelRename() {
+    editingId = null
+    editLabel = ''
+  }
+
+  async function confirmRename(id: string) {
+    try {
+      await webauthn.renameCredential(id, editLabel)
+      showSuccessToast('Credential renamed')
+    } catch (e: unknown) { handleApiError(e, 'Rename failed') }
+    cancelRename()
+  }
+
+  async function handleDelete(id: string) {
+    try {
+      await webauthn.deleteCredential(id)
+      showSuccessToast('Credential removed')
+    } catch (e: unknown) { handleApiError(e, 'Delete failed') }
+  }
+
+  async function handleRegister() {
+    registering = true
+    try {
+      await webauthn.registerCredential(newKeyLabel || 'Security Key')
+      newKeyLabel = ''
+      showSuccessToast('Security key registered')
+    } catch (e: unknown) { handleApiError(e, 'Registration failed') }
+    registering = false
+  }
+
+  $effect(() => {
+    if (modal.open && modal.tab === 'security') webauthn.fetchCredentials()
+  })
 
   const allTabs = $derived([
     ...builtinTabs,
@@ -170,6 +224,76 @@
                 </kbd>
               </div>
             {/each}
+          </div>
+
+        {:else if modal.tab === 'security'}
+          <div class="space-y-6">
+            <p class="text-sm text-muted-foreground">
+              When registered, destructive operations require security key verification.
+            </p>
+
+            {#if webauthn.loading}
+              <p class="text-sm text-muted-foreground">Loading...</p>
+            {:else}
+              {#if webauthn.credentials.length > 0}
+                <div class="space-y-2">
+                  <h4 class="text-sm font-medium">Registered Keys</h4>
+                  {#each webauthn.credentials as cred}
+                    <div class="flex items-center justify-between rounded-md border px-3 py-2">
+                      {#if editingId === cred.id}
+                        <div class="flex items-center gap-2 flex-1 mr-2">
+                          <Input bind:value={editLabel} class="h-7 text-sm" />
+                          <button class="text-muted-foreground hover:text-foreground" onclick={() => confirmRename(cred.id)}>
+                            <Check class="h-4 w-4" />
+                          </button>
+                          <button class="text-muted-foreground hover:text-foreground" onclick={cancelRename}>
+                            <X class="h-4 w-4" />
+                          </button>
+                        </div>
+                      {:else}
+                        <div class="flex-1 min-w-0">
+                          <p class="text-sm font-medium truncate">{cred.label}</p>
+                          <p class="text-xs text-muted-foreground">
+                            Added {new Date(cred.createdAt).toLocaleDateString()}
+                            {#if cred.lastUsedAt}
+                              &middot; Last used {new Date(cred.lastUsedAt).toLocaleDateString()}
+                            {/if}
+                          </p>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                          <button class="text-muted-foreground hover:text-foreground p-1" onclick={() => startRename(cred.id, cred.label)}>
+                            <Pencil class="h-3.5 w-3.5" />
+                          </button>
+                          <button class="text-muted-foreground hover:text-destructive p-1" onclick={() => handleDelete(cred.id)}>
+                            <Trash2 class="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      {/if}
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+
+              {#if webauthn.credentials.length < 4}
+                <div class="space-y-3">
+                  <h4 class="text-sm font-medium">Register New Key</h4>
+                  <div class="flex items-end gap-2">
+                    <div class="flex-1">
+                      <Input bind:value={newKeyLabel} placeholder="Key label (optional)" class="h-8" />
+                    </div>
+                    <Button size="sm" disabled={registering} onclick={handleRegister}>
+                      {registering ? 'Waiting...' : 'Register'}
+                    </Button>
+                  </div>
+                </div>
+              {/if}
+
+              {#if webauthn.credentials.length === 1}
+                <p class="text-xs text-amber-600 dark:text-amber-400">
+                  This is your only security key. Removing it disables step-up verification.
+                </p>
+              {/if}
+            {/if}
           </div>
 
         {:else if activeVendorTab}

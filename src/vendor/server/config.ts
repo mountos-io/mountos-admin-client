@@ -1,4 +1,4 @@
-import type { ContentSecurityPolicy, CsrfConfig, DashboardAuthConfig } from '../../../server/types'
+import type { ContentSecurityPolicy, CsrfConfig, DashboardAuthConfig, StepUpRule, WebAuthnConfig } from '../../../server/types'
 
 // Session/refresh token lifetimes. Defaults: session=24h, refresh=7d.
 // Tokens use Ed25519 EdDSA signing; cookies are httpOnly + SameSite=Strict + Secure (non-dev).
@@ -20,3 +20,6 @@ export const vendorCsrfConfig: Partial<CsrfConfig> = {
 // e.g., imgSrc: ["'self'", 'data:', 'https://cdn.example.com'] to allow external images.
 export const vendorCspConfig: Partial<ContentSecurityPolicy> = {
 }
+
+export const vendorStepUpRules: StepUpRule[] = []
+export const vendorWebAuthnConfig: Partial<WebAuthnConfig> = {}

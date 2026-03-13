@@ -1,5 +1,10 @@
 export type Capabilities = Record<string, number>
 
+export interface WebAuthnState {
+  enrolled: boolean
+  credentialCount: number
+}
+
 export interface UserInfo {
   id: string
   name: string
@@ -7,6 +12,7 @@ export interface UserInfo {
   avatar?: string
   role: string
   capabilities: Capabilities
+  webauthn?: WebAuthnState
 }
 
 export interface AuthAdapter {

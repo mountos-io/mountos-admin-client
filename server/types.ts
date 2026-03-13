@@ -20,6 +20,27 @@ export interface CsrfConfig {
   origin?: string | string[] | ((origin: string) => boolean)
 }
 
+export interface StepUpRule {
+  method?: string
+  pattern: RegExp
+}
+
+export interface WebAuthnConfig {
+  rpId: string
+  rpName: string
+  origin: string
+}
+
+export interface StoredCredential {
+  id: string
+  publicKey: string
+  counter: number
+  transports: string[]
+  label: string
+  createdAt: string
+  lastUsedAt: string
+}
+
 export interface ContentSecurityPolicy {
   defaultSrc: string[]
   scriptSrc: string[]

@@ -31,8 +31,8 @@
   let volume = $state<Volume | null>(null)
   let loading = $state(true)
   let stats = $state<{ diskSize: number; activeSize: number; size: number } | null>(null)
-  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
-    open: false, title: '', desc: '', action: async () => {},
+  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void>; stepUp: boolean }>({
+    open: false, title: '', desc: '', action: async () => {}, stepUp: false,
   })
 
   let genUserId = $state('')
@@ -58,8 +58,8 @@
     stats = await store.getStats(id).catch(() => null)
   }
 
-  function confirm(title: string, desc: string, action: () => Promise<void>) {
-    confirmAction = { open: true, title, desc, action: async () => { await action(); await reload() } }
+  function confirm(title: string, desc: string, action: () => Promise<void>, stepUp = false) {
+    confirmAction = { open: true, title, desc, stepUp, action: async () => { await action(); await reload() } }
   }
 
   async function generateKeys() {
@@ -71,14 +71,14 @@
     } catch (e: unknown) { handleApiError(e, 'Failed to generate keys') }
   }
 
-  async function handleRevokeKey() {
+  function handleRevokeKey() {
     if (!revokeKey) return
-    try {
-      await store.revokeApiKey(id, revokeKey)
+    const key = revokeKey
+    confirm('Revoke API Key', `Revoke key "${key}"?`, async () => {
+      await store.revokeApiKey(id, key)
       revokeKey = ''
       showSuccessToast('API key revoked')
-      await reload()
-    } catch (e: unknown) { handleApiError(e, 'Failed to revoke key') }
+    }, auth.webauthnEnrolled)
   }
 
   async function updateQuota() {
@@ -141,6 +141,7 @@
               volume!.locked ? 'Unlock' : 'Lock',
               `${volume!.locked ? 'Unlock' : 'Lock'} "${volume!.name}"?`,
               () => volume!.locked ? store.unlockVolume(id) : store.lockVolume(id),
+              auth.webauthnEnrolled,
             )}>{volume.locked ? 'Unlock' : 'Lock'}</Button>
           </CardFooter>
         {/if}
@@ -221,4 +222,4 @@
     <p class="text-muted-foreground">Volume not found.</p>
   {/if}
 </div>
-<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} requireStepUp={confirmAction.stepUp} onConfirm={confirmAction.action} />

@@ -5,12 +5,14 @@ import { csrf } from 'hono/csrf'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import type { Context } from 'hono'
 import { bootstrap } from '../src/vendor/server/bootstrap'
-import { vendorCsrfConfig, vendorCspConfig } from '../src/vendor/server/config'
+import { vendorCsrfConfig, vendorCspConfig, vendorStepUpRules, vendorWebAuthnConfig } from '../src/vendor/server/config'
 import { vendorAuthzMiddleware } from '../src/vendor/server/middleware'
-import type { CsrfConfig, ContentSecurityPolicy } from './types'
+import type { CsrfConfig, ContentSecurityPolicy, WebAuthnConfig } from './types'
 import { dashboardAuth } from './auth'
 import { auth } from './middleware'
 import { proxy } from './proxy'
+import { WebAuthnManager } from './webauthn'
+import { createStepUpMiddleware } from './stepup'
 
 await bootstrap()
 
@@ -22,6 +24,15 @@ if (missing.length) {
 }
 
 await dashboardAuth.init()
+
+const webauthnConfig: WebAuthnConfig = {
+  rpId: process.env.WEBAUTHN_RP_ID ?? 'localhost',
+  rpName: process.env.WEBAUTHN_RP_NAME ?? 'mountOS Dashboard',
+  origin: process.env.WEBAUTHN_ORIGIN ?? 'http://localhost:5173',
+  ...vendorWebAuthnConfig,
+}
+const webauthnManager = new WebAuthnManager(dashboardAuth.redisClient, webauthnConfig)
+const stepUpMiddleware = createStepUpMiddleware(webauthnManager, vendorStepUpRules)
 
 const COOKIE_SESSION = 'mountos_session'
 const COOKIE_REFRESH = 'mountos_refresh'
@@ -84,6 +95,11 @@ app.post('/api/auth/exchange', async (c) => {
   }
 })
 
+async function webauthnState(userId: string) {
+  const creds = await webauthnManager.listCredentials(userId)
+  return { enrolled: creds.length > 0, credentialCount: creds.length }
+}
+
 // Session verification & cookie recovery — before auth middleware
 app.get('/api/me', async (c) => {
   const authHeader = c.req.header('authorization')
@@ -92,7 +108,8 @@ app.get('/api/me', async (c) => {
     try {
       const user = await dashboardAuth.verifySessionToken(bearer)
       const capabilities = dashboardAuth.resolveCapabilities(user.role)
-      return c.json({ user, capabilities })
+      const webauthn = await webauthnState(user.id)
+      return c.json({ user, capabilities, webauthn })
     } catch {
       return c.json({ status: 'failure', message: 'invalid session token' }, 401)
     }
@@ -105,7 +122,8 @@ app.get('/api/me', async (c) => {
       const user = await dashboardAuth.verifySessionToken(sessionCookie)
       const capabilities = dashboardAuth.resolveCapabilities(user.role)
       const refreshCookie = getCookie(c, COOKIE_REFRESH)
-      return c.json({ user, token: sessionCookie, refreshToken: refreshCookie, capabilities })
+      const webauthn = await webauthnState(user.id)
+      return c.json({ user, token: sessionCookie, refreshToken: refreshCookie, capabilities, webauthn })
     } catch { /* session expired, fall through to refresh */ }
   }
 
@@ -119,7 +137,8 @@ app.get('/api/me', async (c) => {
         dashboardAuth.signRefreshToken(user),
       ])
       setTokenCookies(c, token, refreshToken)
-      return c.json({ user, token, refreshToken, capabilities })
+      const webauthn = await webauthnState(user.id)
+      return c.json({ user, token, refreshToken, capabilities, webauthn })
     } catch {
       clearTokenCookies(c)
     }
@@ -152,6 +171,67 @@ app.post('/api/auth/logout', async (c) => {
 })
 
 app.use('/api/*', auth)
+
+// WebAuthn endpoints (after auth)
+app.post('/api/webauthn/register/options', async (c) => {
+  const user = c.get('mountosUser')
+  const existing = await webauthnManager.listCredentials(user.id)
+  const options = await webauthnManager.generateRegistrationOptions(user.id, user.name, existing)
+  return c.json(options)
+})
+
+app.post('/api/webauthn/register/verify', async (c) => {
+  try {
+    const { response, label } = await c.req.json()
+    const user = c.get('mountosUser')
+    const cred = await webauthnManager.verifyRegistration(user.id, response, label || 'Security Key')
+    return c.json(cred)
+  } catch (e: unknown) {
+    return c.json({ status: 'failure', message: (e as Error).message }, 400)
+  }
+})
+
+app.post('/api/webauthn/authenticate/options', async (c) => {
+  const user = c.get('mountosUser')
+  const options = await webauthnManager.generateAuthenticationOptions(user.id)
+  return c.json(options)
+})
+
+app.post('/api/webauthn/authenticate/verify', async (c) => {
+  try {
+    const { response } = await c.req.json()
+    const user = c.get('mountosUser')
+    const stepUpToken = await webauthnManager.verifyAuthentication(user.id, response)
+    return c.json({ stepUpToken })
+  } catch (e: unknown) {
+    return c.json({ status: 'failure', message: (e as Error).message }, 400)
+  }
+})
+
+app.get('/api/webauthn/credentials', async (c) => {
+  const user = c.get('mountosUser')
+  const creds = await webauthnManager.listCredentials(user.id)
+  return c.json(creds.map(({ publicKey: _, ...c }) => c))
+})
+
+app.delete('/api/webauthn/credentials/:id', async (c) => {
+  const user = c.get('mountosUser')
+  const ok = await webauthnManager.deleteCredential(user.id, c.req.param('id'))
+  return ok ? c.json({ status: 'ok' }) : c.json({ status: 'not_found' }, 404)
+})
+
+app.patch('/api/webauthn/credentials/:id', async (c) => {
+  try {
+    const { label } = await c.req.json()
+    const user = c.get('mountosUser')
+    await webauthnManager.renameCredential(user.id, c.req.param('id'), label)
+    return c.json({ status: 'ok' })
+  } catch (e: unknown) {
+    return c.json({ status: 'failure', message: (e as Error).message }, 400)
+  }
+})
+
+app.use('/api/*', stepUpMiddleware)
 if (vendorAuthzMiddleware) app.use('/api/*', vendorAuthzMiddleware)
 app.route('/', proxy)
 
