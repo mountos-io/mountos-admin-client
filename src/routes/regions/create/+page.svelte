@@ -8,7 +8,7 @@
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import { showSuccessToast, showErrorToast } from '$lib/core/utils/toast'
+  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
 
   const regionStore = useRegions()
   const accountStore = useAccounts()
@@ -33,8 +33,8 @@
       await regionStore.createRegion({ accountId, name: name.trim() })
       showSuccessToast('Region created')
       goto('/regions')
-    } catch {
-      showErrorToast('Failed to create region')
+    } catch (err: unknown) {
+      handleApiError(err, 'Failed to create region')
     } finally {
       submitting = false
     }

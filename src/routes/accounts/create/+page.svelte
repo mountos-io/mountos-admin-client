@@ -9,7 +9,7 @@
   import Label from '$lib/components/ui/label/label.svelte'
   import { Textarea } from '$lib/components/ui/textarea'
   import { Separator } from '$lib/components/ui/separator'
-  import { showSuccessToast, showErrorToast } from '$lib/core/utils/toast'
+  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
 
   const accountStore = useAccounts()
   const auth = useAuth()
@@ -31,7 +31,7 @@
 
   function parseVendorInfo(): Record<string, unknown> | undefined | null {
     const trimmed = vendorInfoStr.trim()
-    if (!trimmed) return undefined
+    if (!trimmed) { vendorInfoError = ''; return undefined }
     try {
       const parsed = JSON.parse(trimmed)
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
@@ -65,8 +65,8 @@
       }
       showSuccessToast('Account created')
       goto('/')
-    } catch (err) {
-      showErrorToast('Failed to create account')
+    } catch (err: unknown) {
+      handleApiError(err, 'Failed to create account')
     } finally {
       submitting = false
     }
@@ -113,9 +113,10 @@
         <div class="space-y-2">
           <Label for="vendorInfo">Vendor Info</Label>
           <p class="text-xs text-muted-foreground">Optional JSON metadata for this account.</p>
-          <Textarea id="vendorInfo" bind:value={vendorInfoStr} placeholder={'{"key": "value"}'} rows={4} />
+          <Textarea id="vendorInfo" bind:value={vendorInfoStr} placeholder={'{"key": "value"}'} rows={4}
+            aria-invalid={!!vendorInfoError} aria-describedby={vendorInfoError ? 'vendorInfo-error' : undefined} />
           {#if vendorInfoError}
-            <p class="text-xs text-destructive">{vendorInfoError}</p>
+            <p id="vendorInfo-error" class="text-xs text-destructive">{vendorInfoError}</p>
           {/if}
         </div>
 

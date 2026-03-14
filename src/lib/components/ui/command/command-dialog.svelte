@@ -32,7 +32,7 @@
 <Dialog.Root bind:open {...restProps}>
   <Dialog.Content
     class={cn(
-      "overflow-hidden p-0 fixed left-[50%] top-[20%] z-50 grid w-full max-w-[640px] translate-x-[-50%] translate-y-0 gap-0 rounded-sm border shadow-lg bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200"
+      "overflow-hidden p-0 fixed left-[50%] top-[20%] z-50 grid w-full max-w-[640px] translate-x-[-50%] translate-y-0 gap-0 rounded-sm border shadow-none bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 duration-200"
     )}
     showCloseButton={false}
     onkeydown={handleKeydownInternal}

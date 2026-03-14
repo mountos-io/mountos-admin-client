@@ -33,6 +33,8 @@
   let storagesLoaded = $state(false)
   $effect(() => {
     if (accountId) {
+      storageId = ''
+      storagesLoaded = false
       storageStore.fetchStorages(accountId, 1, 100).finally(() => { storagesLoaded = true })
     }
   })
@@ -67,11 +69,11 @@
         name: name.trim(),
         description: description.trim() || undefined,
         volumeType,
-        encryption: encryption || undefined,
+        encryption: encryption ? true : undefined,
         encryptionKey: (encryption && encryptionKey.trim()) ? encryptionKey.trim() : undefined,
         retentionPeriod: retentionPeriod ? Number(retentionPeriod) : undefined,
         gracePeriod: gracePeriod ? Number(gracePeriod) : undefined,
-        gcOnDeactivation: gcOnDeactivation || undefined,
+        gcOnDeactivation: gcOnDeactivation ? true : undefined,
         quotaLimit: quotaLimit ? Number(quotaLimit) : undefined,
       })
       createResult = result
@@ -85,8 +87,12 @@
 
   async function copyKey() {
     if (!createResult?.encryptionKey) return
-    await navigator.clipboard.writeText(createResult.encryptionKey)
-    showSuccessToast('Copied to clipboard')
+    try {
+      await navigator.clipboard.writeText(createResult.encryptionKey)
+      showSuccessToast('Copied to clipboard')
+    } catch {
+      showErrorToast('Failed to copy')
+    }
   }
 </script>
 
@@ -99,11 +105,11 @@
     <Card cornerBrackets>
       <CardHeader>
         <CardTitle>Volume Created</CardTitle>
-        <CardDescription>Save the encryption key below — it will not be shown again.</CardDescription>
       </CardHeader>
       <CardContent>
         {#if createResult.encryptionKey}
-          <div class="rounded-md border p-3 space-y-2 bg-muted/50">
+          <p class="text-sm text-muted-foreground mb-3">Save the encryption key below — it will not be shown again.</p>
+          <div class="rounded-sm border p-3 space-y-2 bg-muted/50">
             <span class="text-xs text-muted-foreground">Encryption Key</span>
             <p class="font-mono text-sm break-all">{createResult.encryptionKey}</p>
           </div>

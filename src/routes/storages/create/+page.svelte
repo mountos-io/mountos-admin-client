@@ -31,6 +31,8 @@
   let regionsLoaded = $state(false)
   $effect(() => {
     if (accountId) {
+      regionId = ''
+      regionsLoaded = false
       regionStore.fetchRegions(1, 100).finally(() => { regionsLoaded = true })
     }
   })

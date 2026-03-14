@@ -11,7 +11,7 @@
     emptyText = 'No results found.', disabled = false,
     class: className,
   }: {
-    options: { value: string; label: string }[]
+    options: readonly { value: string; label: string }[]
     value?: string
     placeholder?: string
     emptyText?: string
@@ -20,14 +20,18 @@
   } = $props()
 
   let open = $state(false)
-  let search = $state('')
+  let searchQuery = $state('')
   const selectedLabel = $derived(options.find(o => o.value === value)?.label ?? '')
+
+  $effect(() => {
+    if (open) searchQuery = ''
+  })
 </script>
 
 <Popover bind:open>
   <PopoverTrigger>
     {#snippet child({ props })}
-      <Button {...props} variant="outline" role="combobox" aria-expanded={open} {disabled}
+      <Button {...props} variant="outline" role="combobox" aria-expanded={open} aria-haspopup="listbox" {disabled}
         class={cn(
           "w-full justify-between font-normal",
           !value && "text-muted-foreground",
@@ -39,8 +43,8 @@
     {/snippet}
   </PopoverTrigger>
   <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
-    <Command bind:value={search}>
-      <CommandInput placeholder="Search..." />
+    <Command>
+      <CommandInput placeholder="Search..." aria-label="Search options" bind:value={searchQuery} />
       <CommandList>
         <CommandEmpty>{emptyText}</CommandEmpty>
         {#each options as opt}

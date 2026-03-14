@@ -10,7 +10,7 @@
   import { Textarea } from '$lib/components/ui/textarea'
   import { Separator } from '$lib/components/ui/separator'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import { showSuccessToast, showErrorToast } from '$lib/core/utils/toast'
+  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
 
   const userStore = useUsers()
   const accountStore = useAccounts()
@@ -33,7 +33,7 @@
 
   function parseVendorInfo(): Record<string, unknown> | undefined | null {
     const trimmed = vendorInfoStr.trim()
-    if (!trimmed) return undefined
+    if (!trimmed) { vendorInfoError = ''; return undefined }
     try {
       const parsed = JSON.parse(trimmed)
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
@@ -64,8 +64,8 @@
       })
       showSuccessToast('User added')
       goto('/users')
-    } catch {
-      showErrorToast('Failed to add user')
+    } catch (err: unknown) {
+      handleApiError(err, 'Failed to add user')
     } finally {
       submitting = false
     }
@@ -101,9 +101,10 @@
           <div class="space-y-2">
             <Label for="vendorInfo">Vendor Info</Label>
             <p class="text-xs text-muted-foreground">Optional JSON metadata for this user.</p>
-            <Textarea id="vendorInfo" bind:value={vendorInfoStr} placeholder={'{"key": "value"}'} rows={4} />
+            <Textarea id="vendorInfo" bind:value={vendorInfoStr} placeholder={'{"key": "value"}'} rows={4}
+              aria-invalid={!!vendorInfoError} aria-describedby={vendorInfoError ? 'vendorInfo-error' : undefined} />
             {#if vendorInfoError}
-              <p class="text-xs text-destructive">{vendorInfoError}</p>
+              <p id="vendorInfo-error" class="text-xs text-destructive">{vendorInfoError}</p>
             {/if}
           </div>
 
