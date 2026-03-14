@@ -132,7 +132,7 @@
   {:else if !regionsLoaded}
     <LoadingSpinner />
   {:else}
-    <Card>
+    <Card cornerBrackets>
       <CardHeader>
         <CardTitle>Create Storage</CardTitle>
         <CardDescription>Configure a storage backend for the current account.</CardDescription>

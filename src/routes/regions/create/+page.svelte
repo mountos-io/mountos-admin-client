@@ -45,7 +45,7 @@
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before creating a region." />
   {:else}
-    <Card>
+    <Card cornerBrackets>
       <CardHeader>
         <CardTitle>Create Region</CardTitle>
         <CardDescription>Add a new region to the current account.</CardDescription>

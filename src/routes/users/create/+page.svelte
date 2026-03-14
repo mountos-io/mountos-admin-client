@@ -76,7 +76,7 @@
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before adding a user." />
   {:else}
-    <Card>
+    <Card cornerBrackets>
       <CardHeader>
         <CardTitle>Add User</CardTitle>
         <CardDescription>Add a user to the current account.</CardDescription>

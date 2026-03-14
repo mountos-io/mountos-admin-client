@@ -96,7 +96,7 @@
   {:else if !storagesLoaded}
     <LoadingSpinner />
   {:else if createResult}
-    <Card>
+    <Card cornerBrackets>
       <CardHeader>
         <CardTitle>Volume Created</CardTitle>
         <CardDescription>Save the encryption key below — it will not be shown again.</CardDescription>
@@ -119,7 +119,7 @@
       </CardFooter>
     </Card>
   {:else}
-    <Card>
+    <Card cornerBrackets>
       <CardHeader>
         <CardTitle>Create Volume</CardTitle>
         <CardDescription>Create a volume on an existing storage backend.</CardDescription>

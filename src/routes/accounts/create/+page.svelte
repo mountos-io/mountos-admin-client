@@ -74,7 +74,7 @@
 </script>
 
 <div class="mx-auto max-w-lg space-y-6">
-  <Card>
+  <Card cornerBrackets>
     <CardHeader>
       <CardTitle>Create Account</CardTitle>
       <CardDescription>Set up a new account with its profile and metadata.</CardDescription>
