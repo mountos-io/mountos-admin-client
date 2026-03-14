@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
   import { useRegions } from '$lib/core/stores/regions.svelte'
+  import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
@@ -12,9 +13,12 @@
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import { formatDate } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import Plus from '@lucide/svelte/icons/plus'
 
   const store = useRegions()
+  const accountStore = useAccounts()
   const auth = useAuth()
+  const accountId = $derived(accountStore.selectedAccountId)
   const prefs = usePreferences()
   let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
     open: false, title: '', desc: '', action: async () => {},
@@ -40,7 +44,15 @@
 </script>
 
 <div class="space-y-4">
-  <h2 class="text-2xl font-bold tracking-tight">Regions</h2>
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold tracking-tight">Regions</h2>
+    {#if accountId && auth.can('regions', 'create')}
+      <Button href="/regions/create" size="sm" class="gap-1.5">
+        <Plus class="h-4 w-4" />
+        Create Region
+      </Button>
+    {/if}
+  </div>
   {#if store.loading}
     <LoadingSpinner />
   {:else if store.regions.length === 0}

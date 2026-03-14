@@ -8,7 +8,9 @@
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import { Button } from '$lib/components/ui/button'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import Plus from '@lucide/svelte/icons/plus'
 
   const userStore = useUsers()
   const accountStore = useAccounts()
@@ -27,7 +29,15 @@
 </script>
 
 <div class="space-y-4">
-  <h2 class="text-2xl font-bold tracking-tight">Users</h2>
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold tracking-tight">Users</h2>
+    {#if accountId && auth.can('users', 'create')}
+      <Button href="/users/create" size="sm" class="gap-1.5">
+        <Plus class="h-4 w-4" />
+        Add User
+      </Button>
+    {/if}
+  </div>
 
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account to view its users." />

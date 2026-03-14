@@ -12,6 +12,7 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import Plus from '@lucide/svelte/icons/plus'
 
   const storageStore = useStorages()
   const accountStore = useAccounts()
@@ -30,7 +31,15 @@
 </script>
 
 <div class="space-y-4">
-  <h2 class="text-2xl font-bold tracking-tight">Storages</h2>
+  <div class="flex items-center justify-between">
+    <h2 class="text-2xl font-bold tracking-tight">Storages</h2>
+    {#if accountId && auth.can('storages', 'create')}
+      <Button href="/storages/create" size="sm" class="gap-1.5">
+        <Plus class="h-4 w-4" />
+        Create Storage
+      </Button>
+    {/if}
+  </div>
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account to view its storages." />
   {:else if storageStore.loading}

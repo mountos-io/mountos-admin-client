@@ -1,0 +1,55 @@
+<script lang="ts">
+  import { cn } from '$lib/utils.js'
+  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
+  import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '$lib/components/ui/command'
+  import { Button } from '$lib/components/ui/button'
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
+  import Check from '@lucide/svelte/icons/check'
+
+  let {
+    options, value = $bindable(''), placeholder = 'Select...',
+    emptyText = 'No results found.', disabled = false,
+    class: className,
+  }: {
+    options: { value: string; label: string }[]
+    value?: string
+    placeholder?: string
+    emptyText?: string
+    disabled?: boolean
+    class?: string
+  } = $props()
+
+  let open = $state(false)
+  let search = $state('')
+  const selectedLabel = $derived(options.find(o => o.value === value)?.label ?? '')
+</script>
+
+<Popover bind:open>
+  <PopoverTrigger>
+    {#snippet child({ props })}
+      <Button {...props} variant="outline" role="combobox" aria-expanded={open} {disabled}
+        class={cn(
+          "w-full justify-between font-normal",
+          !value && "text-muted-foreground",
+          className
+        )}>
+        {selectedLabel || placeholder}
+        <ChevronsUpDown class="ml-auto h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+    {/snippet}
+  </PopoverTrigger>
+  <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
+    <Command bind:value={search}>
+      <CommandInput placeholder="Search..." />
+      <CommandList>
+        <CommandEmpty>{emptyText}</CommandEmpty>
+        {#each options as opt}
+          <CommandItem value={opt.label} onSelect={() => { value = opt.value; open = false }}>
+            <Check class={cn("h-4 w-4", value === opt.value ? "opacity-100" : "opacity-0")} />
+            {opt.label}
+          </CommandItem>
+        {/each}
+      </CommandList>
+    </Command>
+  </PopoverContent>
+</Popover>
