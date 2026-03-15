@@ -50,7 +50,7 @@ export class TokenAuthAdapter implements AuthAdapter {
 
   async signOut(): Promise<void> {
     this.clearTokens()
-    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }) } catch {}
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }) } catch (e) { console.warn('Logout request failed:', e) }
     window.location.href = this.config.logoutUrl
   }
 
@@ -63,7 +63,9 @@ export class TokenAuthAdapter implements AuthAdapter {
       })
       if (res.ok) return toUserInfo(await res.json())
       if (res.status === 401) return await this.tryRefresh()
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to fetch user:', e)
+    }
     return null
   }
 
@@ -74,7 +76,8 @@ export class TokenAuthAdapter implements AuthAdapter {
       const data = await res.json()
       if (data.token) this.storeTokens(data.token, data.refreshToken)
       return toUserInfo(data)
-    } catch {
+    } catch (e) {
+      console.warn('Cookie bootstrap failed:', e)
       return null
     }
   }
@@ -83,6 +86,29 @@ export class TokenAuthAdapter implements AuthAdapter {
     const token = sessionStorage.getItem(this.tokenKey)
     if (!token) return {}
     return { Authorization: `Bearer ${token}` }
+  }
+
+  async tryRefreshToken(): Promise<boolean> {
+    const refreshToken = sessionStorage.getItem(this.refreshKey)
+    if (!refreshToken) return false
+    try {
+      const res = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      })
+      if (!res.ok) {
+        this.clearTokens()
+        return false
+      }
+      const data = await res.json()
+      this.storeTokens(data.token, data.refreshToken)
+      return true
+    } catch (e) {
+      console.warn('Token refresh failed:', e)
+      this.clearTokens()
+      return false
+    }
   }
 
   private async tryRefresh(): Promise<UserInfo | null> {
@@ -106,7 +132,8 @@ export class TokenAuthAdapter implements AuthAdapter {
       if (userRes.ok) return toUserInfo(await userRes.json())
       this.clearTokens()
       return null
-    } catch {
+    } catch (e) {
+      console.warn('Session refresh failed:', e)
       this.clearTokens()
       return null
     }

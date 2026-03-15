@@ -7,4 +7,5 @@ export const api = new AdminClient({
   baseUrl: appConfig.proxyBaseUrl,
   getHeaders: async () => ({ ...await authAdapter.getRequestHeaders(), ...getStepUpHeaders() }),
   onUnauthorized: () => authAdapter.signIn(),
+  onRefreshToken: () => authAdapter.tryRefreshToken(),
 })

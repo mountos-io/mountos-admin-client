@@ -41,6 +41,12 @@ export interface StoredCredential {
   lastUsedAt: string
 }
 
+export interface RateLimitRule {
+  prefix: string
+  limit: number
+  window: number
+}
+
 export interface ContentSecurityPolicy {
   defaultSrc: string[]
   scriptSrc: string[]

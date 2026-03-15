@@ -21,4 +21,6 @@ export interface AuthAdapter {
   signOut(): Promise<void>
   getUser(): Promise<UserInfo | null>
   getRequestHeaders(): Promise<Record<string, string>>
+  /** Attempt to refresh the session token. Returns true if refreshed successfully. */
+  tryRefreshToken(): Promise<boolean>
 }

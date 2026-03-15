@@ -156,7 +156,9 @@ class DashboardAuth {
     try {
       const { jti } = jose.decodeJwt(token)
       if (jti) await this.redis.del(`mountos:refresh:${jti}`)
-    } catch {}
+    } catch (e) {
+      console.warn('Failed to revoke refresh token:', e)
+    }
   }
 }
 

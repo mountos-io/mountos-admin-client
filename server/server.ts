@@ -5,7 +5,7 @@ import { csrf } from 'hono/csrf'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import type { Context } from 'hono'
 import { bootstrap } from '../src/vendor/server/bootstrap'
-import { vendorCsrfConfig, vendorCspConfig, vendorStepUpRules, vendorWebAuthnConfig } from '../src/vendor/server/config'
+import { vendorCsrfConfig, vendorCspConfig, vendorStepUpRules, vendorWebAuthnConfig, vendorRateLimitRules } from '../src/vendor/server/config'
 import { vendorAuthzMiddleware } from '../src/vendor/server/middleware'
 import type { CsrfConfig, ContentSecurityPolicy, WebAuthnConfig } from './types'
 import { dashboardAuth } from './auth'
@@ -13,6 +13,8 @@ import { auth } from './middleware'
 import { proxy } from './proxy'
 import { WebAuthnManager } from './webauthn'
 import { createStepUpMiddleware } from './stepup'
+import { createRateLimiter } from './ratelimit'
+import { registry, metricsMiddleware, authFailuresTotal, rateLimitHitsTotal, webauthnOpsTotal } from './metrics'
 
 await bootstrap()
 
@@ -69,6 +71,7 @@ const csrfConfig = { ...csrfDefaults, ...vendorCsrfConfig }
 const app = new Hono()
 
 app.use(secureHeaders({ contentSecurityPolicy: cspConfig }))
+app.use(metricsMiddleware)
 
 const csrfCheck = csrf(csrfConfig.origin ? { origin: csrfConfig.origin } : undefined)
 app.use('/api/*', async (c, next) => {
@@ -76,7 +79,22 @@ app.use('/api/*', async (c, next) => {
   return csrfCheck(c, next)
 })
 
+const rateLimiter = createRateLimiter(dashboardAuth.redisClient, {
+  rules: [
+    { prefix: '/api/auth/exchange', limit: 30, window: 60 },
+    { prefix: '/api/auth/refresh', limit: 20, window: 60 },
+    { prefix: '/api/webauthn', limit: 15, window: 60 },
+  ],
+  vendorRules: vendorRateLimitRules,
+})
+app.use('/api/*', rateLimiter)
+
 app.get('/health', (c) => c.json({ status: 'ok' }))
+
+app.get('/metrics', async (c) => {
+  const metrics = await registry.metrics()
+  return c.text(metrics, 200, { 'Content-Type': registry.contentType })
+})
 
 // Vendor token exchange — token in body, not URL
 app.post('/api/auth/exchange', async (c) => {
@@ -91,6 +109,7 @@ app.post('/api/auth/exchange', async (c) => {
     setTokenCookies(c, token, refreshToken)
     return c.json({ user, token, refreshToken, capabilities })
   } catch {
+    authFailuresTotal.inc({ type: 'vendor_exchange' })
     return c.json({ status: 'failure', message: 'invalid vendor token' }, 401)
   }
 })
@@ -159,6 +178,7 @@ app.post('/api/auth/refresh', async (c) => {
     setTokenCookies(c, token, newRefreshToken)
     return c.json({ token, refreshToken: newRefreshToken, capabilities })
   } catch {
+    authFailuresTotal.inc({ type: 'refresh' })
     return c.json({ status: 'failure', message: 'invalid refresh token' }, 401)
   }
 })
@@ -185,8 +205,10 @@ app.post('/api/webauthn/register/verify', async (c) => {
     const { response, label } = await c.req.json()
     const user = c.get('mountosUser')
     const { publicKey: _, ...cred } = await webauthnManager.verifyRegistration(user.id, response, label || 'Security Key')
+    webauthnOpsTotal.inc({ op: 'register', result: 'success' })
     return c.json(cred)
   } catch {
+    webauthnOpsTotal.inc({ op: 'register', result: 'failure' })
     return c.json({ status: 'failure', message: 'registration failed' }, 400)
   }
 })
@@ -202,8 +224,10 @@ app.post('/api/webauthn/authenticate/verify', async (c) => {
     const { response } = await c.req.json()
     const user = c.get('mountosUser')
     const stepUpToken = await webauthnManager.verifyAuthentication(user.id, response)
+    webauthnOpsTotal.inc({ op: 'authenticate', result: 'success' })
     return c.json({ stepUpToken })
   } catch {
+    webauthnOpsTotal.inc({ op: 'authenticate', result: 'failure' })
     return c.json({ status: 'failure', message: 'authentication failed' }, 400)
   }
 })

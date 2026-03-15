@@ -22,12 +22,16 @@ export interface ClientConfig {
   baseUrl?: string
   getHeaders?: () => Record<string, string> | Promise<Record<string, string>>
   onUnauthorized?: () => void
+  /** Called on 401 before redirecting. Return true if token was refreshed and request should retry. */
+  onRefreshToken?: () => Promise<boolean>
 }
 
 export class AdminClient {
   readonly baseUrl: string
   private readonly _getHeaders: () => Record<string, string> | Promise<Record<string, string>>
   private readonly _onUnauthorized?: () => void
+  private readonly _onRefreshToken?: () => Promise<boolean>
+  private _refreshing: Promise<boolean> | null = null
 
   private _accounts?: AccountsResource
   private _users?: UsersResource
@@ -43,6 +47,7 @@ export class AdminClient {
     this.baseUrl = (config.baseUrl ?? '/api/proxy/v1').replace(/\/+$/, '')
     this._getHeaders = config.getHeaders ?? (() => ({}))
     this._onUnauthorized = config.onUnauthorized
+    this._onRefreshToken = config.onRefreshToken
   }
 
   get accounts(): AccountsResource {
@@ -81,11 +86,15 @@ export class AdminClient {
     return (this._cache ??= new CacheResource(this))
   }
 
-  async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  async request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+    return this._doRequest(method, path, body, true, signal)
+  }
+
+  private async _doRequest<T>(method: string, path: string, body: unknown, allowRetry: boolean, signal?: AbortSignal): Promise<T> {
     const extra = await this._getHeaders()
     const headers: Record<string, string> = { ...extra }
 
-    const init: RequestInit = { method, headers, credentials: 'include' }
+    const init: RequestInit = { method, headers, credentials: 'include', signal }
     if (body !== undefined) {
       headers['Content-Type'] = 'application/json'
       init.body = JSON.stringify(body)
@@ -94,6 +103,10 @@ export class AdminClient {
     const res = await fetch(`${this.baseUrl}${path}`, init)
 
     if (res.status === 401) {
+      if (allowRetry && this._onRefreshToken) {
+        const refreshed = await this._coalesceRefresh()
+        if (refreshed) return this._doRequest(method, path, body, false, signal)
+      }
       this._onUnauthorized?.()
       throw new ApiError('unauthorized', 401)
     }
@@ -110,6 +123,13 @@ export class AdminClient {
     }
     return json.data as T
   }
+
+  private _coalesceRefresh(): Promise<boolean> {
+    if (!this._refreshing) {
+      this._refreshing = this._onRefreshToken!().finally(() => { this._refreshing = null })
+    }
+    return this._refreshing
+  }
 }
 
 class AccountsResource {
@@ -119,8 +139,8 @@ class AccountsResource {
     return this.client.request('POST', '/accounts/create', req)
   }
 
-  list(opts?: ListOptions): Promise<PaginatedResponse<Account>> {
-    return this.client.request('GET', `/accounts/list${queryString({ page: opts?.page, limit: opts?.limit })}`)
+  list(opts?: ListOptions, signal?: AbortSignal): Promise<PaginatedResponse<Account>> {
+    return this.client.request('GET', `/accounts/list${queryString({ page: opts?.page, limit: opts?.limit })}`, undefined, signal)
   }
 
   get(accountId: number): Promise<Account> {
@@ -155,8 +175,8 @@ class UsersResource {
     return this.client.request('POST', '/users/add', req)
   }
 
-  list(opts: UserListOptions): Promise<PaginatedResponse<User>> {
-    return this.client.request('GET', `/users/list${queryString({ accountId: opts.accountId, page: opts.page, limit: opts.limit })}`)
+  list(opts: UserListOptions, signal?: AbortSignal): Promise<PaginatedResponse<User>> {
+    return this.client.request('GET', `/users/list${queryString({ accountId: opts.accountId, page: opts.page, limit: opts.limit })}`, undefined, signal)
   }
 
   get(userId: number): Promise<User> {
@@ -183,8 +203,8 @@ class RegionsResource {
     return this.client.request('POST', '/regions/create', req)
   }
 
-  list(opts?: ListOptions): Promise<PaginatedResponse<Region>> {
-    return this.client.request('GET', `/regions/list${queryString({ page: opts?.page, limit: opts?.limit })}`)
+  list(opts?: ListOptions, signal?: AbortSignal): Promise<PaginatedResponse<Region>> {
+    return this.client.request('GET', `/regions/list${queryString({ page: opts?.page, limit: opts?.limit })}`, undefined, signal)
   }
 
   get(regionId: number): Promise<Region> {
@@ -211,8 +231,8 @@ class StoragesResource {
     return this.client.request('POST', '/storages/create', req)
   }
 
-  list(opts: StorageListOptions): Promise<PaginatedResponse<Storage>> {
-    return this.client.request('GET', `/storages/list${queryString({ accountId: opts.accountId, page: opts.page, limit: opts.limit })}`)
+  list(opts: StorageListOptions, signal?: AbortSignal): Promise<PaginatedResponse<Storage>> {
+    return this.client.request('GET', `/storages/list${queryString({ accountId: opts.accountId, page: opts.page, limit: opts.limit })}`, undefined, signal)
   }
 
   get(storageId: number): Promise<Storage> {
@@ -239,8 +259,8 @@ class VolumesResource {
     return this.client.request('POST', '/volumes/create', req)
   }
 
-  list(opts: VolumeListOptions): Promise<PaginatedResponse<Volume>> {
-    return this.client.request('GET', `/volumes/list${queryString({ accountId: opts.accountId, page: opts.page, limit: opts.limit })}`)
+  list(opts: VolumeListOptions, signal?: AbortSignal): Promise<PaginatedResponse<Volume>> {
+    return this.client.request('GET', `/volumes/list${queryString({ accountId: opts.accountId, page: opts.page, limit: opts.limit })}`, undefined, signal)
   }
 
   get(volumeId: number): Promise<Volume> {
@@ -287,21 +307,21 @@ class VolumesResource {
 class AuditLogsResource {
   constructor(private client: AdminClient) {}
 
-  list(opts?: AuditLogListOptions): Promise<CursorPaginatedResponse<AuditLog>> {
+  list(opts?: AuditLogListOptions, signal?: AbortSignal): Promise<CursorPaginatedResponse<AuditLog>> {
     return this.client.request('GET', `/audit-logs/list${queryString({
       accountId: opts?.accountId,
       cursor: opts?.cursor,
       limit: opts?.limit,
       subject: opts?.subject,
-    })}`)
+    })}`, undefined, signal)
   }
 }
 
 class ServiceNodesResource {
   constructor(private client: AdminClient) {}
 
-  list(regionId: number): Promise<ServiceNode[]> {
-    return this.client.request('GET', `/regions/${regionId}/nodes`)
+  list(regionId: number, signal?: AbortSignal): Promise<ServiceNode[]> {
+    return this.client.request('GET', `/regions/${regionId}/nodes`, undefined, signal)
   }
 
   drain(regionId: number, nodeId: string): Promise<void> {

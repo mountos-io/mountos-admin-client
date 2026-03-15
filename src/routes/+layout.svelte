@@ -75,9 +75,9 @@
             const found = accounts.find(a => a.id === prefs.defaultAccountId)
             if (found) accountStore.selectAccount(found.id)
           }
-        }).catch(() => {})
+        }).catch((e) => console.warn('Failed to fetch accounts:', e))
       }
-    }).catch(() => {})
+    }).catch((e) => console.warn('Auth init failed:', e))
   })
 </script>
 

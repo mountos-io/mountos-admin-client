@@ -5,8 +5,11 @@ let logs = $state<AuditLog[]>([])
 let loading = $state(false)
 let nextCursor = $state<number | null>(null)
 let hasMore = $derived(nextCursor !== null)
+let fetchCtrl: AbortController | null = null
 
 async function fetchLogs(opts?: { accountId?: number; subject?: string; limit?: number; reset?: boolean }) {
+  fetchCtrl?.abort()
+  fetchCtrl = new AbortController()
   loading = true
   try {
     const cursor = opts?.reset ? undefined : nextCursor ?? undefined
@@ -15,13 +18,16 @@ async function fetchLogs(opts?: { accountId?: number; subject?: string; limit?: 
       subject: opts?.subject,
       cursor,
       limit: opts?.limit ?? 20,
-    })
+    }, fetchCtrl.signal)
     if (opts?.reset || !cursor) {
       logs = res.items
     } else {
       logs = [...logs, ...res.items]
     }
     nextCursor = res.nextCursor
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') return
+    throw e
   } finally {
     loading = false
   }

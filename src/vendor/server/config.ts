@@ -1,4 +1,4 @@
-import type { ContentSecurityPolicy, CsrfConfig, DashboardAuthConfig, StepUpRule, WebAuthnConfig } from '../../../server/types'
+import type { ContentSecurityPolicy, CsrfConfig, DashboardAuthConfig, RateLimitRule, StepUpRule, WebAuthnConfig } from '../../../server/types'
 
 // Session/refresh token lifetimes. Defaults: session=24h, refresh=7d.
 // Tokens use Ed25519 EdDSA signing; cookies are httpOnly + SameSite=Strict + Secure (non-dev).
@@ -23,3 +23,7 @@ export const vendorCspConfig: Partial<ContentSecurityPolicy> = {
 
 export const vendorStepUpRules: StepUpRule[] = []
 export const vendorWebAuthnConfig: Partial<WebAuthnConfig> = {}
+
+// Rate limiting: override or add rules for vendor-specific endpoints.
+// Defaults protect auth exchange (30/60s), auth refresh (20/60s), and webauthn (15/60s).
+export const vendorRateLimitRules: RateLimitRule[] = []

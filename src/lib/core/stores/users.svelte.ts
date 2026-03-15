@@ -5,14 +5,20 @@ let users = $state<User[]>([])
 let loading = $state(false)
 let totalPages = $state(0)
 let currentPage = $state(1)
+let fetchCtrl: AbortController | null = null
 
 async function fetchUsers(accountId: number, page = 1, limit = 20) {
+  fetchCtrl?.abort()
+  fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.users.list({ accountId, page, limit })
+    const res = await api.users.list({ accountId, page, limit }, fetchCtrl.signal)
     users = res.items
     totalPages = res.pagination.totalPages
     currentPage = res.pagination.page
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') return
+    throw e
   } finally {
     loading = false
   }

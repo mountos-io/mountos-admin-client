@@ -4,12 +4,18 @@ import { api } from './client.svelte'
 let nodes = $state<ServiceNode[]>([])
 let loading = $state(false)
 let selectedRegionId = $state<number | null>(null)
+let fetchCtrl: AbortController | null = null
 
 async function fetchNodes(regionId: number) {
+  fetchCtrl?.abort()
+  fetchCtrl = new AbortController()
   selectedRegionId = regionId
   loading = true
   try {
-    nodes = await api.serviceNodes.list(regionId)
+    nodes = await api.serviceNodes.list(regionId, fetchCtrl.signal)
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') return
+    throw e
   } finally {
     loading = false
   }

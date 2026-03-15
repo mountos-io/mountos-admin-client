@@ -5,14 +5,20 @@ let regions = $state<Region[]>([])
 let loading = $state(false)
 let totalPages = $state(0)
 let currentPage = $state(1)
+let fetchCtrl: AbortController | null = null
 
 async function fetchRegions(page = 1, limit = 20) {
+  fetchCtrl?.abort()
+  fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.regions.list({ page, limit })
+    const res = await api.regions.list({ page, limit }, fetchCtrl.signal)
     regions = res.items
     totalPages = res.pagination.totalPages
     currentPage = res.pagination.page
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') return
+    throw e
   } finally {
     loading = false
   }

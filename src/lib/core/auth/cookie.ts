@@ -34,7 +34,8 @@ export class CookieAuthAdapter implements AuthAdapter {
         this.user = await res.json()
         this.checked = true
       }
-    } catch {
+    } catch (e) {
+      console.warn('Cookie auth: failed to fetch user:', e)
       this.user = null
     }
     return this.user
@@ -42,5 +43,10 @@ export class CookieAuthAdapter implements AuthAdapter {
 
   async getRequestHeaders(): Promise<Record<string, string>> {
     return {}
+  }
+
+  async tryRefreshToken(): Promise<boolean> {
+    // Cookie auth relies on server-managed cookies; no client-side refresh needed
+    return false
   }
 }

@@ -6,16 +6,22 @@ let selectedAccountId = $state<number | null>(null)
 let loading = $state(false)
 let totalPages = $state(0)
 let currentPage = $state(1)
+let fetchCtrl: AbortController | null = null
 
 const selectedAccount = $derived(accounts.find(a => a.id === selectedAccountId) ?? null)
 
 async function fetchAccounts(page = 1, limit = 20) {
+  fetchCtrl?.abort()
+  fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.accounts.list({ page, limit })
+    const res = await api.accounts.list({ page, limit }, fetchCtrl.signal)
     accounts = res.items
     totalPages = res.pagination.totalPages
     currentPage = res.pagination.page
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') return
+    throw e
   } finally {
     loading = false
   }
