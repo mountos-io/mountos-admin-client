@@ -7,8 +7,6 @@
   import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
-  import { Textarea } from '$lib/components/ui/textarea'
-  import { Separator } from '$lib/components/ui/separator'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
 
   const accountStore = useAccounts()
@@ -25,39 +23,20 @@
   let name = $state('')
   let description = $state('')
   let iconUrl = $state('')
-  let vendorInfoStr = $state('')
-  let vendorInfoError = $state('')
   let submitting = $state(false)
+  let iconError = $state(false)
 
-  function parseVendorInfo(): Record<string, unknown> | undefined | null {
-    const trimmed = vendorInfoStr.trim()
-    if (!trimmed) { vendorInfoError = ''; return undefined }
-    try {
-      const parsed = JSON.parse(trimmed)
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        vendorInfoError = 'Must be a JSON object'
-        return null
-      }
-      vendorInfoError = ''
-      return parsed
-    } catch {
-      vendorInfoError = 'Invalid JSON'
-      return null
-    }
-  }
+  $effect(() => { iconUrl; iconError = false })
 
   async function handleSubmit(e: Event) {
     e.preventDefault()
     if (!name.trim()) return
-    const vendorInfo = parseVendorInfo()
-    if (vendorInfo === null) return
     submitting = true
     try {
       const created = await accountStore.createAccount({
         name: name.trim(),
         description: description.trim() || undefined,
         iconUrl: iconUrl.trim() || undefined,
-        vendorInfo,
       })
       if (created?.id) {
         accountStore.selectAccount(created.id)
@@ -73,14 +52,30 @@
   }
 </script>
 
-<div class="mx-auto max-w-lg space-y-6">
+<div class="mx-auto max-w-xl">
   <Card cornerBrackets>
-    <CardHeader>
-      <CardTitle>Create Account</CardTitle>
-      <CardDescription>Set up a new account with its profile and metadata.</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <form onsubmit={handleSubmit} class="space-y-4">
+    <form onsubmit={handleSubmit}>
+      <CardHeader>
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <CardTitle>Create Account</CardTitle>
+            <CardDescription>Set up a new account with its profile.</CardDescription>
+          </div>
+          <div class="size-14 rounded-lg border border-border bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
+            {#if iconUrl.trim() && !iconError}
+              <img
+                src={iconUrl.trim()}
+                alt="Icon"
+                class="size-full object-cover"
+                onerror={() => { iconError = true }}
+              />
+            {:else}
+              <span class="text-muted-foreground/40 text-xl">?</span>
+            {/if}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent class="space-y-4">
         <div class="space-y-2">
           <Label for="name">Name</Label>
           <Input id="name" bind:value={name} placeholder="Account name" required />
@@ -92,34 +87,7 @@
         <div class="space-y-2">
           <Label for="iconUrl">Icon URL</Label>
           <Input id="iconUrl" bind:value={iconUrl} placeholder="https://example.com/icon.png" />
-          {#if iconUrl.trim()}
-            <div class="flex items-center gap-2 mt-1">
-              <img
-                src={iconUrl.trim()}
-                alt="Preview"
-                width={32} height={32}
-                class="rounded-full shrink-0"
-                style="width: 32px; height: 32px;"
-                onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-                onload={(e) => { (e.currentTarget as HTMLImageElement).style.display = '' }}
-              />
-              <span class="text-xs text-muted-foreground">Preview</span>
-            </div>
-          {/if}
         </div>
-
-        <Separator />
-
-        <div class="space-y-2">
-          <Label for="vendorInfo">Vendor Info</Label>
-          <p class="text-xs text-muted-foreground">Optional JSON metadata for this account.</p>
-          <Textarea id="vendorInfo" bind:value={vendorInfoStr} placeholder={'{"key": "value"}'} rows={4}
-            aria-invalid={!!vendorInfoError} aria-describedby={vendorInfoError ? 'vendorInfo-error' : undefined} />
-          {#if vendorInfoError}
-            <p id="vendorInfo-error" class="text-xs text-destructive">{vendorInfoError}</p>
-          {/if}
-        </div>
-
         <div class="flex gap-3 pt-2">
           <Button type="submit" disabled={submitting || !name.trim()}>
             {submitting ? 'Creating...' : 'Create Account'}
@@ -128,7 +96,7 @@
             Cancel
           </Button>
         </div>
-      </form>
-    </CardContent>
+      </CardContent>
+    </form>
   </Card>
 </div>

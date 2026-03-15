@@ -350,7 +350,7 @@ function generate(spec: Spec): string {
   w('\n')
 
   w('  constructor(config: ClientConfig = {}) {\n')
-  w("    this.baseUrl = (config.baseUrl ?? '/api/proxy/v1').replace(/\\/+$/, '')\n")
+  w("    this.baseUrl = (config.baseUrl ?? '/api/v1').replace(/\\/+$/, '')\n")
   w('    this._getHeaders = config.getHeaders ?? (() => ({}))\n')
   w('    this._onUnauthorized = config.onUnauthorized\n')
   w('    this._onRefreshToken = config.onRefreshToken\n')

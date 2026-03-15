@@ -35,7 +35,7 @@ OPEN_CMD_Linux  := xdg-open
 OPEN_CMD        := $(or $(OPEN_CMD_$(shell uname -s)),open)
 
 test-auto-login: ## Generate test token and open login URL in browser
-	$(OPEN_CMD) "$$($(TS_EXEC) gen/test-token.ts)"
+	@url="$$($(TS_EXEC) gen/test-token.ts)" && echo "$$url" && read -p "Press Enter to open in browser..." && $(OPEN_CMD) "$$url"
 
 clean: ## Remove build artifacts
 	rm -rf .svelte-kit build node_modules
