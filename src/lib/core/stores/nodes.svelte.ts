@@ -8,16 +8,16 @@ let fetchCtrl: AbortController | null = null
 
 async function fetchNodes(regionId: number) {
   fetchCtrl?.abort()
-  fetchCtrl = new AbortController()
+  const ctrl = fetchCtrl = new AbortController()
   selectedRegionId = regionId
   loading = true
   try {
-    nodes = await api.serviceNodes.list(regionId, fetchCtrl.signal)
+    nodes = await api.serviceNodes.list(regionId, ctrl.signal)
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
     throw e
   } finally {
-    loading = false
+    if (fetchCtrl === ctrl) loading = false
   }
 }
 

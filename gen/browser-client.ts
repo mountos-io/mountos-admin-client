@@ -224,8 +224,10 @@ function voidMethod(mn: string, ep: Endpoint, fp: string, pp: string[], pt?: Rec
 }
 
 function arrayMethod(mn: string, ep: Endpoint, fp: string, pp: string[], pt?: Record<string, string>): void {
-  w(`  ${mn}(${sig(pp, pt)}): Promise<${ep.responseType}[]> {\n`)
-  w(`    return this.client.request('GET', ${pExpr(fp, pp, pt)})\n`)
+  const s = sig(pp, pt)
+  const full = s ? `${s}, signal?: AbortSignal` : 'signal?: AbortSignal'
+  w(`  ${mn}(${full}): Promise<${ep.responseType}[]> {\n`)
+  w(`    return this.client.request('GET', ${pExpr(fp, pp, pt)}, undefined, signal)\n`)
   w('  }\n')
 }
 
@@ -235,16 +237,16 @@ function pageMethod(mn: string, ep: Endpoint, fp: string, pp: string[], rn: stri
   const ot = custom ? listOptsName(rn) : 'ListOptions'
   const oo = custom ? '' : '?'
   const s = sig(pp, pt)
-  const full = (s ? `${s}, ` : '') + `opts${oo}: ${ot}`
+  const full = (s ? `${s}, ` : '') + `opts${oo}: ${ot}, signal?: AbortSignal`
   const ref = oo === '?' ? 'opts?' : 'opts'
   const qs = ep.query!.map(q => { const f = parseField(q); return `${f.name}: ${ref}.${f.name}` }).join(', ')
   const qsCall = `queryString({ ${qs} })`
   if (pp.length > 0) {
     w(`  ${mn}(${full}): Promise<${ret}> {\n`)
-    w(`    return this.client.request('GET', ${pExpr(fp, pp, pt)} + ${qsCall})\n`)
+    w(`    return this.client.request('GET', ${pExpr(fp, pp, pt)} + ${qsCall}, undefined, signal)\n`)
   } else {
     w(`  ${mn}(${full}): Promise<${ret}> {\n`)
-    w(`    return this.client.request('GET', \`${fp}\${${qsCall}}\`)\n`)
+    w(`    return this.client.request('GET', \`${fp}\${${qsCall}}\`, undefined, signal)\n`)
   }
   w('  }\n')
 }
@@ -253,13 +255,13 @@ function cursorMethod(mn: string, ep: Endpoint, fp: string, pp: string[], rn: st
   const ot = listOptsName(rn)
   const ret = `CursorPaginatedResponse<${ep.responseType}>`
   const s = sig(pp, pt)
-  const full = (s ? `${s}, ` : '') + `opts?: ${ot}`
+  const full = (s ? `${s}, ` : '') + `opts?: ${ot}, signal?: AbortSignal`
   const qs = ep.query!.map(q => { const f = parseField(q); return `${f.name}: opts?.${f.name}` })
   const qsCall = `queryString({\n      ${qs.join(',\n      ')},\n    })`
   const pe = pExpr(fp, pp, pt)
   const inner = pe.slice(1, -1)
   w(`  ${mn}(${full}): Promise<${ret}> {\n`)
-  w(`    return this.client.request('GET', \`${inner}\${${qsCall}}\`)\n`)
+  w(`    return this.client.request('GET', \`${inner}\${${qsCall}}\`, undefined, signal)\n`)
   w('  }\n')
 }
 
@@ -325,13 +327,17 @@ function generate(spec: Spec): string {
   w('  baseUrl?: string\n')
   w('  getHeaders?: () => Record<string, string> | Promise<Record<string, string>>\n')
   w('  onUnauthorized?: () => void\n')
+  w('  /** Called on 401 before redirecting. Return true if token was refreshed and request should retry. */\n')
+  w('  onRefreshToken?: () => Promise<boolean>\n')
   w('}\n\n')
 
   // AdminClient class
   w('export class AdminClient {\n')
   w('  readonly baseUrl: string\n')
   w('  private readonly _getHeaders: () => Record<string, string> | Promise<Record<string, string>>\n')
-  w('  private readonly _onUnauthorized?: () => void\n\n')
+  w('  private readonly _onUnauthorized?: () => void\n')
+  w('  private readonly _onRefreshToken?: () => Promise<boolean>\n')
+  w('  private _refreshing: Promise<boolean> | null = null\n\n')
 
   for (const res of spec.resources) {
     w(`  private _${camel(res.name)}?: ${res.name}Resource\n`)
@@ -342,6 +348,7 @@ function generate(spec: Spec): string {
   w("    this.baseUrl = (config.baseUrl ?? '/api/proxy/v1').replace(/\\/+$/, '')\n")
   w('    this._getHeaders = config.getHeaders ?? (() => ({}))\n')
   w('    this._onUnauthorized = config.onUnauthorized\n')
+  w('    this._onRefreshToken = config.onRefreshToken\n')
   w('  }\n')
 
   for (const res of spec.resources) {
@@ -353,18 +360,25 @@ function generate(spec: Spec): string {
     w('  }\n')
   }
 
-  // request method
+  // request method with transparent token refresh
   w('\n')
-  w('  async request<T>(method: string, path: string, body?: unknown): Promise<T> {\n')
+  w('  async request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {\n')
+  w('    return this._doRequest(method, path, body, true, signal)\n')
+  w('  }\n\n')
+  w('  private async _doRequest<T>(method: string, path: string, body: unknown, allowRetry: boolean, signal?: AbortSignal): Promise<T> {\n')
   w('    const extra = await this._getHeaders()\n')
   w('    const headers: Record<string, string> = { ...extra }\n\n')
-  w("    const init: RequestInit = { method, headers, credentials: 'include' }\n")
+  w("    const init: RequestInit = { method, headers, credentials: 'include', signal }\n")
   w('    if (body !== undefined) {\n')
   w("      headers['Content-Type'] = 'application/json'\n")
   w('      init.body = JSON.stringify(body)\n')
   w('    }\n\n')
   w('    const res = await fetch(`${this.baseUrl}${path}`, init)\n\n')
   w('    if (res.status === 401) {\n')
+  w('      if (allowRetry && this._onRefreshToken) {\n')
+  w('        const refreshed = await this._coalesceRefresh()\n')
+  w('        if (refreshed) return this._doRequest(method, path, body, false, signal)\n')
+  w('      }\n')
   w('      this._onUnauthorized?.()\n')
   w("      throw new ApiError('unauthorized', 401)\n")
   w('    }\n\n')
@@ -378,6 +392,12 @@ function generate(spec: Spec): string {
   w('      throw new ApiError(json.message, res.status, json.errorCode)\n')
   w('    }\n')
   w('    return json.data as T\n')
+  w('  }\n\n')
+  w('  private _coalesceRefresh(): Promise<boolean> {\n')
+  w('    if (!this._refreshing) {\n')
+  w("      this._refreshing = this._onRefreshToken!().finally(() => { this._refreshing = null })\n")
+  w('    }\n')
+  w('    return this._refreshing\n')
   w('  }\n')
   w('}\n')
 

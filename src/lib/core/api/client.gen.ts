@@ -9,7 +9,7 @@ import type {
   Storage, StorageListOptions, EditStorageRequest, CreateVolumeRequest, Volume, 
   VolumeListOptions, EditVolumeRequest, GenerateVolumeAPIKeysRequest, 
   RevokeVolumeAPIKeyRequest, UpdateVolumeQuotaRequest, AuditLog, AuditLogListOptions, 
-  ServiceNode, DiscoverMetaResponse,
+  ServiceNode, ClientSession, SessionSummary, DiscoverMetaResponse,
 } from '@mountos-app/admin-sdk'
 
 function queryString(params: Record<string, string | number | undefined>): string {
@@ -40,6 +40,7 @@ export class AdminClient {
   private _volumes?: VolumesResource
   private _auditLogs?: AuditLogsResource
   private _serviceNodes?: ServiceNodesResource
+  private _clientSessions?: ClientSessionsResource
   private _discover?: DiscoverResource
   private _cache?: CacheResource
 
@@ -76,6 +77,10 @@ export class AdminClient {
 
   get serviceNodes(): ServiceNodesResource {
     return (this._serviceNodes ??= new ServiceNodesResource(this))
+  }
+
+  get clientSessions(): ClientSessionsResource {
+    return (this._clientSessions ??= new ClientSessionsResource(this))
   }
 
   get discover(): DiscoverResource {
@@ -334,6 +339,22 @@ class ServiceNodesResource {
 
   remove(regionId: number, nodeId: string): Promise<void> {
     return this.client.request('DELETE', `/regions/${regionId}/nodes/${encodeURIComponent(nodeId)}`)
+  }
+}
+
+class ClientSessionsResource {
+  constructor(private client: AdminClient) {}
+
+  list(opts?: ListOptions, signal?: AbortSignal): Promise<PaginatedResponse<ClientSession>> {
+    return this.client.request('GET', `/client-sessions/list${queryString({ accountId: opts?.accountId, regionId: opts?.regionId, clientType: opts?.clientType, status: opts?.status, page: opts?.page, limit: opts?.limit })}`, undefined, signal)
+  }
+
+  get(sessionId: number): Promise<ClientSession> {
+    return this.client.request('GET', `/client-sessions/${sessionId}`)
+  }
+
+  summary(signal?: AbortSignal): Promise<SessionSummary[]> {
+    return this.client.request('GET', '/client-sessions/summary', undefined, signal)
   }
 }
 

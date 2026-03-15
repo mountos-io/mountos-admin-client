@@ -12,10 +12,10 @@ let fetchCtrl: AbortController | null = null
 
 async function fetchVolumes(accountId: number, page = 1, limit = 20) {
   fetchCtrl?.abort()
-  fetchCtrl = new AbortController()
+  const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.volumes.list({ accountId, page, limit }, fetchCtrl.signal)
+    const res = await api.volumes.list({ accountId, page, limit }, ctrl.signal)
     volumes = res.items
     totalPages = res.pagination.totalPages
     currentPage = res.pagination.page
@@ -23,7 +23,7 @@ async function fetchVolumes(accountId: number, page = 1, limit = 20) {
     if ((e as Error).name === 'AbortError') return
     throw e
   } finally {
-    loading = false
+    if (fetchCtrl === ctrl) loading = false
   }
 }
 

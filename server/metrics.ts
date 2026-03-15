@@ -43,8 +43,9 @@ export const webauthnOpsTotal = new Counter({
 
 function normalizePath(path: string): string {
   return path
-    .replace(/\/\d+/g, '/:id')
     .replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '/:id')
+    .replace(/\/api\/webauthn\/credentials\/[^/]+/g, '/api/webauthn/credentials/:id')
+    .replace(/\/\d+/g, '/:id')
 }
 
 export const metricsMiddleware: MiddlewareHandler = async (c, next) => {

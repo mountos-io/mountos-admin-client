@@ -14,7 +14,7 @@ import { proxy } from './proxy'
 import { WebAuthnManager } from './webauthn'
 import { createStepUpMiddleware } from './stepup'
 import { createRateLimiter } from './ratelimit'
-import { registry, metricsMiddleware, authFailuresTotal, rateLimitHitsTotal, webauthnOpsTotal } from './metrics'
+import { registry, metricsMiddleware, authFailuresTotal, webauthnOpsTotal } from './metrics'
 
 await bootstrap()
 

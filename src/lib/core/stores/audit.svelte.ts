@@ -9,7 +9,7 @@ let fetchCtrl: AbortController | null = null
 
 async function fetchLogs(opts?: { accountId?: number; subject?: string; limit?: number; reset?: boolean }) {
   fetchCtrl?.abort()
-  fetchCtrl = new AbortController()
+  const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
     const cursor = opts?.reset ? undefined : nextCursor ?? undefined
@@ -18,7 +18,7 @@ async function fetchLogs(opts?: { accountId?: number; subject?: string; limit?: 
       subject: opts?.subject,
       cursor,
       limit: opts?.limit ?? 20,
-    }, fetchCtrl.signal)
+    }, ctrl.signal)
     if (opts?.reset || !cursor) {
       logs = res.items
     } else {
@@ -29,7 +29,7 @@ async function fetchLogs(opts?: { accountId?: number; subject?: string; limit?: 
     if ((e as Error).name === 'AbortError') return
     throw e
   } finally {
-    loading = false
+    if (fetchCtrl === ctrl) loading = false
   }
 }
 
