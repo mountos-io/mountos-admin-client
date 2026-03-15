@@ -51,9 +51,22 @@ function clearTokenCookies(c: Context) {
   deleteCookie(c, COOKIE_REFRESH, opts)
 }
 
+const scriptHashes = await (async () => {
+  try {
+    const { readFile } = await import('fs/promises')
+    const html = await readFile('./build/index.html', 'utf-8')
+    const hashes: string[] = []
+    for (const [, content] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(content))
+      hashes.push(`'sha256-${btoa(String.fromCharCode(...new Uint8Array(digest)))}'`)
+    }
+    return hashes
+  } catch { return [] }
+})()
+
 const cspDefaults: ContentSecurityPolicy = {
   defaultSrc: ["'self'"],
-  scriptSrc: ["'self'"],
+  scriptSrc: ["'self'", ...scriptHashes],
   styleSrc: ["'self'", "'unsafe-inline'"],
   imgSrc: ["'self'", 'data:'],
   connectSrc: ["'self'"],

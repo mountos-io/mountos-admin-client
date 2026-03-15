@@ -26,10 +26,10 @@ export function createStepUpMiddleware(
     if (!user || !await manager.hasCredentials(user.id)) return next()
 
     const token = c.req.header('x-stepup-token')
-    if (!token) return c.json({ status: 'step-up-required' }, 403)
+    if (!token) return c.json({ status: 'step-up-required', message: 'step-up authentication required' }, 403)
 
     if (!await manager.consumeStepUpToken(token, user.id)) {
-      return c.json({ status: 'step-up-invalid' }, 403)
+      return c.json({ status: 'step-up-invalid', message: 'step-up token invalid or expired' }, 403)
     }
     return next()
   }

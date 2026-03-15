@@ -143,7 +143,7 @@ export class AdminClient {
     return json.data as T
   }
 
-  private async _doRetryWithStepUp<T>(method: string, path: string, body: unknown, token: string, signal?: AbortSignal): Promise<T> {
+  private async _doRetryWithStepUp<T>(method: string, path: string, body: unknown, token: string, signal?: AbortSignal, refreshed = false): Promise<T> {
     const extra = await this._getHeaders()
     const headers: Record<string, string> = { ...extra, 'X-StepUp-Token': token }
 
@@ -155,11 +155,14 @@ export class AdminClient {
 
     const res = await fetch(`${this.baseUrl}${path}`, init)
 
+    if (res.status === 401 && !refreshed && this._onRefreshToken) {
+      const ok = await this._coalesceRefresh()
+      if (ok) return this._doRetryWithStepUp(method, path, body, token, signal, true)
+      this._onUnauthorized?.()
+      throw new ApiError('unauthorized', 401)
+    }
+
     if (res.status === 401) {
-      if (this._onRefreshToken) {
-        const refreshed = await this._coalesceRefresh()
-        if (refreshed) return this._doRetryWithStepUp(method, path, body, token, signal)
-      }
       this._onUnauthorized?.()
       throw new ApiError('unauthorized', 401)
     }

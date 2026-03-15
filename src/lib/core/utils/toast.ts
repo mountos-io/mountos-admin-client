@@ -47,6 +47,7 @@ export function updateToast(id: string | number, type: ToastType, message: strin
 }
 
 export function handleApiError(error: unknown, fallback = 'An error occurred', options?: ToastOptions) {
+  if (error instanceof Error && error.name === 'StepUpCancelledError') return
   const message = error instanceof Error ? error.message : typeof error === 'string' ? error : fallback
   return showErrorToast(message, options)
 }

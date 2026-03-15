@@ -2,9 +2,8 @@
   import * as Dialog from '$lib/components/ui/dialog'
   import { Button } from '$lib/components/ui/button'
   import { Input } from '$lib/components/ui/input'
-  import { useStepUp } from '$lib/core/stores/stepup.svelte'
+  import { useStepUp, type StepUpRequest } from '$lib/core/stores/stepup.svelte'
   import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
-  import { handleApiError } from '$lib/core/utils/toast'
   import Shield from '@lucide/svelte/icons/shield'
   import KeyRound from '@lucide/svelte/icons/key-round'
 
@@ -16,18 +15,21 @@
   let registering = $state(false)
   let authenticating = $state(false)
   let error = $state('')
+  let handledRequest = $state<StepUpRequest | null>(null)
 
   const open = $derived(stepUp.request !== null)
+  const busy = $derived(registering || authenticating)
 
   $effect(() => {
-    if (stepUp.request) {
-      phase = stepUp.request.mode
-      error = ''
-      keyLabel = ''
-      registering = false
-      authenticating = false
-      if (stepUp.request.mode === 'authenticate') startAuthentication()
-    }
+    const req = stepUp.request
+    if (!req || req === handledRequest) return
+    handledRequest = req
+    phase = req.mode
+    error = ''
+    keyLabel = ''
+    registering = false
+    authenticating = false
+    if (req.mode === 'authenticate') startAuthentication()
   })
 
   async function startAuthentication() {
@@ -35,8 +37,10 @@
     error = ''
     try {
       const token = await webauthn.authenticate()
+      if (!stepUp.request) return
       stepUp.complete(token)
     } catch (e: unknown) {
+      if (!stepUp.request) return
       error = e instanceof Error ? e.message : 'Verification failed'
     } finally {
       authenticating = false
@@ -49,27 +53,35 @@
     try {
       await webauthn.registerCredential(keyLabel || 'Security Key')
       keyLabel = ''
-      phase = 'authenticate'
-      await startAuthentication()
     } catch (e: unknown) {
-      handleApiError(e, 'Registration failed')
       error = e instanceof Error ? e.message : 'Registration failed'
+      return
     } finally {
       registering = false
     }
+    phase = 'authenticate'
+    await startAuthentication()
   }
 
   function handleCancel() {
+    if (busy) return
     stepUp.cancel()
+    handledRequest = null
   }
 
   function handleOpenChange(v: boolean) {
-    if (!v) stepUp.cancel()
+    if (!v && busy) return
+    if (!v) { stepUp.cancel(); handledRequest = null }
   }
 </script>
 
 <Dialog.Root {open} onOpenChange={handleOpenChange}>
-  <Dialog.Content class="sm:max-w-md">
+  <Dialog.Content
+    class="sm:max-w-md"
+    showCloseButton={!busy}
+    onEscapeKeydown={(e) => { if (busy) e.preventDefault() }}
+    onInteractOutside={(e) => { if (busy) e.preventDefault() }}
+  >
     <Dialog.Header>
       <Dialog.Title>
         {phase === 'register' ? 'Register Security Key' : 'Security Verification'}
@@ -111,7 +123,7 @@
     </div>
 
     <Dialog.Footer>
-      <Button variant="outline" onclick={handleCancel} disabled={registering}>Cancel</Button>
+      <Button variant="outline" onclick={handleCancel} disabled={busy}>Cancel</Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
