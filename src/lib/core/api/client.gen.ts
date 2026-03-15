@@ -9,7 +9,8 @@ import type {
   Storage, StorageListOptions, EditStorageRequest, CreateVolumeRequest, Volume, 
   VolumeListOptions, EditVolumeRequest, GenerateVolumeAPIKeysRequest, 
   RevokeVolumeAPIKeyRequest, UpdateVolumeQuotaRequest, AuditLog, AuditLogListOptions, 
-  ServiceNode, ClientSession, SessionSummary, DiscoverMetaResponse,
+  ServiceNode, ClientSession, ClientSessionListOptions, SessionSummary, 
+  DiscoverMetaResponse,
 } from '@mountos-app/admin-sdk'
 
 function queryString(params: Record<string, string | number | undefined>): string {
@@ -345,7 +346,7 @@ class ServiceNodesResource {
 class ClientSessionsResource {
   constructor(private client: AdminClient) {}
 
-  list(opts?: ListOptions, signal?: AbortSignal): Promise<PaginatedResponse<ClientSession>> {
+  list(opts?: ClientSessionListOptions, signal?: AbortSignal): Promise<PaginatedResponse<ClientSession>> {
     return this.client.request('GET', `/client-sessions/list${queryString({ accountId: opts?.accountId, regionId: opts?.regionId, clientType: opts?.clientType, status: opts?.status, page: opts?.page, limit: opts?.limit })}`, undefined, signal)
   }
 

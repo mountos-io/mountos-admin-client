@@ -112,6 +112,10 @@ function listOptsName(resName: string): string {
   return singularize(resName) + 'ListOptions'
 }
 
+function hasExtraQuery(query: string[]): boolean {
+  return query.some(s => { const f = parseField(s); return f.name !== 'page' && f.name !== 'limit' })
+}
+
 function hasReqQuery(query: string[]): boolean {
   return query.some(s => { const f = parseField(s); return f.required && f.name !== 'page' && f.name !== 'limit' })
 }
@@ -232,10 +236,11 @@ function arrayMethod(mn: string, ep: Endpoint, fp: string, pp: string[], pt?: Re
 }
 
 function pageMethod(mn: string, ep: Endpoint, fp: string, pp: string[], rn: string, pt?: Record<string, string>): void {
-  const custom = hasReqQuery(ep.query!)
+  const extra = hasExtraQuery(ep.query!)
+  const required = hasReqQuery(ep.query!)
   const ret = `PaginatedResponse<${ep.responseType}>`
-  const ot = custom ? listOptsName(rn) : 'ListOptions'
-  const oo = custom ? '' : '?'
+  const ot = extra ? listOptsName(rn) : 'ListOptions'
+  const oo = required ? '' : '?'
   const s = sig(pp, pt)
   const full = (s ? `${s}, ` : '') + `opts${oo}: ${ot}, signal?: AbortSignal`
   const ref = oo === '?' ? 'opts?' : 'opts'
@@ -300,7 +305,7 @@ function generate(spec: Spec): string {
     for (const ep of res.endpoints) {
       if (ep.request?.length) add(reqTypeName(res.name, ep.action))
       if (ep.responseType) add(ep.responseType)
-      if (ep.pagination === 'page' && hasReqQuery(ep.query || [])) add(listOptsName(res.name))
+      if (ep.pagination === 'page' && hasExtraQuery(ep.query || [])) add(listOptsName(res.name))
       if (ep.pagination === 'cursor') add(listOptsName(res.name))
     }
   }

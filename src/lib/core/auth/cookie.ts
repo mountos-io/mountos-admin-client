@@ -1,4 +1,4 @@
-import type { AuthAdapter, UserInfo } from './adapter.js'
+import { toUserInfo, type AuthAdapter, type UserInfo } from './adapter.js'
 
 export interface CookieAuthConfig {
   loginUrl: string
@@ -31,7 +31,7 @@ export class CookieAuthAdapter implements AuthAdapter {
     try {
       const res = await fetch(this.config.userEndpoint, { credentials: 'include' })
       if (res.ok) {
-        this.user = await res.json()
+        this.user = toUserInfo(await res.json())
         this.checked = true
       }
     } catch (e) {

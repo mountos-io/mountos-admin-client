@@ -1,4 +1,4 @@
-import type { AuthAdapter, Capabilities, UserInfo, WebAuthnState } from './adapter.js'
+import { toUserInfo, type AuthAdapter, type UserInfo } from './adapter.js'
 
 export interface TokenAuthConfig {
   loginUrl: string
@@ -6,19 +6,6 @@ export interface TokenAuthConfig {
   userEndpoint: string
   tokenKey?: string
   refreshKey?: string
-}
-
-function toUserInfo(data: Record<string, unknown>): UserInfo {
-  const u = (data.user ?? data) as Record<string, unknown>
-  return {
-    id: u.id as string,
-    name: u.name as string,
-    email: u.email as string | undefined,
-    avatar: u.avatar as string | undefined,
-    role: (u.role as string) ?? 'l2admin',
-    capabilities: (data.capabilities ?? {}) as Capabilities,
-    webauthn: data.webauthn as WebAuthnState | undefined,
-  }
 }
 
 export class TokenAuthAdapter implements AuthAdapter {
@@ -112,24 +99,13 @@ export class TokenAuthAdapter implements AuthAdapter {
   }
 
   private async tryRefresh(): Promise<UserInfo | null> {
-    const refreshToken = sessionStorage.getItem(this.refreshKey)
-    if (!refreshToken) return null
+    const refreshed = await this.tryRefreshToken()
+    if (!refreshed) return null
     try {
-      const res = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken }),
+      const res = await fetch(this.config.userEndpoint, {
+        headers: await this.getRequestHeaders(),
       })
-      if (!res.ok) {
-        this.clearTokens()
-        return null
-      }
-      const data = await res.json()
-      this.storeTokens(data.token, data.refreshToken)
-      const userRes = await fetch(this.config.userEndpoint, {
-        headers: { Authorization: `Bearer ${data.token}` },
-      })
-      if (userRes.ok) return toUserInfo(await userRes.json())
+      if (res.ok) return toUserInfo(await res.json())
       this.clearTokens()
       return null
     } catch (e) {
