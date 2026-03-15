@@ -16,8 +16,8 @@
   const regionStore = useRegions()
   const auth = useAuth()
 
-  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void>; stepUp: boolean }>({
-    open: false, title: '', desc: '', action: async () => {}, stepUp: false,
+  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
+    open: false, title: '', desc: '', action: async () => {},
   })
 
   $effect(() => {
@@ -33,9 +33,9 @@
     nodeStore.fetchNodes(regionId)
   }
 
-  function confirm(title: string, desc: string, action: () => Promise<void>, stepUp = false) {
+  function confirm(title: string, desc: string, action: () => Promise<void>) {
     confirmAction = {
-      open: true, title, desc, stepUp,
+      open: true, title, desc,
       action: async () => { await action(); if (nodeStore.selectedRegionId) nodeStore.fetchNodes(nodeStore.selectedRegionId) },
     }
   }
@@ -106,7 +106,6 @@
                   <Button variant="destructive" size="sm" onclick={() => confirm(
                     'Remove Node', `Remove node "${node.nodeId}"? This cannot be undone.`,
                     () => nodeStore.removeNode(nodeStore.selectedRegionId!, node.nodeId),
-                    auth.webauthnEnrolled,
                   )}>Remove</Button>
                 {/if}
               </div>
@@ -117,4 +116,4 @@
     </Table>
   {/if}
 </div>
-<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} requireStepUp={confirmAction.stepUp} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />

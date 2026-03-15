@@ -15,10 +15,8 @@ const sdk = new MountOSAdmin({ baseUrl: APPSERV_URL, privateKey: PRIVATE_KEY })
 
 export const proxy = new Hono()
 
-proxy.all('/api/proxy/v1/*', async (c) => {
-  // SDK doesn't expose TokenSigner/signRequest, so we use sdk.request()
-  // which parses JSON internally. A raw signed-fetch would be better.
-  const upstreamPath = c.req.path.replace('/api/proxy', '')
+proxy.all('/api/v1/*', async (c) => {
+  const upstreamPath = c.req.path
   const url = new URL(upstreamPath, APPSERV_URL)
   url.search = new URL(c.req.url).search
 
@@ -40,9 +38,10 @@ proxy.all('/api/proxy/v1/*', async (c) => {
     return c.json({ status: 'success', message: 'ok', data })
   } catch (err: unknown) {
     const e = err as { message?: string; status?: number; errorCode?: number }
+    const upstream = e.status ?? 502
     return c.json(
       { status: 'failure', message: e.message ?? 'proxy error', errorCode: e.errorCode },
-      { status: e.status ?? 502 },
+      { status: upstream === 401 ? 502 : upstream },
     )
   }
 })

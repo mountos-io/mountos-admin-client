@@ -3,6 +3,7 @@
   import Header from './Header.svelte'
   import CommandPalette from '$lib/components/CommandPalette.svelte'
   import SettingsModal from '$lib/components/SettingsModal.svelte'
+  import StepUpModal from '$lib/components/shared/StepUpModal.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
@@ -62,3 +63,4 @@
 
 <CommandPalette bind:open={commandOpen} />
 <SettingsModal />
+<StepUpModal />

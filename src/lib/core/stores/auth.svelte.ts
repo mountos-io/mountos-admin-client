@@ -12,7 +12,6 @@ let initialized = $state(false)
 
 const authenticated = $derived(user !== null)
 const capabilities = $derived<Capabilities>(user?.capabilities ?? {})
-const webauthnEnrolled = $derived(webauthn.enrolled)
 
 function can(resource: string, action: Action): boolean {
   return authorize(capabilities, resource, action, user)
@@ -51,7 +50,6 @@ export function useAuth() {
     get loading() { return loading },
     get authenticated() { return authenticated },
     get capabilities() { return capabilities },
-    get webauthnEnrolled() { return webauthnEnrolled },
     can,
     guard,
     init,

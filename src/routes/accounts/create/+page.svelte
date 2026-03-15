@@ -8,6 +8,7 @@
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import { debounce } from '$lib/utils'
 
   const accountStore = useAccounts()
   const auth = useAuth()
@@ -25,8 +26,16 @@
   let iconUrl = $state('')
   let submitting = $state(false)
   let iconError = $state(false)
+  let previewUrl = $state('')
 
-  $effect(() => { iconUrl; iconError = false })
+  const updatePreview = debounce((url: string) => { previewUrl = url }, 300)
+
+  $effect(() => {
+    const url = iconUrl.trim()
+    iconError = false
+    if (!url) previewUrl = ''
+    else updatePreview(url)
+  })
 
   async function handleSubmit(e: Event) {
     e.preventDefault()
@@ -62,9 +71,9 @@
             <CardDescription>Set up a new account with its profile.</CardDescription>
           </div>
           <div class="size-14 rounded-lg border border-border bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
-            {#if iconUrl.trim() && !iconError}
+            {#if previewUrl && !iconError}
               <img
-                src={iconUrl.trim()}
+                src={previewUrl}
                 alt="Icon"
                 class="size-full object-cover"
                 onerror={() => { iconError = true }}

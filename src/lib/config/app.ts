@@ -13,7 +13,7 @@ const defaults: AppConfig = {
   appName: 'mountOS Admin',
   logoUrl: '/logo.svg',
   faviconUrl: '/favicon.png',
-  proxyBaseUrl: '/api/proxy/v1',
+  proxyBaseUrl: '/api/v1',
   loginUrl: '/login',
   logoutUrl: '/logout',
 }

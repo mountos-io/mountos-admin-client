@@ -26,8 +26,8 @@
   })
   let account = $state<Account | null>(null)
   let loading = $state(true)
-  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void>; stepUp: boolean }>({
-    open: false, title: '', desc: '', action: async () => {}, stepUp: false,
+  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
+    open: false, title: '', desc: '', action: async () => {},
   })
 
   $effect(() => {
@@ -36,8 +36,8 @@
     store.getAccount(id).then(a => { account = a }).catch(() => { account = null }).finally(() => { loading = false })
   })
 
-  function confirm(title: string, desc: string, action: () => Promise<void>, stepUp = false) {
-    confirmAction = { open: true, title, desc, action, stepUp }
+  function confirm(title: string, desc: string, action: () => Promise<void>) {
+    confirmAction = { open: true, title, desc, action }
   }
 
   async function act(fn: () => Promise<void>) {
@@ -86,9 +86,9 @@
             {/if}
             {#if features.accountLock}
               {#if account.locked}
-                <Button variant="outline" size="sm" onclick={() => confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)), auth.webauthnEnrolled)}>Unlock</Button>
+                <Button variant="outline" size="sm" onclick={() => confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)))}>Unlock</Button>
               {:else}
-                <Button variant="destructive" size="sm" onclick={() => confirm('Lock', `Lock "${account!.name}"?`, () => act(() => store.lockAccount(id)), auth.webauthnEnrolled)}>Lock</Button>
+                <Button variant="destructive" size="sm" onclick={() => confirm('Lock', `Lock "${account!.name}"?`, () => act(() => store.lockAccount(id)))}>Lock</Button>
               {/if}
             {/if}
           </CardFooter>
@@ -109,4 +109,4 @@
   {/if}
 </div>
 
-<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} requireStepUp={confirmAction.stepUp} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />

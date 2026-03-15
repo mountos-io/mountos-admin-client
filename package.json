@@ -4,12 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "vite dev --host",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "proxy": "bun run server/server.ts",
-    "dev:all": "concurrently \"vite dev\" \"bun run server/server.ts\""
+    "dev:all": "concurrently \"vite dev --host\" \"bun run server/server.ts\""
   },
   "dependencies": {
     "@mountos-app/admin-sdk": "file:../mountos-admin-sdk/ts",
