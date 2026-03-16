@@ -1,5 +1,6 @@
 import * as jose from 'jose'
 import Redis from 'ioredis'
+import { MountOSAdmin } from '@mountos-app/admin-sdk'
 import type { AdminUser, Capabilities, DashboardAuthConfig } from './types'
 import { vendorAuthConfig } from '../src/vendor/server/config'
 
@@ -17,6 +18,7 @@ const defaults: DashboardAuthConfig = {
     superadmin: allCaps(15), // CRUD
     l1admin: allCaps(14),    // CRU, no delete
     l2admin: allCaps(4),     // read-only
+    user: { volumes: 4, auditLogs: 4 }, // R-only volumes + audit
   },
 }
 
@@ -58,11 +60,38 @@ function importEd25519PrivateKey(name: string, b64: string) {
   return jose.importPKCS8(ed25519Pkcs8PemFromRaw(bytes), 'EdDSA')
 }
 
+function adminUserFromPayload(payload: jose.JWTPayload): AdminUser {
+  const role = (payload.role as string) ?? 'l2admin'
+  const user: AdminUser = {
+    id: payload.sub!,
+    name: payload.name as string,
+    email: payload.email as string | undefined,
+    role,
+  }
+  if (role === 'user') {
+    if (payload.account_id != null) user.accountId = payload.account_id as number
+    if (payload.user_id != null) user.userId = payload.user_id as number
+    if (payload.volume_id != null) user.volumeId = payload.volume_id as number
+  }
+  return user
+}
+
+function userRoleClaims(user: AdminUser): Record<string, unknown> {
+  const claims: Record<string, unknown> = { name: user.name, email: user.email, role: user.role }
+  if (user.role === 'user') {
+    if (user.accountId != null) claims.account_id = user.accountId
+    if (user.userId != null) claims.user_id = user.userId
+    if (user.volumeId != null) claims.volume_id = user.volumeId
+  }
+  return claims
+}
+
 class DashboardAuth {
   private sessionKey!: jose.KeyLike
   private sessionPub!: jose.KeyLike
   private vendorPub!: jose.KeyLike
   private redis!: Redis
+  private sdk!: MountOSAdmin
   private config: DashboardAuthConfig
 
   constructor() {
@@ -79,6 +108,10 @@ class DashboardAuth {
     this.sessionPub = await importEd25519PublicKey('DASHBOARD_VERIFICATION_KEY', process.env.DASHBOARD_VERIFICATION_KEY!)
     this.redis = new Redis(process.env.REDIS_URL!)
     await this.redis.ping()
+    this.sdk = new MountOSAdmin({
+      baseUrl: process.env.MOUNTOS_APPSERV_URL ?? 'http://localhost:8080',
+      privateKey: process.env.MOUNTOS_SDK_SIGNING_KEY!,
+    })
     console.log('Auth: keys loaded, Redis connected')
   }
 
@@ -88,16 +121,21 @@ class DashboardAuth {
       clockTolerance: 60,
       maxTokenAge: '120s',
     })
-    return {
-      id: payload.sub!,
-      name: payload.name as string,
-      email: payload.email as string | undefined,
-      role: (payload.role as string) ?? 'l2admin',
+    const user = adminUserFromPayload(payload)
+    if (user.role === 'user') {
+      if (user.accountId == null) throw new Error('user role requires account_id claim')
+      const username = payload.username as string | undefined
+      if (!username) throw new Error('user role requires username claim')
+      const { items } = await this.sdk.users.list({ accountId: user.accountId, page: 1, limit: 100 })
+      const match = items.find(u => u.username === username && u.isActive)
+      if (!match) throw new Error('no active user found for account')
+      user.userId = match.id
     }
+    return user
   }
 
   async signSessionToken(user: AdminUser): Promise<string> {
-    return new jose.SignJWT({ name: user.name, email: user.email, role: user.role })
+    return new jose.SignJWT(userRoleClaims(user))
       .setProtectedHeader({ alg: 'EdDSA' })
       .setSubject(user.id)
       .setAudience(AUD_SESSION)
@@ -109,7 +147,7 @@ class DashboardAuth {
 
   async signRefreshToken(user: AdminUser): Promise<string> {
     const jti = crypto.randomUUID()
-    const token = await new jose.SignJWT({ name: user.name, email: user.email, role: user.role })
+    const token = await new jose.SignJWT(userRoleClaims(user))
       .setProtectedHeader({ alg: 'EdDSA' })
       .setSubject(user.id)
       .setAudience(AUD_REFRESH)
@@ -125,12 +163,7 @@ class DashboardAuth {
     const { payload } = await jose.jwtVerify(token, this.sessionPub, {
       audience: AUD_SESSION,
     })
-    return {
-      id: payload.sub!,
-      name: payload.name as string,
-      email: payload.email as string | undefined,
-      role: (payload.role as string) ?? 'l2admin',
-    }
+    return adminUserFromPayload(payload)
   }
 
   async verifyRefreshToken(token: string): Promise<AdminUser> {
@@ -140,16 +173,15 @@ class DashboardAuth {
     if (!payload.jti || !await this.redis.del(`mountos:refresh:${payload.jti}`)) {
       throw new Error('refresh token already consumed')
     }
-    return {
-      id: payload.sub!,
-      name: payload.name as string,
-      email: payload.email as string | undefined,
-      role: (payload.role as string) ?? 'l2admin',
-    }
+    return adminUserFromPayload(payload)
   }
 
   resolveCapabilities(role: string): Capabilities {
     return this.config.roles[role] ?? this.config.roles['l2admin'] ?? allCaps(4)
+  }
+
+  async fetchAccountForUser(accountId: number) {
+    return this.sdk.accounts.get(accountId)
   }
 
   async revokeRefreshToken(token: string) {

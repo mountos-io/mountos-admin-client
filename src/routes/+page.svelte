@@ -19,6 +19,7 @@
     } else {
       dashboard.reset()
     }
+    return () => dashboard.reset()
   })
 </script>
 
@@ -45,6 +46,12 @@
       <div class="flex justify-center py-12">
         <LoadingSpinner />
       </div>
+    {:else if dashboard.error}
+      <Card cornerPlus>
+        <CardContent class="py-8">
+          <p class="text-center text-destructive">{dashboard.error}</p>
+        </CardContent>
+      </Card>
     {:else if stats}
       <div class="grid gap-4 md:grid-cols-3">
         <Card cornerPlus>
@@ -98,7 +105,7 @@
               </div>
               <div class="h-2 rounded-full bg-muted overflow-hidden">
                 <div
-                  class="h-full rounded-full transition-all {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}"
+                  class="h-full rounded-full transition-all {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-amber-500' : 'bg-primary'}"
                   style="width: {pct}%"
                 ></div>
               </div>
@@ -116,7 +123,7 @@
               {#each stats.regionBreakdown as region}
                 <div class="flex items-center justify-between py-2 border-b border-border last:border-0">
                   <div>
-                    <p class="text-sm font-medium">Region {region.regionId}</p>
+                    <p class="text-sm font-medium">{region.regionName}</p>
                     <p class="text-xs text-muted-foreground">{region.volumeCount} volume{region.volumeCount !== 1 ? 's' : ''}</p>
                   </div>
                   <div class="text-right">

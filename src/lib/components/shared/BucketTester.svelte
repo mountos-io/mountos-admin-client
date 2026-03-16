@@ -11,13 +11,14 @@
 
   let {
     endpoint, region = '', bucket, accessKey, secretKey,
-    disabled = false, onresult,
+    providerType = '', disabled = false, onresult,
   }: {
     endpoint: string
     region?: string
     bucket: string
     accessKey: string
     secretKey: string
+    providerType?: string
     disabled?: boolean
     onresult?: (passed: boolean) => void
   } = $props()
@@ -29,6 +30,7 @@
   let testing = $state(false)
   let result = $state<TestResult | null>(null)
   let error = $state('')
+  let testGeneration = $state(0)
 
   const TEST_ITEMS: { key: keyof TestResult; label: string }[] = [
     { key: 'bucketExists', label: 'Bucket Access' },
@@ -39,7 +41,7 @@
     { key: 'multipart', label: 'Multipart Upload' },
   ]
 
-  const fingerprint = $derived(`${endpoint}|${region}|${bucket}|${accessKey}|${secretKey}`)
+  const fingerprint = $derived(`${endpoint}|${region}|${bucket}|${accessKey}|${secretKey}|${providerType}`)
   let lastFingerprint = $state('')
   let mounted = $state(false)
 
@@ -49,6 +51,7 @@
       if (mounted) {
         result = null
         error = ''
+        testGeneration++
         onresult?.(false)
       }
       mounted = true
@@ -59,20 +62,24 @@
   const successCount = $derived(result ? Object.values(result).filter(Boolean).length : 0)
 
   async function runTest() {
+    const gen = ++testGeneration
     testing = true
     error = ''
     result = null
     try {
       const res = await store.testBucket({
         endpoint, region: region || undefined, bucket, accessKey, secretKey,
+        providerType: providerType || undefined,
       })
+      if (gen !== testGeneration) return
       result = res
       onresult?.(Object.values(res).every(Boolean))
     } catch (e: unknown) {
+      if (gen !== testGeneration) return
       error = e instanceof Error ? e.message : 'Test failed'
       onresult?.(false)
     } finally {
-      testing = false
+      if (gen === testGeneration) testing = false
     }
   }
 </script>
@@ -92,7 +99,7 @@
   </div>
 
   {#if error}
-    <div class="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3">
+    <div class="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/10 p-3" role="alert">
       <AlertTriangle class="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
       <span class="text-sm text-destructive">{error}</span>
     </div>

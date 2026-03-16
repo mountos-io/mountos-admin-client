@@ -88,6 +88,7 @@
   )
 
   function resetS3Fields() {
+    providerType = ''
     endpoint = ''
     region = ''
     bucket = ''
@@ -97,18 +98,13 @@
     bucketVerified = false
   }
 
-  // manage providerType and reset fields on storageType / blockType changes
-  $effect(() => {
-    if (isBlock && !isHybrid) providerType = 'mountOS'
-    else if (!isBlock && providerType === 'mountOS') providerType = ''
-  })
-
   let prevStorageType = $state('')
   $effect(() => {
     if (storageType !== prevStorageType) {
       prevStorageType = storageType
       resetS3Fields()
       blockType = ''
+      if (isBlock) providerType = 'mountOS'
     }
   })
 
@@ -118,8 +114,24 @@
       prevBlockType = blockType
       if (isBlock) {
         providerType = isHybrid ? '' : 'mountOS'
-        resetS3Fields()
+        endpoint = ''
+        region = ''
+        bucket = ''
+        base = ''
+        accessKey = ''
+        secretKey = ''
+        bucketVerified = false
       }
+    }
+  })
+
+  let prevProvider = $state('')
+  $effect(() => {
+    if (providerType !== prevProvider) {
+      prevProvider = providerType
+      endpoint = ''
+      region = ''
+      bucketVerified = false
     }
   })
 
@@ -128,11 +140,6 @@
     if (needsS3 && providerType && !isCustomEndpoint(providerType)) {
       endpoint = generateEndpoint(providerType, region)
     }
-  })
-
-  // clear endpoint when switching to custom provider
-  $effect(() => {
-    if (isCustomEndpoint(providerType)) endpoint = ''
   })
 
   const s3RegionLabel = $derived(getProvider(providerType)?.regionLabel ?? 'Region')
@@ -145,7 +152,7 @@
   const canSubmit = $derived(
     !!(name.trim() && regionId && storageType && providerType
     && (isBlock
-      ? blockType && (isHybrid ? s3Ready && bucketVerified : true)
+      ? blockType && (isHybrid ? s3Ready && bucketVerified : !!blockEndpoint)
       : s3Ready && bucketVerified))
   )
 
@@ -220,13 +227,17 @@
                 <Label>Provider</Label>
                 <Input value="mountOS" disabled />
               </div>
-              {#if blockEndpoint}
-                <div class="space-y-2">
-                  <Label>Block Endpoint</Label>
+              <div class="space-y-2">
+                <Label>Block Endpoint</Label>
+                {#if blockEndpoint}
                   <Input value={blockEndpoint} readonly class="font-mono text-sm text-muted-foreground" />
                   <p class="text-xs text-muted-foreground">Derived from region DNS (block.&lt;region-dns&gt;)</p>
-                </div>
-              {/if}
+                {:else if regionId}
+                  <p class="text-sm text-destructive">Selected region has no DNS configured.</p>
+                {:else}
+                  <p class="text-sm text-muted-foreground">Select a region to derive block endpoint.</p>
+                {/if}
+              </div>
               <div class="grid gap-4 md:grid-cols-2">
                 <div class="space-y-2">
                   <Label for="blockType">Block Type</Label>
@@ -301,6 +312,7 @@
                   {bucket}
                   {accessKey}
                   {secretKey}
+                  {providerType}
                   disabled={!s3Ready}
                   onresult={(passed) => { bucketVerified = passed }}
                 />

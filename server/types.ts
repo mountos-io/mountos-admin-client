@@ -7,6 +7,9 @@ export interface AdminUser {
   name: string
   email?: string
   role: string
+  accountId?: number
+  userId?: number
+  volumeId?: number
 }
 
 export interface DashboardAuthConfig {

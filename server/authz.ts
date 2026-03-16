@@ -16,6 +16,9 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
 
 const CREATE_SUFFIXES = ['/create', '/add']
 
+const USER_ROLE_RESOURCES = new Set(['volumes', 'auditLogs'])
+const API_KEY_PATH = /^\/api\/v1\/volumes\/\d+\/api-keys\/(generate|revoke)$/
+
 function extractResource(path: string): string | null {
   const segments = path.slice('/api/v1/'.length).split('/')
   if (!segments[0]) return null
@@ -50,8 +53,25 @@ export const authz: MiddlewareHandler = async (c, next) => {
   const cap = resource ? requiredCap(c.req.method, c.req.path) : 0
   if (!resource || !cap) return c.json({ status: 'failure', message: 'forbidden' }, 403)
 
+  if (user.role === 'user') {
+    if (!USER_ROLE_RESOURCES.has(resource)) {
+      return c.json({ status: 'failure', message: 'forbidden' }, 403)
+    }
+    if (user.accountId != null) {
+      const qAccountId = c.req.query('accountId')
+      if (qAccountId && Number(qAccountId) !== user.accountId) {
+        return c.json({ status: 'failure', message: 'forbidden' }, 403)
+      }
+    }
+  }
+
   const caps = dashboardAuth.resolveCapabilities(user.role)
   if (((caps[resource] ?? 0) & cap) === 0) {
+    // Allow user role to access volume API key endpoints (generate/revoke)
+    if (user.role === 'user' && resource === 'volumes' && cap === Cap.U && API_KEY_PATH.test(c.req.path)) {
+      await next()
+      return
+    }
     return c.json({ status: 'failure', message: 'forbidden' }, 403)
   }
 
