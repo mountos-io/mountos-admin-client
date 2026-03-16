@@ -226,7 +226,7 @@
           {/if}
 
           <div class="flex gap-3 pt-2">
-            <Button type="submit" disabled={submitting || !canSubmit}>
+            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !canSubmit}>
               {submitting ? 'Creating...' : 'Create Storage'}
             </Button>
             <Button variant="outline" type="button" onclick={() => goto('/storages')}>

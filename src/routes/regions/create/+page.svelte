@@ -57,7 +57,7 @@
             <Input id="name" bind:value={name} placeholder="Region name" required />
           </div>
           <div class="flex gap-3 pt-2">
-            <Button type="submit" disabled={submitting || !name.trim()}>
+            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !name.trim()}>
               {submitting ? 'Creating...' : 'Create Region'}
             </Button>
             <Button variant="outline" type="button" onclick={() => goto('/regions')}>

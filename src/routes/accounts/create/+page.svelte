@@ -98,7 +98,7 @@
           <Input id="iconUrl" bind:value={iconUrl} placeholder="https://example.com/icon.png" />
         </div>
         <div class="flex gap-3 pt-2">
-          <Button type="submit" disabled={submitting || !name.trim()}>
+          <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !name.trim()}>
             {submitting ? 'Creating...' : 'Create Account'}
           </Button>
           <Button variant="outline" type="button" onclick={() => goto('/accounts')}>

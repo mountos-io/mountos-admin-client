@@ -76,7 +76,7 @@
           <Separator />
 
           <div class="flex gap-3 pt-2">
-            <Button type="submit" disabled={submitting || !username.trim() || !email.trim()}>
+            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !username.trim() || !email.trim()}>
               {submitting ? 'Adding...' : 'Add User'}
             </Button>
             <Button variant="outline" type="button" onclick={() => goto('/users')}>

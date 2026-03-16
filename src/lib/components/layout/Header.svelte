@@ -8,6 +8,8 @@
   import * as Breadcrumb from '$lib/components/ui/breadcrumb'
   import Search from '@lucide/svelte/icons/search'
   import PanelLeft from '@lucide/svelte/icons/panel-left'
+  import LogOut from '@lucide/svelte/icons/log-out'
+  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
 
   const auth = useAuth()
@@ -63,6 +65,7 @@
   }
 
   let { onOpenCommandPalette = () => {} }: { onOpenCommandPalette?: () => void } = $props()
+  let signOutOpen = $state(false)
 </script>
 
 <header class="sticky top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-4">
@@ -113,6 +116,16 @@
       <span class="rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">{auth.user.role}</span>
       <span class="text-sm text-muted-foreground">{auth.user.name}</span>
     {/if}
-    <Button variant="ghost" size="sm" onclick={() => auth.signOut()}>Sign out</Button>
+    <button
+      type="button"
+      onclick={() => { signOutOpen = true }}
+      class="flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      aria-label="Sign out"
+      title="Sign out"
+    >
+      <LogOut class="h-4 w-4" />
+    </button>
   </div>
 </header>
+
+<ConfirmDialog bind:open={signOutOpen} title="Sign Out" description="Are you sure you want to sign out?" confirmLabel="Sign Out" onConfirm={() => auth.signOut()} />

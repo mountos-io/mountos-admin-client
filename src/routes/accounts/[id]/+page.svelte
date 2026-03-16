@@ -125,7 +125,7 @@
     <LoadingSpinner />
   {:else if account}
     <div class="grid gap-6 md:grid-cols-2">
-      <Card>
+      <Card cornerBrackets>
         {#if editing}
           <form onsubmit={handleUpdate} class="flex flex-col gap-6">
             <CardHeader>
@@ -156,10 +156,10 @@
               </div>
             </CardContent>
             <CardFooter class="gap-4">
-              <Button type="submit" size="sm" disabled={editSubmitting || !editName.trim()}>
+              <Button variant="primary" type="submit" size="sm" class="cyberpunk-skewed-sm" disabled={editSubmitting || !editName.trim()}>
                 {editSubmitting ? 'Updating...' : 'Update'}
               </Button>
-              <Button variant="outline" size="sm" type="button" onclick={cancelEdit} disabled={editSubmitting}>Cancel</Button>
+              <Button variant="secondary" size="sm" type="button" onclick={cancelEdit} disabled={editSubmitting}>Cancel</Button>
             </CardFooter>
           </form>
         {:else}
@@ -196,13 +196,13 @@
           {#if auth.can('accounts', 'update')}
             <CardFooter class="gap-2">
               {#if account.isActive}
-                <Button variant="outline" size="sm" onclick={() => confirm('Deactivate', `Deactivate "${account!.name}"?`, () => act(() => store.deactivateAccount(id)))}>Deactivate</Button>
+                <Button size="sm" onclick={() => confirm('Deactivate', `Deactivate "${account!.name}"?`, () => act(() => store.deactivateAccount(id)))}>Deactivate</Button>
               {:else}
-                <Button variant="outline" size="sm" onclick={() => confirm('Activate', `Activate "${account!.name}"?`, () => act(() => store.activateAccount(id)))}>Activate</Button>
+                <Button size="sm" onclick={() => confirm('Activate', `Activate "${account!.name}"?`, () => act(() => store.activateAccount(id)))}>Activate</Button>
               {/if}
               {#if features.accountLock}
                 {#if account.locked}
-                  <Button variant="outline" size="sm" onclick={() => confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)))}>Unlock</Button>
+                  <Button size="sm" onclick={() => confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)))}>Unlock</Button>
                 {:else}
                   <Button variant="destructive" size="sm" onclick={() => confirm('Lock', `Lock "${account!.name}"?`, () => act(() => store.lockAccount(id)))}>Lock</Button>
                 {/if}
