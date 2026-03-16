@@ -58,6 +58,15 @@
     try {
       await auth.init()
       if (!auth.authenticated) { bootDone = false; return }
+      if (auth.isUserRole) {
+        const account = (authAdapter instanceof TokenAuthAdapter) ? authAdapter.getBootstrapAccount() : null
+        if (account) {
+          accountStore.setFixedAccount(account)
+        } else {
+          console.warn('User role: no bootstrap account available')
+        }
+        return
+      }
       await accountStore.fetchAccounts()
       const accounts = accountStore.accounts
       if (accounts.length === 0) {

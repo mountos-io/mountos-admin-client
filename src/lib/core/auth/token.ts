@@ -1,4 +1,5 @@
 import { toUserInfo, type AuthAdapter, type UserInfo } from './adapter.js'
+import type { Account } from '$lib/core/api/types'
 
 export interface TokenAuthConfig {
   loginUrl: string
@@ -11,6 +12,7 @@ export interface TokenAuthConfig {
 export class TokenAuthAdapter implements AuthAdapter {
   private readonly tokenKey: string
   private readonly refreshKey: string
+  private _bootstrapAccount: Account | null = null
 
   constructor(private config: TokenAuthConfig) {
     this.tokenKey = config.tokenKey ?? 'mountos_token'
@@ -31,12 +33,21 @@ export class TokenAuthAdapter implements AuthAdapter {
     sessionStorage.removeItem(this.refreshKey)
   }
 
+  getBootstrapAccount(): Account | null {
+    return this._bootstrapAccount
+  }
+
+  private cacheBootstrapData(data: Record<string, unknown>) {
+    this._bootstrapAccount = (data.account as Account | undefined) ?? null
+  }
+
   async signIn(): Promise<void> {
     window.location.href = this.config.loginUrl
   }
 
   async signOut(): Promise<void> {
     this.clearTokens()
+    this._bootstrapAccount = null
     try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }) } catch (e) { console.warn('Logout request failed:', e) }
     window.location.href = this.config.logoutUrl
   }
@@ -48,7 +59,11 @@ export class TokenAuthAdapter implements AuthAdapter {
       const res = await fetch(this.config.userEndpoint, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      if (res.ok) return toUserInfo(await res.json())
+      if (res.ok) {
+        const data = await res.json()
+        this.cacheBootstrapData(data)
+        return toUserInfo(data)
+      }
       if (res.status === 401) return await this.tryRefresh()
     } catch (e) {
       console.warn('Failed to fetch user:', e)
@@ -62,6 +77,7 @@ export class TokenAuthAdapter implements AuthAdapter {
       if (!res.ok) return null
       const data = await res.json()
       if (data.token) this.storeTokens(data.token, data.refreshToken)
+      this.cacheBootstrapData(data)
       return toUserInfo(data)
     } catch (e) {
       console.warn('Cookie bootstrap failed:', e)
@@ -105,7 +121,11 @@ export class TokenAuthAdapter implements AuthAdapter {
       const res = await fetch(this.config.userEndpoint, {
         headers: await this.getRequestHeaders(),
       })
-      if (res.ok) return toUserInfo(await res.json())
+      if (res.ok) {
+        const data = await res.json()
+        this.cacheBootstrapData(data)
+        return toUserInfo(data)
+      }
       this.clearTokens()
       return null
     } catch (e) {

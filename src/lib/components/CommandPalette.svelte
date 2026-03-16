@@ -38,9 +38,12 @@
   }
 
   const visibleNav = $derived(
-    navigation.filter(item =>
-      navFilter ? navFilter(item, auth.capabilities) : (!item.feature || features[item.feature])
-    )
+    navigation.filter(item => {
+      if (navFilter) return navFilter(item, auth.capabilities)
+      if (item.feature && !features[item.feature]) return false
+      if (item.feature && !auth.can(item.feature, 'read')) return false
+      return true
+    })
   )
 
   function run(action: () => void) {
@@ -106,7 +109,7 @@
       </Command.CommandGroup>
     {/if}
 
-    {#if accountStore.accounts.length > 0}
+    {#if !auth.isUserRole && accountStore.accounts.length > 0}
       <Command.CommandSeparator />
       <Command.CommandGroup heading="Switch Account">
         {#each accountStore.accounts as account, i}

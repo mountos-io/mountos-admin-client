@@ -121,7 +121,11 @@ app.post('/api/auth/exchange', async (c) => {
       dashboardAuth.signRefreshToken(user),
     ])
     setTokenCookies(c, token, refreshToken)
-    return c.json({ user, token, refreshToken, capabilities })
+    const result: Record<string, unknown> = { user, token, refreshToken, capabilities }
+    if (user.role === 'user' && user.accountId != null) {
+      result.account = await dashboardAuth.fetchAccountForUser(user.accountId).catch(() => undefined)
+    }
+    return c.json(result)
   } catch {
     authFailuresTotal.inc({ type: 'vendor_exchange' })
     return c.json({ status: 'failure', message: 'invalid vendor token' }, 401)
@@ -133,6 +137,16 @@ async function webauthnState(userId: string) {
   return { enrolled: creds.length > 0, credentialCount: creds.length }
 }
 
+async function enrichUserResponse(user: AdminUser, extra: Record<string, unknown> = {}) {
+  const capabilities = dashboardAuth.resolveCapabilities(user.role)
+  const webauthn = await webauthnState(user.id)
+  const result: Record<string, unknown> = { user, capabilities, webauthn, ...extra }
+  if (user.role === 'user' && user.accountId != null) {
+    result.account = await dashboardAuth.fetchAccountForUser(user.accountId).catch(() => undefined)
+  }
+  return result
+}
+
 // Session verification & cookie recovery — before auth middleware
 app.get('/api/me', async (c) => {
   const authHeader = c.req.header('authorization')
@@ -140,9 +154,7 @@ app.get('/api/me', async (c) => {
   if (bearer) {
     try {
       const user = await dashboardAuth.verifySessionToken(bearer)
-      const capabilities = dashboardAuth.resolveCapabilities(user.role)
-      const webauthn = await webauthnState(user.id)
-      return c.json({ user, capabilities, webauthn })
+      return c.json(await enrichUserResponse(user))
     } catch {
       return c.json({ status: 'failure', message: 'invalid session token' }, 401)
     }
@@ -153,10 +165,8 @@ app.get('/api/me', async (c) => {
   if (sessionCookie) {
     try {
       const user = await dashboardAuth.verifySessionToken(sessionCookie)
-      const capabilities = dashboardAuth.resolveCapabilities(user.role)
       const refreshCookie = getCookie(c, COOKIE_REFRESH)
-      const webauthn = await webauthnState(user.id)
-      return c.json({ user, token: sessionCookie, refreshToken: refreshCookie, capabilities, webauthn })
+      return c.json(await enrichUserResponse(user, { token: sessionCookie, refreshToken: refreshCookie }))
     } catch { /* session expired, fall through to refresh */ }
   }
 
@@ -164,14 +174,12 @@ app.get('/api/me', async (c) => {
   if (refreshCookie) {
     try {
       const user = await dashboardAuth.verifyRefreshToken(refreshCookie)
-      const capabilities = dashboardAuth.resolveCapabilities(user.role)
       const [token, refreshToken] = await Promise.all([
         dashboardAuth.signSessionToken(user),
         dashboardAuth.signRefreshToken(user),
       ])
       setTokenCookies(c, token, refreshToken)
-      const webauthn = await webauthnState(user.id)
-      return c.json({ user, token, refreshToken, capabilities, webauthn })
+      return c.json(await enrichUserResponse(user, { token, refreshToken }))
     } catch {
       clearTokenCookies(c)
     }

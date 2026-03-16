@@ -7,6 +7,7 @@
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import type { Snippet } from 'svelte'
 
   let { children }: { children?: Snippet } = $props()
@@ -14,6 +15,7 @@
   const prefs = usePreferences()
   const settingsModal = useSettingsModal()
   const accountStore = useAccounts()
+  const auth = useAuth()
   let commandOpen = $state(false)
 
   function handleKeydown(e: KeyboardEvent) {

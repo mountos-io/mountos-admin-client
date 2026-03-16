@@ -31,6 +31,11 @@ function selectAccount(id: number) {
   selectedAccountId = id
 }
 
+function setFixedAccount(account: Account) {
+  accounts = [account]
+  selectedAccountId = account.id
+}
+
 async function createAccount(req: CreateAccountRequest) {
   const res = await api.accounts.create(req)
   await fetchAccounts(currentPage)
@@ -77,6 +82,7 @@ export function useAccounts() {
     get currentPage() { return currentPage },
     fetchAccounts,
     selectAccount,
+    setFixedAccount,
     createAccount,
     editAccount,
     lockAccount,

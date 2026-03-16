@@ -12,6 +12,10 @@ let initialized = $state(false)
 
 const authenticated = $derived(user !== null)
 const capabilities = $derived<Capabilities>(user?.capabilities ?? {})
+const isUserRole = $derived(user?.role === 'user')
+const userAccountId = $derived(user?.accountId ?? null)
+const userMountosUserId = $derived(user?.userId ?? null)
+const userVolumeId = $derived(user?.volumeId ?? null)
 
 function can(resource: string, action: Action): boolean {
   return authorize(capabilities, resource, action, user)
@@ -50,6 +54,10 @@ export function useAuth() {
     get loading() { return loading },
     get authenticated() { return authenticated },
     get capabilities() { return capabilities },
+    get isUserRole() { return isUserRole },
+    get userAccountId() { return userAccountId },
+    get userMountosUserId() { return userMountosUserId },
+    get userVolumeId() { return userVolumeId },
     can,
     guard,
     init,

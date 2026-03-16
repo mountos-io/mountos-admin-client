@@ -1,6 +1,7 @@
 <script lang="ts">
   import { cn } from '$lib/utils.js'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Button } from '$lib/components/ui/button'
   import * as Dialog from '$lib/components/ui/dialog'
   import Input from '$lib/components/ui/input/input.svelte'
@@ -11,6 +12,7 @@
   let { collapsed = false }: { collapsed?: boolean } = $props()
 
   const store = useAccounts()
+  const auth = useAuth()
   let dialogOpen = $state(false)
   let search = $state('')
 
@@ -27,78 +29,95 @@
   }
 </script>
 
-<Button
-  variant="outline"
-  class={cn("w-full justify-between text-left", collapsed && "justify-center px-0")}
-  onclick={() => dialogOpen = true}
-  aria-haspopup="dialog"
->
-  {#if collapsed}
-    {#if store.selectedAccount}
-      <AccountIcon account={store.selectedAccount} size={24} />
-    {:else}
-      <span class="text-xs font-bold">?</span>
-    {/if}
-  {:else}
-    <span class="flex items-center gap-2 truncate">
+{#if auth.isUserRole}
+  <div class={cn("flex items-center rounded-md border px-3 py-2", collapsed && "justify-center px-2")}>
+    {#if collapsed}
       {#if store.selectedAccount}
-        <AccountIcon account={store.selectedAccount} size={20} />
+        <AccountIcon account={store.selectedAccount} size={24} />
       {/if}
-      <span class="truncate text-sm">{store.selectedAccount?.name ?? 'Select account'}</span>
-    </span>
-    <svg class="h-4 w-4 shrink-0 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  {/if}
-</Button>
+    {:else}
+      <span class="flex items-center gap-2 truncate">
+        {#if store.selectedAccount}
+          <AccountIcon account={store.selectedAccount} size={20} />
+        {/if}
+        <span class="truncate text-sm font-medium">{store.selectedAccount?.name ?? ''}</span>
+      </span>
+    {/if}
+  </div>
+{:else}
+  <Button
+    variant="outline"
+    class={cn("w-full justify-between text-left", collapsed && "justify-center px-0")}
+    onclick={() => dialogOpen = true}
+    aria-haspopup="dialog"
+  >
+    {#if collapsed}
+      {#if store.selectedAccount}
+        <AccountIcon account={store.selectedAccount} size={24} />
+      {:else}
+        <span class="text-xs font-bold">?</span>
+      {/if}
+    {:else}
+      <span class="flex items-center gap-2 truncate">
+        {#if store.selectedAccount}
+          <AccountIcon account={store.selectedAccount} size={20} />
+        {/if}
+        <span class="truncate text-sm">{store.selectedAccount?.name ?? 'Select account'}</span>
+      </span>
+      <svg class="h-4 w-4 shrink-0 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m6 9 6 6 6-6" />
+      </svg>
+    {/if}
+  </Button>
 
-<Dialog.Dialog bind:open={dialogOpen} onOpenChange={(o) => { if (!o) search = '' }}>
-  <Dialog.DialogContent class="sm:max-w-md p-0 gap-0">
-    <Dialog.DialogHeader class="p-4 pb-2">
-      <Dialog.DialogTitle class="text-base">Switch Account</Dialog.DialogTitle>
-      <Dialog.DialogDescription class="sr-only">Select an account</Dialog.DialogDescription>
-    </Dialog.DialogHeader>
-    <div class="px-4 pb-2">
-      <Input
-        placeholder="Search accounts..."
-        bind:value={search}
-        class="h-9"
-      />
-    </div>
-    <div class="max-h-[280px] overflow-y-auto px-2 pb-2">
-      {#each filtered as account, i}
-        <button
-          class={cn(
-            'flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm transition-colors hover:bg-accent',
-            account.id === store.selectedAccountId && 'bg-accent'
-          )}
-          onclick={() => select(account.id)}
+  <Dialog.Dialog bind:open={dialogOpen} onOpenChange={(o) => { if (!o) search = '' }}>
+    <Dialog.DialogContent class="sm:max-w-md p-0 gap-0">
+      <Dialog.DialogHeader class="p-4 pb-2">
+        <Dialog.DialogTitle class="text-base">Switch Account</Dialog.DialogTitle>
+        <Dialog.DialogDescription class="sr-only">Select an account</Dialog.DialogDescription>
+      </Dialog.DialogHeader>
+      <div class="px-4 pb-2">
+        <Input
+          placeholder="Search accounts..."
+          bind:value={search}
+          class="h-9"
+        />
+      </div>
+      <div class="max-h-[280px] overflow-y-auto px-2 pb-2">
+        {#each filtered as account, i}
+          <button
+            class={cn(
+              'flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm transition-colors hover:bg-accent',
+              account.id === store.selectedAccountId && 'bg-accent'
+            )}
+            onclick={() => select(account.id)}
+          >
+            <AccountIcon {account} size={20} />
+            <span class="flex-1 text-left truncate">{account.name}</span>
+            {#if account.id === store.selectedAccountId}
+              <Check class="h-4 w-4 text-primary" />
+            {/if}
+            {#if !search && i < 9}
+              <kbd class="ml-auto rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                ⌘{i + 1}
+              </kbd>
+            {/if}
+          </button>
+        {/each}
+        {#if filtered.length === 0}
+          <p class="px-3 py-4 text-center text-sm text-muted-foreground">No accounts found</p>
+        {/if}
+      </div>
+      <div class="border-t p-2">
+        <a
+          href="/accounts/create"
+          class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          onclick={() => { dialogOpen = false }}
         >
-          <AccountIcon {account} size={20} />
-          <span class="flex-1 text-left truncate">{account.name}</span>
-          {#if account.id === store.selectedAccountId}
-            <Check class="h-4 w-4 text-primary" />
-          {/if}
-          {#if !search && i < 9}
-            <kbd class="ml-auto rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-              ⌘{i + 1}
-            </kbd>
-          {/if}
-        </button>
-      {/each}
-      {#if filtered.length === 0}
-        <p class="px-3 py-4 text-center text-sm text-muted-foreground">No accounts found</p>
-      {/if}
-    </div>
-    <div class="border-t p-2">
-      <a
-        href="/accounts/create"
-        class="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        onclick={() => { dialogOpen = false }}
-      >
-        <Plus class="h-4 w-4" />
-        Create Account
-      </a>
-    </div>
-  </Dialog.DialogContent>
-</Dialog.Dialog>
+          <Plus class="h-4 w-4" />
+          Create Account
+        </a>
+      </div>
+    </Dialog.DialogContent>
+  </Dialog.Dialog>
+{/if}
