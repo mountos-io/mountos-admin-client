@@ -12,6 +12,8 @@
   import { formatDate } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
   import Plus from '@lucide/svelte/icons/plus'
+  import Eye from '@lucide/svelte/icons/eye'
+  import Pencil from '@lucide/svelte/icons/pencil'
 
   const store = useAccounts()
   const auth = useAuth()
@@ -58,7 +60,16 @@
             <TableCell class="font-medium">{account.name}</TableCell>
             <TableCell><StatusBadge active={account.isActive} locked={account.locked} /></TableCell>
             <TableCell class="text-muted-foreground">{formatDate(account.createdAt)}</TableCell>
-            <TableCell><Button variant="ghost" size="sm" href="/accounts/{account.id}">View</Button></TableCell>
+            <TableCell class="flex gap-1">
+              {#if auth.can('accounts', 'update')}
+                <Button variant="ghost" size="sm" href="/accounts/{account.id}?edit" class="gap-1.5">
+                  <Pencil class="size-3.5" />Edit
+                </Button>
+              {/if}
+              <Button variant="ghost" size="sm" href="/accounts/{account.id}" class="gap-1.5">
+                <Eye class="size-3.5" />View
+              </Button>
+            </TableCell>
           </TableRow>
         {/each}
       </TableBody>

@@ -10,6 +10,7 @@ import { vendorAuthzMiddleware } from '../src/vendor/server/middleware'
 import type { CsrfConfig, ContentSecurityPolicy, WebAuthnConfig } from './types'
 import { dashboardAuth } from './auth'
 import { auth } from './middleware'
+import { authz } from './authz'
 import { proxy } from './proxy'
 import { WebAuthnManager } from './webauthn'
 import { createStepUpMiddleware } from './stepup'
@@ -204,6 +205,7 @@ app.post('/api/auth/logout', async (c) => {
 })
 
 app.use('/api/*', auth)
+app.use('/api/v1/*', authz)
 
 // WebAuthn ceremony endpoints (before step-up — chicken-and-egg)
 app.post('/api/webauthn/register/options', async (c) => {

@@ -20,6 +20,7 @@
   let exchanging = $state(false)
   let exchangeError = $state('')
   let progress = $state(0)
+  let bootDone = false
 
   async function exchangeToken(vendorToken: string) {
     exchanging = true
@@ -51,9 +52,31 @@
     }
   }
 
+  async function bootstrap() {
+    if (bootDone) return
+    bootDone = true
+    try {
+      await auth.init()
+      if (!auth.authenticated) { bootDone = false; return }
+      await accountStore.fetchAccounts()
+      const accounts = accountStore.accounts
+      if (accounts.length === 0) {
+        goto('/accounts/create', { replaceState: true })
+        return
+      }
+      const defaultAcct = prefs.defaultAccountId !== null
+        ? accounts.find(a => a.id === prefs.defaultAccountId)
+        : undefined
+      accountStore.selectAccount((defaultAcct ?? accounts[0]).id)
+    } catch (e) {
+      bootDone = false
+      console.warn('Bootstrap failed:', e)
+    }
+  }
+
   $effect(() => {
     const isLoginPage = $page.url.pathname === '/login'
-    if (isLoginPage) return
+    if (isLoginPage || exchanging) return
 
     const vendorToken = $page.url.searchParams.get('token')
     if (vendorToken) {
@@ -61,23 +84,7 @@
       return
     }
 
-    auth.init().then(() => {
-      if (auth.authenticated) {
-        accountStore.fetchAccounts().then(() => {
-          const accounts = accountStore.accounts
-          if (accounts.length === 0 && $page.url.pathname !== '/accounts/create') {
-            goto('/accounts/create', { replaceState: true })
-            return
-          }
-          if (accounts.length === 1) {
-            accountStore.selectAccount(accounts[0].id)
-          } else if (prefs.defaultAccountId !== null) {
-            const found = accounts.find(a => a.id === prefs.defaultAccountId)
-            if (found) accountStore.selectAccount(found.id)
-          }
-        }).catch((e) => console.warn('Failed to fetch accounts:', e))
-      }
-    }).catch((e) => console.warn('Auth init failed:', e))
+    bootstrap()
   })
 </script>
 

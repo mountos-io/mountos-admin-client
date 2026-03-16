@@ -110,6 +110,7 @@
       </kbd>
     </button>
     {#if auth.user}
+      <span class="rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">{auth.user.role}</span>
       <span class="text-sm text-muted-foreground">{auth.user.name}</span>
     {/if}
     <Button variant="ghost" size="sm" onclick={() => auth.signOut()}>Sign out</Button>

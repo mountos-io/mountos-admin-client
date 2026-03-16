@@ -7,7 +7,6 @@
   import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
-  import { Textarea } from '$lib/components/ui/textarea'
   import { Separator } from '$lib/components/ui/separator'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
@@ -27,32 +26,11 @@
   let username = $state('')
   let email = $state('')
   let name = $state('')
-  let vendorInfoStr = $state('')
-  let vendorInfoError = $state('')
   let submitting = $state(false)
-
-  function parseVendorInfo(): Record<string, unknown> | undefined | null {
-    const trimmed = vendorInfoStr.trim()
-    if (!trimmed) { vendorInfoError = ''; return undefined }
-    try {
-      const parsed = JSON.parse(trimmed)
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-        vendorInfoError = 'Must be a JSON object'
-        return null
-      }
-      vendorInfoError = ''
-      return parsed
-    } catch {
-      vendorInfoError = 'Invalid JSON'
-      return null
-    }
-  }
 
   async function handleSubmit(e: Event) {
     e.preventDefault()
     if (!username.trim() || !email.trim() || !accountId) return
-    const vendorInfo = parseVendorInfo()
-    if (vendorInfo === null) return
     submitting = true
     try {
       await userStore.addUser({
@@ -60,7 +38,6 @@
         username: username.trim(),
         email: email.trim(),
         name: name.trim() || undefined,
-        vendorInfo,
       })
       showSuccessToast('User added')
       goto('/users')
@@ -97,16 +74,6 @@
           </div>
 
           <Separator />
-
-          <div class="space-y-2">
-            <Label for="vendorInfo">Vendor Info</Label>
-            <p class="text-xs text-muted-foreground">Optional JSON metadata for this user.</p>
-            <Textarea id="vendorInfo" bind:value={vendorInfoStr} placeholder={'{"key": "value"}'} rows={4}
-              aria-invalid={!!vendorInfoError} aria-describedby={vendorInfoError ? 'vendorInfo-error' : undefined} />
-            {#if vendorInfoError}
-              <p id="vendorInfo-error" class="text-xs text-destructive">{vendorInfoError}</p>
-            {/if}
-          </div>
 
           <div class="flex gap-3 pt-2">
             <Button type="submit" disabled={submitting || !username.trim() || !email.trim()}>

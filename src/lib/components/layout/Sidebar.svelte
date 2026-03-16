@@ -4,6 +4,7 @@
   import { navigation, navFilter } from '$lib/config/navigation'
   import { features } from '$lib/config/features'
   import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import AccountSwitcher from './AccountSwitcher.svelte'
   import type { Component } from 'svelte'
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
@@ -19,6 +20,8 @@
   let { collapsed = false }: { collapsed?: boolean } = $props()
 
   const auth = useAuth()
+  const accountStore = useAccounts()
+  const hasAccount = $derived(accountStore.selectedAccountId !== null)
 
   const iconMap: Record<string, Component> = {
     'layout-dashboard': LayoutDashboard, 'building-2': Building2,
@@ -26,10 +29,13 @@
     'database': Database, 'scroll-text': ScrollText, 'server': Server,
   }
 
+  const accountFreeRoutes = new Set(['/', '/accounts'])
+
   const visibleNav = $derived(
-    navigation.filter(item =>
-      navFilter ? navFilter(item, auth.capabilities) : (!item.feature || features[item.feature])
-    )
+    navigation.filter(item => {
+      if (!hasAccount && !accountFreeRoutes.has(item.href)) return false
+      return navFilter ? navFilter(item, auth.capabilities) : (!item.feature || features[item.feature])
+    })
   )
 </script>
 

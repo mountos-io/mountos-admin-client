@@ -1,0 +1,59 @@
+import type { MiddlewareHandler } from 'hono'
+import { dashboardAuth } from './auth'
+import { Cap } from './types'
+
+const SLUG_TO_RESOURCE: Record<string, string> = {
+  accounts: 'accounts',
+  users: 'users',
+  regions: 'regions',
+  storages: 'storages',
+  volumes: 'volumes',
+  'audit-logs': 'auditLogs',
+  'client-sessions': 'clientSessions',
+  discover: 'discover',
+  cache: 'cache',
+}
+
+const CREATE_SUFFIXES = ['/create', '/add']
+
+function extractResource(path: string): string | null {
+  const segments = path.slice('/api/v1/'.length).split('/')
+  if (!segments[0]) return null
+  if (segments[0] === 'regions' && segments.length >= 3 && segments[2] === 'nodes') {
+    return 'serviceNodes'
+  }
+  return SLUG_TO_RESOURCE[segments[0]] ?? null
+}
+
+function requiredCap(method: string, path: string): number {
+  switch (method) {
+    case 'GET':
+    case 'HEAD':
+      return Cap.R
+    case 'PUT':
+    case 'PATCH':
+      return Cap.U
+    case 'DELETE':
+      return Cap.D
+    case 'POST':
+      return CREATE_SUFFIXES.some(s => path.endsWith(s)) ? Cap.C : Cap.U
+    default:
+      return 0
+  }
+}
+
+export const authz: MiddlewareHandler = async (c, next) => {
+  const user = c.get('mountosUser')
+  if (!user) return c.json({ status: 'failure', message: 'unauthorized' }, 401)
+
+  const resource = extractResource(c.req.path)
+  const cap = resource ? requiredCap(c.req.method, c.req.path) : 0
+  if (!resource || !cap) return c.json({ status: 'failure', message: 'forbidden' }, 403)
+
+  const caps = dashboardAuth.resolveCapabilities(user.role)
+  if (((caps[resource] ?? 0) & cap) === 0) {
+    return c.json({ status: 'failure', message: 'forbidden' }, 403)
+  }
+
+  await next()
+}

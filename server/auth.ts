@@ -7,7 +7,7 @@ const AUD_DASHBOARD = 'mountos/dashboard'
 const AUD_SESSION = 'mountos/dashboard/session'
 const AUD_REFRESH = 'mountos/dashboard/refresh'
 
-const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'discover', 'cache'] as const
+const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'clientSessions', 'discover', 'cache'] as const
 const allCaps = (v: number) => Object.fromEntries(RESOURCES.map(r => [r, v]))
 
 const defaults: DashboardAuthConfig = {
