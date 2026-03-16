@@ -421,16 +421,16 @@ class ClientSessionsResource {
 class DiscoverResource {
   constructor(private client: AdminClient) {}
 
-  meta(accessKeyId: string): Promise<DiscoverMetaResponse> {
-    return this.client.request('GET', `/discover/meta${queryString({ access_key_id: accessKeyId })}`)
+  meta(accessKeyId: string, signal?: AbortSignal): Promise<DiscoverMetaResponse> {
+    return this.client.request('GET', `/discover/meta${queryString({ access_key_id: accessKeyId })}`, undefined, signal)
   }
 }
 
 class DashboardResource {
   constructor(private client: AdminClient) {}
 
-  stats(accountId: number): Promise<DashboardStats> {
-    return this.client.request('GET', `/dashboard/stats${queryString({ accountId: accountId })}`)
+  stats(accountId: number, signal?: AbortSignal): Promise<DashboardStats> {
+    return this.client.request('GET', `/dashboard/stats${queryString({ accountId: accountId })}`, undefined, signal)
   }
 }
 

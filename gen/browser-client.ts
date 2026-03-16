@@ -278,9 +278,10 @@ function queryMethod(mn: string, ep: Endpoint, fp: string, pp: string[], rn: str
     if (s) s += ', '
     s += `${qpName(f.name)}: ${tsType(f.type)}`
   }
+  s += ', signal?: AbortSignal'
   const qs = ep.query!.map(q => { const f = parseField(q); return `${f.name}: ${qpName(f.name)}` }).join(', ')
   w(`  ${mn}(${s}): Promise<${ret}> {\n`)
-  w(`    return this.client.request('GET', \`${fp}\${queryString({ ${qs} })}\`)\n`)
+  w(`    return this.client.request('GET', \`${fp}\${queryString({ ${qs} })}\`, undefined, signal)\n`)
   w('  }\n')
 }
 
