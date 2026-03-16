@@ -7,6 +7,7 @@
   import { Button } from '$lib/components/ui/button'
   import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
   import Input from '$lib/components/ui/input/input.svelte'
+  import { SecretInput } from '$lib/components/ui/input'
   import Label from '$lib/components/ui/label/label.svelte'
   import { Select } from '$lib/components/ui/select'
   import { Separator } from '$lib/components/ui/separator'
@@ -302,7 +303,7 @@
                   </div>
                   <div class="space-y-2">
                     <Label for="secretKey">Secret Key</Label>
-                    <Input id="secretKey" type="password" bind:value={secretKey} placeholder="Secret key" />
+                    <SecretInput id="secretKey" bind:value={secretKey} placeholder="Secret key" />
                   </div>
                 </div>
 
