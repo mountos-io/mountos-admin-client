@@ -35,7 +35,7 @@
     open: false, title: '', desc: '', action: async () => {},
   })
 
-  let genUserId = $state('')
+  let genUserId = $state(auth.userMountosUserId != null ? String(auth.userMountosUserId) : '')
   let genResult = $state<{ apiKey: string; apiSecret: string } | null>(null)
   let revokeKey = $state('')
   let quotaInput = $state('')
@@ -182,6 +182,10 @@
           </div>
         </CardContent>
       </Card>
+    {/if}
+
+    {#if auth.can('volumes', 'update') || auth.isUserRole}
+      <Separator />
 
       <Card>
         <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
@@ -189,7 +193,7 @@
           <div class="flex items-end gap-3">
             <div class="flex-1">
               <Label>User ID</Label>
-              <Input bind:value={genUserId} placeholder="User ID to generate key for" />
+              <Input bind:value={genUserId} placeholder="User ID to generate key for" readonly={auth.isUserRole} />
             </div>
             <Button size="sm" onclick={generateKeys}>Generate</Button>
           </div>

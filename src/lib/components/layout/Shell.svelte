@@ -40,7 +40,7 @@
         if (!e.shiftKey) { e.preventDefault(); prefs.sidebarCollapsed = !prefs.sidebarCollapsed }
         break
       default:
-        if (!e.shiftKey && e.key >= '1' && e.key <= '9') {
+        if (!auth.isUserRole && !e.shiftKey && e.key >= '1' && e.key <= '9') {
           const idx = parseInt(e.key) - 1
           if (idx < accountStore.accounts.length) {
             e.preventDefault()
