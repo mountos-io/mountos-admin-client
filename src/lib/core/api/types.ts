@@ -16,6 +16,7 @@ export type {
   EditRegionRequest,
   CreateStorageRequest,
   EditStorageRequest,
+  TestStorageBucketRequest,
   CreateVolumeRequest,
   EditVolumeRequest,
   GenerateVolumeAPIKeysRequest,

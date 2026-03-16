@@ -13,7 +13,11 @@
   import Combobox from '$lib/components/shared/Combobox.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import BucketTester from '$lib/components/shared/BucketTester.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import {
+    PROVIDER_OPTIONS, generateEndpoint, isCustomEndpoint, getProvider,
+  } from '$lib/core/utils/object-storage-providers'
 
   const storageStore = useStorages()
   const regionStore = useRegions()
@@ -40,18 +44,9 @@
   const regionOptions = $derived(
     regionStore.regions.map(r => ({ value: String(r.id), label: r.name }))
   )
-
-  const OBJECT_PROVIDERS = [
-    { value: 's3', label: 'AWS S3' },
-    { value: 'backblaze', label: 'Backblaze B2' },
-    { value: 'cloudflare', label: 'CloudFlare R2' },
-    { value: 'digitalocean', label: 'Digital Ocean Spaces' },
-    { value: 'ibmcloud', label: 'IBM Cloud' },
-    { value: 'impossiblecloud', label: 'Impossible Cloud' },
-    { value: 'lyve', label: 'Lyve (Seagate)' },
-    { value: 'wasabi', label: 'Wasabi' },
-    { value: 's3compatible', label: 'S3 Compatible' },
-  ]
+  const selectedRegion = $derived(
+    regionStore.regions.find(r => String(r.id) === regionId)
+  )
 
   const BLOCK_TYPES = [
     { value: 'standard', label: 'Standard' },
@@ -78,22 +73,80 @@
   let region = $state('')
   let bucket = $state('')
   let base = $state('')
-  let blockRegion = $state('')
   let blockType = $state('')
-  let blockSize = $state('131072')
+  let blockSize = $state('4194304')
   let accessKey = $state('')
   let secretKey = $state('')
   let submitting = $state(false)
+  let bucketVerified = $state(false)
 
   const isBlock = $derived(storageType === 'block')
+  const isHybrid = $derived(isBlock && blockType === 'hybrid')
+  const needsS3 = $derived(!isBlock || isHybrid)
+  const blockEndpoint = $derived(
+    selectedRegion?.dns ? `https://block.${selectedRegion.dns}` : ''
+  )
 
+  function resetS3Fields() {
+    endpoint = ''
+    region = ''
+    bucket = ''
+    base = ''
+    accessKey = ''
+    secretKey = ''
+    bucketVerified = false
+  }
+
+  // manage providerType and reset fields on storageType / blockType changes
   $effect(() => {
-    if (isBlock) providerType = 'mountOS'
-    else if (providerType === 'mountOS') providerType = ''
+    if (isBlock && !isHybrid) providerType = 'mountOS'
+    else if (!isBlock && providerType === 'mountOS') providerType = ''
   })
 
+  let prevStorageType = $state('')
+  $effect(() => {
+    if (storageType !== prevStorageType) {
+      prevStorageType = storageType
+      resetS3Fields()
+      blockType = ''
+    }
+  })
+
+  let prevBlockType = $state('')
+  $effect(() => {
+    if (blockType !== prevBlockType) {
+      prevBlockType = blockType
+      if (isBlock) {
+        providerType = isHybrid ? '' : 'mountOS'
+        resetS3Fields()
+      }
+    }
+  })
+
+  // auto-fill endpoint for known providers
+  $effect(() => {
+    if (needsS3 && providerType && !isCustomEndpoint(providerType)) {
+      endpoint = generateEndpoint(providerType, region)
+    }
+  })
+
+  // clear endpoint when switching to custom provider
+  $effect(() => {
+    if (isCustomEndpoint(providerType)) endpoint = ''
+  })
+
+  const s3RegionLabel = $derived(getProvider(providerType)?.regionLabel ?? 'Region')
+  const s3RegionPlaceholder = $derived(getProvider(providerType)?.regionPlaceholder ?? 'us-east-1')
+
+  const s3Ready = $derived(
+    !!(endpoint.trim() && bucket.trim() && accessKey.trim() && secretKey.trim())
+  )
+
   const canSubmit = $derived(
-    name.trim() && regionId && storageType && providerType && endpoint.trim()
+    !!(name.trim() && regionId && storageType && providerType
+    && (isBlock
+      ? blockType && (isHybrid ? s3Ready && bucketVerified : true)
+      : s3Ready && bucketVerified))
   )
 
   async function handleSubmit(e: Event) {
@@ -101,22 +154,22 @@
     if (!canSubmit || !accountId) return
     submitting = true
     try {
+      const isStandard = isBlock && !isHybrid
       await storageStore.createStorage({
         accountId,
         regionId: Number(regionId),
         name: name.trim(),
         description: description.trim() || undefined,
         storageType,
-        providerType,
-        endpoint: endpoint.trim(),
-        region: region.trim() || undefined,
-        bucket: bucket.trim() || undefined,
-        base: base.trim() || undefined,
-        blockRegion: (isBlock && blockRegion.trim()) ? blockRegion.trim() : undefined,
-        blockType: (isBlock && blockType) ? blockType : undefined,
+        providerType: isStandard ? 'mountOS' : providerType,
+        endpoint: isStandard ? blockEndpoint : endpoint.trim(),
+        region: (!isStandard && region.trim()) ? region.trim() : undefined,
+        bucket: (!isStandard && bucket.trim()) ? bucket.trim() : undefined,
+        base: (!isStandard && base.trim()) ? base.trim() : undefined,
+        blockType: isBlock ? blockType : undefined,
         blockSize: isBlock ? Number(blockSize) : undefined,
-        accessKey: accessKey.trim() || undefined,
-        secretKey: secretKey.trim() || undefined,
+        accessKey: (!isStandard && accessKey.trim()) ? accessKey.trim() : undefined,
+        secretKey: (!isStandard && secretKey.trim()) ? secretKey.trim() : undefined,
       })
       showSuccessToast('Storage created')
       goto('/storages')
@@ -167,10 +220,13 @@
                 <Label>Provider</Label>
                 <Input value="mountOS" disabled />
               </div>
-              <div class="space-y-2">
-                <Label for="endpoint">Endpoint</Label>
-                <Input id="endpoint" bind:value={endpoint} placeholder="https://..." required />
-              </div>
+              {#if blockEndpoint}
+                <div class="space-y-2">
+                  <Label>Block Endpoint</Label>
+                  <Input value={blockEndpoint} readonly class="font-mono text-sm text-muted-foreground" />
+                  <p class="text-xs text-muted-foreground">Derived from region DNS (block.&lt;region-dns&gt;)</p>
+                </div>
+              {/if}
               <div class="grid gap-4 md:grid-cols-2">
                 <div class="space-y-2">
                   <Label for="blockType">Block Type</Label>
@@ -181,47 +237,74 @@
                   <Select id="blockSize" bind:value={blockSize} options={BLOCK_SIZES} />
                 </div>
               </div>
-              <div class="space-y-2">
-                <Label for="blockRegion">Block Region</Label>
-                <Input id="blockRegion" bind:value={blockRegion} placeholder="Block region" />
-              </div>
-            {:else}
-              <div class="space-y-2">
-                <Label for="providerType">Provider</Label>
-                <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={OBJECT_PROVIDERS} />
-              </div>
-              <div class="space-y-2">
-                <Label for="endpoint">Endpoint</Label>
-                <Input id="endpoint" bind:value={endpoint} placeholder="https://s3.amazonaws.com" required />
-              </div>
-              <div class="grid gap-4 md:grid-cols-2">
-                <div class="space-y-2">
-                  <Label for="region">Region</Label>
-                  <Input id="region" bind:value={region} placeholder="us-east-1" />
-                </div>
-                <div class="space-y-2">
-                  <Label for="bucket">Bucket</Label>
-                  <Input id="bucket" bind:value={bucket} placeholder="my-bucket" />
-                </div>
-              </div>
-              <div class="space-y-2">
-                <Label for="base">Base Path</Label>
-                <Input id="base" bind:value={base} placeholder="Path prefix" />
-              </div>
 
-              <Separator />
+              {#if isHybrid}
+                <Separator />
+                <p class="text-sm font-medium">Backing Object Storage</p>
+              {/if}
+            {/if}
 
-              <p class="text-sm font-medium">Credentials</p>
-              <div class="grid gap-4 md:grid-cols-2">
+            {#if needsS3}
+              {#if !isBlock}
                 <div class="space-y-2">
-                  <Label for="accessKey">Access Key</Label>
-                  <Input id="accessKey" bind:value={accessKey} placeholder="Access key" />
+                  <Label for="providerType">Provider</Label>
+                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={PROVIDER_OPTIONS} />
+                </div>
+              {:else if isHybrid}
+                <div class="space-y-2">
+                  <Label for="providerType">S3 Provider</Label>
+                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={PROVIDER_OPTIONS} />
+                </div>
+              {/if}
+
+              {#if providerType && providerType !== 'mountOS'}
+                <div class="space-y-2">
+                  <Label for="endpoint">Endpoint</Label>
+                  {#if isCustomEndpoint(providerType)}
+                    <Input id="endpoint" bind:value={endpoint} placeholder="https://your-s3-endpoint.com" required />
+                  {:else}
+                    <Input id="endpoint" value={endpoint} readonly class="font-mono text-sm text-muted-foreground" />
+                  {/if}
+                </div>
+                <div class="grid gap-4 md:grid-cols-2">
+                  <div class="space-y-2">
+                    <Label for="region">{s3RegionLabel}</Label>
+                    <Input id="region" bind:value={region} placeholder={s3RegionPlaceholder} />
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="bucket">Bucket</Label>
+                    <Input id="bucket" bind:value={bucket} placeholder="my-bucket" />
+                  </div>
                 </div>
                 <div class="space-y-2">
-                  <Label for="secretKey">Secret Key</Label>
-                  <Input id="secretKey" type="password" bind:value={secretKey} placeholder="Secret key" />
+                  <Label for="base">Base Path</Label>
+                  <Input id="base" bind:value={base} placeholder="Path prefix" />
                 </div>
-              </div>
+
+                <Separator />
+
+                <p class="text-sm font-medium">Credentials</p>
+                <div class="grid gap-4 md:grid-cols-2">
+                  <div class="space-y-2">
+                    <Label for="accessKey">Access Key</Label>
+                    <Input id="accessKey" bind:value={accessKey} placeholder="Access key" />
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="secretKey">Secret Key</Label>
+                    <Input id="secretKey" type="password" bind:value={secretKey} placeholder="Secret key" />
+                  </div>
+                </div>
+
+                <BucketTester
+                  {endpoint}
+                  {region}
+                  {bucket}
+                  {accessKey}
+                  {secretKey}
+                  disabled={!s3Ready}
+                  onresult={(passed) => { bucketVerified = passed }}
+                />
+              {/if}
             {/if}
           {/if}
 
