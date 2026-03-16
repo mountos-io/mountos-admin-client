@@ -23,14 +23,15 @@
   })
 
   let name = $state('')
+  let dns = $state('')
   let submitting = $state(false)
 
   async function handleSubmit(e: Event) {
     e.preventDefault()
-    if (!name.trim() || !accountId) return
+    if (!name.trim() || !dns.trim() || !accountId) return
     submitting = true
     try {
-      await regionStore.createRegion({ accountId, name: name.trim() })
+      await regionStore.createRegion({ accountId, name: name.trim(), dns: dns.trim() })
       showSuccessToast('Region created')
       goto('/regions')
     } catch (err: unknown) {
@@ -56,8 +57,13 @@
             <Label for="name">Name</Label>
             <Input id="name" bind:value={name} placeholder="Region name" required />
           </div>
+          <div class="space-y-2">
+            <Label for="dns">Base DNS</Label>
+            <Input id="dns" bind:value={dns} placeholder="e.g. ap-south-1a.example.com" required />
+            <p class="text-muted-foreground text-xs">Used to build the S3 endpoint for direct S3 access.</p>
+          </div>
           <div class="flex gap-3 pt-2">
-            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !name.trim()}>
+            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !name.trim() || !dns.trim()}>
               {submitting ? 'Creating...' : 'Create Region'}
             </Button>
             <Button variant="outline" type="button" onclick={() => goto('/regions')}>

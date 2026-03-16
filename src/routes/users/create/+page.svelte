@@ -23,14 +23,25 @@
     }
   })
 
+  const usernameRe = /^[a-zA-Z0-9_-]{3,16}$/
+
   let username = $state('')
   let email = $state('')
   let name = $state('')
   let submitting = $state(false)
 
+  const usernameValid = $derived(usernameRe.test(username))
+  const usernameError = $derived(
+    !username ? '' :
+    /\s/.test(username) ? 'Spaces not allowed' :
+    /[^a-zA-Z0-9_-]/.test(username) ? 'Only letters, digits, hyphen and underscore' :
+    username.length < 3 ? 'At least 3 characters' :
+    username.length > 16 ? 'At most 16 characters' : ''
+  )
+
   async function handleSubmit(e: Event) {
     e.preventDefault()
-    if (!username.trim() || !email.trim() || !accountId) return
+    if (!usernameValid || !email.trim() || !accountId) return
     submitting = true
     try {
       await userStore.addUser({
@@ -62,7 +73,10 @@
         <form onsubmit={handleSubmit} class="space-y-4">
           <div class="space-y-2">
             <Label for="username">Username</Label>
-            <Input id="username" bind:value={username} placeholder="Username" required />
+            <Input id="username" bind:value={username} placeholder="Username" maxlength={16} required aria-invalid={!!usernameError || undefined} />
+            {#if usernameError}
+              <p class="text-destructive text-xs">{usernameError}</p>
+            {/if}
           </div>
           <div class="space-y-2">
             <Label for="email">Email</Label>
@@ -70,13 +84,13 @@
           </div>
           <div class="space-y-2">
             <Label for="name">Display Name</Label>
-            <Input id="name" bind:value={name} placeholder="Optional display name" />
+            <Input id="name" bind:value={name} placeholder="Display name" />
           </div>
 
           <Separator />
 
           <div class="flex gap-3 pt-2">
-            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !username.trim() || !email.trim()}>
+            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !usernameValid || !email.trim()}>
               {submitting ? 'Adding...' : 'Add User'}
             </Button>
             <Button variant="outline" type="button" onclick={() => goto('/users')}>

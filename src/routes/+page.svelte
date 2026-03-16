@@ -13,7 +13,7 @@
 
   {#if account}
     <div class="grid gap-4 md:grid-cols-3">
-      <Card>
+      <Card cornerPlus>
         <CardHeader><CardTitle>Account</CardTitle></CardHeader>
         <CardContent>
           <div class="flex items-center gap-3">
@@ -25,13 +25,13 @@
           </div>
         </CardContent>
       </Card>
-      <Card>
+      <Card cornerPlus>
         <CardHeader><CardTitle>Description</CardTitle></CardHeader>
         <CardContent>
           <p class="text-sm text-muted-foreground">{account.description || 'No description'}</p>
         </CardContent>
       </Card>
-      <Card>
+      <Card cornerPlus>
         <CardHeader><CardTitle>Created</CardTitle></CardHeader>
         <CardContent>
           <p class="text-sm text-muted-foreground">{new Date(account.createdAt).toLocaleDateString()}</p>
@@ -39,7 +39,7 @@
       </Card>
     </div>
   {:else}
-    <Card>
+    <Card cornerPlus>
       <CardContent class="py-8">
         <p class="text-center text-muted-foreground">Select an account to view dashboard</p>
       </CardContent>

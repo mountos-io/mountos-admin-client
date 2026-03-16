@@ -147,7 +147,7 @@
           </div>
           <div class="space-y-2">
             <Label for="description">Description</Label>
-            <Input id="description" bind:value={description} placeholder="Optional description" />
+            <Input id="description" bind:value={description} placeholder="Description" />
           </div>
           <div class="space-y-2">
             <Label>Region</Label>
@@ -183,7 +183,7 @@
               </div>
               <div class="space-y-2">
                 <Label for="blockRegion">Block Region</Label>
-                <Input id="blockRegion" bind:value={blockRegion} placeholder="Optional block region" />
+                <Input id="blockRegion" bind:value={blockRegion} placeholder="Block region" />
               </div>
             {:else}
               <div class="space-y-2">
@@ -206,7 +206,7 @@
               </div>
               <div class="space-y-2">
                 <Label for="base">Base Path</Label>
-                <Input id="base" bind:value={base} placeholder="Optional path prefix" />
+                <Input id="base" bind:value={base} placeholder="Path prefix" />
               </div>
 
               <Separator />

@@ -62,6 +62,7 @@
       <TableHeader>
         <TableRow>
           <TableHead>Name</TableHead>
+          <TableHead>Base DNS</TableHead>
           <TableHead>Export ID</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Created</TableHead>
@@ -72,6 +73,7 @@
         {#each store.regions as region}
           <TableRow>
             <TableCell class="font-medium">{region.name}</TableCell>
+            <TableCell class="font-mono text-xs">{region.dns}</TableCell>
             <TableCell class="font-mono text-xs">{region.exportId}</TableCell>
             <TableCell><StatusBadge active={region.isActive} /></TableCell>
             <TableCell class="text-muted-foreground">{formatDate(region.createdAt)}</TableCell>

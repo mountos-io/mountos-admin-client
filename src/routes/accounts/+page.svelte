@@ -19,6 +19,7 @@
   import Power from '@lucide/svelte/icons/power'
   import Lock from '@lucide/svelte/icons/lock'
   import LockOpen from '@lucide/svelte/icons/lock-open'
+  import ArrowRightLeft from '@lucide/svelte/icons/arrow-right-left'
 
   const store = useAccounts()
   const auth = useAuth()
@@ -119,6 +120,15 @@
                 <Button variant="ghost" size="sm" href="/accounts/{account.id}" title="View">
                   <Eye class="size-3.5" />
                 </Button>
+                {#if account.id !== store.selectedAccountId}
+                  <Button
+                    variant="ghost" size="sm"
+                    title="Switch to this account"
+                    onclick={() => store.selectAccount(account.id)}
+                  >
+                    <ArrowRightLeft class="size-3.5" />
+                  </Button>
+                {/if}
               </div>
             </TableCell>
           </TableRow>

@@ -138,7 +138,7 @@
           </div>
           <div class="space-y-2">
             <Label for="description">Description</Label>
-            <Input id="description" bind:value={description} placeholder="Optional description" />
+            <Input id="description" bind:value={description} placeholder="Description" />
           </div>
           <div class="space-y-2">
             <Label>Storage</Label>

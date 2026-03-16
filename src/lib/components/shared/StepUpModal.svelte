@@ -99,7 +99,7 @@
         <div class="w-full space-y-3">
           <div class="flex items-end gap-2">
             <div class="flex-1">
-              <Input bind:value={keyLabel} placeholder="Key label (optional)" class="h-9" />
+              <Input bind:value={keyLabel} placeholder="Key label" class="h-9" />
             </div>
             <Button size="sm" disabled={registering} onclick={handleRegister}>
               {registering ? 'Registering...' : 'Register'}

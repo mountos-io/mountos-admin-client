@@ -148,7 +148,7 @@
               </div>
               <div class="space-y-2">
                 <Label for="edit-description">Description</Label>
-                <Input id="edit-description" bind:value={editDescription} placeholder="Optional description" />
+                <Input id="edit-description" bind:value={editDescription} placeholder="Description" />
               </div>
               <div class="space-y-2">
                 <Label for="edit-iconUrl">Icon URL</Label>
