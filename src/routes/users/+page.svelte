@@ -10,6 +10,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { Button } from '$lib/components/ui/button'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import Plus from '@lucide/svelte/icons/plus'
 
   const userStore = useUsers()
@@ -52,14 +53,16 @@
           <TableHead>Username</TableHead>
           <TableHead>Name</TableHead>
           <TableHead>Email</TableHead>
+          <TableHead>Status</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {#each userStore.users as user}
-          <TableRow>
+          <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => goto(`/users/${user.id}`)}>
             <TableCell class="font-medium">{user.username}</TableCell>
             <TableCell>{user.name}</TableCell>
             <TableCell class="text-muted-foreground">{user.email}</TableCell>
+            <TableCell><StatusBadge active={user.isActive} /></TableCell>
           </TableRow>
         {/each}
       </TableBody>

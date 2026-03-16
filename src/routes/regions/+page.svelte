@@ -12,8 +12,11 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import { formatDate } from '$lib/core/utils/format'
-  import { showErrorToast } from '$lib/core/utils/toast'
+  import { showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import Plus from '@lucide/svelte/icons/plus'
+  import Power from '@lucide/svelte/icons/power'
+  import Copy from '@lucide/svelte/icons/copy'
+  import Lightbulb from '@lucide/svelte/icons/lightbulb'
 
   const store = useRegions()
   const accountStore = useAccounts()
@@ -32,6 +35,15 @@
     }
     store.fetchRegions(1, prefs.pageSize)
   })
+
+  async function copyExportId(exportId: string) {
+    try {
+      await navigator.clipboard.writeText(exportId)
+      showSuccessToast('Copied to clipboard')
+    } catch {
+      showErrorToast('Failed to copy')
+    }
+  }
 
   function toggle(region: { id: number; name: string; isActive: boolean }) {
     if (!auth.guard('regions', 'update')) return
@@ -63,7 +75,12 @@
         <TableRow>
           <TableHead>Name</TableHead>
           <TableHead>Base DNS</TableHead>
-          <TableHead>Export ID</TableHead>
+          <TableHead>
+            <span class="inline-flex items-center gap-1">
+              Export ID
+              <Lightbulb class="size-3.5 text-amber-500" title="Set as env on service instances so appserv groups them under one regional umbrella" />
+            </span>
+          </TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Created</TableHead>
           <TableHead class="w-24"></TableHead>
@@ -74,12 +91,30 @@
           <TableRow>
             <TableCell class="font-medium">{region.name}</TableCell>
             <TableCell class="font-mono text-xs">{region.dns}</TableCell>
-            <TableCell class="font-mono text-xs">{region.exportId}</TableCell>
+            <TableCell>
+              <span class="inline-flex items-center gap-1 font-mono text-xs">
+                {region.exportId}
+                <button
+                  type="button"
+                  title="Copy Export ID"
+                  class="text-muted-foreground hover:text-foreground transition-colors"
+                  onclick={() => copyExportId(region.exportId)}
+                >
+                  <Copy class="size-3" />
+                </button>
+              </span>
+            </TableCell>
             <TableCell><StatusBadge active={region.isActive} /></TableCell>
             <TableCell class="text-muted-foreground">{formatDate(region.createdAt)}</TableCell>
             <TableCell>
               {#if auth.can('regions', 'update')}
-                <Button variant="ghost" size="sm" onclick={() => toggle(region)}>{region.isActive ? 'Deactivate' : 'Activate'}</Button>
+                <Button
+                  variant="ghost" size="sm"
+                  title={region.isActive ? 'Deactivate' : 'Activate'}
+                  onclick={() => toggle(region)}
+                >
+                  <Power class="size-3.5 {region.isActive ? 'text-muted-foreground' : 'text-emerald-500'}" />
+                </Button>
               {/if}
             </TableCell>
           </TableRow>
