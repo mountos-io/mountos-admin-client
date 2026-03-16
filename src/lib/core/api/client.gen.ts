@@ -4,13 +4,13 @@ import { ApiError } from './errors.js'
 import type {
   StandardResponse, ListOptions,
   PaginatedResponse, CursorPaginatedResponse,
-  CreateAccountRequest, Account, EditAccountRequest, AddUserRequest, User, UserListOptions,
-  EditUserRequest, CreateRegionRequest, Region, EditRegionRequest, CreateStorageRequest,
-  Storage, StorageListOptions, EditStorageRequest, TestStorageBucketRequest,
-  CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest,
-  GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, UpdateVolumeQuotaRequest,
-  AuditLog, AuditLogListOptions, ServiceNode, ClientSession, ClientSessionListOptions,
-  SessionSummary, DiscoverMetaResponse,
+  CreateAccountRequest, Account, EditAccountRequest, AddUserRequest, User, UserListOptions, 
+  EditUserRequest, CreateRegionRequest, Region, EditRegionRequest, CreateStorageRequest, 
+  Storage, StorageListOptions, EditStorageRequest, TestStorageBucketRequest, 
+  CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest, 
+  GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, UpdateVolumeQuotaRequest, 
+  AuditLog, AuditLogListOptions, ServiceNode, ClientSession, ClientSessionListOptions, 
+  SessionSummary, DiscoverMetaResponse, DashboardStats,
 } from '@mountos-app/admin-sdk'
 
 function queryString(params: Record<string, string | number | undefined>): string {
@@ -46,6 +46,7 @@ export class AdminClient {
   private _serviceNodes?: ServiceNodesResource
   private _clientSessions?: ClientSessionsResource
   private _discover?: DiscoverResource
+  private _dashboard?: DashboardResource
   private _cache?: CacheResource
 
   constructor(config: ClientConfig = {}) {
@@ -90,6 +91,10 @@ export class AdminClient {
 
   get discover(): DiscoverResource {
     return (this._discover ??= new DiscoverResource(this))
+  }
+
+  get dashboard(): DashboardResource {
+    return (this._dashboard ??= new DashboardResource(this))
   }
 
   get cache(): CacheResource {
@@ -418,6 +423,14 @@ class DiscoverResource {
 
   meta(accessKeyId: string): Promise<DiscoverMetaResponse> {
     return this.client.request('GET', `/discover/meta${queryString({ access_key_id: accessKeyId })}`)
+  }
+}
+
+class DashboardResource {
+  constructor(private client: AdminClient) {}
+
+  stats(accountId: number): Promise<DashboardStats> {
+    return this.client.request('GET', `/dashboard/stats${queryString({ accountId: accountId })}`)
   }
 }
 

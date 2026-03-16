@@ -8,6 +8,8 @@ export type {
   ServiceNode,
   DiscoverMetaResponse,
   DiscoverEndpoint,
+  DashboardStats,
+  RegionVolumeMetrics,
   CreateAccountRequest,
   EditAccountRequest,
   AddUserRequest,
