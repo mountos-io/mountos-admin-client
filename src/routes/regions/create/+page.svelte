@@ -22,13 +22,25 @@
     }
   })
 
+  const nameRe = /^[a-z][a-z0-9-]{2,}$/
+
   let name = $state('')
   let dns = $state('')
   let submitting = $state(false)
 
+  const nameValid = $derived(nameRe.test(name))
+  const nameError = $derived(
+    !name ? '' :
+    /[A-Z]/.test(name) ? 'Lowercase only' :
+    /\s/.test(name) ? 'Spaces not allowed' :
+    !/^[a-z]/.test(name) ? 'Must start with a letter' :
+    /[^a-z0-9-]/.test(name) ? 'Only lowercase letters, digits and hyphens' :
+    name.length < 3 ? 'At least 3 characters' : ''
+  )
+
   async function handleSubmit(e: Event) {
     e.preventDefault()
-    if (!name.trim() || !dns.trim() || !accountId) return
+    if (!nameValid || !dns.trim() || !accountId) return
     submitting = true
     try {
       await regionStore.createRegion({ accountId, name: name.trim(), dns: dns.trim() })
@@ -55,7 +67,10 @@
         <form onsubmit={handleSubmit} class="space-y-4">
           <div class="space-y-2">
             <Label for="name">Name</Label>
-            <Input id="name" bind:value={name} placeholder="Region name" required />
+            <Input id="name" bind:value={name} placeholder="e.g. ap-south-1a" required aria-invalid={!!nameError || undefined} />
+            {#if nameError}
+              <p class="text-destructive text-xs">{nameError}</p>
+            {/if}
           </div>
           <div class="space-y-2">
             <Label for="dns">Base DNS</Label>
@@ -63,7 +78,7 @@
             <p class="text-muted-foreground text-xs">Used to build the S3 endpoint for direct S3 access.</p>
           </div>
           <div class="flex gap-3 pt-2">
-            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !name.trim() || !dns.trim()}>
+            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !nameValid || !dns.trim()}>
               {submitting ? 'Creating...' : 'Create Region'}
             </Button>
             <Button variant="outline" type="button" onclick={() => goto('/regions')}>
