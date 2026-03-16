@@ -22,9 +22,15 @@
   const id = $derived(Number($page.params.id))
 
   $effect(() => {
-    if (!auth.loading && !auth.can('volumes', 'read')) {
+    if (auth.loading) return
+    if (!auth.can('volumes', 'read')) {
       showErrorToast('Access denied')
       goto('/', { replaceState: true })
+      return
+    }
+    if (auth.isUserRole && auth.userVolumeId != null && id !== auth.userVolumeId) {
+      showErrorToast('Access denied')
+      goto('/volumes', { replaceState: true })
     }
   })
 

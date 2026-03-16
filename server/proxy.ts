@@ -30,7 +30,7 @@ proxy.all('/api/v1/*', async (c) => {
 
     const adminUser = c.get('mountosUser') as AdminUser | undefined
     if (adminUser) {
-      headers['X-MountOS-Admin-User'] = btoa(JSON.stringify(adminUser))
+      headers['X-MountOS-Dashboard-User'] = btoa(JSON.stringify(adminUser))
     }
 
     const data = await sdk.request(method, upstreamPath + url.search, body ? JSON.parse(body) : undefined)

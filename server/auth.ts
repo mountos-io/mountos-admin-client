@@ -126,8 +126,7 @@ class DashboardAuth {
       if (user.accountId == null) throw new Error('user role requires account_id claim')
       const username = payload.username as string | undefined
       if (!username) throw new Error('user role requires username claim')
-      const { items } = await this.sdk.users.list({ accountId: user.accountId, page: 1, limit: 100 })
-      const match = items.find(u => u.username === username && u.isActive)
+      const match = await this.findActiveUser(user.accountId, username)
       if (!match) throw new Error('no active user found for account')
       user.userId = match.id
     }
@@ -178,6 +177,16 @@ class DashboardAuth {
 
   resolveCapabilities(role: string): Capabilities {
     return this.config.roles[role] ?? this.config.roles['l2admin'] ?? allCaps(4)
+  }
+
+  private async findActiveUser(accountId: number, username: string) {
+    const limit = 100
+    for (let page = 1; ; page++) {
+      const { items, pagination } = await this.sdk.users.list({ accountId, page, limit })
+      const found = items.find(u => u.username === username && u.isActive)
+      if (found) return found
+      if (page >= pagination.totalPages) return null
+    }
   }
 
   async fetchAccountForUser(accountId: number) {

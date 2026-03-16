@@ -17,7 +17,8 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
 const CREATE_SUFFIXES = ['/create', '/add']
 
 const USER_ROLE_RESOURCES = new Set(['volumes', 'auditLogs'])
-const API_KEY_PATH = /^\/api\/v1\/volumes\/\d+\/api-keys\/(generate|revoke)$/
+const API_KEY_PATH = /^\/api\/v1\/volumes\/(\d+)\/api-keys\/(generate|revoke)$/
+const VOLUME_ID_PATH = /^\/api\/v1\/volumes\/(\d+)/
 
 function extractResource(path: string): string | null {
   const segments = path.slice('/api/v1/'.length).split('/')
@@ -60,6 +61,17 @@ export const authz: MiddlewareHandler = async (c, next) => {
     if (user.accountId != null) {
       const qAccountId = c.req.query('accountId')
       if (qAccountId && Number(qAccountId) !== user.accountId) {
+        return c.json({ status: 'failure', message: 'forbidden' }, 403)
+      }
+      // List endpoints require accountId for user role
+      if (!qAccountId && c.req.path.endsWith('/list')) {
+        return c.json({ status: 'failure', message: 'forbidden' }, 403)
+      }
+    }
+    // Enforce volumeId scoping when set
+    if (user.volumeId != null && resource === 'volumes') {
+      const match = c.req.path.match(VOLUME_ID_PATH)
+      if (match && Number(match[1]) !== user.volumeId) {
         return c.json({ status: 'failure', message: 'forbidden' }, 403)
       }
     }

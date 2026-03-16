@@ -121,11 +121,7 @@ app.post('/api/auth/exchange', async (c) => {
       dashboardAuth.signRefreshToken(user),
     ])
     setTokenCookies(c, token, refreshToken)
-    const result: Record<string, unknown> = { user, token, refreshToken, capabilities }
-    if (user.role === 'user' && user.accountId != null) {
-      result.account = await dashboardAuth.fetchAccountForUser(user.accountId).catch(() => undefined)
-    }
-    return c.json(result)
+    return c.json(await enrichUserResponse(user, { token, refreshToken }))
   } catch {
     authFailuresTotal.inc({ type: 'vendor_exchange' })
     return c.json({ status: 'failure', message: 'invalid vendor token' }, 401)
