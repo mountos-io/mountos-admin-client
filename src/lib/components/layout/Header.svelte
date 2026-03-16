@@ -128,4 +128,4 @@
   </div>
 </header>
 
-<ConfirmDialog bind:open={signOutOpen} title="Sign Out" description="Are you sure you want to sign out?" confirmLabel="Sign Out" onConfirm={() => auth.signOut()} />
+<ConfirmDialog bind:open={signOutOpen} title="Sign Out" description="Are you sure you want to sign out? Your session will be terminated." confirmLabel="Sign Out" icon={LogOut} onConfirm={() => auth.signOut()} />

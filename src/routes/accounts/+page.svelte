@@ -6,18 +6,31 @@
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
+  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import { features } from '$lib/config/features'
   import { formatDate } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
   import Plus from '@lucide/svelte/icons/plus'
   import Eye from '@lucide/svelte/icons/eye'
   import Pencil from '@lucide/svelte/icons/pencil'
+  import Power from '@lucide/svelte/icons/power'
+  import Lock from '@lucide/svelte/icons/lock'
+  import LockOpen from '@lucide/svelte/icons/lock-open'
 
   const store = useAccounts()
   const auth = useAuth()
   const prefs = usePreferences()
+
+  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
+    open: false, title: '', desc: '', action: async () => {},
+  })
+
+  function confirm(title: string, desc: string, action: () => Promise<void>) {
+    confirmAction = { open: true, title, desc, action: async () => { await action(); store.fetchAccounts(store.currentPage, prefs.pageSize) } }
+  }
 
   $effect(() => {
     if (!auth.loading && !auth.can('accounts', 'read')) {
@@ -51,7 +64,7 @@
           <TableHead>Name</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Created</TableHead>
-          <TableHead class="w-24"></TableHead>
+          <TableHead class="w-auto"></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -60,15 +73,53 @@
             <TableCell class="font-medium">{account.name}</TableCell>
             <TableCell><StatusBadge active={account.isActive} locked={account.locked} /></TableCell>
             <TableCell class="text-muted-foreground">{formatDate(account.createdAt)}</TableCell>
-            <TableCell class="flex gap-1">
-              {#if auth.can('accounts', 'update')}
-                <Button variant="ghost" size="sm" href="/accounts/{account.id}?edit" class="gap-1.5">
-                  <Pencil class="size-3.5" />Edit
+            <TableCell>
+              <div class="flex justify-end gap-1">
+                {#if auth.can('accounts', 'update')}
+                  {#if account.isActive}
+                    <Button
+                      variant="ghost" size="sm"
+                      title="Deactivate"
+                      onclick={() => confirm('Deactivate', `Deactivate "${account.name}"?`, () => store.deactivateAccount(account.id))}
+                    >
+                      <Power class="size-3.5 text-muted-foreground" />
+                    </Button>
+                  {:else}
+                    <Button
+                      variant="ghost" size="sm"
+                      title="Activate"
+                      onclick={() => confirm('Activate', `Activate "${account.name}"?`, () => store.activateAccount(account.id))}
+                    >
+                      <Power class="size-3.5 text-emerald-500" />
+                    </Button>
+                  {/if}
+                  {#if features.accountLock}
+                    {#if account.locked}
+                      <Button
+                        variant="ghost" size="sm"
+                        title="Unlock"
+                        onclick={() => confirm('Unlock', `Unlock "${account.name}"?`, () => store.unlockAccount(account.id))}
+                      >
+                        <Lock class="size-3.5 text-destructive" />
+                      </Button>
+                    {:else}
+                      <Button
+                        variant="ghost" size="sm"
+                        title="Lock"
+                        onclick={() => confirm('Lock', `Lock "${account.name}"?`, () => store.lockAccount(account.id))}
+                      >
+                        <LockOpen class="size-3.5 text-muted-foreground" />
+                      </Button>
+                    {/if}
+                  {/if}
+                  <Button variant="ghost" size="sm" href="/accounts/{account.id}?edit" title="Edit">
+                    <Pencil class="size-3.5" />
+                  </Button>
+                {/if}
+                <Button variant="ghost" size="sm" href="/accounts/{account.id}" title="View">
+                  <Eye class="size-3.5" />
                 </Button>
-              {/if}
-              <Button variant="ghost" size="sm" href="/accounts/{account.id}" class="gap-1.5">
-                <Eye class="size-3.5" />View
-              </Button>
+              </div>
             </TableCell>
           </TableRow>
         {/each}
@@ -77,3 +128,5 @@
     <Pagination currentPage={store.currentPage} totalPages={store.totalPages} onPageChange={(p) => store.fetchAccounts(p, prefs.pageSize)} />
   {/if}
 </div>
+
+<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />

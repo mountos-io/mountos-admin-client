@@ -90,7 +90,7 @@
                 {#each themes as t}
                   {@const Icon = t.icon}
                   <Button
-                    variant={prefs.theme === t.value ? 'default' : 'outline'}
+                    variant={prefs.theme === t.value ? 'primary' : 'outline'}
                     size="sm"
                     onclick={() => prefs.theme = t.value}
                     class="gap-2"
@@ -106,7 +106,7 @@
               <div class="flex flex-wrap gap-2">
                 {#each fontSizes as fs}
                   <Button
-                    variant={prefs.fontSize === fs.value ? 'default' : 'outline'}
+                    variant={prefs.fontSize === fs.value ? 'primary' : 'outline'}
                     size="sm"
                     onclick={() => prefs.fontSize = fs.value}
                   >
@@ -124,7 +124,7 @@
               <div class="flex gap-2">
                 {#each pageSizes as ps}
                   <Button
-                    variant={prefs.pageSize === ps ? 'default' : 'outline'}
+                    variant={prefs.pageSize === ps ? 'primary' : 'outline'}
                     size="sm"
                     onclick={() => prefs.pageSize = ps}
                   >
@@ -138,7 +138,7 @@
               {#if accountStore.accounts.length > 0}
                 <div class="flex flex-wrap gap-2">
                   <Button
-                    variant={prefs.defaultAccountId === null ? 'default' : 'outline'}
+                    variant={prefs.defaultAccountId === null ? 'primary' : 'outline'}
                     size="sm"
                     onclick={() => prefs.defaultAccountId = null}
                   >
@@ -146,7 +146,7 @@
                   </Button>
                   {#each accountStore.accounts as account}
                     <Button
-                      variant={prefs.defaultAccountId === account.id ? 'default' : 'outline'}
+                      variant={prefs.defaultAccountId === account.id ? 'primary' : 'outline'}
                       size="sm"
                       onclick={() => prefs.defaultAccountId = account.id}
                     >
