@@ -76,13 +76,15 @@ export function formatDuration(from: string | Date, to?: string | Date): string 
   return `${mins}m`
 }
 
-const SESSION_STATUS_MAP: Record<string, { label: string; variant: string }> = {
+type StatusVariant = 'success' | 'secondary' | 'warning' | 'destructive' | 'outline'
+
+const SESSION_STATUS_MAP: Record<string, { label: string; variant: StatusVariant }> = {
   connected: { label: 'Connected', variant: 'success' },
   disconnected: { label: 'Disconnected', variant: 'secondary' },
   idle: { label: 'Idle', variant: 'warning' },
   error: { label: 'Error', variant: 'destructive' },
 }
 
-export function formatSessionStatus(status: string): { label: string; variant: string } {
+export function formatSessionStatus(status: string): { label: string; variant: StatusVariant } {
   return SESSION_STATUS_MAP[status] ?? { label: status, variant: 'outline' }
 }

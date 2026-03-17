@@ -15,15 +15,6 @@ const totalActive = $derived(
   summary.reduce((sum, s) => sum + (s.status === 'connected' ? s.count : 0), 0)
 )
 
-const byClientType = $derived(
-  summary.reduce((map, s) => {
-    const arr = map.get(s.clientType) ?? []
-    arr.push(s)
-    map.set(s.clientType, arr)
-    return map
-  }, new Map<string, SessionSummary[]>())
-)
-
 async function fetchSessions(opts?: ClientSessionListOptions) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
@@ -84,7 +75,6 @@ export function useSessions() {
     get totalPages() { return totalPages },
     get currentPage() { return currentPage },
     get totalActive() { return totalActive },
-    get byClientType() { return byClientType },
     fetchSessions,
     fetchSummary,
     getSession,

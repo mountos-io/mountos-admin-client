@@ -20,12 +20,13 @@
   const sessionStore = useSessions()
   const auth = useAuth()
   const account = $derived(accountStore.selectedAccount)
+  const accountId = $derived(account?.id ?? null)
   const stats = $derived(dashboard.stats)
   const canReadSessions = $derived(features.clientSessions && auth.can('clientSessions', 'read'))
 
   $effect(() => {
-    if (account) {
-      dashboard.fetchStats(account.id)
+    if (accountId) {
+      dashboard.fetchStats(accountId)
     } else {
       dashboard.reset()
     }
@@ -33,8 +34,8 @@
   })
 
   $effect(() => {
-    if (account && canReadSessions) {
-      sessionStore.fetchSummary(account.id)
+    if (accountId && canReadSessions) {
+      sessionStore.fetchSummary(accountId)
     } else {
       sessionStore.reset()
     }
@@ -114,7 +115,7 @@
           <CardHeader><CardTitle>Per-Region Breakdown</CardTitle></CardHeader>
           <CardContent>
             <div class="space-y-1">
-              {#each stats.regionBreakdown as region}
+              {#each stats.regionBreakdown as region (region.regionId)}
                 <RegionRow {region} />
               {/each}
             </div>

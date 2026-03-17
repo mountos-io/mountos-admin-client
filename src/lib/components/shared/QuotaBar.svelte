@@ -14,7 +14,7 @@
 <div class={cn('space-y-2', className)}>
   <div class="flex justify-between text-sm">
     <span class="text-muted-foreground">{formatBytes(used)} used</span>
-    <span class="text-muted-foreground">{formatBytes(limit)} total</span>
+    <span class="text-muted-foreground">{limit > 0 ? `${formatBytes(limit)} total` : 'Unlimited'}</span>
   </div>
   <div class="h-2 rounded-full bg-muted overflow-hidden" role="progressbar"
     aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}

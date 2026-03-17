@@ -53,7 +53,7 @@
     <AccountSwitcher {collapsed} />
   </div>
   <nav aria-label="Main navigation" class={cn('flex-1 space-y-1 py-2', collapsed ? 'px-1.5' : 'px-3')}>
-    {#each visibleNav as item}
+    {#each visibleNav as item (item.href)}
       {@const Icon = item.iconComponent ?? iconMap[item.icon] ?? Box}
       {@const active = $page.url.pathname === item.href || (item.href !== '/' && $page.url.pathname.startsWith(item.href + '/'))}
       <a

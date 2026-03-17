@@ -12,23 +12,27 @@
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
   import { formatRelative, formatDuration, formatClientType, formatSessionStatus } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
-  import type { BadgeVariant } from '$lib/components/ui/badge'
 
   const sessionStore = useSessions()
   const accountStore = useAccounts()
   const auth = useAuth()
   const account = $derived(accountStore.selectedAccount)
+  const accountId = $derived(account?.id ?? null)
+  let redirected = false
 
   $effect(() => {
-    if (auth.loading) return
+    if (auth.loading) return () => sessionStore.reset()
     if (!auth.can('clientSessions', 'read')) {
-      showErrorToast('Access denied')
-      goto('/', { replaceState: true })
-      return
+      if (!redirected) {
+        redirected = true
+        showErrorToast('Access denied')
+        goto('/', { replaceState: true })
+      }
+      return () => sessionStore.reset()
     }
-    if (account) {
-      sessionStore.fetchSessions({ accountId: account.id })
-      sessionStore.fetchSummary(account.id)
+    if (accountId) {
+      sessionStore.fetchSessions({ accountId })
+      sessionStore.fetchSummary(accountId)
     } else {
       sessionStore.reset()
     }
@@ -36,7 +40,7 @@
   })
 
   function onPageChange(page: number) {
-    if (account) sessionStore.fetchSessions({ accountId: account.id, page })
+    if (accountId) sessionStore.fetchSessions({ accountId, page })
   }
 </script>
 
@@ -85,7 +89,7 @@
           </TableRow>
         </TableHeader>
         <TableBody>
-          {#each sessionStore.sessions as session}
+          {#each sessionStore.sessions as session (session.id)}
             {@const st = formatSessionStatus(session.status)}
             <TableRow>
               <TableCell>
@@ -97,7 +101,7 @@
               <TableCell class="font-mono text-xs">{session.hostname || session.ipAddr}</TableCell>
               <TableCell class="font-mono text-xs">{session.volumeId}</TableCell>
               <TableCell>
-                <Badge variant={st.variant as BadgeVariant}>{st.label}</Badge>
+                <Badge variant={st.variant}>{st.label}</Badge>
               </TableCell>
               <TableCell class="text-sm text-muted-foreground">
                 {session.connectedAt ? formatDuration(session.connectedAt, session.disconnectedAt) : '—'}
