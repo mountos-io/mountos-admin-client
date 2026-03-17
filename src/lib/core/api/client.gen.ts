@@ -400,6 +400,10 @@ class ServiceNodesResource {
   remove(regionId: number, nodeId: string): Promise<void> {
     return this.client.request('DELETE', `/regions/${regionId}/nodes/${encodeURIComponent(nodeId)}`)
   }
+
+  stats(regionId: number, nodeId: string, signal?: AbortSignal): Promise<string> {
+    return this.client.request('GET', `/regions/${regionId}/nodes/${encodeURIComponent(nodeId)}/stats`, undefined, signal)
+  }
 }
 
 class ClientSessionsResource {
@@ -413,8 +417,8 @@ class ClientSessionsResource {
     return this.client.request('GET', `/client-sessions/${sessionId}`)
   }
 
-  summary(signal?: AbortSignal): Promise<SessionSummary[]> {
-    return this.client.request('GET', '/client-sessions/summary', undefined, signal)
+  summary(accountId?: number, signal?: AbortSignal): Promise<SessionSummary[]> {
+    return this.client.request('GET', `/client-sessions/summary${queryString({ accountId })}`, undefined, signal)
   }
 }
 

@@ -32,6 +32,9 @@ export type {
   StorageListOptions,
   VolumeListOptions,
   AuditLogListOptions,
+  ClientSession,
+  ClientSessionListOptions,
+  SessionSummary,
   StandardResponse,
 } from '@mountos-app/admin-sdk'
 

@@ -15,6 +15,7 @@
   import Database from '@lucide/svelte/icons/database'
   import ScrollText from '@lucide/svelte/icons/scroll-text'
   import Server from '@lucide/svelte/icons/server'
+  import MonitorDot from '@lucide/svelte/icons/monitor-dot'
   import Box from '@lucide/svelte/icons/box'
 
   let { collapsed = false }: { collapsed?: boolean } = $props()
@@ -26,7 +27,7 @@
   const iconMap: Record<string, Component> = {
     'layout-dashboard': LayoutDashboard, 'building-2': Building2,
     'users': Users, 'globe': Globe, 'hard-drive': HardDrive,
-    'database': Database, 'scroll-text': ScrollText, 'server': Server,
+    'database': Database, 'scroll-text': ScrollText, 'monitor-dot': MonitorDot, 'server': Server,
   }
 
   const accountFreeRoutes = new Set(['/', '/accounts'])

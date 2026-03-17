@@ -21,6 +21,7 @@ const defaults: NavItem[] = [
   { label: 'Storages', href: '/storages', icon: 'hard-drive', feature: 'storages' },
   { label: 'Volumes', href: '/volumes', icon: 'database', feature: 'volumes' },
   { label: 'Audit Log', href: '/audit', icon: 'scroll-text', feature: 'auditLogs' },
+  { label: 'Sessions', href: '/sessions', icon: 'monitor-dot', feature: 'clientSessions' },
   { label: 'Nodes', href: '/nodes', icon: 'server', feature: 'serviceNodes' },
 ]
 

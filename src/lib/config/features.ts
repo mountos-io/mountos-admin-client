@@ -13,6 +13,7 @@ export interface FeatureFlags {
   volumeStats: boolean
   accountLock: boolean
   allAccountsView: boolean
+  clientSessions: boolean
 }
 
 const defaults: FeatureFlags = {
@@ -28,6 +29,7 @@ const defaults: FeatureFlags = {
   volumeStats: true,
   accountLock: true,
   allAccountsView: false,
+  clientSessions: true,
 }
 
 export const features: FeatureFlags = { ...defaults, ...vendorFeatures }
