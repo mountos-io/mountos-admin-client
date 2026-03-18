@@ -59,6 +59,7 @@
     { keys: '⌘ K', description: 'Open command palette' },
     { keys: '⌘ ,', description: 'Open settings' },
     { keys: '⌘ B', description: 'Toggle sidebar' },
+    { keys: '⌘ ⇧ G', description: 'Toggle grayscale' },
     { keys: '⌘ 1-9', description: 'Switch account by index' },
   ]
 </script>
@@ -123,6 +124,41 @@
                     {fs.label}
                   </Button>
                 {/each}
+              </div>
+            </div>
+            <div class="space-y-3">
+              <h4 class="text-sm font-medium">Grayscale</h4>
+              <div class="flex items-center gap-3">
+                <Button
+                  variant={prefs.grayscale ? 'primary' : 'outline'}
+                  size="sm"
+                  onclick={() => prefs.grayscale = !prefs.grayscale}
+                >
+                  {prefs.grayscale ? 'On' : 'Off'}
+                </Button>
+                <span class="text-xs text-muted-foreground">Reduce color for low-light comfort</span>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-medium">Brightness</h4>
+                <span class="text-xs tabular-nums text-muted-foreground">{prefs.brightness}%</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <input
+                  type="range" min="50" max="150" step="5"
+                  value={prefs.brightness}
+                  oninput={(e) => prefs.brightness = Number((e.target as HTMLInputElement).value)}
+                  aria-label="Brightness"
+                  class="w-full h-1.5 rounded-full appearance-none bg-muted accent-primary cursor-pointer"
+                />
+                {#if prefs.brightness !== 100}
+                  <button
+                    type="button"
+                    class="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    onclick={() => prefs.brightness = 100}
+                  >Reset</button>
+                {/if}
               </div>
             </div>
           </div>

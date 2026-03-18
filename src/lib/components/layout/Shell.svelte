@@ -53,6 +53,9 @@
       case 'b':
         if (!e.shiftKey) { e.preventDefault(); toggleSidebar() }
         break
+      case 'g':
+        if (e.shiftKey) { e.preventDefault(); prefs.grayscale = !prefs.grayscale }
+        break
       default:
         if (!auth.isUserRole && !e.shiftKey && e.key >= '1' && e.key <= '9') {
           const idx = parseInt(e.key) - 1

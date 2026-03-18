@@ -7,6 +7,8 @@ const KEYS = {
   pageSize: 'mountos-admin-page-size',
   defaultAccountId: 'mountos-admin-default-account',
   sidebarCollapsed: 'mountos-admin-sidebar-collapsed',
+  grayscale: 'mountos-admin-grayscale',
+  brightness: 'mountos-admin-brightness',
 } as const
 
 function load<T>(key: string, fallback: T): T {
@@ -26,6 +28,8 @@ let fontSize = $state<FontSize>(load(KEYS.fontSize, 'standard'))
 let pageSize = $state<number>(load(KEYS.pageSize, 20))
 let defaultAccountId = $state<number | null>(load(KEYS.defaultAccountId, null))
 let sidebarCollapsed = $state<boolean>(load(KEYS.sidebarCollapsed, false))
+let grayscale = $state<boolean>(load(KEYS.grayscale, false))
+let brightness = $state<number>(load(KEYS.brightness, 100))
 
 const fontScaleMap: Record<FontSize, string> = {
   standard: '100%',
@@ -49,12 +53,22 @@ function applyFontSize(fs: FontSize) {
   document.documentElement.style.fontSize = fontScaleMap[fs]
 }
 
+function applyFilters() {
+  if (typeof document === 'undefined') return
+  const parts: string[] = []
+  if (grayscale) parts.push('grayscale(1)')
+  if (brightness !== 100) parts.push(`brightness(${brightness / 100})`)
+  document.documentElement.style.filter = parts.length ? parts.join(' ') : ''
+}
+
 $effect.root(() => {
   $effect(() => { save(KEYS.theme, theme); applyTheme(theme) })
   $effect(() => { save(KEYS.fontSize, fontSize); applyFontSize(fontSize) })
   $effect(() => { save(KEYS.pageSize, pageSize) })
   $effect(() => { save(KEYS.defaultAccountId, defaultAccountId) })
   $effect(() => { save(KEYS.sidebarCollapsed, sidebarCollapsed) })
+  $effect(() => { save(KEYS.grayscale, grayscale); applyFilters() })
+  $effect(() => { save(KEYS.brightness, brightness); applyFilters() })
 })
 
 function initBrowser() {
@@ -64,6 +78,7 @@ function initBrowser() {
   })
   applyTheme(theme)
   applyFontSize(fontSize)
+  applyFilters()
 }
 initBrowser()
 
@@ -79,5 +94,9 @@ export function usePreferences() {
     set defaultAccountId(v: number | null) { defaultAccountId = v },
     get sidebarCollapsed() { return sidebarCollapsed },
     set sidebarCollapsed(v: boolean) { sidebarCollapsed = v },
+    get grayscale() { return grayscale },
+    set grayscale(v: boolean) { grayscale = v },
+    get brightness() { return brightness },
+    set brightness(v: number) { brightness = Math.max(50, Math.min(150, v)) },
   }
 }
