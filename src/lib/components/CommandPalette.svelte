@@ -21,8 +21,8 @@
   import PanelLeft from '@lucide/svelte/icons/panel-left'
   import Plus from '@lucide/svelte/icons/plus'
   import LogOut from '@lucide/svelte/icons/log-out'
-  import UserIcon from '@lucide/svelte/icons/user'
   import Box from '@lucide/svelte/icons/box'
+  import { Badge } from '$lib/components/ui/badge'
 
   let { open = $bindable(false) }: { open?: boolean } = $props()
 
@@ -117,10 +117,10 @@
             value="account {account.name}"
             onSelect={() => run(() => accountStore.selectAccount(account.id))}
           >
-            <UserIcon class="mr-2 h-4 w-4" />
+            <Building2 class="mr-2 h-4 w-4" />
             <span class="flex-1">{account.name}</span>
             {#if account.id === accountStore.selectedAccountId}
-              <span class="text-xs text-primary">active</span>
+              <Badge variant="primary">active</Badge>
             {/if}
             {#if i < 9}
               <Command.CommandShortcut>⌘{i + 1}</Command.CommandShortcut>
