@@ -227,6 +227,7 @@
     background: url('/bg.avif') repeat;
     filter: invert(1);
     opacity: 0.05;
+    content-visibility: auto;
   }
   .dark .bg-doodle {
     filter: brightness(0.2);
