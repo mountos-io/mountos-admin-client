@@ -91,7 +91,7 @@
               <span
                 title="Set as env on service instances to groups them under one regional umbrella"
               >
-                <Lightbulb class="size-3.5 text-warning" />
+                <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
               </span>
             </span>
           </TableHead>
@@ -110,11 +110,11 @@
                 {region.exportId}
                 <button
                   type="button"
-                  title="Copy Export ID"
+                  title="Copy Export ID" aria-label="Copy Export ID"
                   class="text-muted-foreground hover:text-foreground transition-colors"
                   onclick={() => copyExportId(region.exportId)}
                 >
-                  <Copy class="size-3.5" />
+                  <Copy class="size-3.5" aria-hidden="true" />
                 </button>
               </span>
             </TableCell>
@@ -128,9 +128,11 @@
                   variant="ghost"
                   size="sm"
                   title={region.isActive ? "Deactivate" : "Activate"}
+                  aria-label={region.isActive ? "Deactivate" : "Activate"}
                   onclick={() => toggle(region)}
                 >
                   <Power
+                    aria-hidden="true"
                     class="size-3.5 {region.isActive
                       ? 'text-muted-foreground'
                       : 'text-success'}"

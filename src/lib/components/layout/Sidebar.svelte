@@ -45,7 +45,7 @@
 
 <aside
   class={cn(
-    'flex h-full flex-col border-r bg-sidebar transition-[width] duration-200 ease-in-out',
+    'flex h-full flex-col border-r bg-sidebar transition-[width] duration-200 ease-in-out will-change-[width]',
     collapsed ? 'w-14' : 'w-60'
   )}
 >

@@ -67,9 +67,9 @@
         <form onsubmit={handleSubmit} class="space-y-4">
           <div class="space-y-2">
             <Label for="name">Name</Label>
-            <Input id="name" bind:value={name} placeholder="e.g. ap-south-1a" required aria-invalid={!!nameError || undefined} />
+            <Input id="name" bind:value={name} placeholder="e.g. ap-south-1a" required aria-invalid={!!nameError || undefined} aria-describedby={nameError ? 'name-error' : undefined} />
             {#if nameError}
-              <p class="text-destructive text-xs">{nameError}</p>
+              <p id="name-error" class="text-destructive text-xs" role="alert">{nameError}</p>
             {/if}
           </div>
           <div class="space-y-2">

@@ -62,28 +62,29 @@
       <Dialog.DialogTitle>Settings</Dialog.DialogTitle>
       <Dialog.DialogDescription class="sr-only">Application settings</Dialog.DialogDescription>
     </Dialog.DialogHeader>
-    <div class="flex" style="min-height: {minHeight}">
-      <nav class="w-44 shrink-0 border-r p-2 space-y-0.5" role="tablist" aria-label="Settings">
+    <div class="flex flex-col sm:flex-row" style="min-height: {minHeight}">
+      <div class="flex sm:w-44 shrink-0 border-b sm:border-b-0 sm:border-r overflow-x-auto sm:overflow-x-visible sm:flex-col p-1.5 sm:p-2 gap-0.5" role="tablist" aria-label="Settings">
         {#each allTabs as t}
           {@const Icon = t.icon}
           <button
             role="tab"
             aria-selected={modal.tab === t.id}
             class={cn(
-              'flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors',
+              'flex items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors whitespace-nowrap',
+              'sm:w-full',
               modal.tab === t.id
                 ? 'bg-accent text-accent-foreground font-medium'
                 : 'text-muted-foreground hover:bg-accent/50'
             )}
             onclick={() => modal.tab = t.id}
           >
-            <Icon class="h-4 w-4" aria-hidden="true" />
-            {t.label}
+            <Icon class="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span class="hidden sm:inline">{t.label}</span>
           </button>
         {/each}
-      </nav>
+      </div>
 
-      <div class="flex-1 p-6 overflow-y-auto">
+      <div class="flex-1 p-4 sm:p-6 overflow-y-auto">
         {#if modal.tab === 'appearance'}
           <div class="space-y-6">
             <div class="space-y-3">

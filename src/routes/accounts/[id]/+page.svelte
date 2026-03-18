@@ -168,9 +168,9 @@
                   type="button"
                   onclick={startEdit}
                   class="opacity-50 hover:opacity-100 hover:text-primary transition-all"
-                  title="Edit account"
+                  title="Edit account" aria-label="Edit account"
                 >
-                  <PencilIcon class="size-4" />
+                  <PencilIcon class="size-4" aria-hidden="true" />
                 </button>
               {/if}
             </div>

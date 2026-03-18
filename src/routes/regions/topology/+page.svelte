@@ -374,7 +374,7 @@
         viewBox="0 0 {topo.w} {topo.h}"
         class="w-full"
         role="img" aria-label="RAFT topology diagram"
-        style="min-width: 620px; max-height: 500px;"
+        style="min-width: min(620px, 100%); max-height: 500px;"
       >
         <defs>
           <!-- Tech grid -->
@@ -574,8 +574,9 @@
     to { stroke-dashoffset: -9; }
   }
 
-  /* Status LED ping */
+  /* Status LED ping — GPU-composited (transform + opacity only) */
   .ping-led {
+    will-change: transform, opacity;
     animation: ping-slow 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
   }
   @keyframes ping-slow {
@@ -583,32 +584,43 @@
     75%, 100% { opacity: 0; transform: scale(2.8); }
   }
 
-  /* RAFT legend LED glow */
+  /* RAFT legend LED glow — use opacity instead of box-shadow */
   .led-indicator {
+    box-shadow: 0 0 6px var(--led);
     animation: led-pulse 3s ease-in-out infinite;
-    box-shadow: 0 0 3px var(--led);
+    will-change: opacity;
   }
   @keyframes led-pulse {
-    0%, 100% { box-shadow: 0 0 3px var(--led); }
-    50% { box-shadow: 0 0 10px var(--led), 0 0 3px var(--led); }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
 
-  /* Leader badge shimmer */
+  /* Leader badge shimmer — use opacity instead of filter: brightness */
   :global(.leader-badge) {
     animation: badge-glow 2.5s ease-in-out infinite;
+    will-change: opacity;
   }
   @keyframes badge-glow {
-    0%, 100% { filter: brightness(1); }
-    50% { filter: brightness(1.3); }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.75; }
   }
 
-  /* SVG leader glow pulse */
+  /* SVG leader glow pulse — already GPU-friendly */
   .leader-glow-svg {
     animation: svg-glow 2.5s ease-in-out infinite;
+    will-change: opacity;
   }
   @keyframes svg-glow {
     0%, 100% { opacity: 0.12; }
     50% { opacity: 0.3; }
+  }
+
+  /* Disable animations for reduced-motion preference */
+  @media (prefers-reduced-motion: reduce) {
+    .conn-flow, .ping-led, .led-indicator,
+    :global(.leader-badge), .leader-glow-svg, .topo-container {
+      animation: none !important;
+    }
   }
 
   /* Node slot styling */

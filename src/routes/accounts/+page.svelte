@@ -74,53 +74,53 @@
                   {#if account.isActive}
                     <Button
                       variant="ghost" size="sm"
-                      title="Deactivate"
+                      title="Deactivate" aria-label="Deactivate"
                       onclick={() => dialog.confirm('Deactivate', `Deactivate "${account.name}"?`, () => store.deactivateAccount(account.id))}
                     >
-                      <Power class="size-3.5 text-muted-foreground" />
+                      <Power class="size-3.5 text-muted-foreground" aria-hidden="true" />
                     </Button>
                   {:else}
                     <Button
                       variant="ghost" size="sm"
-                      title="Activate"
+                      title="Activate" aria-label="Activate"
                       onclick={() => dialog.confirm('Activate', `Activate "${account.name}"?`, () => store.activateAccount(account.id))}
                     >
-                      <Power class="size-3.5 text-success" />
+                      <Power class="size-3.5 text-success" aria-hidden="true" />
                     </Button>
                   {/if}
                   {#if features.accountLock}
                     {#if account.locked}
                       <Button
                         variant="ghost" size="sm"
-                        title="Unlock"
+                        title="Unlock" aria-label="Unlock"
                         onclick={() => dialog.confirm('Unlock', `Unlock "${account.name}"?`, () => store.unlockAccount(account.id))}
                       >
-                        <Lock class="size-3.5 text-destructive" />
+                        <Lock class="size-3.5 text-destructive" aria-hidden="true" />
                       </Button>
                     {:else}
                       <Button
                         variant="ghost" size="sm"
-                        title="Lock"
+                        title="Lock" aria-label="Lock"
                         onclick={() => dialog.confirm('Lock', `Lock "${account.name}"?`, () => store.lockAccount(account.id))}
                       >
-                        <LockOpen class="size-3.5 text-muted-foreground" />
+                        <LockOpen class="size-3.5 text-muted-foreground" aria-hidden="true" />
                       </Button>
                     {/if}
                   {/if}
-                  <Button variant="ghost" size="sm" href="/accounts/{account.id}?edit" title="Edit">
-                    <Pencil class="size-3.5" />
+                  <Button variant="ghost" size="sm" href="/accounts/{account.id}?edit" title="Edit" aria-label="Edit">
+                    <Pencil class="size-3.5" aria-hidden="true" />
                   </Button>
                 {/if}
-                <Button variant="ghost" size="sm" href="/accounts/{account.id}" title="View">
-                  <Eye class="size-3.5" />
+                <Button variant="ghost" size="sm" href="/accounts/{account.id}" title="View" aria-label="View">
+                  <Eye class="size-3.5" aria-hidden="true" />
                 </Button>
                 {#if account.id !== store.selectedAccountId}
                   <Button
                     variant="ghost" size="sm"
-                    title="Switch to this account"
+                    title="Switch to this account" aria-label="Switch to this account"
                     onclick={() => store.selectAccount(account.id)}
                   >
-                    <ArrowRightLeft class="size-3.5" />
+                    <ArrowRightLeft class="size-3.5" aria-hidden="true" />
                   </Button>
                 {/if}
               </div>

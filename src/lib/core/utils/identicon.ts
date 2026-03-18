@@ -1,9 +1,9 @@
 const GRID = 5
 const HALF = Math.ceil(GRID / 2)
 const COLORS = [
-  '#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#1abc9c',
-  '#3498db', '#9b59b6', '#e91e63', '#00bcd4', '#8bc34a',
-  '#ff9800', '#795548', '#607d8b', '#673ab7', '#009688',
+  '#c9564b', '#c47835', '#b89a2e', '#3ba86e', '#2e9e8a',
+  '#3d8abf', '#8b5fa0', '#b84e72', '#2e9eb5', '#7a9e42',
+  '#c48228', '#7d6054', '#6b7e8a', '#6e52a3', '#2e8a7d',
 ]
 
 function hash(n: number): number {
@@ -32,6 +32,6 @@ export function generateIdenticon(id: number, size = 64): string {
     }
   }
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}"><rect width="${size}" height="${size}" fill="#f0f0f0"/>${rects}</svg>`
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">${rects}</svg>`
   return `data:image/svg+xml,${encodeURIComponent(svg)}`
 }
