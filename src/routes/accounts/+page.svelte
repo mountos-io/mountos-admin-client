@@ -6,26 +6,18 @@
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
-  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import { features } from '$lib/config/features'
   import { formatDate } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
-  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import Plus from '@lucide/svelte/icons/plus'
-  import Eye from '@lucide/svelte/icons/eye'
   import Pencil from '@lucide/svelte/icons/pencil'
-  import Power from '@lucide/svelte/icons/power'
-  import Lock from '@lucide/svelte/icons/lock'
-  import LockOpen from '@lucide/svelte/icons/lock-open'
   import ArrowRightLeft from '@lucide/svelte/icons/arrow-right-left'
 
   const store = useAccounts()
   const auth = useAuth()
   const prefs = usePreferences()
-  const dialog = useConfirmDialog(() => store.fetchAccounts(store.currentPage, prefs.pageSize))
 
   $effect(() => {
     if (!auth.loading && !auth.can('accounts', 'read')) {
@@ -65,55 +57,18 @@
       <TableBody>
         {#each store.accounts as account}
           <TableRow>
-            <TableCell class="font-medium max-w-[200px] truncate">{account.name}</TableCell>
+            <TableCell class="font-medium max-w-[200px]">
+              <a href="/accounts/{account.id}" class="hover:text-primary truncate block transition-colors">{account.name}</a>
+            </TableCell>
             <TableCell><StatusBadge active={account.isActive} locked={account.locked} /></TableCell>
             <TableCell class="text-muted-foreground">{formatDate(account.createdAt)}</TableCell>
             <TableCell>
               <div class="flex justify-end gap-1">
                 {#if auth.can('accounts', 'update')}
-                  {#if account.isActive}
-                    <Button
-                      variant="ghost" size="sm"
-                      title="Deactivate" aria-label="Deactivate"
-                      onclick={() => dialog.confirm('Deactivate', `Deactivate "${account.name}"?`, () => store.deactivateAccount(account.id))}
-                    >
-                      <Power class="size-3.5 text-muted-foreground" aria-hidden="true" />
-                    </Button>
-                  {:else}
-                    <Button
-                      variant="ghost" size="sm"
-                      title="Activate" aria-label="Activate"
-                      onclick={() => dialog.confirm('Activate', `Activate "${account.name}"?`, () => store.activateAccount(account.id))}
-                    >
-                      <Power class="size-3.5 text-success" aria-hidden="true" />
-                    </Button>
-                  {/if}
-                  {#if features.accountLock}
-                    {#if account.locked}
-                      <Button
-                        variant="ghost" size="sm"
-                        title="Unlock" aria-label="Unlock"
-                        onclick={() => dialog.confirm('Unlock', `Unlock "${account.name}"?`, () => store.unlockAccount(account.id))}
-                      >
-                        <Lock class="size-3.5 text-destructive" aria-hidden="true" />
-                      </Button>
-                    {:else}
-                      <Button
-                        variant="ghost" size="sm"
-                        title="Lock" aria-label="Lock"
-                        onclick={() => dialog.confirm('Lock', `Lock "${account.name}"?`, () => store.lockAccount(account.id))}
-                      >
-                        <LockOpen class="size-3.5 text-muted-foreground" aria-hidden="true" />
-                      </Button>
-                    {/if}
-                  {/if}
                   <Button variant="ghost" size="sm" href="/accounts/{account.id}?edit" title="Edit" aria-label="Edit">
                     <Pencil class="size-3.5" aria-hidden="true" />
                   </Button>
                 {/if}
-                <Button variant="ghost" size="sm" href="/accounts/{account.id}" title="View" aria-label="View">
-                  <Eye class="size-3.5" aria-hidden="true" />
-                </Button>
                 {#if account.id !== store.selectedAccountId}
                   <Button
                     variant="ghost" size="sm"
@@ -133,4 +88,3 @@
   {/if}
 </div>
 
-<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />
