@@ -5,6 +5,7 @@ import { api } from './client.svelte'
 let nodes = $state<ServiceNode[]>([])
 let loading = $state(false)
 let selectedRegionId = $state<number | null>(null)
+let regionIds = $state<number[]>([])
 let serviceType = $state('')
 let statusFilter = $state('')
 let fetchCtrl: AbortController | null = null
@@ -41,6 +42,25 @@ async function fetchNodes(regionId: number) {
       statusFilter || undefined,
       ctrl.signal,
     )
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') return
+    throw e
+  } finally {
+    if (fetchCtrl === ctrl) loading = false
+  }
+}
+
+async function fetchAllNodes(ids: number[]) {
+  fetchCtrl?.abort()
+  const ctrl = fetchCtrl = new AbortController()
+  selectedRegionId = null
+  regionIds = ids
+  loading = true
+  try {
+    const results = await Promise.all(
+      ids.map(id => api.serviceNodes.list(id, serviceType || undefined, statusFilter || undefined, ctrl.signal))
+    )
+    nodes = results.flat()
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
     throw e
@@ -91,20 +111,29 @@ function resetStats() {
   statsLastUpdated = null
 }
 
+function refetch() {
+  if (selectedRegionId) fetchNodes(selectedRegionId)
+  else if (regionIds.length) fetchAllNodes(regionIds)
+}
+
 function setServiceType(type: string) {
   serviceType = type
-  if (selectedRegionId) fetchNodes(selectedRegionId)
+  refetch()
 }
 
 function setStatus(s: string) {
   statusFilter = s
-  if (selectedRegionId) fetchNodes(selectedRegionId)
+  refetch()
+}
+
+function clearFilters() {
+  serviceType = ''
+  statusFilter = ''
 }
 
 function resetFilters() {
-  serviceType = ''
-  statusFilter = ''
-  if (selectedRegionId) fetchNodes(selectedRegionId)
+  clearFilters()
+  refetch()
 }
 
 export function useNodes() {
@@ -122,12 +151,14 @@ export function useNodes() {
     get statsLastUpdated() { return statsLastUpdated },
     get pollInterval() { return pollInterval },
     fetchNodes,
+    fetchAllNodes,
     fetchStats,
     startPolling,
     stopPolling,
     resetStats,
     setServiceType,
     setStatus,
+    clearFilters,
     resetFilters,
   }
 }

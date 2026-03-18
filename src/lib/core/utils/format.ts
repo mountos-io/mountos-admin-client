@@ -14,12 +14,21 @@ const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['second', 1000],
 ]
 
-export function formatDate(date: string | Date): string {
-  return dtf.format(typeof date === 'string' ? new Date(date) : date)
+function parseDate(date: string | number | Date): Date {
+  if (date instanceof Date) return date
+  if (typeof date === 'number') return new Date(date * 1000)
+  // Postgres timestamps lack timezone — treat as UTC
+  if (!date.includes('T') && !date.includes('Z') && !date.includes('+'))
+    return new Date(date.replace(' ', 'T') + 'Z')
+  return new Date(date)
 }
 
-export function formatRelative(date: string | Date): string {
-  const d = typeof date === 'string' ? new Date(date) : date
+export function formatDate(date: string | number | Date): string {
+  return dtf.format(parseDate(date))
+}
+
+export function formatRelative(date: string | number | Date): string {
+  const d = parseDate(date)
   const diff = d.getTime() - Date.now()
   for (const [unit, ms] of UNITS) {
     if (Math.abs(diff) >= ms) {
@@ -63,9 +72,9 @@ export function formatClientType(raw: string): string {
   return CLIENT_TYPE_NAMES[raw] ?? raw
 }
 
-export function formatDuration(from: string | Date, to?: string | Date): string {
-  const start = typeof from === 'string' ? new Date(from) : from
-  const end = to ? (typeof to === 'string' ? new Date(to) : to) : new Date()
+export function formatDuration(from: string | number | Date, to?: string | number | Date): string {
+  const start = parseDate(from)
+  const end = to ? parseDate(to) : new Date()
   const ms = end.getTime() - start.getTime()
   if (!Number.isFinite(ms) || ms < 60_000) return '< 1m'
   const mins = Math.floor(ms / 60_000)

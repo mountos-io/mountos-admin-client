@@ -6,31 +6,34 @@
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
+  import { Card } from '$lib/components/ui/card'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import { showErrorToast } from '$lib/core/utils/toast'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
+  import { showErrorToast } from '$lib/core/utils/toast'
+  import { formatRelative } from '$lib/core/utils/format'
   import type { Region, ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
+  import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import Shield from '@lucide/svelte/icons/shield'
+  import Database from '@lucide/svelte/icons/database'
+  import Trash2 from '@lucide/svelte/icons/trash-2'
+  import HardDrive from '@lucide/svelte/icons/hard-drive'
+  import Box from '@lucide/svelte/icons/box'
+  import Cloud from '@lucide/svelte/icons/cloud'
+  import Container from '@lucide/svelte/icons/container'
 
   const nodeStore = useNodes()
   const regionStore = useRegions()
   const auth = useAuth()
 
   let region = $state<Region | null>(null)
-  let svgTip = $state<{ node: ServiceNode; x: number; y: number } | null>(null)
+  let hoveredNode = $state<{ node: ServiceNode; x: number; y: number } | null>(null)
+  let expandedGroups = $state(new Set<string>())
 
   const regionId = $derived(Number($page.params.regionId))
-
-  const SERVICE_STYLES: Record<string, { color: string; label: string }> = {
-    appserv:       { color: 'oklch(0.65 0.15 310)', label: 'Hub (appserv)' },
-    dataserv:      { color: 'oklch(0.55 0.18 260)', label: 'Data' },
-    gcserv:        { color: 'oklch(0.55 0.12 140)', label: 'GC' },
-    fuseserv:      { color: 'oklch(0.65 0.18 55)',  label: 'FUSE' },
-    blockserv:     { color: 'oklch(0.60 0.14 200)', label: 'Block' },
-    s3gatewayserv: { color: 'oklch(0.60 0.14 30)',  label: 'S3 Gateway' },
-    csiserv:       { color: 'oklch(0.55 0.12 170)', label: 'CSI' },
-  }
+  const COLLAPSE_THRESHOLD = 8
+  const NAVIGABLE_TYPES = new Set(['appserv', 'dataserv', 'fuseserv'])
 
   const STATUS_COLORS: Record<string, string> = {
     healthy: 'oklch(0.6 0.18 145)',
@@ -39,35 +42,38 @@
     draining: 'oklch(0.7 0.15 80)',
   }
 
-  const NAVIGABLE_TYPES = new Set(['appserv', 'dataserv', 'fuseserv', 'hub', 'mfuse'])
-
-  function statusColor(s: string) { return STATUS_COLORS[s] ?? 'oklch(0.5 0 0)' }
-  function serviceColor(type: string) {
-    const key = type === 'hub' ? 'appserv' : type === 'mfuse' ? 'fuseserv' : type
-    return SERVICE_STYLES[key]?.color ?? 'oklch(0.5 0.08 0)'
-  }
-  function serviceLabel(type: string) {
-    const key = type === 'hub' ? 'appserv' : type === 'mfuse' ? 'fuseserv' : type
-    return SERVICE_STYLES[key]?.label ?? type
-  }
-  function normalizeType(type: string) {
-    return type === 'hub' ? 'appserv' : type === 'mfuse' ? 'fuseserv' : type
-  }
-  function isNavigable(node: ServiceNode) {
-    return NAVIGABLE_TYPES.has(node.serviceType)
+  const SERVICE_PALETTE: Record<string, { accent: string; bg: string; label: string; icon: typeof Shield }> = {
+    appserv:       { accent: 'oklch(0.70 0.12 310)', bg: 'oklch(0.70 0.12 310 / 0.06)', label: 'Hub', icon: Shield },
+    dataserv:      { accent: 'oklch(0.60 0.14 260)', bg: 'oklch(0.60 0.14 260 / 0.06)', label: 'Data', icon: Database },
+    gcserv:        { accent: 'oklch(0.62 0.10 140)', bg: 'oklch(0.62 0.10 140 / 0.06)', label: 'GC', icon: Trash2 },
+    fuseserv:      { accent: 'oklch(0.70 0.14 55)',  bg: 'oklch(0.70 0.14 55 / 0.06)',  label: 'FUSE', icon: HardDrive },
+    blockserv:     { accent: 'oklch(0.65 0.12 200)', bg: 'oklch(0.65 0.12 200 / 0.06)', label: 'Block', icon: Box },
+    s3gatewayserv: { accent: 'oklch(0.65 0.12 30)',  bg: 'oklch(0.65 0.12 30 / 0.06)',  label: 'S3 Gateway', icon: Cloud },
+    csiserv:       { accent: 'oklch(0.60 0.10 170)', bg: 'oklch(0.60 0.10 170 / 0.06)', label: 'CSI', icon: Container },
   }
 
-  // Layout ordering
+  const TIER_COLORS: Record<string, string> = {
+    control: 'oklch(0.70 0.12 310)',
+    data: 'oklch(0.60 0.14 260)',
+    edge: 'oklch(0.70 0.14 55)',
+  }
+
+  const TIERS = [
+    { id: 'control', label: 'CONTROL', types: ['appserv'], deco: 'vault' as const },
+    { id: 'data', label: 'DATA', types: ['dataserv', 'gcserv'], deco: 'database' as const },
+    { id: 'edge', label: 'CLIENT / EDGE', types: ['fuseserv', 'blockserv', 's3gatewayserv', 'csiserv'], deco: undefined },
+  ]
+
   const SERVICE_TYPE_OPTIONS = [
     { value: '', label: 'All Types' },
+    { value: 'appserv', label: 'appserv' },
     { value: 'dataserv', label: 'dataserv' },
-    { value: 'blockserv', label: 'blockserv' },
     { value: 'gcserv', label: 'gcserv' },
     { value: 'fuseserv', label: 'fuseserv' },
+    { value: 'blockserv', label: 'blockserv' },
     { value: 's3gatewayserv', label: 's3gatewayserv' },
     { value: 'csiserv', label: 'csiserv' },
     { value: 'mfuse', label: 'mfuse' },
-    { value: 'appserv', label: 'appserv' },
     { value: 'hub', label: 'hub' },
   ] as const
 
@@ -79,70 +85,42 @@
     { value: 'draining', label: 'Draining' },
   ] as const
 
-  const SERVICE_ORDER = ['appserv', 'dataserv', 'gcserv', 'fuseserv', 'blockserv', 's3gatewayserv', 'csiserv']
-
-  const sortedGroups = $derived.by(() => {
+  const tierData = $derived.by(() => {
     const byType = nodeStore.nodesByType
-    const ordered: [string, ServiceNode[]][] = []
-    for (const svc of SERVICE_ORDER) {
-      const list = byType.get(svc)
-      if (list?.length) ordered.push([svc, list])
-    }
-    for (const [svc, list] of byType) {
-      if (!SERVICE_ORDER.includes(svc)) ordered.push([svc, list])
-    }
-    return ordered
+    return TIERS.map(tier => ({
+      ...tier,
+      groups: tier.types
+        .map(type => ({ type, nodes: byType.get(type) ?? [] }))
+        .filter(g => g.nodes.length > 0),
+      nodeCount: tier.types.reduce((sum, t) => sum + (byType.get(t)?.length ?? 0), 0),
+    })).filter(t => t.groups.length > 0)
   })
 
   const topoStats = $derived.by(() => {
     const n = nodeStore.nodes
     return {
       total: n.length,
-      active: n.filter(x => x.status === 'healthy').length,
+      healthy: n.filter(x => x.status === 'healthy').length,
       types: nodeStore.nodesByType.size,
     }
   })
 
-  // SVG layout computation
-  const topo = $derived.by(() => {
-    const padX = 60, padTop = 30, padBot = 40
-    const groupGapY = 110, nodeGap = 100
-    const groups = sortedGroups
-    if (!groups.length) return null
+  function statusColor(s: string) { return STATUS_COLORS[s] ?? 'oklch(0.5 0 0)' }
 
-    const maxNodesInGroup = Math.max(...groups.map(([, list]) => list.length))
-    const w = Math.max(500, padX * 2 + maxNodesInGroup * nodeGap)
-    const h = padTop + groups.length * groupGapY + padBot
+  function isNavigable(node: ServiceNode) {
+    const t = node.serviceType === 'hub' ? 'appserv' : node.serviceType === 'mfuse' ? 'fuseserv' : node.serviceType
+    return NAVIGABLE_TYPES.has(t)
+  }
 
-    const clusterPositions = groups.map(([svc, list], gi) => {
-      const cy = padTop + gi * groupGapY + 45
-      const totalW = (list.length - 1) * nodeGap
-      const startX = (w - totalW) / 2
-      const nodePositions = list.map((node, ni) => ({
-        node,
-        x: startX + ni * nodeGap,
-        y: cy,
-      }))
-      return { svc, cy, nodePositions }
-    })
+  function palette(type: string) {
+    return SERVICE_PALETTE[type] ?? { accent: 'oklch(0.5 0.08 0)', bg: 'oklch(0.5 0.08 0 / 0.06)', label: type, icon: Box }
+  }
 
-    return { w, h, clusterPositions }
-  })
-
-  // Decorative connecting lines between clusters
-  const connectors = $derived.by(() => {
-    if (!topo || topo.clusterPositions.length < 2) return []
-    const lines: { x: number; y1: number; y2: number }[] = []
-    const cx = topo.w / 2
-    for (let i = 0; i < topo.clusterPositions.length - 1; i++) {
-      lines.push({
-        x: cx,
-        y1: topo.clusterPositions[i].cy + 30,
-        y2: topo.clusterPositions[i + 1].cy - 30,
-      })
-    }
-    return lines
-  })
+  function toggleExpand(type: string) {
+    const next = new Set(expandedGroups)
+    next.has(type) ? next.delete(type) : next.add(type)
+    expandedGroups = next
+  }
 
   $effect(() => {
     if (!auth.loading && !auth.can('serviceNodes', 'read')) {
@@ -150,15 +128,19 @@
       goto('/', { replaceState: true })
       return
     }
+  })
+
+  $effect(() => {
     if (regionId) {
-      regionStore.getRegion(regionId).then(r => region = r)
-      nodeStore.resetFilters()
+      regionStore.getRegion(regionId).then(r => region = r).catch(() => {})
+      nodeStore.clearFilters()
       nodeStore.fetchNodes(regionId)
     }
   })
 </script>
 
 <div class="space-y-5">
+  <!-- Header -->
   <div class="flex items-center gap-3">
     <Button variant="ghost" size="sm" onclick={() => goto('/nodes')}>
       <ArrowLeft class="h-4 w-4" />
@@ -189,182 +171,167 @@
     />
   </div>
 
-  <!-- Stats strip -->
+  <!-- Stats -->
   <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm">
     <div><span class="text-muted-foreground">Nodes</span> <span class="ml-1 font-medium">{topoStats.total}</span></div>
-    <div><span class="text-muted-foreground">Healthy</span> <span class="ml-1 font-medium" style:color={STATUS_COLORS.healthy}>{topoStats.active}</span></div>
+    <div><span class="text-muted-foreground">Healthy</span> <span class="ml-1 font-medium" style:color={STATUS_COLORS.healthy}>{topoStats.healthy}</span></div>
     <div><span class="text-muted-foreground">Types</span> <span class="ml-1 font-medium">{topoStats.types}</span></div>
-    {#each sortedGroups as [svc, list]}
-      <div>
-        <span class="text-muted-foreground">{serviceLabel(svc)}</span>
-        <span class="ml-1 font-medium" style:color={serviceColor(svc)}>{list.length}</span>
-      </div>
-    {/each}
   </div>
 
   {#if nodeStore.loading}
     <LoadingSpinner />
   {:else if nodeStore.nodes.length === 0}
     <EmptyState title="No nodes" description="No nodes registered in this region." />
-  {:else if topo}
-    <!-- Service type legend -->
-    <div class="flex flex-wrap items-center gap-2">
-      {#each sortedGroups as [svc]}
-        <div class="flex items-center gap-2 rounded-sm border px-3 py-1.5 text-xs">
-          <span class="led-indicator h-2.5 w-2.5 rounded-sm shrink-0" style:background={serviceColor(svc)} style:--led={serviceColor(svc)}></span>
-          <span class="font-medium">{serviceLabel(svc)}</span>
-        </div>
+  {:else}
+    <!-- Tiered topology -->
+    <div class="space-y-0">
+      {#each tierData as tier, ti}
+        {#if ti > 0}
+          <div class="mx-auto my-1 h-5 w-px border-l border-dashed border-border/30"></div>
+        {/if}
+        <section
+          class="rounded-sm border-l-2 bg-card/30 p-4"
+          style:border-color={TIER_COLORS[tier.id]}
+          aria-label="{tier.label} tier"
+        >
+          <div class="mb-3 flex items-center gap-2">
+            <span
+              class="text-[10px] font-semibold uppercase tracking-widest"
+              style:color={TIER_COLORS[tier.id]}
+            >{tier.label}</span>
+            <span class="text-[10px] text-muted-foreground">{tier.nodeCount} nodes</span>
+          </div>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {#each tier.groups as group}
+              {@const p = palette(group.type)}
+              {@const Icon = p.icon}
+              {@const isDataserv = group.type === 'dataserv'}
+              {@const expanded = expandedGroups.has(group.type)}
+              {@const needsCollapse = group.nodes.length > COLLAPSE_THRESHOLD}
+              {@const visibleNodes = expanded || !needsCollapse ? group.nodes : group.nodes.slice(0, COLLAPSE_THRESHOLD)}
+              {@const hiddenCount = group.nodes.length - visibleNodes.length}
+              <Card
+                cornerBrackets
+                class="relative overflow-hidden"
+                style="border-left: 4px solid {p.accent}; background: {p.bg};"
+              >
+                {#if isDataserv}
+                  <div class="tech-grid-bg absolute inset-0 pointer-events-none"></div>
+                {/if}
+                <div class="relative">
+                  <!-- Card header -->
+                  <div class="flex items-center gap-2 px-3 pt-3 pb-2">
+                    <span style:color={p.accent} class="shrink-0">
+                      <Icon class="h-4 w-4" />
+                    </span>
+                    <span class="text-sm font-semibold">{p.label}</span>
+                    <Badge variant="outline" class="ml-auto text-[10px]">{group.nodes.length}</Badge>
+                    {#if isDataserv}
+                      <Badge variant="secondary" class="text-[10px]">RAFT</Badge>
+                    {/if}
+                  </div>
+
+                  <!-- Node list -->
+                  <div class="divide-y divide-border/30">
+                    {#each visibleNodes as node}
+                      {@const navigable = isNavigable(node)}
+                      {#if navigable}
+                        <button
+                          class="node-row flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors cursor-pointer hover:bg-foreground/[0.03]"
+                          aria-label="View node {node.nodeId}"
+                          onclick={() => goto(`/nodes/${regionId}/${node.nodeId}`)}
+                          onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
+                          onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
+                          onpointerleave={() => hoveredNode = null}
+                        >
+                          <span
+                            class="led-dot block h-2 w-2 shrink-0 rounded-full"
+                            class:led-ping={node.status === 'healthy'}
+                            class:led-raft={isDataserv}
+                            style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
+                          ></span>
+                          <span class="min-w-0 flex-1 truncate font-mono text-xs">{node.nodeId}</span>
+                          <span class="shrink-0 font-mono text-[10px] text-muted-foreground">{node.advertiseAddr}</span>
+                        </button>
+                      {:else}
+                        <div
+                          role="img" aria-label="{node.nodeId}"
+                          class="node-row flex items-center gap-2 px-3 py-1.5"
+                          onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
+                          onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
+                          onpointerleave={() => hoveredNode = null}
+                        >
+                          <span
+                            class="led-dot block h-2 w-2 shrink-0 rounded-full"
+                            class:led-ping={node.status === 'healthy'}
+                            class:led-raft={isDataserv}
+                            style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
+                          ></span>
+                          <span class="min-w-0 flex-1 truncate font-mono text-xs">{node.nodeId}</span>
+                          <span class="shrink-0 font-mono text-[10px] text-muted-foreground">{node.advertiseAddr}</span>
+                        </div>
+                      {/if}
+                    {/each}
+                  </div>
+
+                  <!-- Expand / collapse -->
+                  {#if needsCollapse}
+                    <button
+                      class="flex w-full items-center justify-center gap-1 border-t border-border/30 px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground hover:bg-foreground/[0.03]"
+                      onclick={() => toggleExpand(group.type)}
+                    >
+                      <ChevronDown class="h-3 w-3 transition-transform" style="transform: rotate({expanded ? 180 : 0}deg);" />
+                      {expanded ? 'Show less' : `+${hiddenCount} more`}
+                    </button>
+                  {:else}
+                    <div class="h-1.5"></div>
+                  {/if}
+                </div>
+              </Card>
+            {/each}
+
+            <!-- Decorative element -->
+            {#if tier.deco === 'vault'}
+              <div class="flex items-center justify-center self-stretch rounded-sm border border-dashed border-border/20 p-4 opacity-20">
+                <div class="flex flex-col items-center gap-1.5 text-muted-foreground">
+                  <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  <span class="text-[9px] font-semibold uppercase tracking-widest">Vault</span>
+                </div>
+              </div>
+            {:else if tier.deco === 'database'}
+              <div class="flex items-center justify-center self-stretch rounded-sm border border-dashed border-border/20 p-4 opacity-20">
+                <div class="flex flex-col items-center gap-1.5 text-muted-foreground">
+                  <Database class="h-8 w-8" />
+                  <span class="text-[9px] font-semibold uppercase tracking-widest">Database</span>
+                </div>
+              </div>
+            {/if}
+          </div>
+        </section>
       {/each}
-    </div>
-
-    <!-- Topology SVG -->
-    <div class="topo-container overflow-x-auto rounded-sm p-3">
-      <svg
-        viewBox="0 0 {topo.w} {topo.h}"
-        class="w-full"
-        role="img" aria-label="Region node topology"
-        style="min-width: min(500px, 100%); max-height: 700px;"
-      >
-        <defs>
-          <pattern id="tgrid" width="24" height="24" patternUnits="userSpaceOnUse">
-            <path d="M 24 0 L 0 0 0 24" fill="none" stroke="var(--color-foreground)" stroke-width="0.3" stroke-opacity="0.05" />
-          </pattern>
-          <filter id="glow">
-            <feGaussianBlur stdDeviation="5" result="b" />
-            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-          <filter id="glow-soft">
-            <feGaussianBlur stdDeviation="3" result="b" />
-            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-          </filter>
-        </defs>
-
-        <rect width="100%" height="100%" fill="url(#tgrid)" />
-
-        <!-- Dashed connector lines between clusters -->
-        {#each connectors as conn}
-          <line x1={conn.x} y1={conn.y1} x2={conn.x} y2={conn.y2}
-            stroke="var(--color-border)" stroke-opacity="0.3" stroke-dasharray="4 6"
-            class="conn-flow" />
-        {/each}
-
-        <!-- Clusters -->
-        {#each topo.clusterPositions as cluster}
-          {@const svcColor = serviceColor(cluster.svc)}
-          {@const isDataserv = cluster.svc === 'dataserv'}
-
-          <!-- Group label -->
-          <text
-            x={topo.w / 2} y={cluster.cy - 30}
-            text-anchor="middle" font-size="11" font-weight="600"
-            fill={svcColor}
-          >{serviceLabel(cluster.svc)}</text>
-
-          <!-- Dataserv raft decorative ring -->
-          {#if isDataserv && cluster.nodePositions.length > 1}
-            {@const minX = Math.min(...cluster.nodePositions.map(p => p.x))}
-            {@const maxX = Math.max(...cluster.nodePositions.map(p => p.x))}
-            <ellipse
-              cx={(minX + maxX) / 2} cy={cluster.cy}
-              rx={(maxX - minX) / 2 + 28} ry="24"
-              fill="none" stroke={svcColor} stroke-width="1"
-              stroke-dasharray="6 4" opacity="0.25"
-            />
-          {/if}
-
-          <!-- Nodes -->
-          {#each cluster.nodePositions as { node, x, y }}
-            {@const navigable = isNavigable(node)}
-            {@const nodeR = 12}
-            <g
-              class="topo-node" class:cursor-pointer={navigable}
-              role="button" tabindex="0"
-              onclick={() => { if (navigable) goto(`/nodes/${regionId}/${node.nodeId}`) }}
-              onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' && navigable) goto(`/nodes/${regionId}/${node.nodeId}`) }}
-              onpointerenter={(e: PointerEvent) => svgTip = { node, x: e.clientX, y: e.clientY }}
-              onpointermove={(e: PointerEvent) => { if (svgTip) svgTip = { node, x: e.clientX, y: e.clientY } }}
-              onpointerleave={() => svgTip = null}
-            >
-              <!-- Dataserv raft outer ring per node -->
-              {#if isDataserv}
-                <circle cx={x} cy={y} r={nodeR + 6} fill="none"
-                  stroke={svcColor} stroke-width="1.5" opacity="0.35" />
-              {/if}
-
-              <!-- Main status circle -->
-              <circle cx={x} cy={y} r={nodeR} fill={statusColor(node.status)} />
-
-              <!-- Active heartbeat ping -->
-              {#if node.status === 'healthy'}
-                <circle cx={x} cy={y} r={nodeR} fill="none"
-                  stroke={statusColor('healthy')} stroke-width="1">
-                  <animate attributeName="r" from="{nodeR}" to="{nodeR + 14}" dur="2.5s" repeatCount="indefinite" />
-                  <animate attributeName="opacity" from="0.45" to="0" dur="2.5s" repeatCount="indefinite" />
-                </circle>
-              {/if}
-
-              <!-- Service color ring -->
-              <circle cx={x} cy={y} r={nodeR + 2} fill="none"
-                stroke={svcColor} stroke-width="0.8" opacity="0.4" />
-
-              <!-- Node ID label -->
-              <text x={x} y={y + nodeR + 15} text-anchor="middle"
-                font-size="7.5" font-family="ui-monospace, monospace"
-                fill="var(--color-muted-foreground)">{node.nodeId}</text>
-
-              <!-- Status label for non-healthy -->
-              {#if node.status !== 'healthy'}
-                <text x={x} y={y + nodeR + 24} text-anchor="middle"
-                  font-size="7" font-weight="600"
-                  fill={statusColor(node.status)}>{node.status.toUpperCase()}</text>
-              {/if}
-
-              <circle cx={x} cy={y} r="24" fill="transparent" />
-            </g>
-          {/each}
-        {/each}
-
-        <!-- Decorative vault icon above appserv -->
-        {#if topo.clusterPositions[0]?.svc === 'appserv'}
-          {@const vy = topo.clusterPositions[0].cy - 50}
-          <g transform="translate({topo.w / 2},{vy})" opacity="0.15">
-            <polygon points="0,-12 10.4,-6 10.4,6 0,12 -10.4,6 -10.4,-6" fill="none"
-              stroke={serviceColor('appserv')} stroke-width="1.5" />
-          </g>
-        {/if}
-
-        <!-- Decorative DB cylinder between dataserv and gcserv -->
-        {#if sortedGroups.some(([s]) => s === 'dataserv') && sortedGroups.some(([s]) => s === 'gcserv')}
-          {@const diIdx = topo.clusterPositions.findIndex(c => c.svc === 'dataserv')}
-          {@const giIdx = topo.clusterPositions.findIndex(c => c.svc === 'gcserv')}
-          {#if diIdx >= 0 && giIdx >= 0}
-            {@const midY = (topo.clusterPositions[diIdx].cy + topo.clusterPositions[giIdx].cy) / 2}
-            <g transform="translate({topo.w / 2},{midY})" opacity="0.15">
-              <ellipse cx="0" cy="-8" rx="10" ry="4" fill="none" stroke="var(--color-foreground)" stroke-width="1" />
-              <line x1="-10" y1="-8" x2="-10" y2="8" stroke="var(--color-foreground)" stroke-width="1" />
-              <line x1="10" y1="-8" x2="10" y2="8" stroke="var(--color-foreground)" stroke-width="1" />
-              <ellipse cx="0" cy="8" rx="10" ry="4" fill="none" stroke="var(--color-foreground)" stroke-width="1" />
-            </g>
-          {/if}
-        {/if}
-      </svg>
     </div>
   {/if}
 </div>
 
-<!-- SVG Tooltip -->
-{#if svgTip}
+<!-- Tooltip -->
+{#if hoveredNode}
   <div
     class="fixed z-50 pointer-events-none rounded-sm border bg-card px-3 py-2 shadow-lg"
-    style:left="{svgTip.x + 16}px"
-    style:top="{svgTip.y - 12}px"
+    style:left="{hoveredNode.x + 16}px"
+    style:top="{hoveredNode.y - 12}px"
   >
-    <div class="font-mono text-xs font-semibold">{svgTip.node.nodeId}</div>
+    <div class="font-mono text-xs font-semibold">{hoveredNode.node.nodeId}</div>
     <div class="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
-      <div>Service: <span class="text-foreground">{svgTip.node.serviceType}</span></div>
-      <div>Status: <span style:color={statusColor(svgTip.node.status)}>{svgTip.node.status}</span></div>
-      <div>Address: <span class="text-foreground font-mono">{svgTip.node.advertiseAddr}</span></div>
-      {#if isNavigable(svgTip.node)}
+      <div>Service: <span class="text-foreground">{hoveredNode.node.serviceType}</span></div>
+      <div>Status: <span style:color={statusColor(hoveredNode.node.status)}>{hoveredNode.node.status}</span></div>
+      <div>Address: <span class="text-foreground font-mono">{hoveredNode.node.advertiseAddr}</span></div>
+      {#if hoveredNode.node.lastHeartbeat}
+        <div>Heartbeat: <span class="text-foreground">{formatRelative(hoveredNode.node.lastHeartbeat)}</span></div>
+      {/if}
+      {#if isNavigable(hoveredNode.node)}
         <div class="text-foreground/60 mt-1">Click for details</div>
       {/if}
     </div>
@@ -372,43 +339,33 @@
 {/if}
 
 <style>
-  .conn-flow {
-    animation: dash-flow 0.9s linear infinite;
-  }
-  @keyframes dash-flow {
-    to { stroke-dashoffset: -10; }
+  .led-dot {
+    box-shadow: 0 0 6px var(--led);
   }
 
-  .led-indicator {
-    box-shadow: 0 0 6px var(--led);
-    animation: led-pulse 3s ease-in-out infinite;
-    will-change: opacity;
+  .led-ping {
+    animation: led-pulse 2.5s ease-in-out infinite;
   }
+
+  .led-raft {
+    box-shadow: 0 0 0 2px var(--color-card), 0 0 0 3.5px var(--led), 0 0 6px var(--led);
+  }
+
   @keyframes led-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--led); }
+    50% { opacity: 0.6; box-shadow: 0 0 3px var(--led); }
+  }
+
+  .tech-grid-bg {
+    background-image:
+      linear-gradient(oklch(0.60 0.14 260 / 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.60 0.14 260 / 0.04) 1px, transparent 1px);
+    background-size: 20px 20px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .conn-flow, .led-indicator, .topo-container {
+    .led-ping {
       animation: none !important;
     }
   }
-
-  .topo-container {
-    background:
-      linear-gradient(var(--color-card), var(--color-card)) padding-box,
-      linear-gradient(135deg, oklch(0.55 0.18 260), oklch(0.65 0.18 55), oklch(0.55 0.15 175), oklch(0.55 0.18 260)) border-box;
-    border: 1.5px solid transparent;
-    background-size: 100% 100%, 400% 400%;
-    animation: border-shift 6s ease-in-out infinite;
-  }
-  @keyframes border-shift {
-    0%, 100% { background-position: 0 0, 0% 0%; }
-    33% { background-position: 0 0, 100% 0%; }
-    66% { background-position: 0 0, 100% 100%; }
-  }
-
-  .topo-node { cursor: default; }
-  .topo-node.cursor-pointer { cursor: pointer; }
 </style>

@@ -102,7 +102,13 @@
       </TableHeader>
       <TableBody>
         {#each store.regions as region}
-          <TableRow>
+          <TableRow
+            class="cursor-pointer hover:bg-muted/50"
+            onclick={() => goto(`/nodes/${region.id}`)}
+            onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/nodes/${region.id}`))}
+            role="link"
+            tabindex={0}
+          >
             <TableCell class="font-medium max-w-[160px] truncate">{region.name}</TableCell>
             <TableCell class="font-mono text-xs max-w-[200px] truncate">{region.dns}</TableCell>
             <TableCell>
@@ -112,7 +118,7 @@
                   type="button"
                   title="Copy Export ID" aria-label="Copy Export ID"
                   class="text-muted-foreground hover:text-foreground transition-colors"
-                  onclick={() => copyExportId(region.exportId)}
+                  onclick={(e: MouseEvent) => { e.stopPropagation(); copyExportId(region.exportId) }}
                 >
                   <Copy class="size-3.5" aria-hidden="true" />
                 </button>
@@ -129,7 +135,7 @@
                   size="sm"
                   title={region.isActive ? "Deactivate" : "Activate"}
                   aria-label={region.isActive ? "Deactivate" : "Activate"}
-                  onclick={() => toggle(region)}
+                  onclick={(e: MouseEvent) => { e.stopPropagation(); toggle(region) }}
                 >
                   <Power
                     aria-hidden="true"

@@ -21,7 +21,7 @@
   const regionId = $derived(Number($page.params.regionId))
   const nodeId = $derived($page.params.nodeId)
 
-  let node = $derived<ServiceNode | undefined>(nodeStore.nodes.find(n => n.nodeId === nodeId))
+  const node = $derived<ServiceNode | undefined>(nodeStore.nodes.find(n => n.nodeId === nodeId))
   let pollValue = $state('0')
 
   const POLL_OPTIONS = [
@@ -73,20 +73,18 @@
     if (!auth.loading && !auth.can('serviceNodes', 'read')) {
       showErrorToast('Access denied')
       goto('/', { replaceState: true })
-      return
-    }
-    if (regionId && nodeId) {
-      if (!nodeStore.nodes.length) nodeStore.fetchNodes(regionId)
-      nodeStore.fetchStats(regionId, nodeId)
     }
   })
 
   $effect(() => {
+    if (!regionId || !nodeId) return
+    if (!nodeStore.nodes.length) nodeStore.fetchNodes(regionId)
     const interval = Number(pollValue)
-    if (interval > 0 && regionId && nodeId) {
+    if (interval > 0) {
       nodeStore.startPolling(regionId, nodeId, interval)
     } else {
       nodeStore.stopPolling()
+      nodeStore.fetchStats(regionId, nodeId)
     }
   })
 

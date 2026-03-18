@@ -16,6 +16,7 @@
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useLicense } from '$lib/core/stores/license.svelte'
   import { Badge } from '$lib/components/ui/badge'
+  import { formatDate } from '$lib/core/utils/format'
 
   const prefs = usePreferences()
   const modal = useSettingsModal()
@@ -246,12 +247,12 @@
                 <hr class="border-border" />
                 <div class="flex justify-between">
                   <dt class="text-muted-foreground">Issued</dt>
-                  <dd>{new Date(lic.issuedAt).toLocaleDateString()}</dd>
+                  <dd>{formatDate(lic.issuedAt)}</dd>
                 </div>
                 <div class="flex justify-between">
                   <dt class="text-muted-foreground">Expires</dt>
                   <dd class:text-destructive={lic.status === 'expired'} class:text-warning={lic.status === 'expiring' || lic.status === 'grace'}>
-                    {new Date(lic.expiresAt).toLocaleDateString()}
+                    {formatDate(lic.expiresAt)}
                     {#if lic.daysRemaining > 0}({lic.daysRemaining}d remaining){:else if lic.daysRemaining < 0}({Math.abs(lic.daysRemaining)}d ago){/if}
                   </dd>
                 </div>
@@ -259,7 +260,7 @@
                   <div class="flex justify-between">
                     <dt class="text-muted-foreground">Grace ends</dt>
                     <dd class:text-destructive={lic.graceDaysLeft <= 0}>
-                      {new Date(lic.graceEndsAt).toLocaleDateString()}
+                      {formatDate(lic.graceEndsAt)}
                       {#if lic.graceDaysLeft > 0}({lic.graceDaysLeft}d left){/if}
                     </dd>
                   </div>
