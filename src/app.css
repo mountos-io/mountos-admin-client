@@ -223,6 +223,10 @@
 
   ::selection { background: var(--primary); color: var(--secondary); }
 
+  #main-content {
+    background: var(--background) url('/bg.avif') repeat;
+  }
+
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
   input:-webkit-autofill:focus {
