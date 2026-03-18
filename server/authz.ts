@@ -12,11 +12,13 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
   'client-sessions': 'clientSessions',
   discover: 'discover',
   cache: 'cache',
+  dashboard: 'dashboard',
+  license: 'license',
 }
 
 const CREATE_SUFFIXES = ['/create', '/add']
 
-const USER_ROLE_RESOURCES = new Set(['volumes', 'auditLogs'])
+const USER_ROLE_RESOURCES = new Set(['volumes', 'auditLogs', 'dashboard'])
 const API_KEY_PATH = /^\/api\/v1\/volumes\/(\d+)\/api-keys\/(generate|revoke)$/
 const VOLUME_ID_PATH = /^\/api\/v1\/volumes\/(\d+)/
 

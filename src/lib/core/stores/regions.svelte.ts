@@ -14,8 +14,8 @@ async function fetchRegions(page = 1, limit = 20) {
   try {
     const res = await api.regions.list({ page, limit }, ctrl.signal)
     regions = res.items
-    totalPages = res.pagination.totalPages
-    currentPage = res.pagination.page
+    totalPages = res.pagination?.totalPages ?? 0
+    currentPage = res.pagination?.page ?? 1
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
     throw e

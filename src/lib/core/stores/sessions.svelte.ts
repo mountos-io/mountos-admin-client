@@ -23,8 +23,8 @@ async function fetchSessions(opts?: ClientSessionListOptions) {
   try {
     const res = await api.clientSessions.list(opts, ctrl.signal)
     sessions = res.items
-    totalPages = res.pagination.totalPages
-    currentPage = res.pagination.page
+    totalPages = res.pagination?.totalPages ?? 0
+    currentPage = res.pagination?.page ?? 1
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
     error = (e as Error).message || 'Failed to load sessions'

@@ -17,8 +17,8 @@ async function fetchVolumes(accountId: number, page = 1, limit = 20) {
   try {
     const res = await api.volumes.list({ accountId, page, limit }, ctrl.signal)
     volumes = res.items
-    totalPages = res.pagination.totalPages
-    currentPage = res.pagination.page
+    totalPages = res.pagination?.totalPages ?? 0
+    currentPage = res.pagination?.page ?? 1
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
     throw e

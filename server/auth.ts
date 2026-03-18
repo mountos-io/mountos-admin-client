@@ -8,7 +8,7 @@ const AUD_DASHBOARD = 'mountos/dashboard'
 const AUD_SESSION = 'mountos/dashboard/session'
 const AUD_REFRESH = 'mountos/dashboard/refresh'
 
-const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'clientSessions', 'discover', 'cache'] as const
+const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'clientSessions', 'discover', 'cache', 'dashboard', 'license'] as const
 const allCaps = (v: number) => Object.fromEntries(RESOURCES.map(r => [r, v]))
 
 const defaults: DashboardAuthConfig = {
@@ -18,7 +18,7 @@ const defaults: DashboardAuthConfig = {
     superadmin: allCaps(15), // CRUD
     l1admin: allCaps(14),    // CRU, no delete
     l2admin: allCaps(4),     // read-only
-    user: { volumes: 4, auditLogs: 4 }, // R-only volumes + audit
+    user: { volumes: 4, auditLogs: 4, dashboard: 4 }, // R-only volumes + audit + dashboard
   },
 }
 

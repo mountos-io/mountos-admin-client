@@ -10,10 +10,11 @@ const needsAttention = $derived<boolean>(
   license != null && license.status !== 'valid'
 )
 
-const badgeVariant = $derived.by<'warning' | 'destructive' | undefined>(() => {
+const badgeVariant = $derived.by<'success' | 'warning' | 'destructive' | undefined>(() => {
   if (!license) return undefined
   if (license.status === 'expired') return 'destructive'
   if (license.status === 'grace' || license.status === 'expiring') return 'warning'
+  if (license.status === 'valid') return 'success'
   return undefined
 })
 
