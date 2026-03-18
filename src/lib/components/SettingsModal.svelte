@@ -12,19 +12,26 @@
   import Palette from '@lucide/svelte/icons/palette'
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal'
   import Keyboard from '@lucide/svelte/icons/keyboard'
+  import ShieldCheck from '@lucide/svelte/icons/shield-check'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { useLicense } from '$lib/core/stores/license.svelte'
+  import { Badge } from '$lib/components/ui/badge'
 
   const prefs = usePreferences()
   const modal = useSettingsModal()
   const accountStore = useAccounts()
+  const auth = useAuth()
+  const licenseStore = useLicense()
 
   const maxWidth = vendorSettingsModalSize?.maxWidth ?? '600px'
   const minHeight = vendorSettingsModalSize?.minHeight ?? '360px'
 
-  const builtinTabs: { id: SettingsTab; label: string; icon: typeof Sun }[] = [
+  const builtinTabs = $derived<{ id: SettingsTab; label: string; icon: typeof Sun }[]>([
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
     { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
-  ]
+    ...(!auth.isUserRole ? [{ id: 'license' as SettingsTab, label: 'License', icon: ShieldCheck }] : []),
+  ])
 
   const allTabs = $derived([
     ...builtinTabs,
@@ -78,8 +85,8 @@
             )}
             onclick={() => modal.tab = t.id}
           >
-            <Icon class="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span class="hidden sm:inline">{t.label}</span>
+            <Icon class="h-4 w-4 shrink-0 sm:aria-hidden" aria-hidden="true" />
+            <span class="sr-only sm:not-sr-only">{t.label}</span>
           </button>
         {/each}
       </div>
@@ -174,6 +181,79 @@
               </div>
             {/each}
           </div>
+
+        {:else if modal.tab === 'license'}
+          {#if licenseStore.license}
+            {@const lic = licenseStore.license}
+            <div class="space-y-5">
+              <div class="flex items-center justify-between">
+                <h4 class="text-sm font-medium">License</h4>
+                <Badge variant={licenseStore.badgeVariant ?? 'default'}>{licenseStore.statusLabel(lic.status)}</Badge>
+              </div>
+              <dl class="grid gap-3 text-sm">
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Licensee</dt>
+                  <dd class="font-medium text-right">{lic.licensee}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Type</dt>
+                  <dd class="font-medium capitalize">{lic.licenseType}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Contact</dt>
+                  <dd class="font-medium">{lic.contact}</dd>
+                </div>
+                <div class="flex justify-between min-w-0">
+                  <dt class="text-muted-foreground shrink-0">License ID</dt>
+                  <dd class="font-mono text-xs text-muted-foreground truncate ml-3">{lic.licenseId}</dd>
+                </div>
+                <hr class="border-border" />
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Issued</dt>
+                  <dd>{new Date(lic.issuedAt).toLocaleDateString()}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Expires</dt>
+                  <dd class:text-destructive={lic.status === 'expired'} class:text-warning={lic.status === 'expiring' || lic.status === 'grace'}>
+                    {new Date(lic.expiresAt).toLocaleDateString()}
+                    {#if lic.daysRemaining > 0}({lic.daysRemaining}d remaining){:else if lic.daysRemaining < 0}({Math.abs(lic.daysRemaining)}d ago){/if}
+                  </dd>
+                </div>
+                {#if lic.status === 'grace' || lic.status === 'expired'}
+                  <div class="flex justify-between">
+                    <dt class="text-muted-foreground">Grace ends</dt>
+                    <dd class:text-destructive={lic.graceDaysLeft <= 0}>
+                      {new Date(lic.graceEndsAt).toLocaleDateString()}
+                      {#if lic.graceDaysLeft > 0}({lic.graceDaysLeft}d left){/if}
+                    </dd>
+                  </div>
+                {/if}
+                <hr class="border-border" />
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Max Nodes</dt>
+                  <dd>{licenseStore.formatLimit(lic.maxNodes)}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Max Volumes</dt>
+                  <dd>{licenseStore.formatLimit(lic.maxVolumes)}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Max Users</dt>
+                  <dd>{licenseStore.formatLimit(lic.maxUsers)}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Max Storage</dt>
+                  <dd>{licenseStore.formatLimit(lic.maxStorageBytes, 'bytes')}</dd>
+                </div>
+              </dl>
+            </div>
+          {:else if licenseStore.loading}
+            <p class="text-sm text-muted-foreground">Loading license...</p>
+          {:else if licenseStore.error}
+            <p class="text-sm text-destructive">{licenseStore.error}</p>
+          {:else}
+            <p class="text-sm text-muted-foreground">No license information available.</p>
+          {/if}
 
         {:else if activeVendorTab}
           {@const VendorComponent = activeVendorTab.component}

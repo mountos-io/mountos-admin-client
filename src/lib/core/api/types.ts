@@ -36,6 +36,9 @@ export type {
   ClientSessionListOptions,
   SessionSummary,
   StandardResponse,
+  LicenseDetails,
+  LicenseStatus,
+  LicenseType,
 } from '@mountos-app/admin-sdk'
 
 export { ApiError } from './errors.js'

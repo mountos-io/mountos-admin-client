@@ -6,15 +6,21 @@
   import { navigation } from '$lib/config/navigation'
   import { features } from '$lib/config/features'
   import * as Breadcrumb from '$lib/components/ui/breadcrumb'
+  import { Badge } from '$lib/components/ui/badge'
   import Search from '@lucide/svelte/icons/search'
   import PanelLeft from '@lucide/svelte/icons/panel-left'
   import LogOut from '@lucide/svelte/icons/log-out'
+  import ShieldAlert from '@lucide/svelte/icons/shield-alert'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
+  import { useLicense } from '$lib/core/stores/license.svelte'
+  import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
 
   const auth = useAuth()
   const accountStore = useAccounts()
   const prefs = usePreferences()
+  const licenseStore = useLicense()
+  const settingsModal = useSettingsModal()
 
   const visibleNav = $derived(
     navigation.filter(item => !item.feature || features[item.feature])
@@ -112,6 +118,33 @@
         <span class="text-xs">⌘</span>K
       </kbd>
     </button>
+    {#if !auth.isUserRole && licenseStore.needsAttention && licenseStore.license}
+      {@const lic = licenseStore.license}
+      <button
+        type="button"
+        class="flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium transition-colors hover:bg-accent/50"
+        onclick={() => settingsModal.show('license')}
+        title="License: {licenseStore.statusLabel(lic.status)}"
+        aria-label="License {licenseStore.statusLabel(lic.status)}"
+      >
+        <ShieldAlert class="size-3.5 {lic.status === 'expired' ? 'text-destructive' : 'text-warning'}" aria-hidden="true" />
+        <Badge variant={licenseStore.badgeVariant}>
+          {#if lic.status === 'expired'}Expired{:else if lic.status === 'grace'}Grace{:else}{lic.daysRemaining}d left{/if}
+        </Badge>
+        {#if lic.licenseType === 'trial'}
+          <span class="hidden sm:inline text-muted-foreground">Trial</span>
+        {/if}
+      </button>
+    {:else if !auth.isUserRole && licenseStore.license?.licenseType === 'trial'}
+      <button
+        type="button"
+        class="flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs transition-colors hover:bg-accent/50"
+        onclick={() => settingsModal.show('license')}
+        title="Trial license" aria-label="Trial license"
+      >
+        <Badge variant="outline">Trial</Badge>
+      </button>
+    {/if}
     {#if auth.user}
       <span class="hidden lg:inline rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">{auth.user.role}</span>
       <span class="hidden md:inline text-sm text-muted-foreground truncate max-w-[120px]">{auth.user.name}</span>

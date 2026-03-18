@@ -10,7 +10,7 @@ import type {
   CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest, 
   GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, UpdateVolumeQuotaRequest, 
   AuditLog, AuditLogListOptions, ServiceNode, ClientSession, ClientSessionListOptions, 
-  SessionSummary, DiscoverMetaResponse, DashboardStats,
+  SessionSummary, DiscoverMetaResponse, DashboardStats, LicenseDetails,
 } from '@mountos-app/admin-sdk'
 
 function queryString(params: Record<string, string | number | undefined>): string {
@@ -48,6 +48,7 @@ export class AdminClient {
   private _discover?: DiscoverResource
   private _dashboard?: DashboardResource
   private _cache?: CacheResource
+  private _license?: LicenseResource
 
   constructor(config: ClientConfig = {}) {
     this.baseUrl = (config.baseUrl ?? '/api/v1').replace(/\/+$/, '')
@@ -95,6 +96,10 @@ export class AdminClient {
 
   get dashboard(): DashboardResource {
     return (this._dashboard ??= new DashboardResource(this))
+  }
+
+  get license(): LicenseResource {
+    return (this._license ??= new LicenseResource(this))
   }
 
   get cache(): CacheResource {
@@ -443,5 +448,13 @@ class CacheResource {
 
   refresh(): Promise<void> {
     return this.client.request('POST', '/cache/refresh')
+  }
+}
+
+class LicenseResource {
+  constructor(private client: AdminClient) {}
+
+  get(signal?: AbortSignal): Promise<LicenseDetails> {
+    return this.client.request('GET', '/license', undefined, signal)
   }
 }

@@ -8,6 +8,7 @@
   import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { useLicense } from '$lib/core/stores/license.svelte'
   import type { Snippet } from 'svelte'
 
   let { children }: { children?: Snippet } = $props()
@@ -16,6 +17,7 @@
   const settingsModal = useSettingsModal()
   const accountStore = useAccounts()
   const auth = useAuth()
+  const licenseStore = useLicense()
   let commandOpen = $state(false)
   let mobileOpen = $state(false)
 
@@ -25,6 +27,10 @@
     if (isMobile()) mobileOpen = !mobileOpen
     else prefs.sidebarCollapsed = !prefs.sidebarCollapsed
   }
+
+  $effect(() => {
+    if (!auth.loading && !auth.isUserRole) licenseStore.fetchLicense()
+  })
 
   function handleKeydown(e: KeyboardEvent) {
     if (!e.metaKey || e.altKey || e.ctrlKey) return
