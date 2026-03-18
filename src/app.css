@@ -223,8 +223,14 @@
 
   ::selection { background: var(--primary); color: var(--secondary); }
 
-  #main-content {
-    background: var(--background) url('/bg.avif') repeat;
+  .bg-doodle {
+    background: url('/bg.avif') repeat;
+    filter: invert(1);
+    opacity: 0.05;
+  }
+  .dark .bg-doodle {
+    filter: brightness(0.2);
+    opacity: 0.08;
   }
 
   input:-webkit-autofill,

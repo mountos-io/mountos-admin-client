@@ -150,7 +150,7 @@
                   value={prefs.brightness}
                   oninput={(e) => prefs.brightness = Number((e.target as HTMLInputElement).value)}
                   aria-label="Brightness"
-                  class="w-full h-1.5 rounded-full appearance-none bg-muted accent-primary cursor-pointer"
+                  class="w-full h-1.5 rounded-full appearance-none bg-border accent-primary cursor-pointer"
                 />
                 {#if prefs.brightness !== 100}
                   <button
