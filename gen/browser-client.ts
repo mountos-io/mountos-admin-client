@@ -210,8 +210,10 @@ function bodyMethod(mn: string, ep: Endpoint, fp: string, pp: string[], rn: stri
 }
 
 function getMethod(mn: string, ep: Endpoint, fp: string, pp: string[], pt?: Record<string, string>): void {
-  w(`  ${mn}(${sig(pp, pt)}): Promise<${ep.responseType}> {\n`)
-  w(`    return this.client.request('GET', ${pExpr(fp, pp, pt)})\n`)
+  const s = sig(pp, pt)
+  const full = s ? `${s}, signal?: AbortSignal` : 'signal?: AbortSignal'
+  w(`  ${mn}(${full}): Promise<${ep.responseType}> {\n`)
+  w(`    return this.client.request('GET', ${pExpr(fp, pp, pt)}, undefined, signal)\n`)
   w('  }\n')
 }
 
@@ -228,10 +230,27 @@ function voidMethod(mn: string, ep: Endpoint, fp: string, pp: string[], pt?: Rec
 }
 
 function arrayMethod(mn: string, ep: Endpoint, fp: string, pp: string[], pt?: Record<string, string>): void {
-  const s = sig(pp, pt)
+  let s = sig(pp, pt)
+  if (ep.query?.length) {
+    for (const q of ep.query) {
+      const f = parseField(q)
+      if (s) s += ', '
+      s += `${qpName(f.name)}?: ${tsType(f.type)}`
+    }
+  }
   const full = s ? `${s}, signal?: AbortSignal` : 'signal?: AbortSignal'
   w(`  ${mn}(${full}): Promise<${ep.responseType}[]> {\n`)
-  w(`    return this.client.request('GET', ${pExpr(fp, pp, pt)}, undefined, signal)\n`)
+  if (ep.query?.length) {
+    const qs = ep.query.map(q => { const f = parseField(q); return `${f.name}: ${qpName(f.name)}` }).join(', ')
+    const qsCall = `queryString({ ${qs} })`
+    if (pp.length > 0) {
+      w(`    return this.client.request('GET', ${pExpr(fp, pp, pt)} + ${qsCall}, undefined, signal)\n`)
+    } else {
+      w(`    return this.client.request('GET', \`${fp}\${${qsCall}}\`, undefined, signal)\n`)
+    }
+  } else {
+    w(`    return this.client.request('GET', ${pExpr(fp, pp, pt)}, undefined, signal)\n`)
+  }
   w('  }\n')
 }
 
@@ -300,8 +319,9 @@ function generate(spec: Spec): string {
 
   // Collect type imports
   const seen = new Set<string>()
+  const builtins = new Set(['string', 'number', 'boolean', 'void', 'object', 'unknown'])
   const imports: string[] = []
-  const add = (n: string) => { if (!seen.has(n)) { seen.add(n); imports.push(n) } }
+  const add = (n: string) => { if (!seen.has(n) && !builtins.has(n)) { seen.add(n); imports.push(n) } }
   for (const res of spec.resources) {
     for (const ep of res.endpoints) {
       if (ep.request?.length) add(reqTypeName(res.name, ep.action))

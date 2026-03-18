@@ -23,7 +23,7 @@
   const auth = useAuth()
   const licenseStore = useLicense()
 
-  const maxWidth = vendorSettingsModalSize?.maxWidth ?? '600px'
+  const maxWidth = vendorSettingsModalSize?.maxWidth ?? '680px'
   const minHeight = vendorSettingsModalSize?.minHeight ?? '360px'
 
   const builtinTabs = $derived<{ id: SettingsTab; label: string; icon: typeof Sun }[]>([

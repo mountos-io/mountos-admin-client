@@ -90,11 +90,50 @@ export function formatSessionStatus(status: string): { label: string; variant: S
 }
 
 const NODE_STATUS_MAP: Record<string, StatusVariant> = {
-  active: 'default' as StatusVariant,
+  healthy: 'success',
+  registered: 'secondary',
+  unhealthy: 'destructive',
   draining: 'warning',
-  inactive: 'secondary',
 }
 
 export function nodeStatusVariant(status: string): StatusVariant {
   return NODE_STATUS_MAP[status] ?? 'secondary'
+}
+
+export interface PrometheusMetric {
+  name: string
+  labels: Record<string, string>
+  value: number
+}
+
+export function parsePrometheusText(text: string): Map<string, PrometheusMetric[]> {
+  const sections = new Map<string, PrometheusMetric[]>()
+  let section = 'general'
+  for (const line of text.split('\n')) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+    if (trimmed.startsWith('# HELP')) {
+      section = trimmed.slice(7).split(' ')[0] ?? 'general'
+      continue
+    }
+    if (trimmed.startsWith('# TYPE')) continue
+    if (trimmed.startsWith('#')) {
+      section = trimmed.slice(2).trim() || 'general'
+      continue
+    }
+    const match = trimmed.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)\{?(.*?)\}?\s+([\d.eE+\-NnIi]+)$/)
+    if (!match) continue
+    const [, name, rawLabels, rawVal] = match
+    const labels: Record<string, string> = {}
+    if (rawLabels) {
+      for (const pair of rawLabels.match(/(\w+)="([^"]*)"/g) ?? []) {
+        const eq = pair.indexOf('=')
+        labels[pair.slice(0, eq)] = pair.slice(eq + 2, -1)
+      }
+    }
+    const list = sections.get(section) ?? []
+    list.push({ name: name!, labels, value: parseFloat(rawVal!) })
+    sections.set(section, list)
+  }
+  return sections
 }

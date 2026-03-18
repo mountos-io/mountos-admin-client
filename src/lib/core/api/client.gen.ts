@@ -47,8 +47,8 @@ export class AdminClient {
   private _clientSessions?: ClientSessionsResource
   private _discover?: DiscoverResource
   private _dashboard?: DashboardResource
-  private _cache?: CacheResource
   private _license?: LicenseResource
+  private _cache?: CacheResource
 
   constructor(config: ClientConfig = {}) {
     this.baseUrl = (config.baseUrl ?? '/api/v1').replace(/\/+$/, '')
@@ -209,8 +209,8 @@ class AccountsResource {
     return this.client.request('GET', `/accounts/list${queryString({ page: opts?.page, limit: opts?.limit })}`, undefined, signal)
   }
 
-  get(accountId: number): Promise<Account> {
-    return this.client.request('GET', `/accounts/${accountId}`)
+  get(accountId: number, signal?: AbortSignal): Promise<Account> {
+    return this.client.request('GET', `/accounts/${accountId}`, undefined, signal)
   }
 
   edit(accountId: number, req: EditAccountRequest): Promise<{ id: number }> {
@@ -245,8 +245,8 @@ class UsersResource {
     return this.client.request('GET', `/users/list${queryString({ accountId: opts.accountId, page: opts.page, limit: opts.limit })}`, undefined, signal)
   }
 
-  get(userId: number): Promise<User> {
-    return this.client.request('GET', `/users/${userId}`)
+  get(userId: number, signal?: AbortSignal): Promise<User> {
+    return this.client.request('GET', `/users/${userId}`, undefined, signal)
   }
 
   edit(userId: number, req: EditUserRequest): Promise<{ id: number }> {
@@ -273,8 +273,8 @@ class RegionsResource {
     return this.client.request('GET', `/regions/list${queryString({ page: opts?.page, limit: opts?.limit })}`, undefined, signal)
   }
 
-  get(regionId: number): Promise<Region> {
-    return this.client.request('GET', `/regions/${regionId}`)
+  get(regionId: number, signal?: AbortSignal): Promise<Region> {
+    return this.client.request('GET', `/regions/${regionId}`, undefined, signal)
   }
 
   edit(regionId: number, req: EditRegionRequest): Promise<{ id: number }> {
@@ -301,8 +301,8 @@ class StoragesResource {
     return this.client.request('GET', `/storages/list${queryString({ accountId: opts.accountId, page: opts.page, limit: opts.limit })}`, undefined, signal)
   }
 
-  get(storageId: number): Promise<Storage> {
-    return this.client.request('GET', `/storages/${storageId}`)
+  get(storageId: number, signal?: AbortSignal): Promise<Storage> {
+    return this.client.request('GET', `/storages/${storageId}`, undefined, signal)
   }
 
   edit(storageId: number, req: EditStorageRequest): Promise<{ id: number }> {
@@ -333,8 +333,8 @@ class VolumesResource {
     return this.client.request('GET', `/volumes/list${queryString({ accountId: opts.accountId, page: opts.page, limit: opts.limit })}`, undefined, signal)
   }
 
-  get(volumeId: number): Promise<Volume> {
-    return this.client.request('GET', `/volumes/${volumeId}`)
+  get(volumeId: number, signal?: AbortSignal): Promise<Volume> {
+    return this.client.request('GET', `/volumes/${volumeId}`, undefined, signal)
   }
 
   edit(volumeId: number, req: EditVolumeRequest): Promise<{ id: number }> {
@@ -390,20 +390,8 @@ class AuditLogsResource {
 class ServiceNodesResource {
   constructor(private client: AdminClient) {}
 
-  list(regionId: number, signal?: AbortSignal): Promise<ServiceNode[]> {
-    return this.client.request('GET', `/regions/${regionId}/nodes`, undefined, signal)
-  }
-
-  drain(regionId: number, nodeId: string): Promise<void> {
-    return this.client.request('POST', `/regions/${regionId}/nodes/${encodeURIComponent(nodeId)}/drain`)
-  }
-
-  activate(regionId: number, nodeId: string): Promise<void> {
-    return this.client.request('POST', `/regions/${regionId}/nodes/${encodeURIComponent(nodeId)}/activate`)
-  }
-
-  remove(regionId: number, nodeId: string): Promise<void> {
-    return this.client.request('DELETE', `/regions/${regionId}/nodes/${encodeURIComponent(nodeId)}`)
+  list(regionId: number, serviceType?: string, status?: string, signal?: AbortSignal): Promise<ServiceNode[]> {
+    return this.client.request('GET', `/regions/${regionId}/nodes` + queryString({ serviceType: serviceType, status: status }), undefined, signal)
   }
 
   stats(regionId: number, nodeId: string, signal?: AbortSignal): Promise<string> {
@@ -418,12 +406,12 @@ class ClientSessionsResource {
     return this.client.request('GET', `/client-sessions/list${queryString({ accountId: opts?.accountId, regionId: opts?.regionId, clientType: opts?.clientType, status: opts?.status, page: opts?.page, limit: opts?.limit })}`, undefined, signal)
   }
 
-  get(sessionId: number): Promise<ClientSession> {
-    return this.client.request('GET', `/client-sessions/${sessionId}`)
+  get(sessionId: number, signal?: AbortSignal): Promise<ClientSession> {
+    return this.client.request('GET', `/client-sessions/${sessionId}`, undefined, signal)
   }
 
   summary(accountId?: number, signal?: AbortSignal): Promise<SessionSummary[]> {
-    return this.client.request('GET', `/client-sessions/summary${queryString({ accountId })}`, undefined, signal)
+    return this.client.request('GET', `/client-sessions/summary${queryString({ accountId: accountId })}`, undefined, signal)
   }
 }
 
@@ -443,18 +431,18 @@ class DashboardResource {
   }
 }
 
-class CacheResource {
-  constructor(private client: AdminClient) {}
-
-  refresh(): Promise<void> {
-    return this.client.request('POST', '/cache/refresh')
-  }
-}
-
 class LicenseResource {
   constructor(private client: AdminClient) {}
 
   get(signal?: AbortSignal): Promise<LicenseDetails> {
     return this.client.request('GET', '/license', undefined, signal)
+  }
+}
+
+class CacheResource {
+  constructor(private client: AdminClient) {}
+
+  refresh(): Promise<void> {
+    return this.client.request('POST', '/cache/refresh')
   }
 }
