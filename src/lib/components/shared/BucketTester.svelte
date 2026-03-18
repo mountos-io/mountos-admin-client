@@ -111,9 +111,9 @@
         {@const ok = result[item.key]}
         <div class="flex items-center gap-2 rounded px-2 py-1 text-sm">
           {#if ok}
-            <CheckCircle class="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
+            <CheckCircle class="h-3.5 w-3.5 text-success" />
           {:else}
-            <XCircle class="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
+            <XCircle class="h-3.5 w-3.5 text-destructive" />
           {/if}
           <span class:text-muted-foreground={!ok}>{item.label}</span>
         </div>

@@ -106,7 +106,7 @@
             </Button>
           </div>
           {#if error}
-            <p class="text-sm text-destructive text-center">{error}</p>
+            <p class="text-sm text-destructive text-center" role="alert">{error}</p>
           {/if}
         </div>
       {:else}
@@ -115,7 +115,7 @@
           <p class="text-sm text-muted-foreground">Waiting for security key...</p>
         {:else if error}
           <div class="space-y-3 text-center">
-            <p class="text-sm text-destructive">{error}</p>
+            <p class="text-sm text-destructive" role="alert">{error}</p>
             <Button variant="outline" size="sm" onclick={startAuthentication}>Retry</Button>
           </div>
         {/if}

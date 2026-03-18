@@ -22,8 +22,9 @@
       className
     )}
     type={visible ? "text" : "password"} bind:value {...restProps} />
-  <button type="button" tabindex="-1"
+  <button type="button"
     class="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer transition-colors"
+    aria-label={visible ? 'Hide password' : 'Show password'}
     onclick={() => visible = !visible}>
     {#if visible}
       <EyeOff class="size-4" />

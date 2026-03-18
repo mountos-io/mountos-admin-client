@@ -45,7 +45,7 @@
 </script>
 
 <div class="space-y-6">
-  <h2 class="text-2xl font-bold tracking-tight">Sessions</h2>
+  <h1 class="text-2xl font-bold tracking-tight">Sessions</h1>
 
   {#if !account}
     <EmptyState title="No account selected" description="Select an account to view sessions." />
@@ -98,8 +98,8 @@
                   <p class="text-xs text-muted-foreground">{session.osName}{session.osVersion ? ` ${session.osVersion}` : ''}</p>
                 </div>
               </TableCell>
-              <TableCell class="font-mono text-xs">{session.hostname || session.ipAddr}</TableCell>
-              <TableCell class="font-mono text-xs">{session.volumeId}</TableCell>
+              <TableCell class="font-mono text-xs max-w-[160px] truncate">{session.hostname || session.ipAddr}</TableCell>
+              <TableCell class="font-mono text-xs max-w-[120px] truncate">{session.volumeId}</TableCell>
               <TableCell>
                 <Badge variant={st.variant}>{st.label}</Badge>
               </TableCell>

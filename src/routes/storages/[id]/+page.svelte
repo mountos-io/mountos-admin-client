@@ -10,6 +10,7 @@
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import type { Storage } from '$lib/core/api/types'
 
   const store = useStorages()
@@ -24,9 +25,7 @@
   })
   let storage = $state<Storage | null>(null)
   let loading = $state(true)
-  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
-    open: false, title: '', desc: '', action: async () => {},
-  })
+  const dialog = useConfirmDialog(() => reload())
 
   $effect(() => {
     if (Number.isNaN(id)) { loading = false; return }
@@ -42,7 +41,7 @@
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" href="/storages">Back</Button>
-    <h2 class="text-2xl font-bold tracking-tight">Storage Detail</h2>
+    <h1 class="text-2xl font-bold tracking-tight">Storage Detail</h1>
   </div>
   {#if loading}
     <LoadingSpinner />
@@ -74,12 +73,11 @@
           <Button variant={storage.isActive ? 'outline' : 'default'} size="sm" onclick={() => {
             if (!auth.guard('storages', 'update')) return
             const active = storage!.isActive
-            confirmAction = {
-              open: true,
-              title: active ? 'Deactivate' : 'Activate',
-              desc: `${active ? 'Deactivate' : 'Activate'} "${storage!.name}"?`,
-              action: async () => { active ? await store.deactivateStorage(id) : await store.activateStorage(id); await reload() },
-            }
+            dialog.confirm(
+              active ? 'Deactivate' : 'Activate',
+              `${active ? 'Deactivate' : 'Activate'} "${storage!.name}"?`,
+              async () => { active ? await store.deactivateStorage(id) : await store.activateStorage(id) },
+            )
           }}>
             {storage.isActive ? 'Deactivate' : 'Activate'}
           </Button>
@@ -90,4 +88,4 @@
     <p class="text-muted-foreground">Storage not found.</p>
   {/if}
 </div>
-<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />

@@ -47,11 +47,11 @@
 </script>
 
 <div class="space-y-4">
-  <h2 class="text-2xl font-bold tracking-tight">Audit Logs</h2>
+  <h1 class="text-2xl font-bold tracking-tight">Audit Logs</h1>
 
   <div class="flex gap-3 items-end">
     <div class="flex-1 max-w-sm">
-      <Input bind:value={subject} placeholder="Filter by subject..." onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && applyFilter()} />
+      <Input bind:value={subject} placeholder="Filter by subject..." aria-label="Filter by subject" onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && applyFilter()} />
     </div>
     <Button variant="outline" size="sm" onclick={applyFilter}>Filter</Button>
   </div>
@@ -74,8 +74,8 @@
       </TableHeader>
       <TableBody>
         {#each store.logs as log}
-          <TableRow class="cursor-pointer" onclick={() => toggleRow(log.id)}>
-            <TableCell class="text-muted-foreground">{expanded.has(log.id) ? '▾' : '▸'}</TableCell>
+          <TableRow class="cursor-pointer" onclick={() => toggleRow(log.id)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggleRow(log.id))} role="button" tabindex={0}>
+            <TableCell class="text-muted-foreground" aria-hidden="true">{expanded.has(log.id) ? '▾' : '▸'}</TableCell>
             <TableCell class="font-medium">{log.title}</TableCell>
             <TableCell class="text-sm text-muted-foreground">{log.subject ?? '—'}</TableCell>
             <TableCell><Badge variant={log.success ? 'default' : 'destructive'}>{log.success ? 'OK' : 'Fail'}</Badge></TableCell>

@@ -14,6 +14,7 @@
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import { formatDate } from '$lib/core/utils/format'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
+  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import { debounce } from '$lib/utils'
   import { generateIdenticon } from '$lib/core/utils/identicon'
   import { features } from '$lib/config/features'
@@ -32,9 +33,7 @@
   })
   let account = $state<Account | null>(null)
   let loading = $state(true)
-  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
-    open: false, title: '', desc: '', action: async () => {},
-  })
+  const dialog = useConfirmDialog()
 
   let editing = $state(false)
   let editName = $state('')
@@ -105,9 +104,6 @@
     if (editOnLoad && account && !editing && auth.can('accounts', 'update')) startEdit()
   })
 
-  function confirm(title: string, desc: string, action: () => Promise<void>) {
-    confirmAction = { open: true, title, desc, action }
-  }
 
   async function act(fn: () => Promise<void>) {
     await fn()
@@ -118,7 +114,7 @@
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" href="/accounts">Back</Button>
-    <h2 class="text-2xl font-bold tracking-tight">Account Detail</h2>
+    <h1 class="text-2xl font-bold tracking-tight">Account Detail</h1>
   </div>
 
   {#if loading}
@@ -196,15 +192,15 @@
           {#if auth.can('accounts', 'update')}
             <CardFooter class="gap-2">
               {#if account.isActive}
-                <Button size="sm" onclick={() => confirm('Deactivate', `Deactivate "${account!.name}"?`, () => act(() => store.deactivateAccount(id)))}>Deactivate</Button>
+                <Button size="sm" onclick={() => dialog.confirm('Deactivate', `Deactivate "${account!.name}"?`, () => act(() => store.deactivateAccount(id)))}>Deactivate</Button>
               {:else}
-                <Button size="sm" onclick={() => confirm('Activate', `Activate "${account!.name}"?`, () => act(() => store.activateAccount(id)))}>Activate</Button>
+                <Button size="sm" onclick={() => dialog.confirm('Activate', `Activate "${account!.name}"?`, () => act(() => store.activateAccount(id)))}>Activate</Button>
               {/if}
               {#if features.accountLock}
                 {#if account.locked}
-                  <Button size="sm" onclick={() => confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)))}>Unlock</Button>
+                  <Button size="sm" onclick={() => dialog.confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)))}>Unlock</Button>
                 {:else}
-                  <Button variant="destructive" size="sm" onclick={() => confirm('Lock', `Lock "${account!.name}"?`, () => act(() => store.lockAccount(id)))}>Lock</Button>
+                  <Button variant="destructive" size="sm" onclick={() => dialog.confirm('Lock', `Lock "${account!.name}"?`, () => act(() => store.lockAccount(id)))}>Lock</Button>
                 {/if}
               {/if}
             </CardFooter>
@@ -226,4 +222,4 @@
   {/if}
 </div>
 
-<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />

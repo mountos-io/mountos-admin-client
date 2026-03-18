@@ -31,7 +31,7 @@
 
 <div class="space-y-4">
   <div class="flex items-center justify-between">
-    <h2 class="text-2xl font-bold tracking-tight">Users</h2>
+    <h1 class="text-2xl font-bold tracking-tight">Users</h1>
     {#if accountId && auth.can('users', 'create')}
       <Button href="/users/create" size="sm" class="gap-1.5">
         <Plus class="h-4 w-4" />
@@ -58,10 +58,10 @@
       </TableHeader>
       <TableBody>
         {#each userStore.users as user}
-          <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => goto(`/users/${user.id}`)}>
-            <TableCell class="font-medium">{user.username}</TableCell>
-            <TableCell>{user.name}</TableCell>
-            <TableCell class="text-muted-foreground">{user.email}</TableCell>
+          <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => goto(`/users/${user.id}`)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/users/${user.id}`))} role="link" tabindex={0}>
+            <TableCell class="font-medium max-w-[160px] truncate">{user.username}</TableCell>
+            <TableCell class="max-w-[160px] truncate">{user.name}</TableCell>
+            <TableCell class="text-muted-foreground max-w-[200px] truncate">{user.email}</TableCell>
             <TableCell><StatusBadge active={user.isActive} /></TableCell>
           </TableRow>
         {/each}

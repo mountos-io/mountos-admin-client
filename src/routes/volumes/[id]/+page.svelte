@@ -16,6 +16,7 @@
   import { formatBytes, formatQuota, quotaPercent } from '$lib/core/utils/format'
   import type { Volume } from '$lib/core/api/types'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
+  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
 
   const store = useVolumes()
   const auth = useAuth()
@@ -37,9 +38,7 @@
   let volume = $state<Volume | null>(null)
   let loading = $state(true)
   let stats = $state<{ diskSize: number; activeSize: number; size: number } | null>(null)
-  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
-    open: false, title: '', desc: '', action: async () => {},
-  })
+  const dialog = useConfirmDialog(() => reload())
 
   let genUserId = $state(auth.userMountosUserId != null ? String(auth.userMountosUserId) : '')
   let genResult = $state<{ apiKey: string; apiSecret: string } | null>(null)
@@ -64,9 +63,6 @@
     stats = await store.getStats(id).catch(() => null)
   }
 
-  function confirm(title: string, desc: string, action: () => Promise<void>) {
-    confirmAction = { open: true, title, desc, action: async () => { await action(); await reload() } }
-  }
 
   async function generateKeys() {
     const uid = Number(genUserId)
@@ -80,7 +76,7 @@
   function handleRevokeKey() {
     if (!revokeKey) return
     const key = revokeKey
-    confirm('Revoke API Key', `Revoke key "${key}"?`, async () => {
+    dialog.confirm('Revoke API Key', `Revoke key "${key}"?`, async () => {
       await store.revokeApiKey(id, key)
       revokeKey = ''
       showSuccessToast('API key revoked')
@@ -101,7 +97,7 @@
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" href="/volumes">Back</Button>
-    <h2 class="text-2xl font-bold tracking-tight">Volume Detail</h2>
+    <h1 class="text-2xl font-bold tracking-tight">Volume Detail</h1>
   </div>
   {#if loading}
     <LoadingSpinner />
@@ -131,19 +127,19 @@
             <p class="mt-1 text-sm">{formatQuota(volume.quotaUsed, volume.quotaLimit)}</p>
             {#if volume.quotaLimit > 0}
               <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden">
-                <div class="h-full rounded-full bg-primary transition-all" style="width: {quotaPercent(volume.quotaUsed, volume.quotaLimit)}%"></div>
+                <div class="h-full rounded-full bg-primary transition-transform origin-left" style="transform: scaleX({quotaPercent(volume.quotaUsed, volume.quotaLimit) / 100})"></div>
               </div>
             {/if}
           </div>
         </CardContent>
         {#if auth.can('volumes', 'update')}
           <CardFooter class="flex gap-2">
-            <Button variant="outline" size="sm" onclick={() => confirm(
+            <Button variant="outline" size="sm" onclick={() => dialog.confirm(
               volume!.isActive ? 'Deactivate' : 'Activate',
               `${volume!.isActive ? 'Deactivate' : 'Activate'} "${volume!.name}"?`,
               () => volume!.isActive ? store.deactivateVolume(id) : store.activateVolume(id),
             )}>{volume.isActive ? 'Deactivate' : 'Activate'}</Button>
-            <Button variant="outline" size="sm" onclick={() => confirm(
+            <Button variant="outline" size="sm" onclick={() => dialog.confirm(
               volume!.locked ? 'Unlock' : 'Lock',
               `${volume!.locked ? 'Unlock' : 'Lock'} "${volume!.name}"?`,
               () => volume!.locked ? store.unlockVolume(id) : store.lockVolume(id),
@@ -231,4 +227,4 @@
     <p class="text-muted-foreground">Volume not found.</p>
   {/if}
 </div>
-<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />

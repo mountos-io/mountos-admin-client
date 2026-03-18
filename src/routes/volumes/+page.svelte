@@ -32,7 +32,7 @@
 
 <div class="space-y-4">
   <div class="flex items-center justify-between">
-    <h2 class="text-2xl font-bold tracking-tight">Volumes</h2>
+    <h1 class="text-2xl font-bold tracking-tight">Volumes</h1>
     {#if accountId && auth.can('volumes', 'create')}
       <Button href="/volumes/create" size="sm" class="gap-1.5">
         <Plus class="h-4 w-4" />
@@ -59,7 +59,7 @@
       <TableBody>
         {#each volumeStore.volumes as volume}
           <TableRow>
-            <TableCell class="font-medium">{volume.name}</TableCell>
+            <TableCell class="font-medium max-w-[200px] truncate">{volume.name}</TableCell>
             <TableCell class="text-sm text-muted-foreground">{formatQuota(volume.quotaUsed, volume.quotaLimit)}</TableCell>
             <TableCell><StatusBadge active={volume.isActive} locked={volume.locked} /></TableCell>
             <TableCell><Button variant="ghost" size="sm" href="/volumes/{volume.id}">View</Button></TableCell>

@@ -12,6 +12,7 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
+  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import type { User } from '$lib/core/api/types'
 
   const store = useUsers()
@@ -28,9 +29,7 @@
 
   let user = $state<User | null>(null)
   let loading = $state(true)
-  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
-    open: false, title: '', desc: '', action: async () => {},
-  })
+  const dialog = useConfirmDialog()
 
   let editing = $state(false)
   let editUsername = $state('')
@@ -91,9 +90,6 @@
     if (editOnLoad && user && !editing && auth.can('users', 'update')) startEdit()
   })
 
-  function confirm(title: string, desc: string, action: () => Promise<void>) {
-    confirmAction = { open: true, title, desc, action }
-  }
 
   async function act(fn: () => Promise<void>) {
     await fn()
@@ -104,7 +100,7 @@
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" href="/users">Back</Button>
-    <h2 class="text-2xl font-bold tracking-tight">User Detail</h2>
+    <h1 class="text-2xl font-bold tracking-tight">User Detail</h1>
   </div>
 
   {#if loading}
@@ -120,9 +116,9 @@
             <CardContent class="space-y-5">
               <div class="space-y-2">
                 <Label for="edit-username">Username</Label>
-                <Input id="edit-username" bind:value={editUsername} placeholder="Username" maxlength={16} required aria-invalid={!!usernameError || undefined} />
+                <Input id="edit-username" bind:value={editUsername} placeholder="Username" maxlength={16} required aria-invalid={!!usernameError || undefined} aria-describedby={usernameError ? 'edit-username-error' : undefined} />
                 {#if usernameError}
-                  <p class="text-destructive text-xs">{usernameError}</p>
+                  <p id="edit-username-error" class="text-destructive text-xs" role="alert">{usernameError}</p>
                 {/if}
               </div>
               <div class="space-y-2">
@@ -151,8 +147,9 @@
                   onclick={startEdit}
                   class="opacity-50 hover:opacity-100 hover:text-primary transition-all"
                   title="Edit user"
+                  aria-label="Edit user"
                 >
-                  <PencilIcon class="size-4" />
+                  <PencilIcon class="size-4" aria-hidden="true" />
                 </button>
               {/if}
             </div>
@@ -174,9 +171,9 @@
           {#if auth.can('users', 'update')}
             <CardFooter class="gap-2">
               {#if user.isActive}
-                <Button size="sm" onclick={() => confirm('Deactivate', `Deactivate "${user!.username}"?`, () => act(() => store.deactivateUser(id)))}>Deactivate</Button>
+                <Button size="sm" onclick={() => dialog.confirm('Deactivate', `Deactivate "${user!.username}"?`, () => act(() => store.deactivateUser(id)))}>Deactivate</Button>
               {:else}
-                <Button size="sm" onclick={() => confirm('Activate', `Activate "${user!.username}"?`, () => act(() => store.activateUser(id)))}>Activate</Button>
+                <Button size="sm" onclick={() => dialog.confirm('Activate', `Activate "${user!.username}"?`, () => act(() => store.activateUser(id)))}>Activate</Button>
               {/if}
             </CardFooter>
           {/if}
@@ -188,4 +185,4 @@
   {/if}
 </div>
 
-<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />

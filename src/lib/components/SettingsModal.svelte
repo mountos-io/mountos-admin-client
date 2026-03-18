@@ -63,10 +63,12 @@
       <Dialog.DialogDescription class="sr-only">Application settings</Dialog.DialogDescription>
     </Dialog.DialogHeader>
     <div class="flex" style="min-height: {minHeight}">
-      <nav class="w-44 shrink-0 border-r p-2 space-y-0.5">
+      <nav class="w-44 shrink-0 border-r p-2 space-y-0.5" role="tablist" aria-label="Settings">
         {#each allTabs as t}
           {@const Icon = t.icon}
           <button
+            role="tab"
+            aria-selected={modal.tab === t.id}
             class={cn(
               'flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors',
               modal.tab === t.id
@@ -75,7 +77,7 @@
             )}
             onclick={() => modal.tab = t.id}
           >
-            <Icon class="h-4 w-4" />
+            <Icon class="h-4 w-4" aria-hidden="true" />
             {t.label}
           </button>
         {/each}

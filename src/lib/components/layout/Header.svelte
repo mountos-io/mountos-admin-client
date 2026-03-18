@@ -64,14 +64,14 @@
     return s.charAt(0).toUpperCase() + s.slice(1)
   }
 
-  let { onOpenCommandPalette = () => {} }: { onOpenCommandPalette?: () => void } = $props()
+  let { onOpenCommandPalette = () => {}, onToggleSidebar }: { onOpenCommandPalette?: () => void; onToggleSidebar?: () => void } = $props()
   let signOutOpen = $state(false)
 </script>
 
 <header class="sticky top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-4">
   <button
-    class="flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-    onclick={() => prefs.sidebarCollapsed = !prefs.sidebarCollapsed}
+    class="flex h-9 w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+    onclick={() => onToggleSidebar ? onToggleSidebar() : (prefs.sidebarCollapsed = !prefs.sidebarCollapsed)}
     aria-label="Toggle sidebar"
     title="Toggle sidebar (⌘B)"
   >
@@ -80,8 +80,8 @@
 
   <div class="h-4 w-px bg-border"></div>
 
-  <Breadcrumb.Breadcrumb>
-    <Breadcrumb.BreadcrumbList>
+  <Breadcrumb.Breadcrumb class="min-w-0 flex-1">
+    <Breadcrumb.BreadcrumbList class="flex-nowrap overflow-hidden">
       {#each crumbs as crumb, i}
         {#if i > 0}
           <Breadcrumb.BreadcrumbSeparator />
@@ -102,24 +102,24 @@
       type="button"
       onclick={onOpenCommandPalette}
       aria-label="Open command palette"
-      class="flex items-center gap-2 rounded-sm border border-border bg-transparent px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground focus:outline-none focus:ring-1 focus:ring-ring min-w-[180px] justify-between"
+      class="flex items-center gap-2 rounded-sm border border-border bg-transparent px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground focus:outline-none focus:ring-1 focus:ring-ring md:min-w-[180px] md:px-3 justify-between"
     >
       <div class="flex items-center gap-2">
         <Search class="h-4 w-4" />
-        <span>Search</span>
+        <span class="hidden sm:inline">Search</span>
       </div>
-      <kbd class="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+      <kbd class="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
         <span class="text-xs">⌘</span>K
       </kbd>
     </button>
     {#if auth.user}
-      <span class="rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">{auth.user.role}</span>
-      <span class="text-sm text-muted-foreground">{auth.user.name}</span>
+      <span class="hidden lg:inline rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">{auth.user.role}</span>
+      <span class="hidden md:inline text-sm text-muted-foreground truncate max-w-[120px]">{auth.user.name}</span>
     {/if}
     <button
       type="button"
       onclick={() => { signOutOpen = true }}
-      class="flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      class="flex h-9 w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       aria-label="Sign out"
       title="Sign out"
     >

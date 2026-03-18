@@ -46,8 +46,8 @@
           aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
           aria-label="{formatClientType(clientType)} sessions {pct}%">
           <div
-            class="h-full rounded-full bg-primary transition-all"
-            style="width: {pct}%"
+            class="h-full rounded-full bg-primary transition-transform origin-left"
+            style="transform: scaleX({pct / 100})"
           ></div>
         </div>
       </div>

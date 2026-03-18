@@ -17,6 +17,14 @@
   const accountStore = useAccounts()
   const auth = useAuth()
   let commandOpen = $state(false)
+  let mobileOpen = $state(false)
+
+  const isMobile = () => typeof window !== 'undefined' && window.innerWidth < 768
+
+  function toggleSidebar() {
+    if (isMobile()) mobileOpen = !mobileOpen
+    else prefs.sidebarCollapsed = !prefs.sidebarCollapsed
+  }
 
   function handleKeydown(e: KeyboardEvent) {
     if (!e.metaKey || e.altKey || e.ctrlKey) return
@@ -37,7 +45,7 @@
         if (!e.shiftKey) { e.preventDefault(); settingsModal.show() }
         break
       case 'b':
-        if (!e.shiftKey) { e.preventDefault(); prefs.sidebarCollapsed = !prefs.sidebarCollapsed }
+        if (!e.shiftKey) { e.preventDefault(); toggleSidebar() }
         break
       default:
         if (!auth.isUserRole && !e.shiftKey && e.key >= '1' && e.key <= '9') {
@@ -53,11 +61,26 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
+<a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-sm focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground">
+  Skip to main content
+</a>
 <div class="flex h-screen">
-  <Sidebar collapsed={prefs.sidebarCollapsed} />
+  <!-- Desktop sidebar -->
+  <div class="hidden md:block">
+    <Sidebar collapsed={prefs.sidebarCollapsed} />
+  </div>
+  <!-- Mobile sidebar overlay -->
+  {#if mobileOpen}
+    <div class="fixed inset-0 z-50 md:hidden">
+      <button class="absolute inset-0 bg-foreground/50" aria-label="Close sidebar" onclick={() => mobileOpen = false}></button>
+      <div class="relative z-10 h-full w-60">
+        <Sidebar collapsed={false} />
+      </div>
+    </div>
+  {/if}
   <div class="flex flex-1 flex-col overflow-hidden">
-    <Header onOpenCommandPalette={() => commandOpen = true} />
-    <main class="flex-1 overflow-y-auto p-6">
+    <Header onOpenCommandPalette={() => commandOpen = true} onToggleSidebar={toggleSidebar} />
+    <main id="main-content" class="flex-1 overflow-y-auto p-4 md:p-6">
       {#if children}{@render children()}{/if}
     </main>
   </div>

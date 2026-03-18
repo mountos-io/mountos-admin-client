@@ -9,16 +9,14 @@
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import { formatRelative } from '$lib/core/utils/format'
+  import { formatRelative, nodeStatusVariant } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
 
   const nodeStore = useNodes()
   const regionStore = useRegions()
   const auth = useAuth()
-
-  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
-    open: false, title: '', desc: '', action: async () => {},
-  })
+  const dialog = useConfirmDialog(() => { if (nodeStore.selectedRegionId) nodeStore.fetchNodes(nodeStore.selectedRegionId) })
 
   $effect(() => {
     if (!auth.loading && !auth.can('serviceNodes', 'read')) {
@@ -32,17 +30,10 @@
   function selectRegion(regionId: number) {
     nodeStore.fetchNodes(regionId)
   }
-
-  function confirm(title: string, desc: string, action: () => Promise<void>) {
-    confirmAction = {
-      open: true, title, desc,
-      action: async () => { await action(); if (nodeStore.selectedRegionId) nodeStore.fetchNodes(nodeStore.selectedRegionId) },
-    }
-  }
 </script>
 
 <div class="space-y-4">
-  <h2 class="text-2xl font-bold tracking-tight">Service Nodes</h2>
+  <h1 class="text-2xl font-bold tracking-tight">Service Nodes</h1>
 
   <div class="flex gap-2 flex-wrap">
     {#each regionStore.regions as region}
@@ -69,7 +60,7 @@
           <TableHead>Address</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Last Heartbeat</TableHead>
-          <TableHead class="w-48"></TableHead>
+          <TableHead class="w-auto"></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -79,9 +70,7 @@
             <TableCell><Badge variant="outline">{node.serviceType}</Badge></TableCell>
             <TableCell class="font-mono text-xs">{node.advertiseAddr}</TableCell>
             <TableCell>
-              <Badge variant={node.status === 'active' ? 'default' : node.status === 'draining' ? 'warning' : 'secondary'}>
-                {node.status}
-              </Badge>
+              <Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge>
             </TableCell>
             <TableCell class="text-sm text-muted-foreground">
               {node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '—'}
@@ -90,20 +79,20 @@
               <div class="flex gap-1">
                 {#if auth.can('serviceNodes', 'update')}
                   {#if node.status !== 'draining'}
-                    <Button variant="outline" size="sm" onclick={() => confirm(
+                    <Button variant="outline" size="sm" onclick={() => dialog.confirm(
                       'Drain Node', `Drain node "${node.nodeId}"?`,
                       () => nodeStore.drainNode(nodeStore.selectedRegionId!, node.nodeId),
                     )}>Drain</Button>
                   {/if}
                   {#if !node.isActive}
-                    <Button variant="outline" size="sm" onclick={() => confirm(
+                    <Button variant="outline" size="sm" onclick={() => dialog.confirm(
                       'Activate Node', `Activate node "${node.nodeId}"?`,
                       () => nodeStore.activateNode(nodeStore.selectedRegionId!, node.nodeId),
                     )}>Activate</Button>
                   {/if}
                 {/if}
                 {#if auth.can('serviceNodes', 'delete')}
-                  <Button variant="destructive" size="sm" onclick={() => confirm(
+                  <Button variant="destructive" size="sm" onclick={() => dialog.confirm(
                     'Remove Node', `Remove node "${node.nodeId}"? This cannot be undone.`,
                     () => nodeStore.removeNode(nodeStore.selectedRegionId!, node.nodeId),
                   )}>Remove</Button>
@@ -116,4 +105,4 @@
     </Table>
   {/if}
 </div>
-<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />

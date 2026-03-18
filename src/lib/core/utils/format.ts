@@ -88,3 +88,13 @@ const SESSION_STATUS_MAP: Record<string, { label: string; variant: StatusVariant
 export function formatSessionStatus(status: string): { label: string; variant: StatusVariant } {
   return SESSION_STATUS_MAP[status] ?? { label: status, variant: 'outline' }
 }
+
+const NODE_STATUS_MAP: Record<string, StatusVariant> = {
+  active: 'default' as StatusVariant,
+  draining: 'warning',
+  inactive: 'secondary',
+}
+
+export function nodeStatusVariant(status: string): StatusVariant {
+  return NODE_STATUS_MAP[status] ?? 'secondary'
+}

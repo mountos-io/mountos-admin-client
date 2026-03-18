@@ -20,8 +20,8 @@
     aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
     aria-label="Quota usage {pct}%">
     <div
-      class="h-full rounded-full transition-all {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-amber-500' : 'bg-primary'}"
-      style="width: {pct}%"
+      class="h-full rounded-full transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}"
+      style="transform: scaleX({pct / 100})"
     ></div>
   </div>
   <p class="text-xs text-muted-foreground text-right">{pct}%</p>

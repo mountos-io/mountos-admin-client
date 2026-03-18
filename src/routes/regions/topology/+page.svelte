@@ -182,7 +182,7 @@
   <div class="flex items-start justify-between gap-4">
     <div>
       <div class="flex items-center gap-3">
-        <h2 class="text-2xl font-bold tracking-tight">Region Topology</h2>
+        <h1 class="text-2xl font-bold tracking-tight">Region Topology</h1>
         <Badge variant="secondary" class="text-[10px] tracking-widest">DEMO</Badge>
       </div>
       <div class="mt-1 flex items-center gap-2 text-sm">
@@ -476,7 +476,7 @@
             <!-- Leader "L" marker -->
             {#if node.isRaftLeader}
               <text x={x} y={y + 4} text-anchor="middle"
-                font-size="11" font-weight="700" fill="white"
+                font-size="11" font-weight="700" fill="var(--foreground)"
                 style="text-shadow: 0 1px 2px oklch(0 0 0 / 0.5);">L</text>
             {/if}
 

@@ -64,7 +64,7 @@
         {/if}
         <span class="truncate text-sm">{store.selectedAccount?.name ?? 'Select account'}</span>
       </span>
-      <svg class="h-4 w-4 shrink-0 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <svg class="h-4 w-4 shrink-0 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
         <path d="m6 9 6 6 6-6" />
       </svg>
     {/if}
@@ -79,6 +79,7 @@
       <div class="px-4 pb-2">
         <Input
           placeholder="Search accounts..."
+          aria-label="Search accounts"
           bind:value={search}
           class="h-9"
         />

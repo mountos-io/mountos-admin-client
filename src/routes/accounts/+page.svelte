@@ -13,6 +13,7 @@
   import { features } from '$lib/config/features'
   import { formatDate } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import Plus from '@lucide/svelte/icons/plus'
   import Eye from '@lucide/svelte/icons/eye'
   import Pencil from '@lucide/svelte/icons/pencil'
@@ -24,14 +25,7 @@
   const store = useAccounts()
   const auth = useAuth()
   const prefs = usePreferences()
-
-  let confirmAction = $state<{ open: boolean; title: string; desc: string; action: () => Promise<void> }>({
-    open: false, title: '', desc: '', action: async () => {},
-  })
-
-  function confirm(title: string, desc: string, action: () => Promise<void>) {
-    confirmAction = { open: true, title, desc, action: async () => { await action(); store.fetchAccounts(store.currentPage, prefs.pageSize) } }
-  }
+  const dialog = useConfirmDialog(() => store.fetchAccounts(store.currentPage, prefs.pageSize))
 
   $effect(() => {
     if (!auth.loading && !auth.can('accounts', 'read')) {
@@ -45,7 +39,7 @@
 
 <div class="space-y-4">
   <div class="flex items-center justify-between">
-    <h2 class="text-2xl font-bold tracking-tight">Accounts</h2>
+    <h1 class="text-2xl font-bold tracking-tight">Accounts</h1>
     {#if auth.can('accounts', 'create')}
       <Button href="/accounts/create" size="sm" class="gap-1.5">
         <Plus class="h-4 w-4" />
@@ -71,7 +65,7 @@
       <TableBody>
         {#each store.accounts as account}
           <TableRow>
-            <TableCell class="font-medium">{account.name}</TableCell>
+            <TableCell class="font-medium max-w-[200px] truncate">{account.name}</TableCell>
             <TableCell><StatusBadge active={account.isActive} locked={account.locked} /></TableCell>
             <TableCell class="text-muted-foreground">{formatDate(account.createdAt)}</TableCell>
             <TableCell>
@@ -81,7 +75,7 @@
                     <Button
                       variant="ghost" size="sm"
                       title="Deactivate"
-                      onclick={() => confirm('Deactivate', `Deactivate "${account.name}"?`, () => store.deactivateAccount(account.id))}
+                      onclick={() => dialog.confirm('Deactivate', `Deactivate "${account.name}"?`, () => store.deactivateAccount(account.id))}
                     >
                       <Power class="size-3.5 text-muted-foreground" />
                     </Button>
@@ -89,9 +83,9 @@
                     <Button
                       variant="ghost" size="sm"
                       title="Activate"
-                      onclick={() => confirm('Activate', `Activate "${account.name}"?`, () => store.activateAccount(account.id))}
+                      onclick={() => dialog.confirm('Activate', `Activate "${account.name}"?`, () => store.activateAccount(account.id))}
                     >
-                      <Power class="size-3.5 text-emerald-500" />
+                      <Power class="size-3.5 text-success" />
                     </Button>
                   {/if}
                   {#if features.accountLock}
@@ -99,7 +93,7 @@
                       <Button
                         variant="ghost" size="sm"
                         title="Unlock"
-                        onclick={() => confirm('Unlock', `Unlock "${account.name}"?`, () => store.unlockAccount(account.id))}
+                        onclick={() => dialog.confirm('Unlock', `Unlock "${account.name}"?`, () => store.unlockAccount(account.id))}
                       >
                         <Lock class="size-3.5 text-destructive" />
                       </Button>
@@ -107,7 +101,7 @@
                       <Button
                         variant="ghost" size="sm"
                         title="Lock"
-                        onclick={() => confirm('Lock', `Lock "${account.name}"?`, () => store.lockAccount(account.id))}
+                        onclick={() => dialog.confirm('Lock', `Lock "${account.name}"?`, () => store.lockAccount(account.id))}
                       >
                         <LockOpen class="size-3.5 text-muted-foreground" />
                       </Button>
@@ -139,4 +133,4 @@
   {/if}
 </div>
 
-<ConfirmDialog bind:open={confirmAction.open} title={confirmAction.title} description={confirmAction.desc} onConfirm={confirmAction.action} />
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />

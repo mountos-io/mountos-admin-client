@@ -44,7 +44,7 @@
 </script>
 
 <div class="space-y-6">
-  <h2 class="text-2xl font-bold tracking-tight">Dashboard</h2>
+  <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
 
   {#if !account}
     <EmptyState title="No account selected" description="Select an account to view dashboard" />

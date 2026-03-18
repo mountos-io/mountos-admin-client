@@ -32,6 +32,12 @@
   --destructive: oklch(0.66 0.24 24.42);
   --destructive-foreground: oklch(0.97 0.03 94.63);
 
+  --warning: oklch(0.75 0.16 70);
+  --warning-foreground: oklch(0.25 0.05 50);
+
+  --success: oklch(0.62 0.17 155);
+  --success-foreground: oklch(0.97 0.03 94.63);
+
   --border: oklch(0.88 0 0);
   --input: oklch(0.96 0 0);
   --ring: oklch(0.61 0.14 39);
@@ -80,6 +86,12 @@
   --destructive: oklch(0.59 0.2 21);
   --destructive-foreground: oklch(0.95 0 0);
 
+  --warning: oklch(0.78 0.15 75);
+  --warning-foreground: oklch(0.2 0.05 50);
+
+  --success: oklch(0.65 0.19 155);
+  --success-foreground: oklch(0.12 0 0);
+
   --border: oklch(0.2 0 0);
   --input: oklch(0.06 0 0);
   --ring: oklch(0.73 0.17 84.429);
@@ -124,6 +136,10 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -250,5 +266,14 @@
     -webkit-text-fill-color: var(--foreground) !important;
     -webkit-box-shadow: 0 0 0px 1000px var(--background) inset !important;
     transition: background-color 5000s ease-in-out 0s;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }

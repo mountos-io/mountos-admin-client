@@ -32,7 +32,7 @@
 
 <div class="space-y-4">
   <div class="flex items-center justify-between">
-    <h2 class="text-2xl font-bold tracking-tight">Storages</h2>
+    <h1 class="text-2xl font-bold tracking-tight">Storages</h1>
     {#if accountId && auth.can('storages', 'create')}
       <Button href="/storages/create" size="sm" class="gap-1.5">
         <Plus class="h-4 w-4" />
@@ -60,7 +60,7 @@
       <TableBody>
         {#each storageStore.storages as storage}
           <TableRow>
-            <TableCell class="font-medium">{storage.name}</TableCell>
+            <TableCell class="font-medium max-w-[200px] truncate">{storage.name}</TableCell>
             <TableCell><Badge variant="outline">{storage.storageType}</Badge></TableCell>
             <TableCell><Badge variant="secondary">{storage.providerType}</Badge></TableCell>
             <TableCell><StatusBadge active={storage.isActive} /></TableCell>

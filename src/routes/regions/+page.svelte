@@ -20,6 +20,7 @@
   import ConfirmDialog from "$lib/components/shared/ConfirmDialog.svelte";
   import { formatDate } from "$lib/core/utils/format";
   import { showErrorToast, showSuccessToast } from "$lib/core/utils/toast";
+  import { useConfirmDialog } from "$lib/stores/confirm-dialog.svelte";
   import Plus from "@lucide/svelte/icons/plus";
   import Power from "@lucide/svelte/icons/power";
   import Copy from "@lucide/svelte/icons/copy";
@@ -30,17 +31,7 @@
   const auth = useAuth();
   const accountId = $derived(accountStore.selectedAccountId);
   const prefs = usePreferences();
-  let confirmAction = $state<{
-    open: boolean;
-    title: string;
-    desc: string;
-    action: () => Promise<void>;
-  }>({
-    open: false,
-    title: "",
-    desc: "",
-    action: async () => {},
-  });
+  const dialog = useConfirmDialog();
 
   $effect(() => {
     if (!auth.loading && !auth.can("regions", "read")) {
@@ -63,22 +54,20 @@
   function toggle(region: { id: number; name: string; isActive: boolean }) {
     if (!auth.guard("regions", "update")) return;
     const act = region.isActive ? "Deactivate" : "Activate";
-    confirmAction = {
-      open: true,
-      title: `${act} Region`,
-      desc: `${act} "${region.name}"?`,
-      action: async () => {
+    dialog.confirm(
+      `${act} Region`, `${act} "${region.name}"?`,
+      async () => {
         region.isActive
           ? await store.deactivateRegion(region.id)
           : await store.activateRegion(region.id);
       },
-    };
+    );
   }
 </script>
 
 <div class="space-y-4">
   <div class="flex items-center justify-between">
-    <h2 class="text-2xl font-bold tracking-tight">Regions</h2>
+    <h1 class="text-2xl font-bold tracking-tight">Regions</h1>
     {#if accountId && auth.can("regions", "create")}
       <Button href="/regions/create" size="sm" class="gap-1.5">
         <Plus class="h-4 w-4" />
@@ -102,7 +91,7 @@
               <span
                 title="Set as env on service instances to groups them under one regional umbrella"
               >
-                <Lightbulb class="size-3.5 text-amber-500" />
+                <Lightbulb class="size-3.5 text-warning" />
               </span>
             </span>
           </TableHead>
@@ -114,8 +103,8 @@
       <TableBody>
         {#each store.regions as region}
           <TableRow>
-            <TableCell class="font-medium">{region.name}</TableCell>
-            <TableCell class="font-mono text-xs">{region.dns}</TableCell>
+            <TableCell class="font-medium max-w-[160px] truncate">{region.name}</TableCell>
+            <TableCell class="font-mono text-xs max-w-[200px] truncate">{region.dns}</TableCell>
             <TableCell>
               <span class="inline-flex items-center gap-1 font-mono text-xs">
                 {region.exportId}
@@ -125,7 +114,7 @@
                   class="text-muted-foreground hover:text-foreground transition-colors"
                   onclick={() => copyExportId(region.exportId)}
                 >
-                  <Copy class="size-3" />
+                  <Copy class="size-3.5" />
                 </button>
               </span>
             </TableCell>
@@ -144,7 +133,7 @@
                   <Power
                     class="size-3.5 {region.isActive
                       ? 'text-muted-foreground'
-                      : 'text-emerald-500'}"
+                      : 'text-success'}"
                   />
                 </Button>
               {/if}
@@ -161,8 +150,8 @@
   {/if}
 </div>
 <ConfirmDialog
-  bind:open={confirmAction.open}
-  title={confirmAction.title}
-  description={confirmAction.desc}
-  onConfirm={confirmAction.action}
+  bind:open={dialog.open}
+  title={dialog.title}
+  description={dialog.desc}
+  onConfirm={dialog.action}
 />
