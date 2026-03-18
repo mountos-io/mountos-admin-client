@@ -45,7 +45,7 @@
   {:else if volumeStore.loading}
     <LoadingSpinner />
   {:else if volumeStore.volumes.length === 0}
-    <EmptyState title="No volumes" />
+    <EmptyState title="No volumes" action={auth.can('volumes', 'create') ? { label: 'Create Volume', href: '/volumes/create' } : undefined} />
   {:else}
     <Table>
       <TableHeader>

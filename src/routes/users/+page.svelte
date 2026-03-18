@@ -45,7 +45,7 @@
   {:else if userStore.loading}
     <LoadingSpinner />
   {:else if userStore.users.length === 0}
-    <EmptyState title="No users" description="No users found for this account." />
+    <EmptyState title="No users" description="No users found for this account." action={auth.can('users', 'create') ? { label: 'Add User', href: '/users/create' } : undefined} />
   {:else}
     <Table>
       <TableHeader>

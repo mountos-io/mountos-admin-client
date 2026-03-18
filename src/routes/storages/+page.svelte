@@ -45,7 +45,7 @@
   {:else if storageStore.loading}
     <LoadingSpinner />
   {:else if storageStore.storages.length === 0}
-    <EmptyState title="No storages" />
+    <EmptyState title="No storages" action={auth.can('storages', 'create') ? { label: 'Create Storage', href: '/storages/create' } : undefined} />
   {:else}
     <Table>
       <TableHeader>

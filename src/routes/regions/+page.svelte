@@ -78,7 +78,7 @@
   {#if store.loading}
     <LoadingSpinner />
   {:else if store.regions.length === 0}
-    <EmptyState title="No regions" />
+    <EmptyState title="No regions" action={auth.can('regions', 'create') ? { label: 'Create Region', href: '/regions/create' } : undefined} />
   {:else}
     <Table>
       <TableHeader>
