@@ -62,10 +62,11 @@ const CLIENT_TYPE_NAMES: Record<string, string> = {
   'macfuse': 'macFUSE',
   'winfsp': 'WinFSP',
   'fskit': 'FSKit (macOS)',
+  'nfs': 'NFS (macOS)',
   'cfapi': 'CloudFilter (Windows)',
   'csi-driver': 'CSI Driver (K8s)',
   'fuse+iouring': 'FUSE io_uring (Linux)',
-  'file provider (FP)': 'File Provider (macOS)',
+  'fp': 'File Provider (macOS)',
 }
 
 export function formatClientType(raw: string): string {
