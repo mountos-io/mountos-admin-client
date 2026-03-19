@@ -208,7 +208,8 @@
     <div class="topo-grid scanlines relative flex flex-wrap gap-5">
       {#each tierData as tier}
         {@const tierColor = TIER_COLORS[tier.id]}
-        <section class="tier-column corner-brackets-dynamic flex flex-col gap-3 w-full md:w-auto border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
+        <div class="monitor-frame flex flex-col items-center w-full md:w-auto">
+        <section class="tier-column corner-brackets flex flex-col gap-3 w-full border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
           <!-- Tier header -->
           <div class="flex items-center gap-2">
             <span
@@ -319,6 +320,8 @@
               </Card>
             {/each}
         </section>
+        <div class="monitor-stand" style="--stand-color: {tierColor};"></div>
+        </div>
       {/each}
     </div>
   {/if}
@@ -396,6 +399,30 @@
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg, var(--svc-bg) 0%, transparent 50%);
+  }
+
+  /* Monitor stand */
+  .monitor-stand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .monitor-stand::before {
+    content: '';
+    width: 2px;
+    height: 14px;
+    background: var(--stand-color, var(--color-border));
+    opacity: 0.5;
+  }
+
+  .monitor-stand::after {
+    content: '';
+    width: 48px;
+    height: 3px;
+    border-radius: 0 0 2px 2px;
+    background: var(--stand-color, var(--color-border));
+    opacity: 0.4;
   }
 
   /* Tier label glow */
