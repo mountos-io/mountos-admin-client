@@ -249,8 +249,7 @@
               {@const hiddenCount = group.nodes.length - visibleNodes.length}
               <Card
                 cornerBrackets
-                cornerPlus
-                class="svc-card relative overflow-hidden gap-0 py-0 w-full md:w-[420px]"
+                class="svc-card corner-plus-bl relative overflow-hidden gap-0 py-0 w-full md:w-[420px]"
                 style="--svc-accent: {p.accent}; --svc-bg: {p.bg};"
               >
                 <!-- inset glow at top edge -->

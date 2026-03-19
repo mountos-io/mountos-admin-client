@@ -431,4 +431,55 @@
   .dark .cyberpunk-skewed-sm:hover::before {
     color: oklch(0.73 0.17 84.429);
   }
+
+  /* Cyberpunk table header labels — scan-line underline */
+  .th-cyber {
+    position: relative;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: oklch(0.45 0.03 200);
+    padding-bottom: 0.5rem !important;
+  }
+
+  .th-cyber::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, oklch(0.4 0.08 200), transparent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+
+  .th-cyber:hover::after {
+    transform: scaleX(1);
+  }
+
+  .th-cyber:hover {
+    color: oklch(0.55 0.08 200);
+  }
+
+  .dark .th-cyber {
+    color: oklch(0.50 0.03 200);
+  }
+
+  .dark .th-cyber::after {
+    background: linear-gradient(90deg, transparent, oklch(0.55 0.08 200), transparent);
+  }
+
+  .dark .th-cyber:hover {
+    color: oklch(0.65 0.08 200);
+  }
+
+  thead:has(.th-cyber) tr {
+    border-bottom-color: oklch(0.4 0.002 200 / 0.3);
+  }
+
+  .dark thead:has(.th-cyber) tr {
+    border-bottom-color: oklch(0.35 0.002 200 / 0.3);
+  }
 }

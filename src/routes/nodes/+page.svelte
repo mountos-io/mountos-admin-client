@@ -145,14 +145,14 @@
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Node ID</TableHead>
+          <TableHead class="th-cyber">Node ID</TableHead>
           {#if !selectedRegionId}
-            <TableHead>Region</TableHead>
+            <TableHead class="th-cyber">Region</TableHead>
           {/if}
-          <TableHead>Type</TableHead>
-          <TableHead>Address</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Last Heartbeat</TableHead>
+          <TableHead class="th-cyber">Type</TableHead>
+          <TableHead class="th-cyber">Address</TableHead>
+          <TableHead class="th-cyber">Status</TableHead>
+          <TableHead class="th-cyber">Last Heartbeat</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
