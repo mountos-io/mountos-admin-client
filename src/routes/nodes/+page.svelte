@@ -55,7 +55,6 @@
     { value: 's3gatewayserv', label: 's3gatewayserv' },
     { value: 'csiserv', label: 'csiserv' },
     { value: 'mfuse', label: 'mfuse' },
-    { value: 'hub', label: 'hub' },
   ] as const
 
   const STATUS_OPTIONS = [

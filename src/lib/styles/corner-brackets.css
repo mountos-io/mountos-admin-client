@@ -186,7 +186,7 @@
   .dark .corner-brackets-lg,
   .dark .corner-brackets-lg-fixed,
   .dark .corner-brackets-dynamic {
-    --bracket-active: oklch(0.73 0.17 84.429);
+    --bracket-active: oklch(0.78 0.13 92);
   }
 
   @supports selector(:has(*)) {
@@ -241,7 +241,7 @@
   }
 
   .dark .corner-plus:hover::after {
-    color: oklch(0.73 0.17 84.429);
+    color: oklch(0.78 0.13 92);
   }
 
   /* Corner plus at bottom-left */
@@ -276,7 +276,7 @@
   }
 
   .dark .corner-plus-bl:hover::after {
-    color: oklch(0.73 0.17 84.429);
+    color: oklch(0.78 0.13 92);
   }
 
   /* Technical grid pattern background */
@@ -353,7 +353,7 @@
   }
 
   .dark .cyberpunk-skewed:hover::before {
-    color: oklch(0.73 0.17 84.429);
+    color: oklch(0.78 0.13 92);
   }
 
   /* Large variant with more pronounced skew */
@@ -391,7 +391,7 @@
   }
 
   .dark .cyberpunk-skewed-lg:hover::before {
-    color: oklch(0.73 0.17 84.429);
+    color: oklch(0.78 0.13 92);
   }
 
   /* Small variant for buttons (6px cuts) */
@@ -429,7 +429,7 @@
   }
 
   .dark .cyberpunk-skewed-sm:hover::before {
-    color: oklch(0.73 0.17 84.429);
+    color: oklch(0.78 0.13 92);
   }
 
   /* Cyberpunk table header labels — scan-line underline */
@@ -476,32 +476,37 @@
   }
 
   thead:has(.th-cyber) tr {
-    position: relative;
     border-bottom-color: oklch(0.4 0.002 200 / 0.3);
   }
 
-  /* Top-left bracket */
-  thead:has(.th-cyber) tr::before {
+  /* Ensure all th in cyber rows can host brackets */
+  thead:has(.th-cyber) th:first-child,
+  thead:has(.th-cyber) th:last-child {
+    position: relative;
+  }
+
+  /* Top-left bracket: first th in the row */
+  thead:has(.th-cyber) th:first-child::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
+    inset: 0 auto auto 0;
     width: 14px;
     height: 14px;
+    border: none;
     border-top: 1.5px solid oklch(0.4 0.002 200);
     border-left: 1.5px solid oklch(0.4 0.002 200);
     opacity: 0.4;
     pointer-events: none;
   }
 
-  /* Bottom-right bracket */
-  thead:has(.th-cyber) tr::after {
+  /* Bottom-right bracket: last th in the row */
+  thead:has(.th-cyber) th:last-child::before {
     content: '';
     position: absolute;
-    bottom: 0;
-    right: 0;
+    inset: auto 0 0 auto;
     width: 14px;
     height: 14px;
+    border: none;
     border-bottom: 1.5px solid oklch(0.4 0.002 200);
     border-right: 1.5px solid oklch(0.4 0.002 200);
     opacity: 0.4;
@@ -512,8 +517,13 @@
     border-bottom-color: oklch(0.35 0.002 200 / 0.3);
   }
 
-  .dark thead:has(.th-cyber) tr::before,
-  .dark thead:has(.th-cyber) tr::after {
-    border-color: oklch(0.35 0.002 200);
+  .dark thead:has(.th-cyber) th:first-child::before {
+    border-top-color: oklch(0.35 0.002 200);
+    border-left-color: oklch(0.35 0.002 200);
+  }
+
+  .dark thead:has(.th-cyber) th:last-child::before {
+    border-bottom-color: oklch(0.35 0.002 200);
+    border-right-color: oklch(0.35 0.002 200);
   }
 }

@@ -9,7 +9,6 @@
   import { Card } from '$lib/components/ui/card'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { formatRelative } from '$lib/core/utils/format'
   import type { Region, ServiceNode } from '$lib/core/api/types'
@@ -68,27 +67,6 @@
     { id: 'gateway', label: 'GATEWAY', types: ['s3gatewayserv'] },
     { id: 'edge', label: 'CLIENT / EDGE', types: ['fuseserv', 'csiserv'] },
   ]
-
-  const SERVICE_TYPE_OPTIONS = [
-    { value: '', label: 'All Types' },
-    { value: 'appserv', label: 'appserv' },
-    { value: 'dataserv', label: 'dataserv' },
-    { value: 'gcserv', label: 'gcserv' },
-    { value: 'fuseserv', label: 'fuseserv' },
-    { value: 'blockserv', label: 'blockserv' },
-    { value: 's3gatewayserv', label: 's3gatewayserv' },
-    { value: 'csiserv', label: 'csiserv' },
-    { value: 'mfuse', label: 'mfuse' },
-    { value: 'hub', label: 'hub' },
-  ] as const
-
-  const STATUS_OPTIONS = [
-    { value: '', label: 'All Statuses' },
-    { value: 'healthy', label: 'Healthy' },
-    { value: 'registered', label: 'Registered' },
-    { value: 'unhealthy', label: 'Unhealthy' },
-    { value: 'draining', label: 'Draining' },
-  ] as const
 
   const isHubRegion = $derived(nodeStore.nodesByType.has('hub'))
 
@@ -182,20 +160,6 @@
           <span class="hud-value text-[28px] font-bold tabular-nums leading-none tracking-tight">{topoStats.types}</span>
           <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">types</span>
         </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <FilterSelect
-          options={SERVICE_TYPE_OPTIONS}
-          value={nodeStore.serviceType}
-          placeholder="All Types"
-          onchange={(v) => nodeStore.setServiceType(v)}
-        />
-        <FilterSelect
-          options={STATUS_OPTIONS}
-          value={nodeStore.status}
-          placeholder="All Statuses"
-          onchange={(v) => nodeStore.setStatus(v)}
-        />
       </div>
     </div>
   </div>
