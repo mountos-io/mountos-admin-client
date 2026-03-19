@@ -33,7 +33,7 @@
 
   const regionId = $derived(Number($page.params.regionId))
   const COLLAPSE_THRESHOLD = 8
-  const NAVIGABLE_TYPES = new Set(['appserv', 'dataserv', 'fuseserv'])
+  const NAVIGABLE_TYPES = new Set(['hub', 'appserv', 'dataserv', 'fuseserv'])
 
   const STATUS_COLORS: Record<string, string> = {
     healthy: 'oklch(0.6 0.18 145)',
@@ -43,7 +43,8 @@
   }
 
   const SERVICE_PALETTE: Record<string, { accent: string; bg: string; label: string; icon: typeof Shield }> = {
-    appserv:       { accent: 'oklch(0.70 0.12 310)', bg: 'oklch(0.70 0.12 310 / 0.06)', label: 'Hub', icon: Shield },
+    hub:           { accent: 'oklch(0.70 0.12 310)', bg: 'oklch(0.70 0.12 310 / 0.06)', label: 'Hub', icon: Shield },
+    appserv:       { accent: 'oklch(0.70 0.12 310)', bg: 'oklch(0.70 0.12 310 / 0.06)', label: 'App Server', icon: Shield },
     dataserv:      { accent: 'oklch(0.60 0.14 260)', bg: 'oklch(0.60 0.14 260 / 0.06)', label: 'Metadata', icon: Database },
     gcserv:        { accent: 'oklch(0.55 0.18 25)',  bg: 'oklch(0.55 0.18 25 / 0.06)',  label: 'Garbage Collection', icon: Trash2 },
     fuseserv:      { accent: 'oklch(0.70 0.14 55)',  bg: 'oklch(0.70 0.14 55 / 0.06)',  label: 'FUSE', icon: HardDrive },
@@ -55,13 +56,17 @@
   const TIER_COLORS: Record<string, string> = {
     control: 'oklch(0.70 0.12 310)',
     data: 'oklch(0.60 0.14 260)',
+    storage: 'oklch(0.65 0.12 200)',
+    gateway: 'oklch(0.65 0.12 30)',
     edge: 'oklch(0.70 0.14 55)',
   }
 
   const TIERS = [
-    { id: 'control', label: 'CONTROL', types: ['appserv'], deco: 'vault' as const },
-    { id: 'data', label: 'DATA', types: ['dataserv', 'gcserv'], deco: 'database' as const },
-    { id: 'edge', label: 'CLIENT / EDGE', types: ['fuseserv', 'blockserv', 's3gatewayserv', 'csiserv'], deco: undefined },
+    { id: 'control', label: 'CONTROL', types: ['hub'] },
+    { id: 'data', label: 'DATA', types: ['appserv', 'dataserv', 'gcserv'] },
+    { id: 'storage', label: 'STORAGE', types: ['blockserv'] },
+    { id: 'gateway', label: 'GATEWAY', types: ['s3gatewayserv'] },
+    { id: 'edge', label: 'CLIENT / EDGE', types: ['fuseserv', 'csiserv'] },
   ]
 
   const SERVICE_TYPE_OPTIONS = [
@@ -85,15 +90,20 @@
     { value: 'draining', label: 'Draining' },
   ] as const
 
+  const isHubRegion = $derived(nodeStore.nodesByType.has('hub'))
+
   const tierData = $derived.by(() => {
     const byType = nodeStore.nodesByType
-    return TIERS.map(tier => ({
+    const relevant = isHubRegion
+      ? TIERS.filter(t => t.id === 'control')
+      : TIERS.filter(t => t.id !== 'control')
+    return relevant.map(tier => ({
       ...tier,
       groups: tier.types
         .map(type => ({ type, nodes: byType.get(type) ?? [] }))
         .filter(g => g.nodes.length > 0),
       nodeCount: tier.types.reduce((sum, t) => sum + (byType.get(t)?.length ?? 0), 0),
-    })).filter(t => t.groups.length > 0)
+    }))
   })
 
   const topoStats = $derived.by(() => {
@@ -108,7 +118,7 @@
   function statusColor(s: string) { return STATUS_COLORS[s] ?? 'oklch(0.5 0 0)' }
 
   function isNavigable(node: ServiceNode) {
-    const t = node.serviceType === 'hub' ? 'appserv' : node.serviceType === 'mfuse' ? 'fuseserv' : node.serviceType
+    const t = node.serviceType === 'mfuse' ? 'fuseserv' : node.serviceType
     return NAVIGABLE_TYPES.has(t)
   }
 
@@ -195,35 +205,27 @@
   {:else if nodeStore.nodes.length === 0}
     <EmptyState title="No nodes" description="No nodes registered in this region." />
   {:else}
-    <div class="topo-stack scanlines relative">
-      {#each tierData as tier, ti}
-        <!-- Circuit trace connector -->
-        {#if ti > 0}
-          {@const prevColor = TIER_COLORS[tierData[ti-1].id]}
-          {@const nextColor = TIER_COLORS[tier.id]}
-          <div class="flex flex-col items-center py-0.5">
-            <div class="circuit-dot" style="background: {prevColor}; --dot-glow: {prevColor};"></div>
-            <div class="h-5 w-px" style="background: linear-gradient(to bottom, {prevColor}, {nextColor});"></div>
-            <div class="circuit-dot" style="background: {nextColor}; --dot-glow: {nextColor};"></div>
-          </div>
-        {/if}
-
-        <section aria-label="{tier.label} tier">
+    <div class="topo-grid scanlines relative flex flex-wrap gap-5">
+      {#each tierData as tier}
+        {@const tierColor = TIER_COLORS[tier.id]}
+        <section class="tier-column corner-brackets-dynamic flex flex-col gap-3 w-full md:w-auto border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
           <!-- Tier header -->
-          <div class="flex items-center gap-3 mb-3">
+          <div class="flex items-center gap-2">
             <span
               class="tier-label-glow text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap"
-              style:color={TIER_COLORS[tier.id]}
+              style:color={tierColor}
             >{tier.label}</span>
-            <div class="h-px flex-1" style="background: {TIER_COLORS[tier.id]}; opacity: 0.3;"></div>
-            <span class="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">
-              {tier.nodeCount} {tier.nodeCount === 1 ? 'node' : 'nodes'}
-            </span>
+            {#if tier.nodeCount > 0}
+              <span class="text-[10px] text-muted-foreground tabular-nums">{tier.nodeCount}</span>
+            {/if}
           </div>
 
-          <!-- Service cards -->
-          <div class="flex flex-wrap gap-3">
-            {#each tier.groups as group}
+          {#if tier.groups.length === 0}
+            <div class="flex items-center justify-center rounded-sm border border-dashed border-border/30 px-6 py-8 md:w-[420px]">
+              <span class="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/40">no nodes</span>
+            </div>
+          {/if}
+          {#each tier.groups as group}
               {@const p = palette(group.type)}
               {@const Icon = p.icon}
               {@const isDataserv = group.type === 'dataserv'}
@@ -234,7 +236,7 @@
               <Card
                 cornerBrackets
                 cornerPlus
-                class="svc-card relative overflow-hidden gap-0 py-0 w-[420px]"
+                class="svc-card relative overflow-hidden gap-0 py-0 w-full md:w-[420px]"
                 style="--svc-accent: {p.accent}; --svc-bg: {p.bg};"
               >
                 <!-- inset glow at top edge -->
@@ -316,7 +318,6 @@
                 </div>
               </Card>
             {/each}
-          </div>
         </section>
       {/each}
     </div>
@@ -395,15 +396,6 @@
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg, var(--svc-bg) 0%, transparent 50%);
-  }
-
-  /* Circuit trace connector dots */
-  .circuit-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    box-shadow: 0 0 6px var(--dot-glow), 0 0 2px var(--dot-glow);
-    flex-shrink: 0;
   }
 
   /* Tier label glow */

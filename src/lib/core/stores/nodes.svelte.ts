@@ -22,7 +22,7 @@ let statsFetchCtrl: AbortController | null = null
 const nodesByType = $derived.by(() => {
   const map = new Map<string, ServiceNode[]>()
   for (const n of nodes) {
-    const key = n.serviceType === 'hub' ? 'appserv' : n.serviceType === 'mfuse' ? 'fuseserv' : n.serviceType
+    const key = n.serviceType === 'mfuse' ? 'fuseserv' : n.serviceType
     const list = map.get(key) ?? []
     list.push(n)
     map.set(key, list)

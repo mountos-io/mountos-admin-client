@@ -6,7 +6,7 @@
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
-  import { Select } from '$lib/components/ui/select'
+  import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
@@ -111,10 +111,12 @@
         {/if}
       </div>
     </div>
-    <div class="flex items-center gap-3">
-      <span class="text-xs text-muted-foreground">Poll:</span>
-      <Select bind:value={pollValue} options={POLL_OPTIONS} class="w-20" />
-    </div>
+    <FilterSelect
+      options={POLL_OPTIONS}
+      value={pollValue}
+      placeholder="Off"
+      onchange={(v) => pollValue = v}
+    />
   </div>
 
   <!-- Last updated -->
