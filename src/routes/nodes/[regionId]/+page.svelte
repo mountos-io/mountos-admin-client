@@ -139,43 +139,52 @@
   })
 </script>
 
-<div class="space-y-5">
+<div class="space-y-6">
   <!-- Header -->
   <div class="flex items-center gap-3">
     <Button variant="ghost" size="sm" onclick={() => goto('/nodes')}>
       <ArrowLeft class="h-4 w-4" />
     </Button>
-    <div class="flex items-center gap-3">
-      <h1 class="text-2xl font-bold tracking-tight">{region?.name ?? 'Region'}</h1>
-      {#if region}
-        <Badge variant={region.isActive ? 'success' : 'secondary'}>
-          {region.isActive ? 'Active' : 'Inactive'}
-        </Badge>
-      {/if}
+    <h1 class="text-2xl font-bold tracking-tight">{region?.name ?? 'Region'}</h1>
+    {#if region}
+      <Badge variant={region.isActive ? 'success' : 'secondary'}>
+        {region.isActive ? 'Active' : 'Inactive'}
+      </Badge>
+    {/if}
+  </div>
+
+  <!-- Stats + Filters -->
+  <div class="flex flex-wrap items-end justify-between gap-4 border-b border-border/40 pb-5">
+    <div class="flex items-baseline gap-6">
+      <div class="flex items-baseline gap-1.5">
+        <span class="text-[28px] font-bold tabular-nums leading-none tracking-tight">{topoStats.total}</span>
+        <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">nodes</span>
+      </div>
+      <div class="h-5 w-px bg-border/60"></div>
+      <div class="flex items-baseline gap-1.5">
+        <span class="text-[28px] font-bold tabular-nums leading-none tracking-tight" style:color={STATUS_COLORS.healthy}>{topoStats.healthy}</span>
+        <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">healthy</span>
+      </div>
+      <div class="h-5 w-px bg-border/60"></div>
+      <div class="flex items-baseline gap-1.5">
+        <span class="text-[28px] font-bold tabular-nums leading-none tracking-tight">{topoStats.types}</span>
+        <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">types</span>
+      </div>
     </div>
-  </div>
-
-  <!-- Filters -->
-  <div class="flex items-center gap-2">
-    <FilterSelect
-      options={SERVICE_TYPE_OPTIONS}
-      value={nodeStore.serviceType}
-      placeholder="All Types"
-      onchange={(v) => nodeStore.setServiceType(v)}
-    />
-    <FilterSelect
-      options={STATUS_OPTIONS}
-      value={nodeStore.status}
-      placeholder="All Statuses"
-      onchange={(v) => nodeStore.setStatus(v)}
-    />
-  </div>
-
-  <!-- Stats -->
-  <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm">
-    <div><span class="text-muted-foreground">Nodes</span> <span class="ml-1 font-medium">{topoStats.total}</span></div>
-    <div><span class="text-muted-foreground">Healthy</span> <span class="ml-1 font-medium" style:color={STATUS_COLORS.healthy}>{topoStats.healthy}</span></div>
-    <div><span class="text-muted-foreground">Types</span> <span class="ml-1 font-medium">{topoStats.types}</span></div>
+    <div class="flex items-center gap-2">
+      <FilterSelect
+        options={SERVICE_TYPE_OPTIONS}
+        value={nodeStore.serviceType}
+        placeholder="All Types"
+        onchange={(v) => nodeStore.setServiceType(v)}
+      />
+      <FilterSelect
+        options={STATUS_OPTIONS}
+        value={nodeStore.status}
+        placeholder="All Statuses"
+        onchange={(v) => nodeStore.setStatus(v)}
+      />
+    </div>
   </div>
 
   {#if nodeStore.loading}
@@ -183,25 +192,33 @@
   {:else if nodeStore.nodes.length === 0}
     <EmptyState title="No nodes" description="No nodes registered in this region." />
   {:else}
-    <!-- Tiered topology -->
-    <div class="space-y-0">
+    <div class="topo-stack">
       {#each tierData as tier, ti}
+        <!-- Tier connector -->
         {#if ti > 0}
-          <div class="mx-auto my-1 h-5 w-px border-l border-dashed border-border/30"></div>
+          <div class="flex justify-center py-0.5">
+            <div
+              class="h-6 w-px opacity-50"
+              style="background: linear-gradient(to bottom, {TIER_COLORS[tierData[ti-1].id]}, {TIER_COLORS[tier.id]});"
+            ></div>
+          </div>
         {/if}
-        <section
-          class="rounded-sm border-l-2 bg-card/30 p-4"
-          style:border-color={TIER_COLORS[tier.id]}
-          aria-label="{tier.label} tier"
-        >
-          <div class="mb-3 flex items-center gap-2">
+
+        <section aria-label="{tier.label} tier">
+          <!-- Tier header -->
+          <div class="flex items-center gap-3 mb-3">
             <span
-              class="text-[10px] font-semibold uppercase tracking-widest"
+              class="text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap"
               style:color={TIER_COLORS[tier.id]}
             >{tier.label}</span>
-            <span class="text-[10px] text-muted-foreground">{tier.nodeCount} nodes</span>
+            <div class="h-px flex-1" style="background: {TIER_COLORS[tier.id]}; opacity: 0.25;"></div>
+            <span class="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">
+              {tier.nodeCount} {tier.nodeCount === 1 ? 'node' : 'nodes'}
+            </span>
           </div>
-          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
+          <!-- Service cards -->
+          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {#each tier.groups as group}
               {@const p = palette(group.type)}
               {@const Icon = p.icon}
@@ -212,12 +229,15 @@
               {@const hiddenCount = group.nodes.length - visibleNodes.length}
               <Card
                 cornerBrackets
-                class="relative overflow-hidden"
-                style="border-left: 4px solid {p.accent}; background: {p.bg};"
+                class="svc-card relative overflow-hidden gap-0 py-0"
+                style="--svc-accent: {p.accent}; --svc-bg: {p.bg};"
               >
+                <div class="svc-accent-bar"></div>
+                <div class="svc-glow pointer-events-none"></div>
                 {#if isDataserv}
                   <div class="tech-grid-bg absolute inset-0 pointer-events-none"></div>
                 {/if}
+
                 <div class="relative">
                   <!-- Card header -->
                   <div class="flex items-center gap-2 px-3 pt-3 pb-2">
@@ -225,19 +245,21 @@
                       <Icon class="h-4 w-4" />
                     </span>
                     <span class="text-sm font-semibold">{p.label}</span>
-                    <Badge variant="outline" class="ml-auto text-[10px]">{group.nodes.length}</Badge>
-                    {#if isDataserv}
-                      <Badge variant="secondary" class="text-[10px]">RAFT</Badge>
-                    {/if}
+                    <div class="ml-auto flex items-center gap-1.5">
+                      {#if isDataserv}
+                        <Badge variant="secondary" class="text-[10px]">RAFT</Badge>
+                      {/if}
+                      <Badge variant="outline" class="text-[10px] tabular-nums">{group.nodes.length}</Badge>
+                    </div>
                   </div>
 
                   <!-- Node list -->
-                  <div class="divide-y divide-border/30">
+                  <div class="divide-y divide-border/20">
                     {#each visibleNodes as node}
                       {@const navigable = isNavigable(node)}
                       {#if navigable}
                         <button
-                          class="node-row flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors cursor-pointer hover:bg-foreground/[0.03]"
+                          class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
                           aria-label="View node {node.nodeId}"
                           onclick={() => goto(`/nodes/${regionId}/${node.nodeId}`)}
                           onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
@@ -255,8 +277,8 @@
                         </button>
                       {:else}
                         <div
-                          role="img" aria-label="{node.nodeId}"
-                          class="node-row flex items-center gap-2 px-3 py-1.5"
+                          role="listitem"
+                          class="node-row flex items-center gap-2.5 px-3 py-2"
                           onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
                           onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
                           onpointerleave={() => hoveredNode = null}
@@ -277,38 +299,18 @@
                   <!-- Expand / collapse -->
                   {#if needsCollapse}
                     <button
-                      class="flex w-full items-center justify-center gap-1 border-t border-border/30 px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground hover:bg-foreground/[0.03]"
+                      class="flex w-full items-center justify-center gap-1 border-t border-border/20 px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground hover:bg-foreground/[0.03]"
                       onclick={() => toggleExpand(group.type)}
                     >
                       <ChevronDown class="h-3 w-3 transition-transform" style="transform: rotate({expanded ? 180 : 0}deg);" />
                       {expanded ? 'Show less' : `+${hiddenCount} more`}
                     </button>
                   {:else}
-                    <div class="h-1.5"></div>
+                    <div class="h-2"></div>
                   {/if}
                 </div>
               </Card>
             {/each}
-
-            <!-- Decorative element -->
-            {#if tier.deco === 'vault'}
-              <div class="flex items-center justify-center self-stretch rounded-sm border border-dashed border-border/20 p-4 opacity-20">
-                <div class="flex flex-col items-center gap-1.5 text-muted-foreground">
-                  <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                    <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  <span class="text-[9px] font-semibold uppercase tracking-widest">Vault</span>
-                </div>
-              </div>
-            {:else if tier.deco === 'database'}
-              <div class="flex items-center justify-center self-stretch rounded-sm border border-dashed border-border/20 p-4 opacity-20">
-                <div class="flex flex-col items-center gap-1.5 text-muted-foreground">
-                  <Database class="h-8 w-8" />
-                  <span class="text-[9px] font-semibold uppercase tracking-widest">Database</span>
-                </div>
-              </div>
-            {/if}
           </div>
         </section>
       {/each}
@@ -319,26 +321,58 @@
 <!-- Tooltip -->
 {#if hoveredNode}
   <div
-    class="fixed z-50 pointer-events-none rounded-sm border bg-card px-3 py-2 shadow-lg"
+    class="tooltip-card fixed z-50 pointer-events-none rounded-sm border bg-card px-3 py-2.5 shadow-lg"
     style:left="{hoveredNode.x + 16}px"
     style:top="{hoveredNode.y - 12}px"
   >
     <div class="font-mono text-xs font-semibold">{hoveredNode.node.nodeId}</div>
-    <div class="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
-      <div>Service: <span class="text-foreground">{hoveredNode.node.serviceType}</span></div>
-      <div>Status: <span style:color={statusColor(hoveredNode.node.status)}>{hoveredNode.node.status}</span></div>
-      <div>Address: <span class="text-foreground font-mono">{hoveredNode.node.advertiseAddr}</span></div>
+    <div class="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
+      <div class="flex justify-between gap-4">
+        <span>Service</span>
+        <span class="text-foreground">{hoveredNode.node.serviceType}</span>
+      </div>
+      <div class="flex justify-between gap-4">
+        <span>Status</span>
+        <span style:color={statusColor(hoveredNode.node.status)}>{hoveredNode.node.status}</span>
+      </div>
+      <div class="flex justify-between gap-4">
+        <span>Address</span>
+        <span class="text-foreground font-mono">{hoveredNode.node.advertiseAddr}</span>
+      </div>
       {#if hoveredNode.node.lastHeartbeat}
-        <div>Heartbeat: <span class="text-foreground">{formatRelative(hoveredNode.node.lastHeartbeat)}</span></div>
+        <div class="flex justify-between gap-4">
+          <span>Heartbeat</span>
+          <span class="text-foreground">{formatRelative(hoveredNode.node.lastHeartbeat)}</span>
+        </div>
       {/if}
       {#if isNavigable(hoveredNode.node)}
-        <div class="text-foreground/60 mt-1">Click for details</div>
+        <div class="text-foreground/50 mt-1.5 text-center border-t border-border/30 pt-1.5">click to view details</div>
       {/if}
     </div>
   </div>
 {/if}
 
 <style>
+  /* Service card structure */
+  .svc-accent-bar {
+    height: 3px;
+    background: var(--svc-accent);
+    flex-shrink: 0;
+  }
+
+  .svc-glow {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, var(--svc-bg) 0%, transparent 50%);
+  }
+
+  /* Tooltip */
+  .tooltip-card {
+    backdrop-filter: blur(8px);
+    max-width: 280px;
+  }
+
+  /* LED status dots */
   .led-dot {
     box-shadow: 0 0 6px var(--led);
   }
@@ -356,11 +390,33 @@
     50% { opacity: 0.6; box-shadow: 0 0 3px var(--led); }
   }
 
+  /* Tech grid for dataserv */
   .tech-grid-bg {
     background-image:
       linear-gradient(oklch(0.60 0.14 260 / 0.04) 1px, transparent 1px),
       linear-gradient(90deg, oklch(0.60 0.14 260 / 0.04) 1px, transparent 1px);
     background-size: 20px 20px;
+  }
+
+  /* Node row hover accent */
+  button.node-row {
+    position: relative;
+  }
+
+  button.node-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 2px;
+    background: var(--svc-accent, var(--color-primary));
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  button.node-row:hover::before {
+    opacity: 1;
   }
 
   @media (prefers-reduced-motion: reduce) {
