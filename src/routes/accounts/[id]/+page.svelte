@@ -11,6 +11,7 @@
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import { formatDate } from '$lib/core/utils/format'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
@@ -113,7 +114,7 @@
 
 <div class="space-y-6">
   <div class="flex items-center gap-4">
-    <Button variant="ghost" size="sm" href="/accounts">Back</Button>
+    <Button variant="ghost" size="sm" href="/accounts"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight">Account Detail</h1>
   </div>
 
@@ -177,15 +178,15 @@
           </CardHeader>
           <CardContent class="space-y-3">
             <div>
-              <span class="text-sm text-muted-foreground">Status</span>
+              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Status</span>
               <div class="mt-1"><StatusBadge active={account.isActive} locked={account.locked} /></div>
             </div>
             <div>
-              <span class="text-sm text-muted-foreground">Description</span>
+              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Description</span>
               <p class="mt-1 text-sm">{account.description || '—'}</p>
             </div>
             <div>
-              <span class="text-sm text-muted-foreground">Created</span>
+              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Created</span>
               <p class="mt-1 text-sm">{formatDate(account.createdAt)}</p>
             </div>
           </CardContent>

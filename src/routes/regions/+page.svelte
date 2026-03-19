@@ -21,6 +21,7 @@
   import { formatDate } from "$lib/core/utils/format";
   import { showErrorToast, showSuccessToast } from "$lib/core/utils/toast";
   import { useConfirmDialog } from "$lib/stores/confirm-dialog.svelte";
+  import { Input } from "$lib/components/ui/input";
   import Plus from "@lucide/svelte/icons/plus";
   import Power from "@lucide/svelte/icons/power";
   import Copy from "@lucide/svelte/icons/copy";
@@ -32,6 +33,13 @@
   const accountId = $derived(accountStore.selectedAccountId);
   const prefs = usePreferences();
   const dialog = useConfirmDialog();
+
+  let nameFilter = $state('');
+  const filteredRegions = $derived(
+    nameFilter
+      ? store.regions.filter(r => r.name.toLowerCase().includes(nameFilter.toLowerCase()))
+      : store.regions
+  );
 
   $effect(() => {
     if (!auth.loading && !auth.can("regions", "read")) {
@@ -75,10 +83,17 @@
       </Button>
     {/if}
   </div>
+  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full">
+    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+    <div class="relative">
+      <Input bind:value={nameFilter} placeholder="Filter by name..." aria-label="Filter by name" class="max-w-sm" />
+    </div>
+  </div>
+
   {#if store.loading}
     <LoadingSpinner />
-  {:else if store.regions.length === 0}
-    <EmptyState title="No regions" action={auth.can('regions', 'create') ? { label: 'Create Region', href: '/regions/create' } : undefined} />
+  {:else if filteredRegions.length === 0}
+    <EmptyState title="No regions" description={nameFilter ? 'No regions match the current filter.' : undefined} action={!nameFilter && auth.can('regions', 'create') ? { label: 'Create Region', href: '/regions/create' } : undefined} />
   {:else}
     <Table>
       <TableHeader>
@@ -101,7 +116,7 @@
         </TableRow>
       </TableHeader>
       <TableBody>
-        {#each store.regions as region}
+        {#each filteredRegions as region}
           <TableRow
             class="cursor-pointer hover:bg-muted/50"
             onclick={() => goto(`/nodes/${region.id}`)}

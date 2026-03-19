@@ -44,8 +44,8 @@
 
   const SERVICE_PALETTE: Record<string, { accent: string; bg: string; label: string; icon: typeof Shield }> = {
     appserv:       { accent: 'oklch(0.70 0.12 310)', bg: 'oklch(0.70 0.12 310 / 0.06)', label: 'Hub', icon: Shield },
-    dataserv:      { accent: 'oklch(0.60 0.14 260)', bg: 'oklch(0.60 0.14 260 / 0.06)', label: 'Data', icon: Database },
-    gcserv:        { accent: 'oklch(0.62 0.10 140)', bg: 'oklch(0.62 0.10 140 / 0.06)', label: 'GC', icon: Trash2 },
+    dataserv:      { accent: 'oklch(0.60 0.14 260)', bg: 'oklch(0.60 0.14 260 / 0.06)', label: 'Metadata', icon: Database },
+    gcserv:        { accent: 'oklch(0.55 0.18 25)',  bg: 'oklch(0.55 0.18 25 / 0.06)',  label: 'Garbage Collection', icon: Trash2 },
     fuseserv:      { accent: 'oklch(0.70 0.14 55)',  bg: 'oklch(0.70 0.14 55 / 0.06)',  label: 'FUSE', icon: HardDrive },
     blockserv:     { accent: 'oklch(0.65 0.12 200)', bg: 'oklch(0.65 0.12 200 / 0.06)', label: 'Block', icon: Box },
     s3gatewayserv: { accent: 'oklch(0.65 0.12 30)',  bg: 'oklch(0.65 0.12 30 / 0.06)',  label: 'S3 Gateway', icon: Cloud },
@@ -153,37 +153,40 @@
     {/if}
   </div>
 
-  <!-- Stats + Filters -->
-  <div class="flex flex-wrap items-end justify-between gap-4 border-b border-border/40 pb-5">
-    <div class="flex items-baseline gap-6">
-      <div class="flex items-baseline gap-1.5">
-        <span class="text-[28px] font-bold tabular-nums leading-none tracking-tight">{topoStats.total}</span>
-        <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">nodes</span>
+  <!-- HUD Readout -->
+  <div class="corner-brackets relative border border-border/30 rounded-sm p-5 w-fit max-w-full">
+    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+    <div class="relative flex flex-wrap items-end justify-between gap-4">
+      <div class="flex items-baseline gap-6">
+        <div class="flex items-baseline gap-1.5">
+          <span class="hud-value text-[28px] font-bold tabular-nums leading-none tracking-tight">{topoStats.total}</span>
+          <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">nodes</span>
+        </div>
+        <div class="h-7 w-px bg-border/40"></div>
+        <div class="flex items-baseline gap-1.5">
+          <span class="hud-value text-[28px] font-bold tabular-nums leading-none tracking-tight" style="color: {STATUS_COLORS.healthy}; --hud-glow: {STATUS_COLORS.healthy};">{topoStats.healthy}</span>
+          <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">healthy</span>
+        </div>
+        <div class="h-7 w-px bg-border/40"></div>
+        <div class="flex items-baseline gap-1.5">
+          <span class="hud-value text-[28px] font-bold tabular-nums leading-none tracking-tight">{topoStats.types}</span>
+          <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">types</span>
+        </div>
       </div>
-      <div class="h-5 w-px bg-border/60"></div>
-      <div class="flex items-baseline gap-1.5">
-        <span class="text-[28px] font-bold tabular-nums leading-none tracking-tight" style:color={STATUS_COLORS.healthy}>{topoStats.healthy}</span>
-        <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">healthy</span>
+      <div class="flex items-center gap-2">
+        <FilterSelect
+          options={SERVICE_TYPE_OPTIONS}
+          value={nodeStore.serviceType}
+          placeholder="All Types"
+          onchange={(v) => nodeStore.setServiceType(v)}
+        />
+        <FilterSelect
+          options={STATUS_OPTIONS}
+          value={nodeStore.status}
+          placeholder="All Statuses"
+          onchange={(v) => nodeStore.setStatus(v)}
+        />
       </div>
-      <div class="h-5 w-px bg-border/60"></div>
-      <div class="flex items-baseline gap-1.5">
-        <span class="text-[28px] font-bold tabular-nums leading-none tracking-tight">{topoStats.types}</span>
-        <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">types</span>
-      </div>
-    </div>
-    <div class="flex items-center gap-2">
-      <FilterSelect
-        options={SERVICE_TYPE_OPTIONS}
-        value={nodeStore.serviceType}
-        placeholder="All Types"
-        onchange={(v) => nodeStore.setServiceType(v)}
-      />
-      <FilterSelect
-        options={STATUS_OPTIONS}
-        value={nodeStore.status}
-        placeholder="All Statuses"
-        onchange={(v) => nodeStore.setStatus(v)}
-      />
     </div>
   </div>
 
@@ -192,15 +195,16 @@
   {:else if nodeStore.nodes.length === 0}
     <EmptyState title="No nodes" description="No nodes registered in this region." />
   {:else}
-    <div class="topo-stack">
+    <div class="topo-stack scanlines relative">
       {#each tierData as tier, ti}
-        <!-- Tier connector -->
+        <!-- Circuit trace connector -->
         {#if ti > 0}
-          <div class="flex justify-center py-0.5">
-            <div
-              class="h-6 w-px opacity-50"
-              style="background: linear-gradient(to bottom, {TIER_COLORS[tierData[ti-1].id]}, {TIER_COLORS[tier.id]});"
-            ></div>
+          {@const prevColor = TIER_COLORS[tierData[ti-1].id]}
+          {@const nextColor = TIER_COLORS[tier.id]}
+          <div class="flex flex-col items-center py-0.5">
+            <div class="circuit-dot" style="background: {prevColor}; --dot-glow: {prevColor};"></div>
+            <div class="h-5 w-px" style="background: linear-gradient(to bottom, {prevColor}, {nextColor});"></div>
+            <div class="circuit-dot" style="background: {nextColor}; --dot-glow: {nextColor};"></div>
           </div>
         {/if}
 
@@ -208,17 +212,17 @@
           <!-- Tier header -->
           <div class="flex items-center gap-3 mb-3">
             <span
-              class="text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap"
+              class="tier-label-glow text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap"
               style:color={TIER_COLORS[tier.id]}
             >{tier.label}</span>
-            <div class="h-px flex-1" style="background: {TIER_COLORS[tier.id]}; opacity: 0.25;"></div>
+            <div class="h-px flex-1" style="background: {TIER_COLORS[tier.id]}; opacity: 0.3;"></div>
             <span class="text-[10px] text-muted-foreground tabular-nums whitespace-nowrap">
               {tier.nodeCount} {tier.nodeCount === 1 ? 'node' : 'nodes'}
             </span>
           </div>
 
           <!-- Service cards -->
-          <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div class="flex flex-wrap gap-3">
             {#each tier.groups as group}
               {@const p = palette(group.type)}
               {@const Icon = p.icon}
@@ -229,10 +233,11 @@
               {@const hiddenCount = group.nodes.length - visibleNodes.length}
               <Card
                 cornerBrackets
-                class="svc-card relative overflow-hidden gap-0 py-0"
+                cornerPlus
+                class="svc-card relative overflow-hidden gap-0 py-0 w-[420px]"
                 style="--svc-accent: {p.accent}; --svc-bg: {p.bg};"
               >
-                <div class="svc-accent-bar"></div>
+                <!-- inset glow at top edge -->
                 <div class="svc-glow pointer-events-none"></div>
                 {#if isDataserv}
                   <div class="tech-grid-bg absolute inset-0 pointer-events-none"></div>
@@ -247,9 +252,9 @@
                     <span class="text-sm font-semibold">{p.label}</span>
                     <div class="ml-auto flex items-center gap-1.5">
                       {#if isDataserv}
-                        <Badge variant="secondary" class="text-[10px]">RAFT</Badge>
+                        <span class="svc-tag font-mono" style="--tag-color: {p.accent};">RAFT</span>
                       {/if}
-                      <Badge variant="outline" class="text-[10px] tabular-nums">{group.nodes.length}</Badge>
+                      <span class="svc-count font-mono" style="--tag-color: {p.accent};">{group.nodes.length}</span>
                     </div>
                   </div>
 
@@ -321,49 +326,110 @@
 <!-- Tooltip -->
 {#if hoveredNode}
   <div
-    class="tooltip-card fixed z-50 pointer-events-none rounded-sm border bg-card px-3 py-2.5 shadow-lg"
+    class="tooltip-card fixed z-50 pointer-events-none rounded-sm border bg-card shadow-lg"
     style:left="{hoveredNode.x + 16}px"
     style:top="{hoveredNode.y - 12}px"
   >
-    <div class="font-mono text-xs font-semibold">{hoveredNode.node.nodeId}</div>
-    <div class="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
-      <div class="flex justify-between gap-4">
-        <span>Service</span>
-        <span class="text-foreground">{hoveredNode.node.serviceType}</span>
-      </div>
-      <div class="flex justify-between gap-4">
-        <span>Status</span>
-        <span style:color={statusColor(hoveredNode.node.status)}>{hoveredNode.node.status}</span>
-      </div>
-      <div class="flex justify-between gap-4">
-        <span>Address</span>
-        <span class="text-foreground font-mono">{hoveredNode.node.advertiseAddr}</span>
-      </div>
-      {#if hoveredNode.node.lastHeartbeat}
+    <!-- Accent bar -->
+    <div class="h-[2px] rounded-t-sm" style="background: {statusColor(hoveredNode.node.status)};"></div>
+    <div class="px-3 py-2.5">
+      <div class="font-mono text-xs font-semibold">{hoveredNode.node.nodeId}</div>
+      <div class="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
         <div class="flex justify-between gap-4">
-          <span>Heartbeat</span>
-          <span class="text-foreground">{formatRelative(hoveredNode.node.lastHeartbeat)}</span>
+          <span>Service</span>
+          <span class="text-foreground">{hoveredNode.node.serviceType}</span>
         </div>
-      {/if}
-      {#if isNavigable(hoveredNode.node)}
-        <div class="text-foreground/50 mt-1.5 text-center border-t border-border/30 pt-1.5">click to view details</div>
-      {/if}
+        <div class="flex justify-between gap-4">
+          <span>Status</span>
+          <span style:color={statusColor(hoveredNode.node.status)}>{hoveredNode.node.status}</span>
+        </div>
+        <div class="flex justify-between gap-4">
+          <span>Address</span>
+          <span class="text-foreground font-mono">{hoveredNode.node.advertiseAddr}</span>
+        </div>
+        {#if hoveredNode.node.lastHeartbeat}
+          <div class="flex justify-between gap-4">
+            <span>Heartbeat</span>
+            <span class="text-foreground">{formatRelative(hoveredNode.node.lastHeartbeat)}</span>
+          </div>
+        {/if}
+        {#if isNavigable(hoveredNode.node)}
+          <div class="text-foreground/50 mt-1.5 text-center border-t border-border/30 pt-1.5">click to view details</div>
+        {/if}
+      </div>
     </div>
   </div>
 {/if}
 
 <style>
-  /* Service card structure */
-  .svc-accent-bar {
-    height: 3px;
-    background: var(--svc-accent);
-    flex-shrink: 0;
+  /* HUD readout value glow */
+  .hud-value {
+    text-shadow: 0 0 12px var(--hud-glow, oklch(0.5 0 0 / 0.15));
+  }
+
+  /* Service card tag / count badges */
+  .svc-tag {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    padding: 1px 6px;
+    border: 1px solid var(--tag-color);
+    color: var(--tag-color);
+    text-shadow: 0 0 8px var(--tag-color);
+  }
+
+  .svc-count {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 0 6px;
+    color: var(--tag-color);
+    text-shadow: 0 0 8px var(--tag-color);
+  }
+
+  /* Inset glow at top edge */
+  :global(.svc-card[data-slot="card"]) {
+    box-shadow: inset 0 3px 12px -4px var(--svc-accent);
   }
 
   .svc-glow {
     position: absolute;
     inset: 0;
     background: linear-gradient(180deg, var(--svc-bg) 0%, transparent 50%);
+  }
+
+  /* Circuit trace connector dots */
+  .circuit-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--dot-glow), 0 0 2px var(--dot-glow);
+    flex-shrink: 0;
+  }
+
+  /* Tier label glow */
+  .tier-label-glow {
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  /* Scanline overlay on topology area */
+  .scanlines::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 3px,
+      oklch(0 0 0 / 0.012) 3px,
+      oklch(0 0 0 / 0.012) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .scanlines > * {
+    position: relative;
+    z-index: 1;
   }
 
   /* Tooltip */

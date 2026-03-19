@@ -10,6 +10,7 @@
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
@@ -99,7 +100,7 @@
 
 <div class="space-y-6">
   <div class="flex items-center gap-4">
-    <Button variant="ghost" size="sm" href="/users">Back</Button>
+    <Button variant="ghost" size="sm" href="/users"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight">User Detail</h1>
   </div>
 
@@ -156,15 +157,15 @@
           </CardHeader>
           <CardContent class="space-y-3">
             <div>
-              <span class="text-sm text-muted-foreground">Status</span>
+              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Status</span>
               <div class="mt-1"><StatusBadge active={user.isActive} /></div>
             </div>
             <div>
-              <span class="text-sm text-muted-foreground">Email</span>
+              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Email</span>
               <p class="mt-1 text-sm">{user.email}</p>
             </div>
             <div>
-              <span class="text-sm text-muted-foreground">Display Name</span>
+              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Display Name</span>
               <p class="mt-1 text-sm">{user.name || '—'}</p>
             </div>
           </CardContent>

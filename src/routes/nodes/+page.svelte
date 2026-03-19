@@ -15,6 +15,18 @@
   import { formatRelative, nodeStatusVariant } from '$lib/core/utils/format'
   import Network from '@lucide/svelte/icons/network'
 
+  const SERVICE_COLORS: Record<string, string> = {
+    appserv:       'oklch(0.70 0.12 310)',
+    hub:           'oklch(0.70 0.12 310)',
+    dataserv:      'oklch(0.60 0.14 260)',
+    gcserv:        'oklch(0.55 0.18 25)',
+    fuseserv:      'oklch(0.70 0.14 55)',
+    mfuse:         'oklch(0.70 0.14 55)',
+    blockserv:     'oklch(0.65 0.12 200)',
+    s3gatewayserv: 'oklch(0.65 0.12 30)',
+    csiserv:       'oklch(0.60 0.10 170)',
+  }
+
   const regionStore = useRegions()
   const nodeStore = useNodes()
   const auth = useAuth()
@@ -93,35 +105,36 @@
 </script>
 
 <div class="space-y-4">
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold tracking-tight">Nodes</h1>
-    {#if selectedRegionId}
-      <Button variant="outline" size="sm" class="gap-1.5" href="/nodes/{selectedRegionId}">
-        <Network class="h-3.5 w-3.5" />
-        View Topology
-      </Button>
-    {/if}
-  </div>
+  <h1 class="text-2xl font-bold tracking-tight">Nodes</h1>
 
-  <div class="flex flex-wrap items-center gap-2">
-    <FilterSelect
-      options={regionOptions}
-      value={selectedRegionId}
-      placeholder="All Regions"
-      onchange={onRegionChange}
-    />
-    <FilterSelect
-      options={SERVICE_TYPE_OPTIONS}
-      value={nodeStore.serviceType}
-      placeholder="All Types"
-      onchange={onTypeChange}
-    />
-    <FilterSelect
-      options={STATUS_OPTIONS}
-      value={nodeStore.status}
-      placeholder="All Statuses"
-      onchange={onStatusChange}
-    />
+  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full">
+    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+    <div class="relative flex flex-wrap items-center gap-2">
+      <FilterSelect
+        options={regionOptions}
+        value={selectedRegionId}
+        placeholder="All Regions"
+        onchange={onRegionChange}
+      />
+      <FilterSelect
+        options={SERVICE_TYPE_OPTIONS}
+        value={nodeStore.serviceType}
+        placeholder="All Types"
+        onchange={onTypeChange}
+      />
+      <FilterSelect
+        options={STATUS_OPTIONS}
+        value={nodeStore.status}
+        placeholder="All Statuses"
+        onchange={onStatusChange}
+      />
+      {#if selectedRegionId}
+        <Button variant="outline" size="sm" class="gap-1.5" href="/nodes/{selectedRegionId}">
+          <Network class="h-3.5 w-3.5" />
+          View Topology
+        </Button>
+      {/if}
+    </div>
   </div>
 
   {#if regionStore.loading || nodeStore.loading}
@@ -163,7 +176,9 @@
                 </button>
               </TableCell>
             {/if}
-            <TableCell><Badge variant="outline">{node.serviceType}</Badge></TableCell>
+            <TableCell>
+              <Badge variant="outline" class="font-mono text-[11px]" style="color: {SERVICE_COLORS[node.serviceType] ?? 'inherit'}; border-color: {SERVICE_COLORS[node.serviceType] ?? 'var(--border)'};">{node.serviceType}</Badge>
+            </TableCell>
             <TableCell class="font-mono text-xs text-muted-foreground">{node.advertiseAddr}</TableCell>
             <TableCell><Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge></TableCell>
             <TableCell class="text-xs text-muted-foreground">

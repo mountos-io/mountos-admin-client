@@ -290,8 +290,8 @@
 
   .dark .tech-grid {
     background-image:
-      linear-gradient(oklch(0.15 0.002 200) 1px, transparent 1px),
-      linear-gradient(90deg, oklch(0.15 0.002 200) 1px, transparent 1px);
+      linear-gradient(oklch(0.28 0.002 200) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.28 0.002 200) 1px, transparent 1px);
   }
 
   /* Dashed connecting lines */

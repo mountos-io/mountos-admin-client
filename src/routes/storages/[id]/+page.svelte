@@ -11,6 +11,7 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import type { Storage } from '$lib/core/api/types'
 
   const store = useStorages()
@@ -40,7 +41,7 @@
 
 <div class="space-y-6">
   <div class="flex items-center gap-4">
-    <Button variant="ghost" size="sm" href="/storages">Back</Button>
+    <Button variant="ghost" size="sm" href="/storages"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight">Storage Detail</h1>
   </div>
   {#if loading}
@@ -50,20 +51,20 @@
       <CardHeader><CardTitle>{storage.name}</CardTitle></CardHeader>
       <CardContent class="grid gap-3 md:grid-cols-2">
         <div>
-          <span class="text-sm text-muted-foreground">Status</span>
+          <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Status</span>
           <div class="mt-1"><StatusBadge active={storage.isActive} /></div>
         </div>
         <div>
-          <span class="text-sm text-muted-foreground">Type</span>
+          <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Type</span>
           <div class="mt-1 flex gap-2"><Badge variant="outline">{storage.storageType}</Badge><Badge variant="secondary">{storage.providerType}</Badge></div>
         </div>
         <div>
-          <span class="text-sm text-muted-foreground">Endpoint</span>
+          <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Endpoint</span>
           <p class="mt-1 text-sm font-mono">{storage.endpoint}</p>
         </div>
         {#if storage.bucket}
           <div>
-            <span class="text-sm text-muted-foreground">Bucket</span>
+            <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Bucket</span>
             <p class="mt-1 text-sm font-mono">{storage.bucket}</p>
           </div>
         {/if}

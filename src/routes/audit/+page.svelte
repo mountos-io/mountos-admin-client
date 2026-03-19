@@ -49,11 +49,14 @@
 <div class="space-y-4">
   <h1 class="text-2xl font-bold tracking-tight">Audit Logs</h1>
 
-  <div class="flex gap-3 items-end">
-    <div class="flex-1 max-w-sm">
-      <Input bind:value={subject} placeholder="Filter by subject..." aria-label="Filter by subject" onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && applyFilter()} />
+  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full">
+    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+    <div class="relative flex gap-3 items-end">
+      <div class="flex-1 max-w-sm">
+        <Input bind:value={subject} placeholder="Filter by subject..." aria-label="Filter by subject" onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && applyFilter()} />
+      </div>
+      <Button variant="primary" size="sm" onclick={applyFilter}>Filter</Button>
     </div>
-    <Button variant="outline" size="sm" onclick={applyFilter}>Filter</Button>
   </div>
 
   {#if store.loading && store.logs.length === 0}
