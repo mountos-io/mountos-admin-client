@@ -68,11 +68,11 @@
       <TableHeader>
         <TableRow>
           <TableHead class="w-8"></TableHead>
-          <TableHead>Title</TableHead>
-          <TableHead>Subject</TableHead>
-          <TableHead>Result</TableHead>
-          <TableHead>By</TableHead>
-          <TableHead>When</TableHead>
+          <TableHead class="th-cyber">Title</TableHead>
+          <TableHead class="th-cyber">Subject</TableHead>
+          <TableHead class="th-cyber">Result</TableHead>
+          <TableHead class="th-cyber">By</TableHead>
+          <TableHead class="th-cyber">When</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

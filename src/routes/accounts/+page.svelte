@@ -48,9 +48,9 @@
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Created</TableHead>
+          <TableHead class="th-cyber">Name</TableHead>
+          <TableHead class="th-cyber">Status</TableHead>
+          <TableHead class="th-cyber">Created</TableHead>
           <TableHead class="w-auto"></TableHead>
         </TableRow>
       </TableHeader>

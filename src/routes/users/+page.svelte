@@ -50,10 +50,10 @@
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Username</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>Email</TableHead>
-          <TableHead>Status</TableHead>
+          <TableHead class="th-cyber">Username</TableHead>
+          <TableHead class="th-cyber">Name</TableHead>
+          <TableHead class="th-cyber">Email</TableHead>
+          <TableHead class="th-cyber">Status</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

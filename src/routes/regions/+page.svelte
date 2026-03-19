@@ -98,9 +98,9 @@
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Base DNS</TableHead>
-          <TableHead>
+          <TableHead class="th-cyber">Name</TableHead>
+          <TableHead class="th-cyber">Base DNS</TableHead>
+          <TableHead class="th-cyber">
             <span class="inline-flex items-center gap-1">
               Export ID
               <span
@@ -110,8 +110,8 @@
               </span>
             </span>
           </TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Created</TableHead>
+          <TableHead class="th-cyber">Status</TableHead>
+          <TableHead class="th-cyber">Created</TableHead>
           <TableHead class="w-24"></TableHead>
         </TableRow>
       </TableHeader>

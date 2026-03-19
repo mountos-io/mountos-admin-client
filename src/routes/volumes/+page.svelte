@@ -50,9 +50,9 @@
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Name</TableHead>
-          <TableHead>Quota</TableHead>
-          <TableHead>Status</TableHead>
+          <TableHead class="th-cyber">Name</TableHead>
+          <TableHead class="th-cyber">Quota</TableHead>
+          <TableHead class="th-cyber">Status</TableHead>
           <TableHead class="w-24"></TableHead>
         </TableRow>
       </TableHeader>

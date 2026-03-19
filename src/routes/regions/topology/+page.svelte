@@ -311,9 +311,9 @@
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead class="w-32">Service</TableHead>
+            <TableHead class="th-cyber w-32">Service</TableHead>
             {#each racks as rack}
-              <TableHead>
+              <TableHead class="th-cyber">
                 <div class="text-xs">{rack.name}</div>
                 <div class="font-mono text-[10px] font-normal text-muted-foreground">{rack.address}</div>
               </TableHead>

@@ -80,12 +80,12 @@
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Client</TableHead>
-            <TableHead>Host</TableHead>
-            <TableHead>Volume</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Duration</TableHead>
-            <TableHead>Last Heartbeat</TableHead>
+            <TableHead class="th-cyber">Client</TableHead>
+            <TableHead class="th-cyber">Host</TableHead>
+            <TableHead class="th-cyber">Volume</TableHead>
+            <TableHead class="th-cyber">Status</TableHead>
+            <TableHead class="th-cyber">Duration</TableHead>
+            <TableHead class="th-cyber">Last Heartbeat</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

@@ -206,9 +206,9 @@
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Metric</TableHead>
-                <TableHead>Labels</TableHead>
-                <TableHead class="text-right">Value</TableHead>
+                <TableHead class="th-cyber">Metric</TableHead>
+                <TableHead class="th-cyber">Labels</TableHead>
+                <TableHead class="th-cyber text-right">Value</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
