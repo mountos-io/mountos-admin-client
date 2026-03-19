@@ -219,6 +219,19 @@
             {#if tier.nodeCount > 0}
               <span class="text-[10px] text-muted-foreground tabular-nums">{tier.nodeCount}</span>
             {/if}
+            <div class="ml-auto flex items-center gap-1.5">
+              {#if tier.id === 'data' || tier.id === 'control'}
+                <span class="tier-infra-icon" style="color: oklch(0.60 0.14 260);" title="Regional DB Access">
+                  <Database class="h-3.5 w-3.5" />
+                </span>
+              {/if}
+              <span class="tier-infra-icon" style="color: oklch(0.65 0.18 45);" title="Regional Vault Access">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                  <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </span>
+            </div>
           </div>
 
           {#if tier.groups.length === 0}
@@ -324,6 +337,7 @@
         </div>
       {/each}
     </div>
+
   {/if}
 </div>
 
@@ -423,6 +437,17 @@
     border-radius: 0 0 2px 2px;
     background: var(--stand-color, var(--color-border));
     opacity: 0.4;
+  }
+
+  /* Tier header infra icons */
+  .tier-infra-icon {
+    opacity: 0.4;
+    transition: opacity 0.2s;
+    cursor: default;
+  }
+
+  .tier-infra-icon:hover {
+    opacity: 0.8;
   }
 
   /* Tier label glow */
