@@ -240,9 +240,9 @@
                   <dt class="text-muted-foreground">Contact</dt>
                   <dd class="font-medium"><a href="mailto:{lic.contact}" class="underline underline-offset-2 hover:text-primary">{lic.contact}</a></dd>
                 </div>
-                <div class="flex justify-between min-w-0">
+                <div class="flex justify-between gap-3 min-w-0">
                   <dt class="text-muted-foreground shrink-0">ID</dt>
-                  <dd class="font-mono text-xs text-muted-foreground truncate ml-3">{lic.licenseId}</dd>
+                  <dd class="font-mono text-xs text-muted-foreground truncate min-w-0">{lic.licenseId}</dd>
                 </div>
                 <hr class="border-border" />
                 <div class="flex justify-between">

@@ -29,6 +29,7 @@
   let region = $state<Region | null>(null)
   let hoveredNode = $state<{ node: ServiceNode; x: number; y: number } | null>(null)
   let expandedGroups = $state(new Set<string>())
+  let dimmedServices = $state(new Set<string>())
 
   const regionId = $derived(Number($page.params.regionId))
   const COLLAPSE_THRESHOLD = 8
@@ -84,6 +85,18 @@
     }))
   })
 
+  const legendEntries = $derived.by(() => {
+    const byType = nodeStore.nodesByType
+    const types = isHubRegion
+      ? TIERS.filter(t => t.id === 'control').flatMap(t => t.types)
+      : TIERS.filter(t => t.id !== 'control').flatMap(t => t.types)
+    return types.map(type => {
+      const p = palette(type)
+      const count = byType.get(type)?.length ?? 0
+      return { type, label: p.label, accent: p.accent, icon: p.icon, count, hasNodes: count > 0 }
+    })
+  })
+
   const topoStats = $derived.by(() => {
     const n = nodeStore.nodes
     return {
@@ -102,6 +115,16 @@
 
   function palette(type: string) {
     return SERVICE_PALETTE[type] ?? { accent: 'oklch(0.5 0.08 0)', bg: 'oklch(0.5 0.08 0 / 0.06)', label: type, icon: Box }
+  }
+
+  function toggleDim(type: string) {
+    const next = new Set(dimmedServices)
+    next.has(type) ? next.delete(type) : next.add(type)
+    dimmedServices = next
+  }
+
+  function isDimmed(type: string) {
+    return dimmedServices.has(type)
   }
 
   function toggleExpand(type: string) {
@@ -144,7 +167,7 @@
   <!-- HUD Readout -->
   <div class="corner-brackets relative border border-border/30 rounded-sm p-5 w-fit max-w-full">
     <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-    <div class="relative flex flex-wrap items-end justify-between gap-4">
+    <div class="relative flex flex-wrap items-end gap-x-6 gap-y-3">
       <div class="flex items-baseline gap-6">
         <div class="flex items-baseline gap-1.5">
           <span class="hud-value text-[28px] font-bold tabular-nums leading-none tracking-tight">{topoStats.total}</span>
@@ -161,6 +184,31 @@
           <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">types</span>
         </div>
       </div>
+      {#if !nodeStore.loading && nodeStore.nodes.length > 0}
+        <div class="hud-divider"></div>
+        <div class="flex flex-wrap items-center gap-1.5">
+          {#each legendEntries as entry}
+            {#if entry.hasNodes}
+              <button
+                class="legend-chip"
+                class:legend-dimmed={isDimmed(entry.type)}
+                style="--chip-accent: {entry.accent};"
+                onclick={() => toggleDim(entry.type)}
+                title="{entry.label} ({entry.count})"
+              >
+                <span class="legend-dot" style="background: {entry.accent};"></span>
+                <span class="legend-label">{entry.label}</span>
+                <span class="legend-count">{entry.count}</span>
+              </button>
+            {:else}
+              <span class="legend-chip legend-inert" title="{entry.label} — no nodes">
+                <span class="legend-dot" style="background: oklch(0.5 0 0 / 0.3);"></span>
+                <span class="legend-label">{entry.label}</span>
+              </span>
+            {/if}
+          {/each}
+        </div>
+      {/if}
     </div>
   </div>
 
@@ -213,7 +261,7 @@
               {@const hiddenCount = group.nodes.length - visibleNodes.length}
               <Card
                 cornerBrackets
-                class="svc-card corner-plus-bl relative overflow-hidden gap-0 py-0 w-full md:w-[420px]"
+                class="svc-card corner-plus-bl relative overflow-hidden gap-0 py-0 w-full md:w-[420px] {isDimmed(group.type) ? 'svc-dimmed' : ''}"
                 style="--svc-accent: {p.accent}; --svc-bg: {p.bg};"
               >
                 <!-- inset glow at top edge -->
@@ -346,6 +394,21 @@
   /* HUD readout value glow */
   .hud-value {
     text-shadow: 0 0 12px var(--hud-glow, oklch(0.5 0 0 / 0.15));
+  }
+
+  /* Ceremonial divider between stats and legend */
+  .hud-divider {
+    position: relative;
+    top: 8px;
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      oklch(0.6 0.08 250 / 0.5) 30%,
+      oklch(0.6 0.08 250 / 0.25) 70%,
+      transparent 100%
+    );
   }
 
   /* Service card tag / count badges */
@@ -490,6 +553,73 @@
 
   button.node-row:hover::before {
     opacity: 1;
+  }
+
+  /* Service legend filter bar */
+  .legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--chip-accent, oklch(0.5 0 0 / 0.2));
+    border-radius: 2px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: opacity 0.2s, filter 0.2s, border-color 0.2s;
+    user-select: none;
+    background: transparent;
+    color: inherit;
+  }
+
+  .legend-chip:hover:not(.legend-inert) {
+    background: var(--chip-accent, oklch(0.5 0 0)) / 0.06;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 5px currentColor;
+  }
+
+  .legend-label {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .legend-count {
+    font-family: var(--font-mono, monospace);
+    font-size: 10px;
+    opacity: 0.6;
+  }
+
+  .legend-dimmed {
+    opacity: 0.35;
+    filter: saturate(0.2);
+    border-color: oklch(0.5 0 0 / 0.15);
+  }
+
+  .legend-dimmed .legend-dot {
+    box-shadow: none;
+  }
+
+  .legend-inert {
+    cursor: default;
+    opacity: 0.25;
+    border-color: oklch(0.5 0 0 / 0.1);
+  }
+
+  /* Dimmed service card */
+  :global(.svc-dimmed[data-slot="card"]) {
+    opacity: 0.25;
+    filter: saturate(0.15);
+    transition: opacity 0.3s, filter 0.3s;
+  }
+
+  :global(.svc-dimmed[data-slot="card"]:hover) {
+    opacity: 0.4;
+    filter: saturate(0.3);
   }
 
   @media (prefers-reduced-motion: reduce) {
