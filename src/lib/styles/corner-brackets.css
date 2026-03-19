@@ -479,7 +479,41 @@
     border-bottom-color: oklch(0.4 0.002 200 / 0.3);
   }
 
+  .th-cyber:first-child::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 14px;
+    height: 14px;
+    border-top: 1.5px solid oklch(0.4 0.002 200);
+    border-left: 1.5px solid oklch(0.4 0.002 200);
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .th-cyber:last-child::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    border-bottom: 1.5px solid oklch(0.4 0.002 200);
+    border-right: 1.5px solid oklch(0.4 0.002 200);
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
   .dark thead:has(.th-cyber) tr {
     border-bottom-color: oklch(0.35 0.002 200 / 0.3);
+  }
+
+  .dark .th-cyber:first-child::before {
+    border-color: oklch(0.35 0.002 200);
+  }
+
+  .dark .th-cyber:last-child::before {
+    border-color: oklch(0.35 0.002 200);
   }
 }
