@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/bun'
+import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
 import { csrf } from 'hono/csrf'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
@@ -84,6 +85,7 @@ const csrfConfig = { ...csrfDefaults, ...vendorCsrfConfig }
 
 const app = new Hono()
 
+app.use(logger())
 app.use(secureHeaders({ contentSecurityPolicy: cspConfig }))
 app.use(metricsMiddleware)
 

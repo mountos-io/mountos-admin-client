@@ -10,6 +10,7 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
   volumes: 'volumes',
   'audit-logs': 'auditLogs',
   'client-sessions': 'clientSessions',
+  nodes: 'serviceNodes',
   discover: 'discover',
   cache: 'cache',
   dashboard: 'dashboard',

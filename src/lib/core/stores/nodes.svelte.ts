@@ -5,9 +5,9 @@ import { api } from './client.svelte'
 let nodes = $state<ServiceNode[]>([])
 let loading = $state(false)
 let selectedRegionId = $state<number | null>(null)
-let regionIds = $state<number[]>([])
 let serviceType = $state('')
 let statusFilter = $state('')
+let inactiveHoursFilter = $state<number | undefined>(undefined)
 let fetchCtrl: AbortController | null = null
 
 let stats = $state<Map<string, PrometheusMetric[]>>(new Map())
@@ -40,6 +40,7 @@ async function fetchNodes(regionId: number) {
       regionId,
       serviceType || undefined,
       statusFilter || undefined,
+      inactiveHoursFilter,
       ctrl.signal,
     )
   } catch (e) {
@@ -50,19 +51,21 @@ async function fetchNodes(regionId: number) {
   }
 }
 
-async function fetchAllNodes(ids: number[]) {
+async function fetchAllNodes() {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   selectedRegionId = null
-  regionIds = ids
   loading = true
   try {
-    const results = await Promise.all(
-      ids.map(id => api.serviceNodes.list(id, serviceType || undefined, statusFilter || undefined, ctrl.signal))
+    nodes = await api.serviceNodes.listAll(
+      serviceType || undefined,
+      statusFilter || undefined,
+      inactiveHoursFilter,
+      ctrl.signal,
     )
-    nodes = results.flat()
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
+    console.error('[nodes] fetchAllNodes failed:', e)
     throw e
   } finally {
     if (fetchCtrl === ctrl) loading = false
@@ -113,7 +116,7 @@ function resetStats() {
 
 function refetch() {
   if (selectedRegionId) fetchNodes(selectedRegionId)
-  else if (regionIds.length) fetchAllNodes(regionIds)
+  else fetchAllNodes()
 }
 
 function setServiceType(type: string) {
@@ -126,9 +129,15 @@ function setStatus(s: string) {
   refetch()
 }
 
+function setInactiveHours(hours: number | undefined) {
+  inactiveHoursFilter = hours
+  refetch()
+}
+
 function clearFilters() {
   serviceType = ''
   statusFilter = ''
+  inactiveHoursFilter = undefined
 }
 
 function resetFilters() {
@@ -143,6 +152,7 @@ export function useNodes() {
     get selectedRegionId() { return selectedRegionId },
     get serviceType() { return serviceType },
     get status() { return statusFilter },
+    get inactiveHours() { return inactiveHoursFilter },
     get nodesByType() { return nodesByType },
     get stats() { return stats },
     get statsRaw() { return statsRaw },
@@ -158,6 +168,7 @@ export function useNodes() {
     resetStats,
     setServiceType,
     setStatus,
+    setInactiveHours,
     clearFilters,
     resetFilters,
   }

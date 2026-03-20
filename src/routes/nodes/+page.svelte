@@ -65,6 +65,18 @@
     { value: 'draining', label: 'Draining' },
   ] as const
 
+  const ACTIVITY_OPTIONS = [
+    { value: '', label: 'All Activity' },
+    { value: '6', label: 'Inactive ≤ 6h' },
+    { value: '12', label: 'Inactive ≤ 12h' },
+    { value: '24', label: 'Inactive ≤ 1d' },
+    { value: '72', label: 'Inactive ≤ 3d' },
+    { value: '168', label: 'Inactive ≤ 7d' },
+    { value: '360', label: 'Inactive ≤ 15d' },
+  ] as const
+
+  const activityValue = $derived(nodeStore.inactiveHours != null ? String(nodeStore.inactiveHours) : '')
+
   const totalPages = $derived(Math.max(1, Math.ceil(nodeStore.nodes.length / prefs.pageSize)))
   const pagedNodes = $derived(nodeStore.nodes.slice((currentPage - 1) * prefs.pageSize, currentPage * prefs.pageSize))
 
@@ -81,7 +93,7 @@
     if (initialized || !regionStore.regions.length) return
     initialized = true
     nodeStore.clearFilters()
-    nodeStore.fetchAllNodes(regionStore.regions.map(r => r.id))
+    nodeStore.fetchAllNodes()
   })
 
   function onRegionChange(v: string) {
@@ -89,7 +101,7 @@
     currentPage = 1
     nodeStore.clearFilters()
     if (v) nodeStore.fetchNodes(Number(v))
-    else nodeStore.fetchAllNodes(regionStore.regions.map(r => r.id))
+    else nodeStore.fetchAllNodes()
   }
 
   function onTypeChange(v: string) {
@@ -126,6 +138,12 @@
         value={nodeStore.status}
         placeholder="All Statuses"
         onchange={onStatusChange}
+      />
+      <FilterSelect
+        options={ACTIVITY_OPTIONS}
+        value={activityValue}
+        placeholder="All Activity"
+        onchange={(v) => { currentPage = 1; nodeStore.setInactiveHours(v ? Number(v) : undefined) }}
       />
       {#if selectedRegionId}
         <Button variant="outline" size="sm" class="gap-1.5" href="/nodes/{selectedRegionId}">

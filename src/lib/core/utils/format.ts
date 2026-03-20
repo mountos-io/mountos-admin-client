@@ -14,11 +14,12 @@ const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ['second', 1000],
 ]
 
-function parseDate(date: string | number | Date): Date {
+export function parseDate(date: string | number | Date): Date {
   if (date instanceof Date) return date
   if (typeof date === 'number') return new Date(date * 1000)
-  // Postgres timestamps lack timezone — treat as UTC
-  if (!date.includes('T') && !date.includes('Z') && !date.includes('+'))
+  if (/^\d+$/.test(date)) return new Date(Number(date) * 1000)
+  // No timezone suffix → treat as UTC
+  if (!/Z$|[+-]\d{2}:?\d{2}$/.test(date))
     return new Date(date.replace(' ', 'T') + 'Z')
   return new Date(date)
 }

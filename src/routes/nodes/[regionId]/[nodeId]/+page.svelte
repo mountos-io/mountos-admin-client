@@ -151,12 +151,6 @@
             <dt class="text-muted-foreground text-xs">Address</dt>
             <dd class="font-mono text-xs mt-0.5">{node.advertiseAddr}</dd>
           </div>
-          {#if node.httpAddr}
-            <div>
-              <dt class="text-muted-foreground text-xs">HTTP Address</dt>
-              <dd class="font-mono text-xs mt-0.5">{node.httpAddr}</dd>
-            </div>
-          {/if}
           <div>
             <dt class="text-muted-foreground text-xs">Last Heartbeat</dt>
             <dd class="text-xs mt-0.5">{node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '—'}</dd>

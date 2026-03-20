@@ -390,8 +390,12 @@ class AuditLogsResource {
 class ServiceNodesResource {
   constructor(private client: AdminClient) {}
 
-  list(regionId: number, serviceType?: string, status?: string, signal?: AbortSignal): Promise<ServiceNode[]> {
-    return this.client.request('GET', `/regions/${regionId}/nodes` + queryString({ serviceType: serviceType, status: status }), undefined, signal)
+  list(regionId: number, serviceType?: string, status?: string, inactiveHours?: number, signal?: AbortSignal): Promise<ServiceNode[]> {
+    return this.client.request('GET', `/regions/${regionId}/nodes` + queryString({ serviceType, status, inactiveHours }), undefined, signal)
+  }
+
+  listAll(serviceType?: string, status?: string, inactiveHours?: number, signal?: AbortSignal): Promise<ServiceNode[]> {
+    return this.client.request('GET', '/nodes' + queryString({ serviceType, status, inactiveHours }), undefined, signal)
   }
 
   stats(regionId: number, nodeId: string, signal?: AbortSignal): Promise<string> {
