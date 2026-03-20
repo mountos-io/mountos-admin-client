@@ -71,7 +71,14 @@
 
   $effect(() => {
     if (!regionId || !nodeId) return
-    if (!nodeStore.nodes.length) nodeStore.fetchNodes(regionId)
+    if (!nodeStore.nodes.length) {
+      nodeStore.fetchNodes(regionId)
+      return
+    }
+    if (!node || node.status !== 'healthy' || !node.isActive) {
+      nodeStore.stopPolling()
+      return
+    }
     const interval = Number(pollValue)
     if (interval > 0) {
       nodeStore.startPolling(regionId, nodeId, interval)
@@ -166,7 +173,14 @@
   {/if}
 
   <!-- Stats section -->
-  {#if nodeStore.statsLoading && !nodeStore.statsLastUpdated}
+  {#if node && (node.status !== 'healthy' || !node.isActive)}
+    <Card>
+      <CardHeader><CardTitle class="text-base">Metrics</CardTitle></CardHeader>
+      <CardContent class="pt-0">
+        <p class="text-sm text-muted-foreground">Metrics unavailable — node is {node.status}{!node.isActive ? ' (inactive)' : ''}.</p>
+      </CardContent>
+    </Card>
+  {:else if nodeStore.statsLoading && !nodeStore.statsLastUpdated}
     <LoadingSpinner />
   {:else if nodeStore.statsError}
     {#if isFuseserv}
