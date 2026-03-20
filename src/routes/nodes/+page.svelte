@@ -132,41 +132,41 @@
 <div class="space-y-4">
   <h1 class="text-2xl font-bold tracking-tight">Nodes</h1>
 
-  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full">
+  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full text-base">
     <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-    <div class="relative flex flex-wrap items-center gap-2">
-      <FilterSelect
+    <div class="relative flex flex-wrap items-center gap-3">
+      <FilterSelect class="text-base"
         options={regionOptions}
         value={selectedRegionId}
         placeholder="All Regions"
         onchange={onRegionChange}
       />
-      <FilterSelect
+      <FilterSelect class="text-base"
         options={SERVICE_TYPE_OPTIONS}
         value={nodeStore.serviceType}
         placeholder="All Types"
         onchange={onTypeChange}
       />
-      <FilterSelect
+      <FilterSelect class="text-base"
         options={STATUS_OPTIONS}
         value={nodeStore.status}
         placeholder="All Statuses"
         onchange={onStatusChange}
       />
-      <FilterSelect
+      <FilterSelect class="text-base"
         options={ACTIVITY_OPTIONS}
         value={activityValue}
         placeholder="All Activity"
         onchange={(v) => { currentPage = 1; nodeStore.setInactiveHours(v ? Number(v) : undefined) }}
       />
-      <FilterSelect
+      <FilterSelect class="text-base"
         options={POLL_OPTIONS}
         value={pollValue}
         placeholder="Poll Off"
         onchange={setPoll}
       />
       {#if selectedRegionId}
-        <Button variant="outline" size="sm" class="gap-1.5 font-normal text-muted-foreground" href="/nodes/{selectedRegionId}">
+        <Button variant="outline" size="sm" class="gap-1.5 font-normal text-muted-foreground text-base" href="/nodes/{selectedRegionId}">
           <Network class="h-4 w-4" />
           View Topology
         </Button>
