@@ -166,8 +166,8 @@
         onchange={setPoll}
       />
       {#if selectedRegionId}
-        <Button variant="outline" size="sm" class="gap-1.5" href="/nodes/{selectedRegionId}">
-          <Network class="h-3.5 w-3.5" />
+        <Button variant="outline" size="sm" class="gap-1.5 font-normal text-muted-foreground" href="/nodes/{selectedRegionId}">
+          <Network class="h-4 w-4" />
           View Topology
         </Button>
       {/if}
@@ -214,7 +214,7 @@
               </TableCell>
             {/if}
             <TableCell>
-              <Badge variant="outline" class="font-mono text-[11px]" style="color: {SERVICE_COLORS[node.serviceType] ?? 'inherit'}; border-color: {SERVICE_COLORS[node.serviceType] ?? 'var(--border)'};">{node.serviceType}</Badge>
+              <Badge variant="outline" class="font-mono text-xs" style="color: {SERVICE_COLORS[node.serviceType] ?? 'inherit'}; border-color: {SERVICE_COLORS[node.serviceType] ?? 'var(--border)'};">{node.serviceType}</Badge>
             </TableCell>
             <TableCell class="font-mono text-sm text-muted-foreground">{node.advertiseAddr}</TableCell>
             <TableCell><Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge></TableCell>

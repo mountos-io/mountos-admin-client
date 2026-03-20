@@ -25,12 +25,12 @@
     {#snippet child({ props })}
       <Button {...props} variant="outline" size="sm"
         class={cn(
-          "justify-between gap-1.5 font-normal min-w-24",
-          !value && "text-muted-foreground",
+          "justify-between gap-1.5 min-w-24",
+          value ? "font-semibold" : "font-normal text-muted-foreground",
           className
         )}>
         <span class="truncate">{selectedLabel || placeholder}</span>
-        <ChevronDown class="h-3.5 w-3.5 shrink-0 opacity-50" />
+        <ChevronDown class="h-4 w-4 shrink-0 opacity-50" />
       </Button>
     {/snippet}
   </PopoverTrigger>
@@ -46,7 +46,7 @@
         )}
         onclick={() => { value = opt.value; open = false; onchange?.(opt.value) }}
       >
-        <Check class={cn("h-3.5 w-3.5 shrink-0", opt.value === value ? "opacity-100" : "opacity-0")} />
+        <Check class={cn("h-4 w-4 shrink-0", opt.value === value ? "opacity-100" : "opacity-0")} />
         <span class="truncate">{opt.label}</span>
       </button>
     {/each}

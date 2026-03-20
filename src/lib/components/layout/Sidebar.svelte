@@ -68,7 +68,7 @@
             : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
         )}
       >
-        {#if Icon}<Icon class="h-4 w-4 shrink-0" />{/if}
+        {#if Icon}<Icon class={cn(collapsed ? 'h-5 w-5' : 'h-4 w-4', 'shrink-0')} />{/if}
         {#if !collapsed}
           <span class="truncate">{item.label}</span>
         {/if}

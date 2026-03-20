@@ -108,23 +108,23 @@
         <CardHeader><CardTitle>{volume.name}</CardTitle></CardHeader>
         <CardContent class="grid gap-3">
           <div>
-            <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Status</span>
+            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
             <div class="mt-1"><StatusBadge active={volume.isActive} locked={volume.locked} /></div>
           </div>
           {#if volume.description}
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Description</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
               <p class="mt-1 text-sm">{volume.description}</p>
             </div>
           {/if}
           <div class="flex gap-4">
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Encryption</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Encryption</span>
               <div class="mt-1"><Badge variant={volume.encryption ? 'default' : 'outline'}>{volume.encryption ? 'Enabled' : 'Disabled'}</Badge></div>
             </div>
           </div>
           <div>
-            <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Quota</span>
+            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota</span>
             <p class="mt-1 text-sm">{formatQuota(volume.quotaUsed, volume.quotaLimit)}</p>
             {#if volume.quotaLimit > 0}
               <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden">
@@ -154,15 +154,15 @@
           <CardHeader><CardTitle>Storage Stats</CardTitle></CardHeader>
           <CardContent class="grid gap-3">
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Disk Size</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Disk Size</span>
               <p class="mt-1 font-mono text-sm">{formatBytes(stats.diskSize)}</p>
             </div>
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Active Size</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Active Size</span>
               <p class="mt-1 font-mono text-sm">{formatBytes(stats.activeSize)}</p>
             </div>
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Total Size</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Total Size</span>
               <p class="mt-1 font-mono text-sm">{formatBytes(stats.size)}</p>
             </div>
           </CardContent>

@@ -99,7 +99,7 @@
               <Check class="h-4 w-4 text-primary" />
             {/if}
             {#if !search && i < 9}
-              <kbd class="ml-auto rounded border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              <kbd class="ml-auto rounded border bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">
                 ⌘{i + 1}
               </kbd>
             {/if}

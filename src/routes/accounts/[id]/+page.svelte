@@ -178,15 +178,15 @@
           </CardHeader>
           <CardContent class="space-y-3">
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Status</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
               <div class="mt-1"><StatusBadge active={account.isActive} locked={account.locked} /></div>
             </div>
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Description</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
               <p class="mt-1 text-sm">{account.description || '—'}</p>
             </div>
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Created</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Created</span>
               <p class="mt-1 text-sm">{formatDate(account.createdAt)}</p>
             </div>
           </CardContent>

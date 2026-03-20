@@ -183,7 +183,7 @@
     <div>
       <div class="flex items-center gap-3">
         <h1 class="text-2xl font-bold tracking-tight">Region Topology</h1>
-        <Badge variant="secondary" class="text-[10px] tracking-widest">DEMO</Badge>
+        <Badge variant="secondary" class="text-xs tracking-widest">DEMO</Badge>
       </div>
       <div class="mt-1 flex items-center gap-2 text-sm">
         <span class="font-mono text-muted-foreground">{region.name}</span>
@@ -288,15 +288,15 @@
                   {/if}
                 </span>
                 <span class="font-mono text-sm flex-1 truncate tracking-tight">{node.nodeId}</span>
-                <Badge variant="outline" class="text-[10px] px-1.5 py-0 shrink-0">{node.serviceType}</Badge>
+                <Badge variant="outline" class="text-xs px-1.5 py-0 shrink-0">{node.serviceType}</Badge>
                 {#if node.isRaftLeader}
-                  <Badge variant="primary" class="text-[10px] px-1.5 py-0 shrink-0 leader-badge">LEADER</Badge>
+                  <Badge variant="primary" class="text-xs px-1.5 py-0 shrink-0 leader-badge">LEADER</Badge>
                 {/if}
                 {#if node.status === 'draining'}
-                  <Badge variant="warning" class="text-[10px] px-1.5 py-0 shrink-0">DRAINING</Badge>
+                  <Badge variant="warning" class="text-xs px-1.5 py-0 shrink-0">DRAINING</Badge>
                 {/if}
                 {#if !node.isActive}
-                  <Badge variant="secondary" class="text-[10px] px-1.5 py-0 shrink-0">DOWN</Badge>
+                  <Badge variant="secondary" class="text-xs px-1.5 py-0 shrink-0">DOWN</Badge>
                 {/if}
               </div>
             {/each}
@@ -315,7 +315,7 @@
             {#each racks as rack}
               <TableHead class="th-cyber">
                 <div class="text-sm">{rack.name}</div>
-                <div class="font-mono text-[10px] font-normal text-muted-foreground">{rack.address}</div>
+                <div class="font-mono text-xs font-normal text-muted-foreground">{rack.address}</div>
               </TableHead>
             {/each}
           </TableRow>
@@ -347,13 +347,13 @@
                     </div>
                     <div class="flex gap-1 mt-1">
                       {#if node.isRaftLeader}
-                        <Badge variant="primary" class="text-[10px] px-1 py-0 leader-badge">LEADER</Badge>
+                        <Badge variant="primary" class="text-xs px-1 py-0 leader-badge">LEADER</Badge>
                       {/if}
                       {#if node.status === 'draining'}
-                        <Badge variant="warning" class="text-[10px] px-1 py-0">DRAINING</Badge>
+                        <Badge variant="warning" class="text-xs px-1 py-0">DRAINING</Badge>
                       {/if}
                       {#if !node.isActive}
-                        <Badge variant="secondary" class="text-[10px] px-1 py-0">DOWN</Badge>
+                        <Badge variant="secondary" class="text-xs px-1 py-0">DOWN</Badge>
                       {/if}
                     </div>
                   {:else}
@@ -528,12 +528,12 @@
                   <span class="font-mono text-sm font-medium truncate">{node.nodeId}</span>
                 </div>
                 <div class="space-y-1 text-sm text-muted-foreground">
-                  <div><Badge variant="outline" class="text-[10px] px-1.5 py-0">{node.serviceType}</Badge></div>
+                  <div><Badge variant="outline" class="text-xs px-1.5 py-0">{node.serviceType}</Badge></div>
                   <div class="font-mono">{rackForAddr(node.advertiseAddr)}</div>
-                  <div class="font-mono text-[10px]">{node.advertiseAddr}</div>
+                  <div class="font-mono text-xs">{node.advertiseAddr}</div>
                 </div>
                 {#if !node.isActive}
-                  <div class="mt-2"><Badge variant="secondary" class="text-[10px] px-1.5 py-0">DOWN</Badge></div>
+                  <div class="mt-2"><Badge variant="secondary" class="text-xs px-1.5 py-0">DOWN</Badge></div>
                 {/if}
               </div>
             {/each}
@@ -552,7 +552,7 @@
     style:top="{svgTip.y - 12}px"
   >
     <div class="font-mono text-sm font-semibold">{svgTip.node.nodeId}</div>
-    <div class="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
+    <div class="mt-1 space-y-0.5 text-xs text-muted-foreground">
       <div>Service: <span class="text-foreground">{svgTip.node.serviceType}</span></div>
       <div>Status: <span style:color={STATUS_COLORS[svgTip.node.status]}>{svgTip.node.status}</span></div>
       <div>Rack: <span class="text-foreground font-mono">{rackForAddr(svgTip.node.advertiseAddr)}</span></div>

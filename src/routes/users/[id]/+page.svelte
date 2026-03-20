@@ -157,15 +157,15 @@
           </CardHeader>
           <CardContent class="space-y-3">
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Status</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
               <div class="mt-1"><StatusBadge active={user.isActive} /></div>
             </div>
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Email</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Email</span>
               <p class="mt-1 text-sm">{user.email}</p>
             </div>
             <div>
-              <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Display Name</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Display Name</span>
               <p class="mt-1 text-sm">{user.name || '—'}</p>
             </div>
           </CardContent>

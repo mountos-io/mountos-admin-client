@@ -19,7 +19,7 @@
   className
 )}>
   <span class={cn(
-    "relative inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border border-input bg-transparent transition-[border-color,background-color]",
+    "relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[2px] border border-input bg-transparent transition-[border-color,background-color]",
     !disabled && "group-hover:border-foreground/40",
     "has-[:focus-visible]:border-foreground/40",
     checked && "border-primary bg-primary/10",
@@ -30,7 +30,7 @@
       class:cursor-not-allowed={disabled}
       {disabled} bind:checked {...restProps} />
     {#if checked}
-      <svg aria-hidden="true" class="h-3 w-3 text-primary pointer-events-none" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg aria-hidden="true" class="h-4 w-4 text-primary pointer-events-none" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M2.5 6L5 8.5L9.5 3.5" />
       </svg>
     {/if}

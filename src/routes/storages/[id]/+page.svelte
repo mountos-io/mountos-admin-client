@@ -51,20 +51,20 @@
       <CardHeader><CardTitle>{storage.name}</CardTitle></CardHeader>
       <CardContent class="grid gap-3 md:grid-cols-2">
         <div>
-          <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Status</span>
+          <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
           <div class="mt-1"><StatusBadge active={storage.isActive} /></div>
         </div>
         <div>
-          <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Type</span>
+          <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Type</span>
           <div class="mt-1 flex gap-2"><Badge variant="outline">{storage.storageType}</Badge><Badge variant="secondary">{storage.providerType}</Badge></div>
         </div>
         <div>
-          <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Endpoint</span>
+          <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Endpoint</span>
           <p class="mt-1 text-sm font-mono">{storage.endpoint}</p>
         </div>
         {#if storage.bucket}
           <div>
-            <span class="text-[10px] uppercase tracking-[0.15em] font-semibold text-muted-foreground">Bucket</span>
+            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Bucket</span>
             <p class="mt-1 text-sm font-mono">{storage.bucket}</p>
           </div>
         {/if}

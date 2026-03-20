@@ -171,17 +171,17 @@
       <div class="flex items-baseline gap-6">
         <div class="flex items-baseline gap-1.5">
           <span class="hud-value text-[28px] font-bold tabular-nums leading-none tracking-tight">{topoStats.total}</span>
-          <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">nodes</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">nodes</span>
         </div>
         <div class="h-7 w-px bg-border/40"></div>
         <div class="flex items-baseline gap-1.5">
           <span class="hud-value text-[28px] font-bold tabular-nums leading-none tracking-tight" style="color: {STATUS_COLORS.healthy}; --hud-glow: {STATUS_COLORS.healthy};">{topoStats.healthy}</span>
-          <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">healthy</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">healthy</span>
         </div>
         <div class="h-7 w-px bg-border/40"></div>
         <div class="flex items-baseline gap-1.5">
           <span class="hud-value text-[28px] font-bold tabular-nums leading-none tracking-tight">{topoStats.types}</span>
-          <span class="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">types</span>
+          <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">types</span>
         </div>
       </div>
       {#if !nodeStore.loading && nodeStore.nodes.length > 0}
@@ -225,11 +225,11 @@
           <!-- Tier header -->
           <div class="flex items-center gap-2">
             <span
-              class="tier-label-glow text-[10px] font-bold uppercase tracking-[0.2em] whitespace-nowrap"
+              class="tier-label-glow text-xs font-bold uppercase tracking-wider whitespace-nowrap"
               style:color={tierColor}
             >{tier.label}</span>
             {#if tier.nodeCount > 0}
-              <span class="text-[10px] text-muted-foreground tabular-nums">{tier.nodeCount}</span>
+              <span class="text-xs text-muted-foreground tabular-nums">{tier.nodeCount}</span>
             {/if}
             <div class="ml-auto flex items-center gap-1.5">
               {#if tier.id === 'data' || tier.id === 'control'}
@@ -248,7 +248,7 @@
 
           {#if tier.groups.length === 0}
             <div class="flex items-center justify-center rounded-sm border border-dashed border-border/30 px-6 py-8 md:w-[420px]">
-              <span class="text-[10px] uppercase tracking-[0.15em] text-muted-foreground/40">no nodes</span>
+              <span class="text-xs uppercase tracking-wider text-muted-foreground/40">no nodes</span>
             </div>
           {/if}
           {#each tier.groups as group}
@@ -305,7 +305,7 @@
                             style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
                           ></span>
                           <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
-                          <span class="shrink-0 font-mono text-[10px] text-muted-foreground">{node.advertiseAddr}</span>
+                          <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
                         </button>
                       {:else}
                         <div
@@ -322,7 +322,7 @@
                             style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
                           ></span>
                           <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
-                          <span class="shrink-0 font-mono text-[10px] text-muted-foreground">{node.advertiseAddr}</span>
+                          <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
                         </div>
                       {/if}
                     {/each}
@@ -331,7 +331,7 @@
                   <!-- Expand / collapse -->
                   {#if needsCollapse}
                     <button
-                      class="flex w-full items-center justify-center gap-1 border-t border-border/20 px-3 py-1.5 text-[11px] text-muted-foreground transition-colors hover:text-foreground hover:bg-foreground/[0.03]"
+                      class="flex w-full items-center justify-center gap-1 border-t border-border/20 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground hover:bg-foreground/[0.03]"
                       onclick={() => toggleExpand(group.type)}
                     >
                       <ChevronDown class="h-3 w-3 transition-transform" style="transform: rotate({expanded ? 180 : 0}deg);" />
@@ -363,7 +363,7 @@
     <div class="h-[2px] rounded-t-sm" style="background: {statusColor(hoveredNode.node.status)};"></div>
     <div class="px-3 py-2.5">
       <div class="font-mono text-sm font-semibold">{hoveredNode.node.nodeId}</div>
-      <div class="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
+      <div class="mt-1.5 space-y-0.5 text-xs text-muted-foreground">
         <div class="flex justify-between gap-4">
           <span>Service</span>
           <span class="text-foreground">{hoveredNode.node.serviceType}</span>

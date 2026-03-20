@@ -114,7 +114,7 @@
         <Search class="h-4 w-4" />
         <span class="hidden sm:inline">Search</span>
       </div>
-      <kbd class="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+      <kbd class="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground">
         <span class="text-sm">⌘</span>K
       </kbd>
     </button>
