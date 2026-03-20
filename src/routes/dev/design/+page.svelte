@@ -4,6 +4,10 @@
   import { Badge } from '$lib/components/ui/badge'
   import Button from '$lib/components/ui/button/button.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
+  import {
+    showSuccessToast, showErrorToast, showWarningToast, showInfoToast,
+    showLoadingToastWithUpdate, dismissAllToasts,
+  } from '$lib/core/utils/toast'
 
   const nodes = [
     { id: 'sn-0x7a3f', name: 'appserv-us-east-1a', type: 'appserv', addr: '10.0.12.41:9090', status: 'online', cpu: 23, mem: 61, uptime: '14d 7h' },
@@ -37,6 +41,48 @@
       {darkMode ? 'Light' : 'Dark'}
     </Button>
   </div>
+
+  <!-- Toast Notifications -->
+  <section class="space-y-4">
+    <div>
+      <h2 class="text-xl font-semibold tracking-tight">Toast Notifications</h2>
+      <p class="mt-1 text-sm text-muted-foreground">Type-specific left-edge accent, tinted backgrounds, themed icons</p>
+    </div>
+    <div class="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+      <Button variant="outline" onclick={() => showSuccessToast('Volume mounted', { description: 'vol-0x3a9f attached to node sn-0x7a3f' })}>
+        Success
+      </Button>
+      <Button variant="outline" onclick={() => showErrorToast('Mount failed', { description: 'FUSE handshake timeout after 30s' })}>
+        Error
+      </Button>
+      <Button variant="outline" onclick={() => showWarningToast('High memory usage', { description: 'Node sn-0x8b2e at 84% — consider rebalancing' })}>
+        Warning
+      </Button>
+      <Button variant="outline" onclick={() => showInfoToast('Region sync complete', { description: 'us-east-1: 3 nodes, 12 volumes' })}>
+        Info
+      </Button>
+      <Button variant="outline" onclick={() => {
+        const t = showLoadingToastWithUpdate('Provisioning storage...')
+        setTimeout(() => t.success('Storage provisioned', { description: 'store-0xf2a1 ready' }), 2500)
+      }}>
+        Loading
+      </Button>
+      <Button variant="outline" onclick={() => dismissAllToasts()}>
+        Dismiss All
+      </Button>
+    </div>
+    <div class="grid gap-4 md:grid-cols-2">
+      <Button variant="outline" onclick={() => showSuccessToast('Quick toast — no description')}>
+        Title Only
+      </Button>
+      <Button variant="outline" onclick={() => showErrorToast('Connection refused', {
+        description: 'storeserv-eu-west-1a:9092 unreachable',
+        action: { label: 'Retry', onClick: () => showInfoToast('Retrying...') },
+      })}>
+        With Action
+      </Button>
+    </div>
+  </section>
 
   <!-- Corner Brackets -->
   <section class="space-y-4">

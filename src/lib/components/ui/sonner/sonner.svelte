@@ -8,12 +8,11 @@
 <Sonner
   theme={mode.current}
   class="toaster group"
-  richColors={true}
   closeButton={true}
   position="top-right"
   expand={true}
   visibleToasts={5}
   gap={16}
-  style="--normal-bg: var(--popover); --normal-text: var(--popover-foreground); --normal-border: var(--border);"
+  style="--normal-bg: var(--card); --normal-text: var(--card-foreground); --normal-border: var(--border);"
   {...restProps}
 />

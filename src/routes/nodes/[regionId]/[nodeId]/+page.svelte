@@ -10,6 +10,7 @@
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import ServiceMetricsView from '$lib/components/shared/ServiceMetricsView.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { formatRelative, nodeStatusVariant, formatDate } from '$lib/core/utils/format'
   import type { ServiceNode } from '$lib/core/api/types'
@@ -35,6 +36,10 @@
 
   const isFuseserv = $derived(
     node?.serviceType === 'fuseserv' || node?.serviceType === 'mfuse'
+  )
+
+  const isHub = $derived(
+    node?.serviceType === 'hub' || node?.serviceType === 'appserv'
   )
 
   // Group stats by section for fuseserv
@@ -183,20 +188,13 @@
   {:else if nodeStore.statsLoading && !nodeStore.statsLastUpdated}
     <LoadingSpinner />
   {:else if nodeStore.statsError}
-    {#if isFuseserv}
-      <Card>
-        <CardContent>
-          <p class="text-sm text-destructive">{nodeStore.statsError}</p>
-        </CardContent>
-      </Card>
-    {:else}
-      <Card>
-        <CardHeader><CardTitle class="text-base">Metrics</CardTitle></CardHeader>
-        <CardContent class="pt-0">
-          <p class="text-sm text-muted-foreground">Detailed metrics coming soon. Stats endpoint not yet available for {serviceTypeLabel}.</p>
-        </CardContent>
-      </Card>
-    {/if}
+    <Card>
+      <CardContent>
+        <p class="text-sm text-destructive">{nodeStore.statsError}</p>
+      </CardContent>
+    </Card>
+  {:else if isHub && nodeStore.statsRaw}
+    <ServiceMetricsView raw={nodeStore.statsRaw} />
   {:else if statSections.length > 0}
     {#each statSections as section}
       <Card>
@@ -225,21 +223,11 @@
         </CardContent>
       </Card>
     {/each}
-  {:else if !isFuseserv && node}
+  {:else if node}
     <Card>
       <CardHeader><CardTitle class="text-base">Metrics</CardTitle></CardHeader>
       <CardContent class="pt-0">
         <p class="text-sm text-muted-foreground">Detailed metrics coming soon. Stats endpoint not yet available for {serviceTypeLabel}.</p>
-      </CardContent>
-    </Card>
-  {/if}
-
-  <!-- Raw stats (for unknown service types or debug) -->
-  {#if nodeStore.statsRaw && !statSections.length}
-    <Card>
-      <CardHeader><CardTitle class="text-base">Raw Stats</CardTitle></CardHeader>
-      <CardContent class="pt-0">
-        <pre class="overflow-x-auto rounded-sm bg-muted p-3 text-sm font-mono">{nodeStore.statsRaw}</pre>
       </CardContent>
     </Card>
   {/if}
