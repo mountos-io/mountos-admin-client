@@ -1,5 +1,5 @@
 export type Theme = 'light' | 'dark' | 'system'
-export type FontSize = 'standard' | 'medium' | 'large' | 'extra-large'
+export type FontSize = 'standard' | 'medium' | 'large' | 'extra-large' | 'jumbo'
 
 const KEYS = {
   theme: 'mountos-admin-theme',
@@ -33,9 +33,10 @@ let brightness = $state<number>(load(KEYS.brightness, 100))
 
 const fontScaleMap: Record<FontSize, string> = {
   standard: '100%',
-  medium: '110%',
-  large: '120%',
-  'extra-large': '130%',
+  medium: '112.5%',
+  large: '125%',
+  'extra-large': '137.5%',
+  jumbo: '150%',
 }
 
 function applyTheme(t: Theme) {

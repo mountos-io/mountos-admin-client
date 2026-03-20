@@ -22,16 +22,9 @@
   const nodeId = $derived($page.params.nodeId)
 
   const node = $derived<ServiceNode | undefined>(nodeStore.nodes.find(n => n.nodeId === nodeId))
-  let pollValue = $state('0')
+  import { POLL_OPTIONS } from '$lib/core/utils/options'
 
-  const POLL_OPTIONS = [
-    { value: '0', label: 'Off' },
-    { value: '5', label: '5s' },
-    { value: '10', label: '10s' },
-    { value: '15', label: '15s' },
-    { value: '30', label: '30s' },
-    { value: '60', label: '60s' },
-  ]
+  let pollValue = $state('')
 
   const serviceTypeLabel = $derived.by(() => {
     const t = node?.serviceType
@@ -114,7 +107,7 @@
     <FilterSelect
       options={POLL_OPTIONS}
       value={pollValue}
-      placeholder="Off"
+      placeholder="Poll Off"
       onchange={(v) => pollValue = v}
     />
   </div>

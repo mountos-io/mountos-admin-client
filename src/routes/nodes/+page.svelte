@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte'
   import { goto } from '$app/navigation'
   import { useRegions } from '$lib/core/stores/regions.svelte'
   import { useNodes } from '$lib/core/stores/nodes.svelte'
@@ -13,6 +14,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { formatRelative, nodeStatusVariant } from '$lib/core/utils/format'
+  import { POLL_OPTIONS } from '$lib/core/utils/options'
   import Network from '@lucide/svelte/icons/network'
 
   const SERVICE_COLORS: Record<string, string> = {
@@ -74,6 +76,18 @@
     { value: '168', label: 'Inactive ≤ 7d' },
     { value: '360', label: 'Inactive ≤ 15d' },
   ] as const
+
+  let pollValue = $state('')
+  let pollTimer: ReturnType<typeof setInterval> | null = null
+
+  function setPoll(v: string) {
+    pollValue = v
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+    const secs = Number(v)
+    if (secs > 0) pollTimer = setInterval(() => nodeStore.refetch(), secs * 1000)
+  }
+
+  onDestroy(() => { if (pollTimer) clearInterval(pollTimer) })
 
   const activityValue = $derived(nodeStore.inactiveHours != null ? String(nodeStore.inactiveHours) : '')
 
@@ -144,6 +158,12 @@
         value={activityValue}
         placeholder="All Activity"
         onchange={(v) => { currentPage = 1; nodeStore.setInactiveHours(v ? Number(v) : undefined) }}
+      />
+      <FilterSelect
+        options={POLL_OPTIONS}
+        value={pollValue}
+        placeholder="Poll Off"
+        onchange={setPoll}
       />
       {#if selectedRegionId}
         <Button variant="outline" size="sm" class="gap-1.5" href="/nodes/{selectedRegionId}">

@@ -160,6 +160,7 @@ export function useNodes() {
     get statsError() { return statsError },
     get statsLastUpdated() { return statsLastUpdated },
     get pollInterval() { return pollInterval },
+    refetch,
     fetchNodes,
     fetchAllNodes,
     fetchStats,

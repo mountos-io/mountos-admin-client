@@ -52,6 +52,7 @@
     { value: 'medium', label: 'Medium' },
     { value: 'large', label: 'Large' },
     { value: 'extra-large', label: 'Extra Large' },
+    { value: 'jumbo', label: 'Jumbo' },
   ]
 
   const pageSizes = [10, 20, 50]
