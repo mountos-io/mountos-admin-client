@@ -232,6 +232,33 @@ export function bucketBarColor(leUs: number): string {
   return 'var(--destructive)'
 }
 
+export type SortCol = 'label' | 'total' | 'opsPerSec' | 'durationSec' | 'avgLatencyUs' | 'cv' | 'minUs' | 'maxUs' | 'p50' | 'p95' | 'p99'
+export type SortDir = 'asc' | 'desc'
+
+export function sortGroups(groups: HistogramGroup[], col: SortCol, dir: SortDir): HistogramGroup[] {
+  const sorted = [...groups]
+  const m = dir === 'asc' ? 1 : -1
+  sorted.sort((a, b) => {
+    let va: number | string, vb: number | string
+    switch (col) {
+      case 'label': return m * a.label.localeCompare(b.label)
+      case 'total': va = a.total; vb = b.total; break
+      case 'opsPerSec': va = a.avgLatencyUs > 0 ? 1e6 / a.avgLatencyUs : 0; vb = b.avgLatencyUs > 0 ? 1e6 / b.avgLatencyUs : 0; break
+      case 'durationSec': va = a.durationSec; vb = b.durationSec; break
+      case 'avgLatencyUs': va = a.avgLatencyUs; vb = b.avgLatencyUs; break
+      case 'cv': va = estimateCV(a.buckets, a.avgLatencyUs); vb = estimateCV(b.buckets, b.avgLatencyUs); break
+      case 'minUs': va = a.minUs; vb = b.minUs; break
+      case 'maxUs': va = a.maxUs; vb = b.maxUs; break
+      case 'p50': va = interpolatePercentile(a.buckets, 50); vb = interpolatePercentile(b.buckets, 50); break
+      case 'p95': va = interpolatePercentile(a.buckets, 95); vb = interpolatePercentile(b.buckets, 95); break
+      case 'p99': va = interpolatePercentile(a.buckets, 99); vb = interpolatePercentile(b.buckets, 99); break
+      default: va = a.avgLatencyUs; vb = b.avgLatencyUs
+    }
+    return m * ((va as number) - (vb as number))
+  })
+  return sorted
+}
+
 export function latencyBands(groups: HistogramGroup[]) {
   const bands = { sub1ms: 0, sub10ms: 0, sub100ms: 0, over100ms: 0 }
   for (const g of groups) {
