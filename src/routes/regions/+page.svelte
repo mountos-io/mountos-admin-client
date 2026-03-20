@@ -125,9 +125,9 @@
             tabindex={0}
           >
             <TableCell class="font-medium max-w-[160px] truncate">{region.name}</TableCell>
-            <TableCell class="font-mono text-xs max-w-[200px] truncate">{region.dns}</TableCell>
+            <TableCell class="font-mono text-sm max-w-[200px] truncate">{region.dns}</TableCell>
             <TableCell>
-              <span class="inline-flex items-center gap-1 font-mono text-xs">
+              <span class="inline-flex items-center gap-1 font-mono text-sm">
                 {region.exportId}
                 <button
                   type="button"

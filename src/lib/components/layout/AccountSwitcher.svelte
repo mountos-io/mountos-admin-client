@@ -55,7 +55,7 @@
       {#if store.selectedAccount}
         <AccountIcon account={store.selectedAccount} size={24} />
       {:else}
-        <span class="text-xs font-bold">?</span>
+        <span class="text-sm font-bold">?</span>
       {/if}
     {:else}
       <span class="flex items-center gap-2 truncate">

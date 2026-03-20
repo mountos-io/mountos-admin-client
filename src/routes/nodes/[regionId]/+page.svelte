@@ -304,7 +304,7 @@
                             class:led-raft={isDataserv}
                             style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
                           ></span>
-                          <span class="min-w-0 flex-1 truncate font-mono text-xs">{node.nodeId}</span>
+                          <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
                           <span class="shrink-0 font-mono text-[10px] text-muted-foreground">{node.advertiseAddr}</span>
                         </button>
                       {:else}
@@ -321,7 +321,7 @@
                             class:led-raft={isDataserv}
                             style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
                           ></span>
-                          <span class="min-w-0 flex-1 truncate font-mono text-xs">{node.nodeId}</span>
+                          <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
                           <span class="shrink-0 font-mono text-[10px] text-muted-foreground">{node.advertiseAddr}</span>
                         </div>
                       {/if}
@@ -362,7 +362,7 @@
     <!-- Accent bar -->
     <div class="h-[2px] rounded-t-sm" style="background: {statusColor(hoveredNode.node.status)};"></div>
     <div class="px-3 py-2.5">
-      <div class="font-mono text-xs font-semibold">{hoveredNode.node.nodeId}</div>
+      <div class="font-mono text-sm font-semibold">{hoveredNode.node.nodeId}</div>
       <div class="mt-1.5 space-y-0.5 text-[10px] text-muted-foreground">
         <div class="flex justify-between gap-4">
           <span>Service</span>

@@ -94,7 +94,7 @@
                     <p class="text-sm">{log.description}</p>
                   {/if}
                   {#if log.data}
-                    <pre class="text-xs bg-muted rounded-md p-3 overflow-x-auto max-h-64">{JSON.stringify(log.data, null, 2)}</pre>
+                    <pre class="text-sm bg-muted rounded-md p-3 overflow-x-auto max-h-64">{JSON.stringify(log.data, null, 2)}</pre>
                   {/if}
                 </div>
               </TableCell>

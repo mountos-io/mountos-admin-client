@@ -232,7 +232,7 @@
                 <Label>Block Endpoint</Label>
                 {#if blockEndpoint}
                   <Input value={blockEndpoint} readonly class="font-mono text-sm text-muted-foreground" />
-                  <p class="text-xs text-muted-foreground">Derived from region DNS (block.&lt;region-dns&gt;)</p>
+                  <p class="text-sm text-muted-foreground">Derived from region DNS (block.&lt;region-dns&gt;)</p>
                 {:else if regionId}
                   <p class="text-sm text-destructive">Selected region has no DNS configured.</p>
                 {:else}

@@ -201,11 +201,11 @@
             role="link"
             tabindex={0}
           >
-            <TableCell class="font-mono text-xs">{node.nodeId}</TableCell>
+            <TableCell class="font-mono text-sm">{node.nodeId}</TableCell>
             {#if !selectedRegionId}
               <TableCell>
                 <button
-                  class="text-xs hover:underline"
+                  class="text-sm hover:underline"
                   onclick={(e: MouseEvent) => { e.stopPropagation(); goto(`/nodes/${node.regionId}`) }}
                   onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); goto(`/nodes/${node.regionId}`) } }}
                 >
@@ -216,9 +216,9 @@
             <TableCell>
               <Badge variant="outline" class="font-mono text-[11px]" style="color: {SERVICE_COLORS[node.serviceType] ?? 'inherit'}; border-color: {SERVICE_COLORS[node.serviceType] ?? 'var(--border)'};">{node.serviceType}</Badge>
             </TableCell>
-            <TableCell class="font-mono text-xs text-muted-foreground">{node.advertiseAddr}</TableCell>
+            <TableCell class="font-mono text-sm text-muted-foreground">{node.advertiseAddr}</TableCell>
             <TableCell><Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge></TableCell>
-            <TableCell class="text-xs text-muted-foreground">
+            <TableCell class="text-sm text-muted-foreground">
               {node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '—'}
             </TableCell>
           </TableRow>

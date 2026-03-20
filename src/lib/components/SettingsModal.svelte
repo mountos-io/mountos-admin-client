@@ -138,13 +138,13 @@
                 >
                   {prefs.grayscale ? 'On' : 'Off'}
                 </Button>
-                <span class="text-xs text-muted-foreground">Reduce color for low-light comfort</span>
+                <span class="text-sm text-muted-foreground">Reduce color for low-light comfort</span>
               </div>
             </div>
             <div class="space-y-3">
               <div class="flex items-center justify-between">
                 <h4 class="text-sm font-medium">Brightness</h4>
-                <span class="text-xs tabular-nums text-muted-foreground">{prefs.brightness}%</span>
+                <span class="text-sm tabular-nums text-muted-foreground">{prefs.brightness}%</span>
               </div>
               <div class="flex items-center gap-3">
                 <input
@@ -157,7 +157,7 @@
                 {#if prefs.brightness !== 100}
                   <button
                     type="button"
-                    class="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    class="text-sm text-muted-foreground hover:text-foreground transition-colors shrink-0"
                     onclick={() => prefs.brightness = 100}
                   >Reset</button>
                 {/if}
@@ -213,7 +213,7 @@
             {#each shortcuts as s}
               <div class="flex items-center justify-between py-2.5 px-1">
                 <span class="text-sm">{s.description}</span>
-                <kbd class="inline-flex items-center gap-1 rounded border bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+                <kbd class="inline-flex items-center gap-1 rounded border bg-muted px-2 py-0.5 font-mono text-sm text-muted-foreground">
                   {s.keys}
                 </kbd>
               </div>
@@ -243,7 +243,7 @@
                 </div>
                 <div class="flex justify-between gap-3 min-w-0">
                   <dt class="text-muted-foreground shrink-0">ID</dt>
-                  <dd class="font-mono text-xs text-muted-foreground truncate min-w-0">{lic.licenseId}</dd>
+                  <dd class="font-mono text-sm text-muted-foreground truncate min-w-0">{lic.licenseId}</dd>
                 </div>
                 <hr class="border-border" />
                 <div class="flex justify-between">

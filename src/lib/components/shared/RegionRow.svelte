@@ -13,7 +13,7 @@
 <div class={cn('flex items-center gap-4 py-2 border-b border-border last:border-0', className)}>
   <div class="min-w-0 max-w-[10rem] shrink-0">
     <p class="text-sm font-medium truncate" title={region.regionName}>{region.regionName}</p>
-    <p class="text-xs text-muted-foreground">{region.volumeCount} volume{region.volumeCount !== 1 ? 's' : ''}</p>
+    <p class="text-sm text-muted-foreground">{region.volumeCount} volume{region.volumeCount !== 1 ? 's' : ''}</p>
   </div>
   <div class="flex-1">
     {#if region.totalQuotaLimit > 0}

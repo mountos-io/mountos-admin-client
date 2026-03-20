@@ -24,5 +24,5 @@
       style="transform: scaleX({pct / 100})"
     ></div>
   </div>
-  <p class="text-xs text-muted-foreground text-right">{pct}%</p>
+  <p class="text-sm text-muted-foreground text-right">{pct}%</p>
 </div>

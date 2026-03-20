@@ -110,7 +110,7 @@
         {#if createResult.encryptionKey}
           <p class="text-sm text-muted-foreground mb-3">Save the encryption key below — it will not be shown again.</p>
           <div class="rounded-sm border p-3 space-y-2 bg-muted/50">
-            <span class="text-xs text-muted-foreground">Encryption Key</span>
+            <span class="text-sm text-muted-foreground">Encryption Key</span>
             <p class="font-mono text-sm break-all">{createResult.encryptionKey}</p>
           </div>
           <Button variant="outline" size="sm" class="mt-3 gap-1.5" onclick={copyKey}>

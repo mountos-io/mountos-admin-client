@@ -218,7 +218,7 @@
   <div class="flex flex-wrap items-center gap-2">
     {#each raftGroups as group}
       <button
-        class="raft-pill flex items-center gap-2 rounded-sm border px-3 py-1.5 text-xs transition-all cursor-pointer"
+        class="raft-pill flex items-center gap-2 rounded-sm border px-3 py-1.5 text-sm transition-all cursor-pointer"
         style:border-color={selectedRaft === group.name ? group.color : undefined}
         style:background={selectedRaft === group.name ? group.bgColor : undefined}
         style:outline={selectedRaft === group.name ? `2px solid ${group.color}` : 'none'}
@@ -237,7 +237,7 @@
       </button>
     {/each}
     {#if selectedRaft}
-      <button class="text-xs text-muted-foreground underline cursor-pointer" onclick={() => selectedRaft = null}>clear</button>
+      <button class="text-sm text-muted-foreground underline cursor-pointer" onclick={() => selectedRaft = null}>clear</button>
     {/if}
   </div>
 
@@ -251,9 +251,9 @@
           <CardHeader>
             <div class="flex items-center justify-between">
               <CardTitle class="text-base">{rack.name}</CardTitle>
-              <Badge variant="outline" class="font-mono text-xs">{rack.address}</Badge>
+              <Badge variant="outline" class="font-mono text-sm">{rack.address}</Badge>
             </div>
-            <div class="flex items-center gap-3 text-xs text-muted-foreground">
+            <div class="flex items-center gap-3 text-sm text-muted-foreground">
               <span>{rack.total} nodes</span>
               <span style:color={STATUS_COLORS.active}>{rack.active} active</span>
               {#if rack.draining > 0}
@@ -287,7 +287,7 @@
                     <span class="absolute inset-0 rounded-full ping-led" style:background={STATUS_COLORS[node.status]}></span>
                   {/if}
                 </span>
-                <span class="font-mono text-xs flex-1 truncate tracking-tight">{node.nodeId}</span>
+                <span class="font-mono text-sm flex-1 truncate tracking-tight">{node.nodeId}</span>
                 <Badge variant="outline" class="text-[10px] px-1.5 py-0 shrink-0">{node.serviceType}</Badge>
                 {#if node.isRaftLeader}
                   <Badge variant="primary" class="text-[10px] px-1.5 py-0 shrink-0 leader-badge">LEADER</Badge>
@@ -314,7 +314,7 @@
             <TableHead class="th-cyber w-32">Service</TableHead>
             {#each racks as rack}
               <TableHead class="th-cyber">
-                <div class="text-xs">{rack.name}</div>
+                <div class="text-sm">{rack.name}</div>
                 <div class="font-mono text-[10px] font-normal text-muted-foreground">{rack.address}</div>
               </TableHead>
             {/each}
@@ -343,7 +343,7 @@
                           <span class="absolute inset-0 rounded-full ping-led" style:background={STATUS_COLORS[node.status]}></span>
                         {/if}
                       </span>
-                      <span class="font-mono text-xs">{node.nodeId}</span>
+                      <span class="font-mono text-sm">{node.nodeId}</span>
                     </div>
                     <div class="flex gap-1 mt-1">
                       {#if node.isRaftLeader}
@@ -357,7 +357,7 @@
                       {/if}
                     </div>
                   {:else}
-                    <span class="text-muted-foreground/30 text-xs">--</span>
+                    <span class="text-muted-foreground/30 text-sm">--</span>
                   {/if}
                 </TableCell>
               {/each}
@@ -506,7 +506,7 @@
           <div class="flex items-center gap-3">
             <span class="h-3 w-3 rounded-sm shrink-0 bg-muted-foreground/30"></span>
             <CardTitle class="text-base">Stateless Services</CardTitle>
-            <span class="text-xs text-muted-foreground">{statelessNodes.length} nodes, no RAFT</span>
+            <span class="text-sm text-muted-foreground">{statelessNodes.length} nodes, no RAFT</span>
           </div>
         </CardHeader>
         <CardContent>
@@ -525,9 +525,9 @@
                       <span class="absolute inset-0 rounded-full ping-led" style:background={STATUS_COLORS[node.status]}></span>
                     {/if}
                   </span>
-                  <span class="font-mono text-xs font-medium truncate">{node.nodeId}</span>
+                  <span class="font-mono text-sm font-medium truncate">{node.nodeId}</span>
                 </div>
-                <div class="space-y-1 text-xs text-muted-foreground">
+                <div class="space-y-1 text-sm text-muted-foreground">
                   <div><Badge variant="outline" class="text-[10px] px-1.5 py-0">{node.serviceType}</Badge></div>
                   <div class="font-mono">{rackForAddr(node.advertiseAddr)}</div>
                   <div class="font-mono text-[10px]">{node.advertiseAddr}</div>
@@ -551,7 +551,7 @@
     style:left="{svgTip.x + 16}px"
     style:top="{svgTip.y - 12}px"
   >
-    <div class="font-mono text-xs font-semibold">{svgTip.node.nodeId}</div>
+    <div class="font-mono text-sm font-semibold">{svgTip.node.nodeId}</div>
     <div class="mt-1 space-y-0.5 text-[10px] text-muted-foreground">
       <div>Service: <span class="text-foreground">{svgTip.node.serviceType}</span></div>
       <div>Status: <span style:color={STATUS_COLORS[svgTip.node.status]}>{svgTip.node.status}</span></div>

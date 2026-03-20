@@ -115,14 +115,14 @@
         <span class="hidden sm:inline">Search</span>
       </div>
       <kbd class="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-        <span class="text-xs">⌘</span>K
+        <span class="text-sm">⌘</span>K
       </kbd>
     </button>
     {#if !auth.isUserRole && licenseStore.needsAttention && licenseStore.license}
       {@const lic = licenseStore.license}
       <button
         type="button"
-        class="flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs font-medium transition-colors hover:bg-accent/50"
+        class="flex items-center gap-1.5 rounded-sm px-2 py-1 text-sm font-medium transition-colors hover:bg-accent/50"
         onclick={() => settingsModal.show('license')}
         title="License: {licenseStore.statusLabel(lic.status)}"
         aria-label="License {licenseStore.statusLabel(lic.status)}"
@@ -138,7 +138,7 @@
     {:else if !auth.isUserRole && licenseStore.license?.licenseType === 'trial'}
       <button
         type="button"
-        class="flex items-center gap-1.5 rounded-sm px-2 py-1 text-xs transition-colors hover:bg-accent/50"
+        class="flex items-center gap-1.5 rounded-sm px-2 py-1 text-sm transition-colors hover:bg-accent/50"
         onclick={() => settingsModal.show('license')}
         title="Trial license" aria-label="Trial license"
       >
@@ -146,7 +146,7 @@
       </button>
     {/if}
     {#if auth.user}
-      <span class="hidden lg:inline rounded-sm bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">{auth.user.role}</span>
+      <span class="hidden lg:inline rounded-sm bg-muted px-1.5 py-0.5 text-sm font-medium text-muted-foreground">{auth.user.role}</span>
       <span class="hidden md:inline text-sm text-muted-foreground truncate max-w-[120px]">{auth.user.name}</span>
     {/if}
     <button

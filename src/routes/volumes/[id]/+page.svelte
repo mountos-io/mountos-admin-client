@@ -204,11 +204,11 @@
             <div class="rounded-md border p-3 space-y-2 bg-muted/50">
               <p class="text-sm font-medium">Generated credentials (save now, shown once):</p>
               <div>
-                <span class="text-xs text-muted-foreground">API Key</span>
+                <span class="text-sm text-muted-foreground">API Key</span>
                 <p class="font-mono text-sm break-all">{genResult.apiKey}</p>
               </div>
               <div>
-                <span class="text-xs text-muted-foreground">API Secret</span>
+                <span class="text-sm text-muted-foreground">API Secret</span>
                 <p class="font-mono text-sm break-all">{genResult.apiSecret}</p>
               </div>
             </div>

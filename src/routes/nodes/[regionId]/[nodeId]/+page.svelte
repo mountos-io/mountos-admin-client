@@ -100,7 +100,7 @@
           {/if}
         </div>
         {#if node}
-          <div class="mt-1 text-xs text-muted-foreground font-mono">{node.advertiseAddr}</div>
+          <div class="mt-1 text-sm text-muted-foreground font-mono">{node.advertiseAddr}</div>
         {/if}
       </div>
     </div>
@@ -114,7 +114,7 @@
 
   <!-- Last updated -->
   {#if nodeStore.statsLastUpdated}
-    <div class="text-xs text-muted-foreground">
+    <div class="text-sm text-muted-foreground">
       Last updated: {formatDate(nodeStore.statsLastUpdated)}
       {#if nodeStore.statsLoading}
         <span class="ml-2 inline-block h-2 w-2 rounded-full bg-primary animate-pulse"></span>
@@ -129,35 +129,35 @@
       <CardContent class="pt-0">
         <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
           <div>
-            <dt class="text-muted-foreground text-xs">Node ID</dt>
-            <dd class="font-mono text-xs mt-0.5">{node.nodeId}</dd>
+            <dt class="text-muted-foreground text-sm">Node ID</dt>
+            <dd class="font-mono text-sm mt-0.5">{node.nodeId}</dd>
           </div>
           <div>
-            <dt class="text-muted-foreground text-xs">Service Type</dt>
+            <dt class="text-muted-foreground text-sm">Service Type</dt>
             <dd class="mt-0.5">{node.serviceType}</dd>
           </div>
           <div>
-            <dt class="text-muted-foreground text-xs">Status</dt>
+            <dt class="text-muted-foreground text-sm">Status</dt>
             <dd class="mt-0.5"><Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge></dd>
           </div>
           <div>
-            <dt class="text-muted-foreground text-xs">Address</dt>
-            <dd class="font-mono text-xs mt-0.5">{node.advertiseAddr}</dd>
+            <dt class="text-muted-foreground text-sm">Address</dt>
+            <dd class="font-mono text-sm mt-0.5">{node.advertiseAddr}</dd>
           </div>
           <div>
-            <dt class="text-muted-foreground text-xs">Last Heartbeat</dt>
-            <dd class="text-xs mt-0.5">{node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '—'}</dd>
+            <dt class="text-muted-foreground text-sm">Last Heartbeat</dt>
+            <dd class="text-sm mt-0.5">{node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '—'}</dd>
           </div>
           <div>
-            <dt class="text-muted-foreground text-xs">Active</dt>
+            <dt class="text-muted-foreground text-sm">Active</dt>
             <dd class="mt-0.5">
               <Badge variant={node.isActive ? 'success' : 'secondary'}>{node.isActive ? 'Yes' : 'No'}</Badge>
             </dd>
           </div>
           {#if node.metadata && Object.keys(node.metadata).length > 0}
             <div class="col-span-full">
-              <dt class="text-muted-foreground text-xs">Metadata</dt>
-              <dd class="font-mono text-xs mt-0.5 whitespace-pre-wrap">{JSON.stringify(node.metadata, null, 2)}</dd>
+              <dt class="text-muted-foreground text-sm">Metadata</dt>
+              <dd class="font-mono text-sm mt-0.5 whitespace-pre-wrap">{JSON.stringify(node.metadata, null, 2)}</dd>
             </div>
           {/if}
         </dl>
@@ -201,9 +201,9 @@
             <TableBody>
               {#each section.metrics as m}
                 <TableRow>
-                  <TableCell class="font-mono text-xs">{m.name}</TableCell>
-                  <TableCell class="font-mono text-xs text-muted-foreground">{m.labels || '—'}</TableCell>
-                  <TableCell class="text-right font-mono text-xs tabular-nums">{formatMetricValue(m.value)}</TableCell>
+                  <TableCell class="font-mono text-sm">{m.name}</TableCell>
+                  <TableCell class="font-mono text-sm text-muted-foreground">{m.labels || '—'}</TableCell>
+                  <TableCell class="text-right font-mono text-sm tabular-nums">{formatMetricValue(m.value)}</TableCell>
                 </TableRow>
               {/each}
             </TableBody>
@@ -225,7 +225,7 @@
     <Card>
       <CardHeader><CardTitle class="text-base">Raw Stats</CardTitle></CardHeader>
       <CardContent class="pt-0">
-        <pre class="overflow-x-auto rounded-sm bg-muted p-3 text-xs font-mono">{nodeStore.statsRaw}</pre>
+        <pre class="overflow-x-auto rounded-sm bg-muted p-3 text-sm font-mono">{nodeStore.statsRaw}</pre>
       </CardContent>
     </Card>
   {/if}

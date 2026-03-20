@@ -95,11 +95,11 @@
               <TableCell>
                 <div>
                   <p class="text-sm font-medium">{formatClientType(session.clientType)}</p>
-                  <p class="text-xs text-muted-foreground">{session.osName}{session.osVersion ? ` ${session.osVersion}` : ''}</p>
+                  <p class="text-sm text-muted-foreground">{session.osName}{session.osVersion ? ` ${session.osVersion}` : ''}</p>
                 </div>
               </TableCell>
-              <TableCell class="font-mono text-xs max-w-[160px] truncate">{session.hostname || session.ipAddr}</TableCell>
-              <TableCell class="font-mono text-xs max-w-[120px] truncate">{session.volumeId}</TableCell>
+              <TableCell class="font-mono text-sm max-w-[160px] truncate">{session.hostname || session.ipAddr}</TableCell>
+              <TableCell class="font-mono text-sm max-w-[120px] truncate">{session.volumeId}</TableCell>
               <TableCell>
                 <Badge variant={st.variant}>{st.label}</Badge>
               </TableCell>
