@@ -11,6 +11,8 @@
     type MetricSection, type HistogramGroup, type SortCol, type SortDir,
   } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import ChevronsDownUp from '@lucide/svelte/icons/chevrons-down-up'
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
   import ArrowUp from '@lucide/svelte/icons/arrow-up'
   import ArrowDown from '@lucide/svelte/icons/arrow-down'
 
@@ -29,10 +31,25 @@
   type MetricMode = 'latency' | 'percentiles'
 
   let activeTab = $state<Tab>('overview')
-  let layout = $state<Layout>('histogram')
+  let layout = $state<Layout>('table')
   let metricMode = $state<MetricMode>('latency')
   let sortCol = $state<SortCol>('avgLatencyUs')
   let sortDir = $state<SortDir>('desc')
+
+  function expandAll(groups: HistogramGroup[], sectionKey: string) {
+    const suffix = layout === 'table' ? '-tbl-' : '-'
+    const keys = groups.filter(g => g.buckets.length > 0).map((_, i) => `${sectionKey}${suffix}${i}`)
+    const allExpanded = keys.every(k => expanded.has(k))
+    const next = new Set(expanded)
+    for (const k of keys) allExpanded ? next.delete(k) : next.add(k)
+    expanded = next
+  }
+
+  function isAllExpanded(groups: HistogramGroup[], sectionKey: string): boolean {
+    const suffix = layout === 'table' ? '-tbl-' : '-'
+    const keys = groups.filter(g => g.buckets.length > 0).map((_, i) => `${sectionKey}${suffix}${i}`)
+    return keys.length > 0 && keys.every(k => expanded.has(k))
+  }
 
   function toggleSort(col: SortCol) {
     if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc'
@@ -91,40 +108,41 @@
 </script>
 
 <div class="space-y-5">
-  <!-- Runtime Gauges -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-    <div class="border rounded-sm bg-card p-4 space-y-1">
-      <div class="text-sm text-muted-foreground">Uptime</div>
-      <div class="text-2xl font-bold font-mono tabular-nums">{formatUptime(uptime)}</div>
-      <div class="text-sm text-muted-foreground font-mono">PID {pid}</div>
-    </div>
-    <div class="border rounded-sm bg-card p-4 space-y-1">
-      <div class="text-sm text-muted-foreground">Goroutines</div>
-      <div class="text-2xl font-bold font-mono tabular-nums">{goroutines}</div>
-    </div>
-    <div class="border rounded-sm bg-card p-4 space-y-1">
-      <div class="text-sm text-muted-foreground">Heap Alloc</div>
-      <div class="text-2xl font-bold font-mono tabular-nums">{formatBytes(memAlloc)}</div>
-      <div class="text-sm text-muted-foreground">of {formatBytes(memSys)} sys</div>
-    </div>
-    <div class="border rounded-sm bg-card p-4 space-y-1">
-      <div class="text-sm text-muted-foreground">GC Cycles</div>
-      <div class="text-2xl font-bold font-mono tabular-nums">{gcNum}</div>
-      <div class="text-sm text-muted-foreground">last {formatNs(gcPause)}</div>
-    </div>
-    <div class="border rounded-sm bg-card p-4 space-y-1">
-      <div class="text-sm text-muted-foreground">CPU Cores</div>
-      <div class="text-2xl font-bold font-mono tabular-nums">{cpuCount}</div>
-    </div>
-  </div>
-
   <!-- Tab Bar -->
   {@render tabBar()}
 
   <!-- Tab Panels -->
   {#if activeTab === 'overview'}
+    <!-- Runtime Gauges — instrument panel -->
+    <div class="corner-plus">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px rounded-sm overflow-hidden bg-border/50">
+        <div class="gauge-cell bg-card px-4 py-3">
+          <div class="gauge-lbl">Uptime</div>
+          <div class="gauge-val">{formatUptime(uptime)}</div>
+          <div class="gauge-sub">PID {pid}</div>
+        </div>
+        <div class="gauge-cell bg-card px-4 py-3">
+          <div class="gauge-lbl">Goroutines</div>
+          <div class="gauge-val">{goroutines}</div>
+        </div>
+        <div class="gauge-cell bg-card px-4 py-3">
+          <div class="gauge-lbl">Heap Alloc</div>
+          <div class="gauge-val">{formatBytes(memAlloc)}</div>
+          <div class="gauge-sub">of {formatBytes(memSys)} sys</div>
+        </div>
+        <div class="gauge-cell bg-card px-4 py-3">
+          <div class="gauge-lbl">GC Cycles</div>
+          <div class="gauge-val">{gcNum}</div>
+          <div class="gauge-sub">last {formatNs(gcPause)}</div>
+        </div>
+        <div class="gauge-cell bg-card px-4 py-3">
+          <div class="gauge-lbl">CPU Cores</div>
+          <div class="gauge-val">{cpuCount}</div>
+        </div>
+      </div>
+    </div>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <Card>
+      <Card cornerBrackets={false}>
         <CardHeader>
           <div class="flex items-center justify-between">
             <CardTitle class="text-base">Memory</CardTitle>
@@ -165,7 +183,7 @@
         </CardContent>
       </Card>
 
-      <Card>
+      <Card cornerBrackets={false}>
         <CardHeader>
           <div class="flex items-center justify-between">
             <CardTitle class="text-base">DB Pool</CardTitle>
@@ -242,53 +260,66 @@
 <!-- Snippets -->
 
 {#snippet tabBar()}
-  <div class="flex items-center gap-1 border-b pb-1" role="tablist" aria-label="Metrics">
+  <div class="tab-bar relative flex items-center gap-0.5 pb-3 pt-1" role="tablist" aria-label="Metrics">
     {#each tabs as t}
       {@const c = t.count()}
       <button
         role="tab"
         aria-selected={activeTab === t.id}
-        class="flex items-center gap-1.5 rounded-sm px-3 py-1.5 font-mono text-sm transition-colors {activeTab === t.id
-          ? 'bg-accent text-accent-foreground font-medium'
-          : 'text-muted-foreground hover:bg-accent/50'}"
+        class="tab-btn flex items-center gap-1.5 px-4 py-2 font-mono transition-colors
+          {activeTab === t.id ? 'font-medium' : 'text-muted-foreground'}"
         onclick={() => activeTab = t.id}
       >
         {t.label}
         {#if c > 0}
-          <Badge variant="secondary" class="font-mono tabular-nums text-[0.65rem] px-1.5 py-0">{c}</Badge>
+          <span class="tabular-nums opacity-60">[{c}]</span>
         {/if}
       </button>
     {/each}
   </div>
 {/snippet}
 
-{#snippet toggleBar()}
-  <div class="flex items-center gap-3">
-    <div class="flex items-center rounded-sm border text-[0.7rem] font-mono overflow-hidden">
+{#snippet toggleBar(groups: HistogramGroup[], sectionKey: string)}
+  {@const allOpen = isAllExpanded(groups, sectionKey)}
+  <div class="flex items-center gap-2">
+    <div class="toggle-group flex items-center font-mono overflow-hidden">
       <button
-        class="px-2 py-1 transition-colors {layout === 'histogram' ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground hover:bg-accent/50'}"
+        class="toggle-btn px-2.5 py-1 transition-colors {layout === 'histogram' ? 'toggle-active' : 'text-muted-foreground'}"
         onclick={() => layout = 'histogram'}
       >Histogram</button>
+      <span class="text-border/40 select-none">&vert;</span>
       <button
-        class="px-2 py-1 border-l transition-colors {layout === 'table' ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground hover:bg-accent/50'}"
+        class="toggle-btn px-2.5 py-1 transition-colors {layout === 'table' ? 'toggle-active' : 'text-muted-foreground'}"
         onclick={() => layout = 'table'}
       >Table</button>
     </div>
-    <div class="flex items-center rounded-sm border text-[0.7rem] font-mono overflow-hidden">
+    <div class="toggle-group flex items-center font-mono overflow-hidden">
       <button
-        class="px-2 py-1 transition-colors {metricMode === 'latency' ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground hover:bg-accent/50'}"
+        class="toggle-btn px-2.5 py-1 transition-colors {metricMode === 'latency' ? 'toggle-active' : 'text-muted-foreground'}"
         onclick={() => metricMode = 'latency'}
       >Latency</button>
+      <span class="text-border/40 select-none">&vert;</span>
       <button
-        class="px-2 py-1 border-l transition-colors {metricMode === 'percentiles' ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground hover:bg-accent/50'}"
+        class="toggle-btn px-2.5 py-1 transition-colors {metricMode === 'percentiles' ? 'toggle-active' : 'text-muted-foreground'}"
         onclick={() => metricMode = 'percentiles'}
       >Percentiles</button>
     </div>
+    <button
+      class="toggle-btn toggle-group flex items-center gap-1 px-2 py-1 font-mono transition-colors {allOpen ? 'toggle-active' : 'text-muted-foreground'}"
+      onclick={() => expandAll(groups, sectionKey)}
+      title="{allOpen ? 'Collapse' : 'Expand'} all buckets"
+    >
+      {#if allOpen}
+        <ChevronsDownUp class="h-3 w-3" />
+      {:else}
+        <ChevronsUpDown class="h-3 w-3" />
+      {/if}
+    </button>
   </div>
 {/snippet}
 
 {#snippet profileTab(section: MetricSection, maxUs: number, isHttp: boolean, totalHits: number, totalDuration: number, bands: ReturnType<typeof latencyBands>, sectionKey: string)}
-  <Card>
+  <Card cornerBrackets={false}>
     <CardHeader>
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2">
@@ -301,7 +332,7 @@
         </div>
         <div class="flex items-center gap-3">
           {@render bandPills(bands)}
-          {@render toggleBar()}
+          {@render toggleBar(section.groups, sectionKey)}
         </div>
       </div>
     </CardHeader>
@@ -323,7 +354,7 @@
 
 {#snippet dbTab()}
   {@const section = dbQuerySection!}
-  <Card>
+  <Card cornerBrackets={false}>
     <CardHeader>
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2">
@@ -336,7 +367,7 @@
         </div>
         <div class="flex items-center gap-3">
           {@render bandPills(dbBands)}
-          {@render toggleBar()}
+          {@render toggleBar(section.groups, 'db')}
         </div>
       </div>
     </CardHeader>
@@ -598,3 +629,141 @@
     {/if}
   </div>
 {/snippet}
+
+<style>
+  /* Tab bar — scan-line border + corner brackets */
+  .tab-bar::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background:
+      linear-gradient(to right, currentColor 12px, transparent 12px) 0 0 / 12px 1.5px,
+      linear-gradient(to bottom, currentColor 12px, transparent 12px) 0 0 / 1.5px 12px,
+      linear-gradient(to left, currentColor 12px, transparent 12px) 100% 100% / 12px 1.5px,
+      linear-gradient(to top, currentColor 12px, transparent 12px) 100% 100% / 1.5px 12px;
+    background-repeat: no-repeat;
+    color: oklch(0.4 0.002 200 / 0.5);
+    pointer-events: none;
+  }
+
+  .tab-bar::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, oklch(0.4 0.08 200) 15%, oklch(0.4 0.08 200) 85%, transparent);
+  }
+
+  :global(.dark) .tab-bar::before {
+    color: oklch(0.35 0.002 200 / 0.5);
+  }
+
+  :global(.dark) .tab-bar::after {
+    background: linear-gradient(90deg, transparent, oklch(0.5 0.08 200) 15%, oklch(0.5 0.08 200) 85%, transparent);
+  }
+
+  /* Tab buttons — skewed corners + scan-line underline */
+  .tab-btn {
+    position: relative;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.7rem;
+    clip-path: polygon(0 5px, 5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%);
+  }
+
+  .tab-btn::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    width: 80%;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, oklch(0.45 0.08 200), transparent);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.35s ease;
+  }
+
+  .tab-btn:hover::after {
+    transform: scaleX(1);
+  }
+
+  .tab-btn[aria-selected="true"] {
+    color: var(--foreground);
+    background: var(--accent);
+  }
+
+  .tab-btn[aria-selected="true"]::after {
+    transform: scaleX(1);
+    background: linear-gradient(90deg, transparent, oklch(0.65 0.18 45), transparent);
+  }
+
+  :global(.dark) .tab-btn::after {
+    background: linear-gradient(90deg, transparent, oklch(0.55 0.08 200), transparent);
+  }
+
+  :global(.dark) .tab-btn[aria-selected="true"] {
+    background: var(--accent);
+  }
+
+  :global(.dark) .tab-btn[aria-selected="true"]::after {
+    background: linear-gradient(90deg, transparent, oklch(0.78 0.13 92), transparent);
+  }
+
+  /* Toggle groups — skewed micro-cuts */
+  .toggle-group {
+    clip-path: polygon(0 3px, 3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%);
+    background: oklch(0.4 0.002 200 / 0.06);
+  }
+
+  .toggle-btn {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.6rem;
+  }
+
+  .toggle-active {
+    color: var(--foreground);
+    background: oklch(0.45 0.08 200 / 0.12);
+  }
+
+  :global(.dark) .toggle-group {
+    background: oklch(0.35 0.002 200 / 0.12);
+  }
+
+  :global(.dark) .toggle-active {
+    background: oklch(0.5 0.08 200 / 0.15);
+  }
+
+  .gauge-cell {
+    transition: background-color 0.25s ease;
+  }
+
+  .gauge-cell:hover {
+    background: var(--accent);
+  }
+
+  .gauge-lbl {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--muted-foreground);
+  }
+
+  .gauge-val {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    margin-top: 2px;
+  }
+
+  .gauge-sub {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.8rem;
+    color: var(--muted-foreground);
+  }
+</style>

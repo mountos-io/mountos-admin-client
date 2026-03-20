@@ -10,14 +10,14 @@
 
   let {
     ref = $bindable(null), class: className,
-    cornerBrackets = false, cornerPlus = false, fixedBrackets = false,
+    cornerBrackets = true, cornerPlus = false, fixedBrackets = false,
     children, ...restProps
   }: CardProps = $props();
 </script>
 
 <div bind:this={ref} data-slot="card"
   class={cn(
-    "bg-card text-card-foreground flex flex-col gap-6 rounded-sm border py-6 shadow-none",
+    "bg-card text-card-foreground flex flex-col gap-6 rounded-sm border py-6 shadow-none card-cyber",
     cornerBrackets && !fixedBrackets && "corner-brackets-lg",
     cornerBrackets && fixedBrackets && "corner-brackets-lg-fixed",
     cornerPlus && "corner-plus",

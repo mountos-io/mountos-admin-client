@@ -432,6 +432,28 @@
     color: oklch(0.78 0.13 92);
   }
 
+  /* Cyberpunk card accent — top-edge glow + hover halo */
+  .card-cyber {
+    box-shadow: inset 0 1px 0 oklch(0.61 0.14 39 / 0.2);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .card-cyber:hover {
+    box-shadow:
+      inset 0 1px 0 oklch(0.61 0.14 39 / 0.5),
+      0 0 24px oklch(0.61 0.14 39 / 0.07);
+  }
+
+  .dark .card-cyber {
+    box-shadow: inset 0 1px 0 oklch(0.78 0.13 92 / 0.15);
+  }
+
+  .dark .card-cyber:hover {
+    box-shadow:
+      inset 0 1px 0 oklch(0.78 0.13 92 / 0.45),
+      0 0 24px oklch(0.78 0.13 92 / 0.08);
+  }
+
   /* Cyberpunk table header labels — scan-line underline */
   .th-cyber {
     position: relative;

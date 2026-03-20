@@ -126,10 +126,11 @@
 
   <!-- Last updated -->
   {#if nodeStore.statsLastUpdated}
-    <div class="text-sm text-muted-foreground">
+    <div class="flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
+      <span class="inline-block w-4 h-px bg-primary/40"></span>
       Last updated: {formatDate(nodeStore.statsLastUpdated)}
       {#if nodeStore.statsLoading}
-        <span class="ml-2 inline-block h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+        <span class="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
       {/if}
     </div>
   {/if}
