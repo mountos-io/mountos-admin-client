@@ -274,14 +274,6 @@
     opacity: 0.08;
   }
 
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus {
-    -webkit-text-fill-color: var(--foreground) !important;
-    -webkit-box-shadow: 0 0 0px 1000px var(--background) inset !important;
-    transition: background-color 5000s ease-in-out 0s;
-  }
-
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
@@ -290,4 +282,20 @@
       scroll-behavior: auto !important;
     }
   }
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: var(--foreground) !important;
+  -webkit-box-shadow: 0 0 0px 1000px var(--background) inset !important;
+  caret-color: var(--foreground) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px color-mix(in srgb, var(--input) 20%, transparent) inset !important;
 }

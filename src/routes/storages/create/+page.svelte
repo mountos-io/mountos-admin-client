@@ -19,6 +19,7 @@
   import {
     PROVIDER_OPTIONS, generateEndpoint, isCustomEndpoint, getProvider,
   } from '$lib/core/utils/object-storage-providers'
+  import { HUB_REGION_NAME } from '$lib/core/constants'
 
   const storageStore = useStorages()
   const regionStore = useRegions()
@@ -43,7 +44,9 @@
   })
 
   const regionOptions = $derived(
-    regionStore.regions.map(r => ({ value: String(r.id), label: r.name }))
+    regionStore.regions
+      .filter(r => r.name !== HUB_REGION_NAME)
+      .map(r => ({ value: String(r.id), label: r.name }))
   )
   const selectedRegion = $derived(
     regionStore.regions.find(r => String(r.id) === regionId)
