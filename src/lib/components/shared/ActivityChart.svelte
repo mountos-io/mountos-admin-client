@@ -15,6 +15,8 @@
   import SunIcon from '@lucide/svelte/icons/sun'
   import SunsetIcon from '@lucide/svelte/icons/sunset'
   import MoonIcon from '@lucide/svelte/icons/moon'
+  import CopyIcon from '@lucide/svelte/icons/copy'
+  import CheckIcon from '@lucide/svelte/icons/check'
 
   let { logs = [] }: { logs: AuditLog[] } = $props()
 
@@ -25,6 +27,21 @@
   let hoveredLog = $state<PlottedLog | null>(null)
   let popupPosition = $state({ left: '0px', top: '0px', transform: 'translate(-50%, -100%)' })
   let selectedTimeRange = $state<'full' | 'morning' | 'afternoon' | 'evening' | 'night'>('full')
+  let copiedId = $state<number | null>(null)
+
+  async function handleCopy(log: PlottedLog) {
+    const obj: Record<string, unknown> = { title: log.title }
+    if (log.description) obj.description = log.description
+    if (log.subject) obj.subject = log.subject
+    obj.success = log.success
+    obj.date = log.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    obj.time = fmtTime(log.timeMinutes)
+    if (log.createdBy) obj.createdBy = log.createdBy
+    if (log.data) obj.data = log.data
+    await navigator.clipboard.writeText(JSON.stringify(obj, null, 2))
+    copiedId = log.id
+    setTimeout(() => { copiedId = null }, 2000)
+  }
 
   const timeRanges = {
     full:      { start: 0,    end: 1440, label: 'Full Day', icon: ClockIcon },
@@ -159,6 +176,8 @@
           style="left: {log.x}%; top: {log.y}%;"
           onmouseenter={(e) => handleEnter(log, e)}
           onmouseleave={() => hoveredLog = null}
+          onclick={() => handleCopy(log)}
+          onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), handleCopy(log))}
           role="button" tabindex="0">
           <div class="flex items-center justify-center w-5 h-5 rounded-full bg-background border-2 shadow-sm transition-transform hover:scale-[1.8]"
             style="border-color: {m.color}; color: {m.color}; transform: translate(-50%, -50%);">
@@ -190,6 +209,14 @@
         {#if !hoveredLog.success}
           <span class="rounded-sm border border-destructive text-destructive px-1.5 py-0.5 text-[0.6rem] font-mono uppercase">fail</span>
         {/if}
+        <span class="rounded-sm border px-1.5 py-0.5 text-[0.6rem] font-mono uppercase tracking-wider flex items-center gap-1
+          {copiedId === hoveredLog.id ? 'border-primary text-primary bg-primary/10' : 'border-muted-foreground/30 text-muted-foreground'}">
+          {#if copiedId === hoveredLog.id}
+            <CheckIcon class="w-2.5 h-2.5" />Copied
+          {:else}
+            <CopyIcon class="w-2.5 h-2.5" />Click to copy
+          {/if}
+        </span>
       </div>
       {#if hoveredLog.description}
         <p class="text-xs text-muted-foreground">{hoveredLog.description}</p>
