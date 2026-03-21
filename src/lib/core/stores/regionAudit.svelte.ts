@@ -28,7 +28,8 @@ async function fetchLogs(regionId: number, opts?: { subject?: string; limit?: nu
     error = ''
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
-    error = (e as Error).message || 'Failed to fetch audit logs'
+    const msg = (e as Error).message
+    error = msg ? `Failed to load audit logs: ${msg}` : 'Failed to load audit logs'
   } finally {
     if (fetchCtrl === ctrl) loading = false
   }

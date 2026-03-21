@@ -217,7 +217,7 @@
           <div class="space-y-2">
             <Label for="storageType">Storage Type</Label>
             <Select id="storageType" bind:value={storageType} placeholder="Select type..."
-              options={[{ value: 'object', label: 'Object Storage' }, { value: 'block', label: 'Block Storage' }]} />
+              options={[{ value: 'object', label: 'Object' }, { value: 'block', label: 'Block' }]} />
           </div>
 
           {#if storageType}

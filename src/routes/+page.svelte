@@ -39,6 +39,8 @@
   const canReadNodes = $derived(auth.can('serviceNodes', 'read'))
   const canReadAudit = $derived(auth.can('auditLogs', 'read'))
   let activityDays = $state(7)
+  const activityCutoff = $derived(Date.now() - activityDays * 86400000)
+  const filteredActivity = $derived(auditStore.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= activityCutoff))
 
   $effect(() => {
     if (accountId) {
@@ -93,7 +95,7 @@
     </div>
 
     {#if dashboard.loading && !stats}
-      <div class="flex justify-center py-12">
+      <div class="flex justify-center py-12" aria-busy="true">
         <LoadingSpinner />
       </div>
     {:else if dashboard.error}
@@ -131,7 +133,7 @@
                   <p class="text-[10px] text-muted-foreground/60 leading-none mt-0.5">{item.subtitle}</p>
                 {/if}
               </div>
-              <ChevronRightIcon class="size-3 text-muted-foreground/0 group-hover:text-muted-foreground transition-colors absolute right-2 top-1/2 -translate-y-1/2" />
+              <ChevronRightIcon class="size-3 invisible group-hover:visible text-muted-foreground transition-colors absolute right-2 top-1/2 -translate-y-1/2" />
             </a>
           {/each}
         </div>
@@ -171,7 +173,7 @@
               <div class="flex items-center gap-1">
                 {#each [7, 15, 30] as d}
                   <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
-                    class="h-6 px-2 text-xs font-mono"
+                    class="h-7 px-2 text-xs font-mono"
                     onclick={() => activityDays = d}>{d}d</Button>
                 {/each}
               </div>
@@ -185,12 +187,10 @@
             {:else if auditStore.logs.length === 0}
               <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No recent activity</div>
             {:else}
-              {@const cutoff = Date.now() - activityDays * 86400000}
-              {@const filtered = auditStore.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= cutoff)}
-              {#if filtered.length === 0}
+              {#if filteredActivity.length === 0}
                 <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
               {:else}
-                <ActivityChart logs={filtered} />
+                <ActivityChart logs={filteredActivity} />
               {/if}
             {/if}
           </CardContent>

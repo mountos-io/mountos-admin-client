@@ -151,7 +151,7 @@
 
   $effect(() => {
     if (regionId) {
-      regionStore.getRegion(regionId).then(r => region = r).catch(() => {})
+      regionStore.getRegion(regionId).then(r => region = r).catch(() => showErrorToast('Failed to load region details'))
       nodeStore.clearFilters()
       nodeStore.fetchNodes(regionId)
     }
@@ -211,6 +211,7 @@
                 class:legend-dimmed={isDimmed(entry.type)}
                 style="--chip-accent: {entry.accent};"
                 onclick={() => toggleDim(entry.type)}
+                aria-pressed={!isDimmed(entry.type)}
                 title="{entry.label} ({entry.count})"
               >
                 <span class="legend-dot" style="background: {entry.accent};"></span>
@@ -264,7 +265,7 @@
           </div>
 
           {#if tier.groups.length === 0}
-            <div class="flex items-center justify-center rounded-sm border border-dashed border-border/30 px-6 py-8 md:w-[420px]">
+            <div class="flex items-center justify-center rounded-sm border border-dashed border-border/30 px-6 py-8 md:w-[420px] md:max-w-full">
               <span class="text-xs uppercase tracking-wider text-muted-foreground/40">no nodes</span>
             </div>
           {/if}
@@ -278,7 +279,7 @@
               {@const hiddenCount = group.nodes.length - visibleNodes.length}
               <Card
                 cornerBrackets
-                class="svc-card corner-plus-bl relative overflow-hidden gap-0 py-0 w-full md:w-[420px] {isDimmed(group.type) ? 'svc-dimmed' : ''}"
+                class="svc-card corner-plus-bl relative overflow-hidden gap-0 py-0 w-full md:w-[420px] md:max-w-full {isDimmed(group.type) ? 'svc-dimmed' : ''}"
                 style="--svc-accent: {p.accent}; --svc-bg: {p.bg};"
               >
                 <!-- inset glow at top edge -->
@@ -303,23 +304,26 @@
                   </div>
 
                   <!-- Node list -->
-                  <div class="divide-y divide-border/20">
+                  <div role="list" aria-label="{p.label} nodes" class="divide-y divide-border/20">
                     {#each visibleNodes as node}
                       {@const navigable = isNavigable(node)}
                       {#if navigable}
                         <button
                           class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
-                          aria-label="View node {node.nodeId}"
+                          aria-label="View node {node.nodeId}, status {node.status}"
                           onclick={() => goto(`/nodes/${regionId}/${node.nodeId}`)}
                           onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
                           onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
                           onpointerleave={() => hoveredNode = null}
+                          onfocus={(e: FocusEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); hoveredNode = { node, x: r.right, y: r.top } }}
+                          onblur={() => hoveredNode = null}
                         >
                           <span
                             class="led-dot block h-2 w-2 shrink-0 rounded-full"
                             class:led-ping={node.status === 'healthy'}
                             class:led-raft={isDataserv}
                             style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
+                            title={node.status}
                           ></span>
                           <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
                           <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
@@ -337,6 +341,7 @@
                             class:led-ping={node.status === 'healthy'}
                             class:led-raft={isDataserv}
                             style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
+                            title={node.status}
                           ></span>
                           <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
                           <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
@@ -349,6 +354,7 @@
                   {#if needsCollapse}
                     <button
                       class="flex w-full items-center justify-center gap-1 border-t border-border/20 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground hover:bg-foreground/[0.03]"
+                      aria-expanded={expanded}
                       onclick={() => toggleExpand(group.type)}
                     >
                       <ChevronDown class="h-3 w-3 transition-transform" style="transform: rotate({expanded ? 180 : 0}deg);" />
@@ -379,29 +385,29 @@
               <div class="flex items-center gap-1">
                 {#each ['feed', 'chart'] as v}
                   <Button variant={auditView === v ? 'primary' : 'ghost'} size="sm"
-                    class="h-6 px-2 text-xs capitalize"
+                    class="h-7 px-2 text-xs capitalize"
                     onclick={() => auditView = v as 'chart' | 'feed'}>{v}</Button>
                 {/each}
                 {#if auditView === 'chart'}
                   <div class="w-px h-4 bg-border mx-1"></div>
                   {#each [7, 15, 30] as d}
                     <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
-                      class="h-6 px-2 text-xs font-mono"
+                      class="h-7 px-2 text-xs font-mono"
                       onclick={() => activityDays = d}>{d}d</Button>
                   {/each}
                 {/if}
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent aria-live="polite">
             {#if regionAudit.loading && regionAudit.logs.length === 0}
-              <div class="flex items-center justify-center py-16">
+              <div class="flex items-center justify-center py-16" aria-busy="true">
                 <LoadingSpinner />
               </div>
             {:else if regionAudit.error}
               <div class="flex items-center justify-center gap-2 py-16 text-sm text-destructive">
                 <span>Failed to load audit logs</span>
-                <Button variant="ghost" size="sm" class="h-6 px-2 text-xs"
+                <Button variant="ghost" size="sm" class="h-7 px-2 text-xs"
                   onclick={() => regionAudit.fetchLogs(regionId, { limit: 200, reset: true })}>Retry</Button>
               </div>
             {:else if regionAudit.logs.length === 0}
@@ -437,6 +443,7 @@
 <!-- Tooltip -->
 {#if hoveredNode}
   <div
+    role="tooltip"
     class="tooltip-card fixed z-50 pointer-events-none rounded-sm border bg-card shadow-lg"
     style:left="{hoveredNode.x + 16}px"
     style:top="{hoveredNode.y - 12}px"

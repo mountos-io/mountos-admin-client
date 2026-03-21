@@ -1,35 +1,57 @@
 <script lang="ts">
-  import type { HTMLSelectAttributes } from "svelte/elements";
-  import { cn, type WithElementRef } from "$lib/utils.js";
+  import { cn } from '$lib/utils.js'
+  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import Check from '@lucide/svelte/icons/check'
 
-  type Props = WithElementRef<HTMLSelectAttributes, HTMLSelectElement> & {
-    options: { value: string; label: string }[];
-    placeholder?: string;
-  };
+  type Props = {
+    options: { value: string; label: string }[]
+    value?: string
+    placeholder?: string
+    id?: string
+    disabled?: boolean
+    class?: string
+  }
 
   let {
-    ref = $bindable(null), value = $bindable(''),
-    options, placeholder, class: className, ...restProps
-  }: Props = $props();
+    options, value = $bindable(''), placeholder,
+    id, disabled = false, class: className,
+  }: Props = $props()
+
+  let open = $state(false)
+  const selectedLabel = $derived(options.find(o => o.value === value)?.label ?? '')
 </script>
 
-<div class="relative w-full">
-  <select bind:this={ref} data-slot="select"
-    class={cn(
-      "border-input bg-background selection:bg-primary/20 dark:bg-input/20 selection:text-foreground ring-offset-background shadow-none flex h-9 w-full min-w-0 appearance-none rounded-sm border px-3 py-1 pr-8 text-base outline-none transition-[border-color] disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-      "focus-visible:border-foreground/40 focus-visible:ring-0",
-      "aria-invalid:ring-0 aria-invalid:border-destructive",
-      !value && "text-muted-foreground",
-      className
-    )}
-    bind:value {...restProps}>
-    {#if placeholder}
-      <option value="" disabled>{placeholder}</option>
-    {/if}
+<Popover bind:open>
+  <PopoverTrigger {disabled}>
+    {#snippet child({ props })}
+      <button {...props} {id} type="button"
+        class={cn(
+          "border-input bg-background dark:bg-input/20 ring-offset-background flex h-9 w-full items-center justify-between rounded-sm border px-3 py-1 text-base outline-none transition-[border-color] md:text-sm",
+          "focus-visible:border-foreground/40 focus-visible:ring-0",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          !value && "text-muted-foreground",
+          className
+        )}>
+        <span class="truncate">{selectedLabel || placeholder || ''}</span>
+        <ChevronDown class="h-4 w-4 shrink-0 opacity-50" />
+      </button>
+    {/snippet}
+  </PopoverTrigger>
+  <PopoverContent class="w-[--bits-popover-anchor-width] min-w-36 p-1" align="start">
     {#each options as opt}
-      <option value={opt.value}>{opt.label}</option>
+      <button type="button"
+        class={cn(
+          "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none cursor-pointer",
+          "hover:bg-accent hover:text-accent-foreground",
+          "focus-visible:bg-accent focus-visible:text-accent-foreground",
+          opt.value === value && "bg-accent/50"
+        )}
+        onclick={() => { value = opt.value; open = false }}
+      >
+        <Check class={cn("h-4 w-4 shrink-0", opt.value === value ? "opacity-100" : "opacity-0")} />
+        <span class="truncate">{opt.label}</span>
+      </button>
     {/each}
-  </select>
-  <ChevronDown aria-hidden="true" class="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 opacity-50 pointer-events-none" />
-</div>
+  </PopoverContent>
+</Popover>
