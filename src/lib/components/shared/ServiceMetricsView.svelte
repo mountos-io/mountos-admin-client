@@ -121,6 +121,14 @@
     return value.toLocaleString()
   }
 
+  function numVal(sec: MetricSection, key: string): number {
+    const e = sec.scalars.find(x => x.name === key)
+    return typeof e?.value === 'number' ? e.value : 0
+  }
+  function strVal(sec: MetricSection, key: string): string {
+    return String(sec.scalars.find(x => x.name === key)?.value ?? '')
+  }
+
   const sections = $derived(parseMetrics(raw));
 
   const uptime = $derived(sv(sections, "Overview", "uptime_seconds"));
@@ -570,6 +578,100 @@
       </div>
     </CardContent>
   </Card>
+{/snippet}
+
+{#snippet systemCard(sec: MetricSection)}
+  {@const sysMemTotal = numVal(sec, 'sys_mem_total')}
+  {@const sysMemAvail = numVal(sec, 'sys_mem_available')}
+  {@const sysMemUsed = sysMemTotal - sysMemAvail}
+  {@const memUsedPct = sysMemTotal > 0 ? Math.round((sysMemUsed / sysMemTotal) * 100) : 0}
+  {@const load1 = numVal(sec, 'load_avg_1')}
+  {@const load5 = numVal(sec, 'load_avg_5')}
+  {@const load15 = numVal(sec, 'load_avg_15')}
+  {@const cores = cpuCount > 0 ? cpuCount : 1}
+  {@const osName = strVal(sec, 'os')}
+  {@const kernel = strVal(sec, 'kernel')}
+  {@const arch = strVal(sec, 'arch')}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <Card cornerBrackets={false}>
+      <CardHeader><CardTitle class="text-base font-mono">Platform</CardTitle></CardHeader>
+      <CardContent class="pt-0 space-y-1.5 text-sm font-mono">
+        <div class="flex justify-between gap-4">
+          <span class="text-muted-foreground">OS</span>
+          <span class="font-medium">{osName}</span>
+        </div>
+        <div class="flex justify-between gap-4">
+          <span class="text-muted-foreground">Kernel</span>
+          <span class="font-medium">{kernel}</span>
+        </div>
+        <div class="flex justify-between gap-4">
+          <span class="text-muted-foreground">Arch</span>
+          <span class="font-medium">{arch}</span>
+        </div>
+        <div class="flex justify-between gap-4">
+          <span class="text-muted-foreground">Cores</span>
+          <span class="font-medium">{cores}</span>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card cornerBrackets={false}>
+      <CardHeader>
+        <div class="flex items-center justify-between">
+          <CardTitle class="text-base font-mono">Memory</CardTitle>
+          <span class="font-mono tabular-nums text-sm" style="color: {memUsedPct > 85 ? 'var(--destructive)' : memUsedPct > 65 ? 'var(--warning)' : 'var(--success)'}">{memUsedPct}%</span>
+        </div>
+      </CardHeader>
+      <CardContent class="pt-0 space-y-3">
+        <div class="space-y-1">
+          <div class="h-2.5 rounded-full bg-muted overflow-hidden">
+            <div class="h-full rounded-full transition-transform origin-left duration-700"
+              style="background: {memUsedPct > 85 ? 'var(--destructive)' : memUsedPct > 65 ? 'var(--warning)' : 'var(--success)'}; transform: scaleX({memUsedPct / 100})"
+            ></div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-x-5 gap-y-1 text-sm font-mono">
+          <span class="flex items-center gap-1.5">
+            <span class="inline-block w-2.5 h-2.5 rounded-sm" style="background: {memUsedPct > 85 ? 'var(--destructive)' : memUsedPct > 65 ? 'var(--warning)' : 'var(--success)'}"></span>
+            Used <span class="tabular-nums font-medium">{formatBytes(sysMemUsed)}</span>
+          </span>
+          <span class="flex items-center gap-1.5">
+            <span class="inline-block w-2.5 h-2.5 rounded-sm bg-muted border"></span>
+            Avail <span class="tabular-nums font-medium">{formatBytes(sysMemAvail)}</span>
+          </span>
+        </div>
+        <div class="text-sm text-muted-foreground font-mono">
+          Total <span class="tabular-nums">{formatBytes(sysMemTotal)}</span>
+        </div>
+      </CardContent>
+    </Card>
+
+    <Card cornerBrackets={false}>
+      <CardHeader><CardTitle class="text-base font-mono">Load Average</CardTitle></CardHeader>
+      <CardContent class="pt-0 space-y-3">
+        {@render loadBar('1m', load1, cores)}
+        {@render loadBar('5m', load5, cores)}
+        {@render loadBar('15m', load15, cores)}
+      </CardContent>
+    </Card>
+  </div>
+{/snippet}
+
+{#snippet loadBar(label: string, load: number, cores: number)}
+  {@const ratio = cores > 0 ? load / cores : 0}
+  {@const pct = Math.min(ratio * 100, 100)}
+  {@const color = ratio > 1.0 ? 'var(--destructive)' : ratio > 0.7 ? 'var(--warning)' : 'var(--success)'}
+  <div class="space-y-1">
+    <div class="flex justify-between text-sm font-mono">
+      <span class="text-muted-foreground">{label}</span>
+      <span class="tabular-nums font-medium" style="color: {color}">{load.toFixed(2)}</span>
+    </div>
+    <div class="h-2 rounded-full bg-muted overflow-hidden">
+      <div class="h-full rounded-full transition-transform origin-left duration-700"
+        style="background: {color}; transform: scaleX({pct / 100})"
+      ></div>
+    </div>
+  </div>
 {/snippet}
 
 {#snippet tableView(
