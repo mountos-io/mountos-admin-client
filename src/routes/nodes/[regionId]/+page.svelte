@@ -33,7 +33,7 @@
 
   const regionId = $derived(Number($page.params.regionId))
   const COLLAPSE_THRESHOLD = 8
-  const NAVIGABLE_TYPES = new Set(['hub', 'appserv', 'dataserv', 'fuseserv'])
+  const NAVIGABLE_TYPES = new Set(['hub', 'dataserv', 'fuseserv'])
 
   const STATUS_COLORS: Record<string, string> = {
     healthy: 'oklch(0.6 0.18 145)',
@@ -44,7 +44,6 @@
 
   const SERVICE_PALETTE: Record<string, { accent: string; bg: string; label: string; icon: typeof Shield }> = {
     hub:           { accent: 'oklch(0.70 0.12 310)', bg: 'oklch(0.70 0.12 310 / 0.06)', label: 'Hub', icon: Shield },
-    appserv:       { accent: 'oklch(0.70 0.12 310)', bg: 'oklch(0.70 0.12 310 / 0.06)', label: 'App Server', icon: Shield },
     dataserv:      { accent: 'oklch(0.60 0.14 260)', bg: 'oklch(0.60 0.14 260 / 0.06)', label: 'Metadata', icon: Database },
     gcserv:        { accent: 'oklch(0.55 0.18 25)',  bg: 'oklch(0.55 0.18 25 / 0.06)',  label: 'Garbage Collection', icon: Trash2 },
     fuseserv:      { accent: 'oklch(0.70 0.14 55)',  bg: 'oklch(0.70 0.14 55 / 0.06)',  label: 'FUSE', icon: HardDrive },
@@ -63,7 +62,7 @@
 
   const TIERS = [
     { id: 'control', label: 'CONTROL', types: ['hub'] },
-    { id: 'data', label: 'DATA', types: ['appserv', 'dataserv', 'gcserv'] },
+    { id: 'data', label: 'DATA', types: ['dataserv', 'gcserv'] },
     { id: 'storage', label: 'STORAGE', types: ['blockserv'] },
     { id: 'gateway', label: 'GATEWAY', types: ['s3gatewayserv'] },
     { id: 'edge', label: 'CLIENT / EDGE', types: ['fuseserv', 'csiserv'] },

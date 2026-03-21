@@ -62,8 +62,9 @@ export function parseMetrics(text: string): MetricSection[] {
       for (const l of lines) {
         const m = l.match(/^(\S+)\s+(.+)$/)
         if (!m) continue
-        const n = parseFloat(m[2])
-        scalars.push({ name: m[1], value: isNaN(n) ? m[2] : n })
+        const raw = m[2]
+        const n = Number(raw)
+        scalars.push({ name: m[1], value: isNaN(n) ? raw : n })
       }
       result.push({ name, kind: 'scalar', scalars, groups: [] })
     } else {

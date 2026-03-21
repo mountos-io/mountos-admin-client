@@ -28,7 +28,7 @@
 
   const serviceTypeLabel = $derived.by(() => {
     const t = node?.serviceType
-    if (t === 'hub' || t === 'appserv') return 'Hub (appserv)'
+    if (t === 'hub') return 'Hub (appserv)'
     if (t === 'mfuse' || t === 'fuseserv') return 'FUSE (fuseserv)'
     return t ?? nodeId
   })

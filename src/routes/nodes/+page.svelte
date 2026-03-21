@@ -18,7 +18,6 @@
   import Network from '@lucide/svelte/icons/network'
 
   const SERVICE_COLORS: Record<string, string> = {
-    appserv:       'oklch(0.70 0.12 310)',
     hub:           'oklch(0.70 0.12 310)',
     dataserv:      'oklch(0.60 0.14 260)',
     gcserv:        'oklch(0.55 0.18 25)',
@@ -49,7 +48,7 @@
 
   const SERVICE_TYPE_OPTIONS = [
     { value: '', label: 'All Types' },
-    { value: 'appserv', label: 'appserv' },
+    { value: 'hub', label: 'appserv' },
     { value: 'dataserv', label: 'dataserv' },
     { value: 'gcserv', label: 'gcserv' },
     { value: 'fuseserv', label: 'fuseserv' },

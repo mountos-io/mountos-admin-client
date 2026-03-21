@@ -101,6 +101,23 @@
     }
   }
 
+  const idKeys = new Set(['pid', 'port', 'view_mode'])
+  function isIdKey(name: string): boolean {
+    for (const k of idKeys) if (name === k || name.endsWith('_' + k)) return true
+    return false
+  }
+
+  const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+  function fmtScalar(name: string, value: number | string): string {
+    if (typeof value === 'string') {
+      const d = Date.parse(value)
+      if (!isNaN(d) && /^\d{4}-\d{2}-\d{2}/.test(value)) return dateFmt.format(d)
+      return value
+    }
+    if (isIdKey(name)) return String(value)
+    return value.toLocaleString()
+  }
+
   const sections = $derived(parseMetrics(raw));
 
   const uptime = $derived(sv(sections, "Overview", "uptime_seconds"));
@@ -535,11 +552,11 @@
       <CardTitle class="text-base font-mono">{sec.name}</CardTitle>
     </CardHeader>
     <CardContent class="pt-0">
-      <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm font-mono">
+      <div class="grid grid-cols-1 gap-y-1.5 text-sm font-mono">
         {#each sec.scalars as entry}
-          <div class="flex justify-between gap-2">
-            <span class="text-muted-foreground truncate">{entry.name}</span>
-            <span class="tabular-nums font-medium shrink-0">{typeof entry.value === 'number' ? entry.value.toLocaleString() : entry.value}</span>
+          <div class="flex justify-between gap-4">
+            <span class="text-muted-foreground truncate scalar-label">{entry.name.replaceAll('_', ' ')}</span>
+            <span class="tabular-nums font-medium shrink-0">{fmtScalar(entry.name, entry.value)}</span>
           </div>
         {/each}
       </div>
@@ -1104,5 +1121,9 @@
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
     font-size: 0.8rem;
     color: var(--muted-foreground);
+  }
+
+  .scalar-label {
+    text-transform: capitalize;
   }
 </style>
