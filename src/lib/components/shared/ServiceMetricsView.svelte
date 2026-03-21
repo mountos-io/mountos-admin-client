@@ -155,8 +155,6 @@
     dbMaxOpen > 0 ? Math.round((dbOpen / dbMaxOpen) * 100) : 0,
   );
 
-  const CIRC = 2 * Math.PI * 38;
-
   // Dynamic tabs: overview + one per histogram section
   const histogramSections = $derived(
     sections.filter(s => s.kind === 'histogram' && !overviewSections.has(s.name))
@@ -207,148 +205,76 @@
         </div>
       </div>
     </div>
+    {@const sysSection = sections.find(s => s.name === 'System' && s.kind === 'scalar' && s.scalars.length > 0)}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <Card cornerBrackets={false}>
         <CardHeader>
           <div class="flex items-center justify-between">
-            <CardTitle class="text-base">Memory</CardTitle>
-            <svg viewBox="0 0 100 100" class="w-12 h-12">
-              <circle
-                cx="50"
-                cy="50"
-                r="38"
-                fill="none"
-                stroke="var(--muted)"
-                stroke-width="8"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="38"
-                fill="none"
-                stroke={poolUtilColor(memAllocPct)}
-                stroke-width="8"
-                stroke-dasharray="{(memAllocPct * CIRC) / 100} {CIRC}"
-                stroke-dashoffset="0"
-                transform="rotate(-90 50 50)"
-                stroke-linecap="round"
-              />
-              <text
-                x="50"
-                y="50"
-                text-anchor="middle"
-                dominant-baseline="central"
-                class="fill-foreground font-mono"
-                style="font-size: 22px">{memAllocPct}%</text
-              >
-            </svg>
-          </div>
-        </CardHeader>
-        <CardContent class="pt-0 space-y-3">
-          {#each [{ label: "Allocated", value: memAlloc, color: "var(--success)" }, { label: "Heap In-Use", value: memHeap, color: "var(--primary)" }, { label: "System Total", value: memSys, color: "var(--chart-3)" }] as row}
-            <div class="space-y-1">
-              <div class="flex justify-between text-sm">
-                <span class="text-muted-foreground">{row.label}</span>
-                <span class="font-mono tabular-nums"
-                  >{formatBytes(row.value)}</span
-                >
-              </div>
-              <div class="h-2 rounded-full bg-muted overflow-hidden">
-                <div
-                  class="h-full rounded-full transition-transform origin-left duration-700"
-                  style="background: {row.color}; transform: scaleX({row.value /
-                    memSys})"
-                ></div>
-              </div>
-            </div>
-          {/each}
-        </CardContent>
-      </Card>
-
-      <Card cornerBrackets={false}>
-        <CardHeader>
-          <div class="flex items-center justify-between">
-            <CardTitle class="text-base">DB Pool</CardTitle>
-            <Badge variant="outline" class="font-mono">{dbDialect}</Badge>
+            <CardTitle class="text-base font-mono">Process</CardTitle>
+            {#if dbDialect}
+              <Badge variant="outline" class="font-mono">{dbDialect}</Badge>
+            {/if}
           </div>
         </CardHeader>
         <CardContent class="pt-0 space-y-4">
-          <div class="flex gap-1.5 flex-wrap">
-            {#each { length: dbMaxOpen } as _, i}
-              <div
-                class="w-4 h-4 rounded-sm border transition-colors duration-300"
-                style="background: {i < dbInUse
-                  ? 'var(--destructive)'
-                  : i < dbOpen
-                    ? 'var(--primary)'
-                    : 'var(--muted)'};
-                       border-color: {i < dbInUse
-                  ? 'var(--destructive)'
-                  : i < dbOpen
-                    ? 'var(--primary)'
-                    : 'var(--border)'};
-                       opacity: {i < dbOpen ? 1 : 0.4}"
-              ></div>
+          <!-- Process Memory -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm font-mono">
+              <span class="text-muted-foreground">Heap</span>
+              <span class="tabular-nums" style="color: {poolUtilColor(memAllocPct)}">{memAllocPct}%</span>
+            </div>
+            {#each [{ label: "Alloc", value: memAlloc, color: "var(--success)" }, { label: "Heap", value: memHeap, color: "var(--primary)" }, { label: "Sys", value: memSys, color: "var(--chart-3)" }] as row}
+              <div class="flex items-center gap-2 text-xs font-mono">
+                <span class="text-muted-foreground w-8">{row.label}</span>
+                <div class="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div class="h-full rounded-full transition-transform origin-left duration-700"
+                    style="background: {row.color}; transform: scaleX({row.value / memSys})"
+                  ></div>
+                </div>
+                <span class="tabular-nums w-14 text-right">{formatBytes(row.value)}</span>
+              </div>
             {/each}
           </div>
-          <div class="flex flex-wrap gap-x-5 gap-y-1 text-sm">
-            <span class="flex items-center gap-1.5">
-              <span
-                class="inline-block w-3 h-3 rounded-sm"
-                style="background: var(--destructive)"
-              ></span>
-              In use
-              <span class="font-mono tabular-nums font-medium">{dbInUse}</span>
-            </span>
-            <span class="flex items-center gap-1.5">
-              <span
-                class="inline-block w-3 h-3 rounded-sm"
-                style="background: var(--primary)"
-              ></span>
-              Idle
-              <span class="font-mono tabular-nums font-medium">{dbIdle}</span>
-            </span>
-            <span class="flex items-center gap-1.5">
-              <span
-                class="inline-block w-3 h-3 rounded-sm border"
-                style="background: var(--muted); opacity: 0.4"
-              ></span>
-              Free
-              <span class="font-mono tabular-nums font-medium"
-                >{dbMaxOpen - dbOpen}</span
-              >
-            </span>
-          </div>
-          <div class="space-y-1">
-            <div class="flex justify-between text-sm text-muted-foreground">
-              <span>Pool utilization</span>
-              <span class="font-mono tabular-nums">{dbOpen}/{dbMaxOpen}</span>
-            </div>
-            <div class="h-2 rounded-full bg-muted overflow-hidden">
-              <div
-                class="h-full rounded-full transition-transform origin-left duration-700"
-                style="background: {poolUtilColor(
-                  poolUtilPct,
-                )}; transform: scaleX({poolUtilPct / 100})"
-              ></div>
-            </div>
-          </div>
-          {#if dbWaitCount > 0}
-            <div class="text-sm text-warning flex items-center gap-1.5">
-              <span
-                class="inline-block w-2 h-2 rounded-full bg-warning animate-pulse"
-              ></span>
-              {dbWaitCount} connection{dbWaitCount !== 1 ? "s" : ""} waiting
+          <!-- DB Pool -->
+          {#if dbMaxOpen > 0}
+            <div class="space-y-2">
+              <div class="flex items-center justify-between text-sm font-mono">
+                <span class="text-muted-foreground">DB Pool</span>
+                <span class="tabular-nums" style="color: {poolUtilColor(poolUtilPct)}">{dbOpen}/{dbMaxOpen}</span>
+              </div>
+              <div class="h-2 rounded-full bg-muted overflow-hidden">
+                <div class="h-full rounded-full transition-transform origin-left duration-700"
+                  style="background: {poolUtilColor(poolUtilPct)}; transform: scaleX({poolUtilPct / 100})"
+                ></div>
+              </div>
+              <div class="flex flex-wrap gap-x-4 text-xs font-mono">
+                <span class="flex items-center gap-1">
+                  <span class="inline-block w-2 h-2 rounded-sm" style="background: var(--destructive)"></span>
+                  Active <span class="tabular-nums font-medium">{dbInUse}</span>
+                </span>
+                <span class="flex items-center gap-1">
+                  <span class="inline-block w-2 h-2 rounded-sm" style="background: var(--primary)"></span>
+                  Idle <span class="tabular-nums font-medium">{dbIdle}</span>
+                </span>
+                <span class="flex items-center gap-1">
+                  <span class="inline-block w-2 h-2 rounded-sm bg-muted border" style="opacity: 0.4"></span>
+                  Free <span class="tabular-nums font-medium">{dbMaxOpen - dbOpen}</span>
+                </span>
+              </div>
+              {#if dbWaitCount > 0}
+                <div class="text-xs text-warning flex items-center gap-1 font-mono">
+                  <span class="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
+                  {dbWaitCount} waiting
+                </div>
+              {/if}
             </div>
           {/if}
         </CardContent>
       </Card>
+      {#if sysSection}
+        {@render systemCard(sysSection)}
+      {/if}
     </div>
-    <!-- System card (custom layout for load + memory) -->
-    {@const sysSection = sections.find(s => s.name === 'System' && s.kind === 'scalar' && s.scalars.length > 0)}
-    {#if sysSection}
-      {@render systemCard(sysSection)}
-    {/if}
     <!-- Extra scalar sections (TCP Connections, Raft, MetaEngine, Semaphore, etc.) -->
     {@const extraSections = sections.filter(s => s.kind === 'scalar' && !['Overview', 'Runtime', 'DB Pool', 'System'].includes(s.name) && s.scalars.length > 0)}
     {#if extraSections.length > 0}
@@ -570,9 +496,9 @@
     <CardContent class="pt-0">
       <div class="grid grid-cols-1 gap-y-1.5 text-sm font-mono">
         {#each sec.scalars as entry}
-          <div class="flex justify-between gap-4">
-            <span class="text-muted-foreground truncate scalar-label">{entry.name.replaceAll('_', ' ')}</span>
-            <span class="tabular-nums font-medium shrink-0">{fmtScalar(entry.name, entry.value)}</span>
+          <div class="flex justify-between gap-2">
+            <span class="text-muted-foreground shrink-0 scalar-label">{entry.name.replaceAll('_', ' ')}</span>
+            <span class="tabular-nums font-medium text-right truncate">{fmtScalar(entry.name, entry.value)}</span>
           </div>
         {/each}
       </div>
@@ -585,6 +511,7 @@
   {@const sysMemAvail = numVal(sec, 'sys_mem_available')}
   {@const sysMemUsed = sysMemTotal - sysMemAvail}
   {@const memUsedPct = sysMemTotal > 0 ? Math.round((sysMemUsed / sysMemTotal) * 100) : 0}
+  {@const memColor = memUsedPct > 85 ? 'var(--destructive)' : memUsedPct > 65 ? 'var(--warning)' : 'var(--success)'}
   {@const load1 = numVal(sec, 'load_avg_1')}
   {@const load5 = numVal(sec, 'load_avg_5')}
   {@const load15 = numVal(sec, 'load_avg_15')}
@@ -592,85 +519,70 @@
   {@const osName = strVal(sec, 'os')}
   {@const kernel = strVal(sec, 'kernel')}
   {@const arch = strVal(sec, 'arch')}
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <Card cornerBrackets={false}>
-      <CardHeader><CardTitle class="text-base font-mono">Platform</CardTitle></CardHeader>
-      <CardContent class="pt-0 space-y-1.5 text-sm font-mono">
-        <div class="flex justify-between gap-4">
-          <span class="text-muted-foreground">OS</span>
-          <span class="font-medium">{osName}</span>
-        </div>
-        <div class="flex justify-between gap-4">
-          <span class="text-muted-foreground">Kernel</span>
-          <span class="font-medium">{kernel}</span>
-        </div>
-        <div class="flex justify-between gap-4">
-          <span class="text-muted-foreground">Arch</span>
-          <span class="font-medium">{arch}</span>
-        </div>
-        <div class="flex justify-between gap-4">
-          <span class="text-muted-foreground">Cores</span>
-          <span class="font-medium">{cores}</span>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card cornerBrackets={false}>
-      <CardHeader>
-        <div class="flex items-center justify-between">
-          <CardTitle class="text-base font-mono">Memory</CardTitle>
-          <span class="font-mono tabular-nums text-sm" style="color: {memUsedPct > 85 ? 'var(--destructive)' : memUsedPct > 65 ? 'var(--warning)' : 'var(--success)'}">{memUsedPct}%</span>
-        </div>
-      </CardHeader>
-      <CardContent class="pt-0 space-y-3">
-        <div class="space-y-1">
-          <div class="h-2.5 rounded-full bg-muted overflow-hidden">
+  <Card cornerBrackets={false}>
+    <CardHeader>
+      <div class="flex items-center justify-between">
+        <CardTitle class="text-base font-mono">System</CardTitle>
+        <span class="font-mono text-xs text-muted-foreground">{osName}/{arch} &middot; {kernel} &middot; {cores} cores</span>
+      </div>
+    </CardHeader>
+    <CardContent class="pt-0">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
+        <!-- System Memory -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-sm font-mono">
+            <span class="text-muted-foreground">System Memory</span>
+            <span class="tabular-nums font-medium" style="color: {memColor}">{memUsedPct}%</span>
+          </div>
+          <div class="h-2 rounded-full bg-muted overflow-hidden">
             <div class="h-full rounded-full transition-transform origin-left duration-700"
-              style="background: {memUsedPct > 85 ? 'var(--destructive)' : memUsedPct > 65 ? 'var(--warning)' : 'var(--success)'}; transform: scaleX({memUsedPct / 100})"
+              style="background: {memColor}; transform: scaleX({memUsedPct / 100})"
             ></div>
           </div>
+          <div class="flex justify-between text-xs font-mono text-muted-foreground">
+            <span>{formatBytes(sysMemUsed)} used</span>
+            <span>{formatBytes(sysMemAvail)} avail / {formatBytes(sysMemTotal)}</span>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-x-5 gap-y-1 text-sm font-mono">
-          <span class="flex items-center gap-1.5">
-            <span class="inline-block w-2.5 h-2.5 rounded-sm" style="background: {memUsedPct > 85 ? 'var(--destructive)' : memUsedPct > 65 ? 'var(--warning)' : 'var(--success)'}"></span>
-            Used <span class="tabular-nums font-medium">{formatBytes(sysMemUsed)}</span>
-          </span>
-          <span class="flex items-center gap-1.5">
-            <span class="inline-block w-2.5 h-2.5 rounded-sm bg-muted border"></span>
-            Avail <span class="tabular-nums font-medium">{formatBytes(sysMemAvail)}</span>
-          </span>
+        <!-- Load Average -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-sm font-mono">
+            <span class="text-muted-foreground">Load Average</span>
+            <span class="text-xs text-muted-foreground tabular-nums">/ {cores} cores</span>
+          </div>
+          <div class="flex items-center gap-3 font-mono text-sm">
+            {@render loadPill('1m', load1, cores)}
+            {@render loadPill('5m', load5, cores)}
+            {@render loadPill('15m', load15, cores)}
+          </div>
+          <div class="flex gap-1.5 h-1.5">
+            {@render loadSegment(load1, cores, '1m')}
+            {@render loadSegment(load5, cores, '5m')}
+            {@render loadSegment(load15, cores, '15m')}
+          </div>
         </div>
-        <div class="text-sm text-muted-foreground font-mono">
-          Total <span class="tabular-nums">{formatBytes(sysMemTotal)}</span>
-        </div>
-      </CardContent>
-    </Card>
-
-    <Card cornerBrackets={false}>
-      <CardHeader><CardTitle class="text-base font-mono">Load Average</CardTitle></CardHeader>
-      <CardContent class="pt-0 space-y-3">
-        {@render loadBar('1m', load1, cores)}
-        {@render loadBar('5m', load5, cores)}
-        {@render loadBar('15m', load15, cores)}
-      </CardContent>
-    </Card>
-  </div>
+      </div>
+    </CardContent>
+  </Card>
 {/snippet}
 
-{#snippet loadBar(label: string, load: number, cores: number)}
+{#snippet loadPill(label: string, load: number, cores: number)}
+  {@const ratio = cores > 0 ? load / cores : 0}
+  {@const color = ratio > 1.0 ? 'var(--destructive)' : ratio > 0.7 ? 'var(--warning)' : 'var(--success)'}
+  <span class="flex items-center gap-1">
+    <span class="text-xs text-muted-foreground">{label}</span>
+    <span class="tabular-nums font-medium" style="color: {color}">{load.toFixed(2)}</span>
+  </span>
+{/snippet}
+
+{#snippet loadSegment(load: number, cores: number, _label: string)}
   {@const ratio = cores > 0 ? load / cores : 0}
   {@const pct = Math.min(ratio * 100, 100)}
   {@const color = ratio > 1.0 ? 'var(--destructive)' : ratio > 0.7 ? 'var(--warning)' : 'var(--success)'}
-  <div class="space-y-1">
-    <div class="flex justify-between text-sm font-mono">
-      <span class="text-muted-foreground">{label}</span>
-      <span class="tabular-nums font-medium" style="color: {color}">{load.toFixed(2)}</span>
-    </div>
-    <div class="h-2 rounded-full bg-muted overflow-hidden">
-      <div class="h-full rounded-full transition-transform origin-left duration-700"
-        style="background: {color}; transform: scaleX({pct / 100})"
-      ></div>
-    </div>
+  <div class="flex-1 rounded-full bg-muted overflow-hidden">
+    <div class="h-full rounded-full transition-transform origin-left duration-700"
+      style="background: {color}; transform: scaleX({pct / 100})"
+    ></div>
   </div>
 {/snippet}
 
@@ -852,7 +764,7 @@
     onclick={() => toggleSort(col)}
   >
     <div class="flex items-center gap-1 {col !== 'label' ? 'justify-end' : ''}">
-      <span>{label}</span>
+      <span class={col === 'cv' ? 'normal-case' : ''}>{label}</span>
       {#if sortCol === col}
         {#if sortDir === "asc"}
           <ArrowUp class="h-3 w-3" />
