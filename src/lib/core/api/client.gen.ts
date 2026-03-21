@@ -9,7 +9,7 @@ import type {
   Storage, StorageListOptions, EditStorageRequest, TestStorageBucketRequest, 
   CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest, 
   GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, UpdateVolumeQuotaRequest, 
-  AuditLog, AuditLogListOptions, ServiceNode, ClientSession, ClientSessionListOptions, 
+  AuditLog, AuditLogListOptions, RegionAuditLogListOptions, ServiceNode, ClientSession, ClientSessionListOptions,
   SessionSummary, DiscoverMetaResponse, DashboardStats, LicenseDetails,
 } from '@mountos-app/admin-sdk'
 
@@ -43,6 +43,7 @@ export class AdminClient {
   private _storages?: StoragesResource
   private _volumes?: VolumesResource
   private _auditLogs?: AuditLogsResource
+  private _regionAuditLogs?: RegionAuditLogsResource
   private _serviceNodes?: ServiceNodesResource
   private _clientSessions?: ClientSessionsResource
   private _discover?: DiscoverResource
@@ -80,6 +81,10 @@ export class AdminClient {
 
   get auditLogs(): AuditLogsResource {
     return (this._auditLogs ??= new AuditLogsResource(this))
+  }
+
+  get regionAuditLogs(): RegionAuditLogsResource {
+    return (this._regionAuditLogs ??= new RegionAuditLogsResource(this))
   }
 
   get serviceNodes(): ServiceNodesResource {
@@ -380,6 +385,18 @@ class AuditLogsResource {
   list(opts?: AuditLogListOptions, signal?: AbortSignal): Promise<CursorPaginatedResponse<AuditLog>> {
     return this.client.request('GET', `/audit-logs/list${queryString({
       accountId: opts?.accountId,
+      cursor: opts?.cursor,
+      limit: opts?.limit,
+      subject: opts?.subject,
+    })}`, undefined, signal)
+  }
+}
+
+class RegionAuditLogsResource {
+  constructor(private client: AdminClient) {}
+
+  list(regionId: number, opts?: RegionAuditLogListOptions, signal?: AbortSignal): Promise<CursorPaginatedResponse<AuditLog>> {
+    return this.client.request('GET', `/regions/${regionId}/audit-logs/list${queryString({
       cursor: opts?.cursor,
       limit: opts?.limit,
       subject: opts?.subject,

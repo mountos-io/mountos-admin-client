@@ -32,6 +32,7 @@ export type {
   StorageListOptions,
   VolumeListOptions,
   AuditLogListOptions,
+  RegionAuditLogListOptions,
   ClientSession,
   ClientSessionListOptions,
   SessionSummary,

@@ -4,6 +4,7 @@
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useDashboard } from '$lib/core/stores/dashboard.svelte'
   import { useSessions } from '$lib/core/stores/sessions.svelte'
+  import { useNodes } from '$lib/core/stores/nodes.svelte'
   import { useAuditLogs } from '$lib/core/stores/audit.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { features } from '$lib/config/features'
@@ -11,8 +12,15 @@
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import StatCard from '$lib/components/shared/StatCard.svelte'
   import QuotaBar from '$lib/components/shared/QuotaBar.svelte'
+  import UsersIcon from '@lucide/svelte/icons/users'
+  import DatabaseIcon from '@lucide/svelte/icons/database'
+  import GlobeIcon from '@lucide/svelte/icons/globe'
+  import HardDriveIcon from '@lucide/svelte/icons/hard-drive'
+  import ServerIcon from '@lucide/svelte/icons/server'
+  import MonitorDotIcon from '@lucide/svelte/icons/monitor-dot'
+  import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
+  import ExternalLinkIcon from '@lucide/svelte/icons/external-link'
   import RegionRow from '$lib/components/shared/RegionRow.svelte'
   import SessionSummaryChart from '$lib/components/shared/SessionSummaryChart.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
@@ -21,12 +29,14 @@
   const accountStore = useAccounts()
   const dashboard = useDashboard()
   const sessionStore = useSessions()
+  const nodeStore = useNodes()
   const auditStore = useAuditLogs()
   const auth = useAuth()
   const account = $derived(accountStore.selectedAccount)
   const accountId = $derived(account?.id ?? null)
   const stats = $derived(dashboard.stats)
   const canReadSessions = $derived(features.clientSessions && auth.can('clientSessions', 'read'))
+  const canReadNodes = $derived(auth.can('serviceNodes', 'read'))
   const canReadAudit = $derived(auth.can('auditLogs', 'read'))
   let activityDays = $state(7)
 
@@ -37,6 +47,10 @@
       dashboard.reset()
     }
     return () => dashboard.reset()
+  })
+
+  $effect(() => {
+    if (canReadNodes) nodeStore.fetchAllNodes()
   })
 
   $effect(() => {
@@ -59,23 +73,24 @@
 </script>
 
 <div class="space-y-6">
-  <h1 class="text-2xl font-bold tracking-tight">Dashboard</h1>
-
   {#if !account}
     <EmptyState title="No account selected" description="Select an account to view dashboard" />
   {:else}
-    <Card cornerPlus>
-      <CardContent class="py-4">
-        <div class="flex items-center gap-3">
-          <AccountIcon {account} size={40} />
-          <div class="flex-1 min-w-0">
-            <p class="text-lg font-medium truncate">{account.name}</p>
-            <p class="text-sm text-muted-foreground truncate">{account.description || 'No description'}</p>
-          </div>
+    <div class="flex items-center gap-3">
+      <AccountIcon {account} size={36} />
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2">
+          <a href="/accounts/{account.id}" class="group flex items-center gap-1.5 hover:text-primary transition-colors">
+            <h1 class="text-lg font-semibold truncate">{account.name}</h1>
+            <ExternalLinkIcon class="size-3.5 text-muted-foreground/0 group-hover:text-primary transition-colors shrink-0" />
+          </a>
           <StatusBadge active={account.isActive} locked={account.locked} />
         </div>
-      </CardContent>
-    </Card>
+        {#if account.description}
+          <p class="text-sm text-muted-foreground truncate">{account.description}</p>
+        {/if}
+      </div>
+    </div>
 
     {#if dashboard.loading && !stats}
       <div class="flex justify-center py-12">
@@ -89,14 +104,37 @@
       </Card>
     {:else if stats}
       <!-- Overview Stats -->
-      <div class="grid gap-4 md:grid-cols-3">
-        <StatCard title="Users" value={stats.userCount} />
-        <StatCard title="Volumes" value={stats.volumeCount} />
-        <StatCard title="Regions" value={stats.regionCount} />
-        <StatCard title="Storages" value={stats.storageCount} />
-        <StatCard title="Storage Used" value={formatBytes(stats.totalQuotaUsed)}
-          subtitle={formatQuota(stats.totalQuotaUsed, stats.totalQuotaLimit)} />
-        <StatCard title="Active Sessions" value={stats.activeSessionCount} />
+      {@const overviewItems = [
+        { label: 'Users', value: stats.userCount, href: '/users', icon: UsersIcon },
+        { label: 'Volumes', value: stats.volumeCount, href: '/volumes', icon: DatabaseIcon },
+        { label: 'Regions', value: stats.regionCount, href: '/regions', icon: GlobeIcon },
+        { label: 'Storages', value: stats.storageCount, href: '/storages', icon: HardDriveIcon },
+        { label: 'Storage', value: formatBytes(stats.totalQuotaUsed), subtitle: formatQuota(stats.totalQuotaUsed, stats.totalQuotaLimit), href: '/storages', icon: HardDriveIcon },
+        ...(canReadNodes ? [{ label: 'Nodes', value: nodeStore.nodes.length, href: '/nodes', icon: ServerIcon }] : []),
+        ...(canReadSessions ? [{ label: 'Sessions', value: stats.activeSessionCount, href: '/sessions', icon: MonitorDotIcon }] : []),
+      ]}
+      <div class="corner-brackets relative border border-border/30 rounded-sm">
+        <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+        <div class="relative flex">
+          {#each overviewItems as item, i}
+            <a href={item.href}
+              class="group relative flex-1 flex items-center gap-3 px-4 py-3
+                     hover:bg-muted/40 transition-colors
+                     {i < overviewItems.length - 1 ? 'border-r border-border' : ''}">
+              <div class="flex size-8 items-center justify-center rounded-md bg-muted/60 group-hover:bg-primary/10 transition-colors">
+                <item.icon class="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <div>
+                <p class="text-xl font-bold tabular-nums leading-none">{item.value}</p>
+                <p class="text-xs text-muted-foreground mt-0.5">{item.label}</p>
+                {#if item.subtitle}
+                  <p class="text-[10px] text-muted-foreground/60 leading-none mt-0.5">{item.subtitle}</p>
+                {/if}
+              </div>
+              <ChevronRightIcon class="size-3 text-muted-foreground/0 group-hover:text-muted-foreground transition-colors absolute right-2 top-1/2 -translate-y-1/2" />
+            </a>
+          {/each}
+        </div>
       </div>
 
       <!-- Quota Usage -->

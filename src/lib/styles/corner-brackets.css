@@ -454,6 +454,32 @@
       0 0 24px oklch(0.78 0.13 92 / 0.08);
   }
 
+  /* Cyberpunk stat cell — bottom scan-line on hover */
+  .stat-cyber {
+    position: relative;
+  }
+
+  .stat-cyber::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, oklch(0.61 0.14 39 / 0.35), transparent);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+    pointer-events: none;
+  }
+
+  .stat-cyber:hover::after {
+    transform: scaleX(1);
+  }
+
+  .dark .stat-cyber::after {
+    background: linear-gradient(90deg, transparent, oklch(0.78 0.13 92 / 0.35), transparent);
+  }
+
   /* Cyberpunk table header labels — scan-line underline */
   .th-cyber {
     position: relative;

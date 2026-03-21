@@ -3,12 +3,15 @@
   import { page } from '$app/stores'
   import { useNodes } from '$lib/core/stores/nodes.svelte'
   import { useRegions } from '$lib/core/stores/regions.svelte'
+  import { useRegionAuditLogs } from '$lib/core/stores/regionAudit.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
-  import { Card } from '$lib/components/ui/card'
+  import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
+  import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { formatRelative } from '$lib/core/utils/format'
   import type { Region, ServiceNode } from '$lib/core/api/types'
@@ -21,15 +24,19 @@
   import Box from '@lucide/svelte/icons/box'
   import Cloud from '@lucide/svelte/icons/cloud'
   import Container from '@lucide/svelte/icons/container'
+  import ServerOff from '@lucide/svelte/icons/server-off'
 
   const nodeStore = useNodes()
   const regionStore = useRegions()
+  const regionAudit = useRegionAuditLogs()
   const auth = useAuth()
 
   let region = $state<Region | null>(null)
   let hoveredNode = $state<{ node: ServiceNode; x: number; y: number } | null>(null)
   let expandedGroups = $state(new Set<string>())
   let dimmedServices = $state(new Set<string>())
+  let auditView = $state<'chart' | 'feed'>('feed')
+  let activityDays = $state(7)
 
   const regionId = $derived(Number($page.params.regionId))
   const COLLAPSE_THRESHOLD = 8
@@ -69,6 +76,8 @@
   ]
 
   const isHubRegion = $derived(nodeStore.nodesByType.has('hub'))
+  const hasRegionalDB = $derived(nodeStore.nodesByType.has('dataserv') || nodeStore.nodesByType.has('gcserv'))
+  const canReadAudit = $derived(auth.can('auditLogs', 'read'))
 
   const tierData = $derived.by(() => {
     const byType = nodeStore.nodesByType
@@ -146,6 +155,15 @@
       nodeStore.clearFilters()
       nodeStore.fetchNodes(regionId)
     }
+  })
+
+  $effect(() => {
+    if (regionId && canReadAudit && hasRegionalDB) {
+      regionAudit.fetchLogs(regionId, { limit: 200, reset: true }).catch(() => {})
+    } else {
+      regionAudit.reset()
+    }
+    return () => regionAudit.reset()
   })
 </script>
 
@@ -348,6 +366,65 @@
       {/each}
     </div>
 
+  {/if}
+
+  <!-- Region Audit Log -->
+  {#if canReadAudit}
+    {#if !nodeStore.loading}
+      {#if hasRegionalDB}
+        <Card cornerPlus>
+          <CardHeader>
+            <div class="flex items-center justify-between">
+              <CardTitle>Region Audit Log</CardTitle>
+              <div class="flex items-center gap-1">
+                {#each ['feed', 'chart'] as v}
+                  <Button variant={auditView === v ? 'primary' : 'ghost'} size="sm"
+                    class="h-6 px-2 text-xs capitalize"
+                    onclick={() => auditView = v as 'chart' | 'feed'}>{v}</Button>
+                {/each}
+                {#if auditView === 'chart'}
+                  <div class="w-px h-4 bg-border mx-1"></div>
+                  {#each [7, 15, 30] as d}
+                    <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
+                      class="h-6 px-2 text-xs font-mono"
+                      onclick={() => activityDays = d}>{d}d</Button>
+                  {/each}
+                {/if}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {#if regionAudit.loading && regionAudit.logs.length === 0}
+              <div class="flex items-center justify-center py-16">
+                <LoadingSpinner />
+              </div>
+            {:else if regionAudit.logs.length === 0}
+              <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No regional audit activity</div>
+            {:else if auditView === 'chart'}
+              {@const cutoff = Date.now() - activityDays * 86400000}
+              {@const filtered = regionAudit.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= cutoff)}
+              {#if filtered.length === 0}
+                <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
+              {:else}
+                <ActivityChart logs={filtered} />
+              {/if}
+            {:else}
+              <ActivityFeed
+                logs={regionAudit.logs}
+                loading={regionAudit.loading}
+                hasMore={regionAudit.hasMore}
+                onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200 })}
+              />
+            {/if}
+          </CardContent>
+        </Card>
+      {:else}
+        <div class="flex items-center gap-2 rounded-sm border border-dashed border-border/50 px-4 py-6 text-sm text-muted-foreground">
+          <ServerOff class="h-4 w-4 shrink-0" />
+          <span>No dataserv or gcserv nodes in this region to fetch audit logs</span>
+        </div>
+      {/if}
+    {/if}
   {/if}
 </div>
 

@@ -229,17 +229,19 @@
     </div>
 
     {#if auth.can('auditLogs', 'read')}
-      <Card>
-        <CardHeader><CardTitle class="text-base font-mono">Activity</CardTitle></CardHeader>
-        <CardContent class="pt-0">
-          <ActivityFeed
-            logs={auditStore.logs}
-            loading={auditStore.loading}
-            hasMore={auditStore.hasMore}
-            onLoadMore={() => auditStore.fetchLogs({ accountId: id })}
-          />
-        </CardContent>
-      </Card>
+      <div class="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle class="text-base font-mono">Activity</CardTitle></CardHeader>
+          <CardContent class="pt-0">
+            <ActivityFeed
+              logs={auditStore.logs}
+              loading={auditStore.loading}
+              hasMore={auditStore.hasMore}
+              onLoadMore={() => auditStore.fetchLogs({ accountId: id })}
+            />
+          </CardContent>
+        </Card>
+      </div>
     {/if}
   {:else}
     <p class="text-muted-foreground">Account not found.</p>
