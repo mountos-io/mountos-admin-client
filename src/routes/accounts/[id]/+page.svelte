@@ -11,6 +11,7 @@
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import { formatDate } from '$lib/core/utils/format'
@@ -19,10 +20,12 @@
   import { debounce } from '$lib/utils'
   import { generateIdenticon } from '$lib/core/utils/identicon'
   import { features } from '$lib/config/features'
-  import type { Account } from '$lib/core/api/types'
+  import type { Account, AuditLog } from '$lib/core/api/types'
+  import { useAuditLogs } from '$lib/core/stores/audit.svelte'
 
   const store = useAccounts()
   const auth = useAuth()
+  const auditStore = useAuditLogs()
   const id = $derived(Number($page.params.id))
   const editOnLoad = $derived($page.url.searchParams.has('edit'))
 
@@ -105,6 +108,12 @@
     if (editOnLoad && account && !editing && auth.can('accounts', 'update')) startEdit()
   })
 
+
+  $effect(() => {
+    if (!Number.isNaN(id) && auth.can('auditLogs', 'read')) {
+      auditStore.fetchLogs({ accountId: id, reset: true })
+    }
+  })
 
   async function act(fn: () => Promise<void>) {
     await fn()
@@ -218,6 +227,20 @@
         </Card>
       {/if}
     </div>
+
+    {#if auth.can('auditLogs', 'read')}
+      <Card>
+        <CardHeader><CardTitle class="text-base font-mono">Activity</CardTitle></CardHeader>
+        <CardContent class="pt-0">
+          <ActivityFeed
+            logs={auditStore.logs}
+            loading={auditStore.loading}
+            hasMore={auditStore.hasMore}
+            onLoadMore={() => auditStore.fetchLogs({ accountId: id })}
+          />
+        </CardContent>
+      </Card>
+    {/if}
   {:else}
     <p class="text-muted-foreground">Account not found.</p>
   {/if}
