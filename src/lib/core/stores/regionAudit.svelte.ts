@@ -3,6 +3,7 @@ import { api } from './client.svelte'
 
 let logs = $state<AuditLog[]>([])
 let loading = $state(false)
+let error = $state('')
 let nextCursor = $state<number | null>(null)
 let hasMore = $derived(nextCursor !== null)
 let fetchCtrl: AbortController | null = null
@@ -24,9 +25,10 @@ async function fetchLogs(regionId: number, opts?: { subject?: string; limit?: nu
       logs = [...logs, ...res.items]
     }
     nextCursor = res.nextCursor
+    error = ''
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
-    throw e
+    error = (e as Error).message || 'Failed to fetch audit logs'
   } finally {
     if (fetchCtrl === ctrl) loading = false
   }
@@ -37,6 +39,7 @@ function reset() {
   fetchCtrl = null
   logs = []
   loading = false
+  error = ''
   nextCursor = null
 }
 
@@ -44,6 +47,7 @@ export function useRegionAuditLogs() {
   return {
     get logs() { return logs },
     get loading() { return loading },
+    get error() { return error },
     get hasMore() { return hasMore },
     fetchLogs,
     reset,

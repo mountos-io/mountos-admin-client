@@ -159,7 +159,7 @@
 
   $effect(() => {
     if (regionId && canReadAudit && hasRegionalDB) {
-      regionAudit.fetchLogs(regionId, { limit: 200, reset: true }).catch(() => {})
+      regionAudit.fetchLogs(regionId, { limit: 200, reset: true })
     } else {
       regionAudit.reset()
     }
@@ -397,6 +397,12 @@
             {#if regionAudit.loading && regionAudit.logs.length === 0}
               <div class="flex items-center justify-center py-16">
                 <LoadingSpinner />
+              </div>
+            {:else if regionAudit.error}
+              <div class="flex items-center justify-center gap-2 py-16 text-sm text-destructive">
+                <span>Failed to load audit logs</span>
+                <Button variant="ghost" size="sm" class="h-6 px-2 text-xs"
+                  onclick={() => regionAudit.fetchLogs(regionId, { limit: 200, reset: true })}>Retry</Button>
               </div>
             {:else if regionAudit.logs.length === 0}
               <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No regional audit activity</div>
