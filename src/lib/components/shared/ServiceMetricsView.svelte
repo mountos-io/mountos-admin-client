@@ -455,25 +455,6 @@
       {#if section.groups.length === 0}
         <p class="text-sm text-muted-foreground">No queries recorded</p>
       {:else}
-        <div class="mb-5 relative h-8 bg-muted rounded-sm overflow-hidden">
-          {#each section.groups as group}
-            {@const pos = (group.avgLatencyUs / maxUs) * 100}
-            <div
-              class="absolute top-0 h-full w-0.5 transition-all duration-500"
-              style="left: {pos}%; background: {latencyColor(group.avgLatencyUs)}"
-              title="{group.label}: {formatUs(group.avgLatencyUs)}"
-            ></div>
-            <div
-              class="absolute top-1 w-2 h-2 rounded-full -translate-x-1 transition-all duration-500"
-              style="left: {pos}%; background: {latencyColor(group.avgLatencyUs)}"
-            ></div>
-          {/each}
-          <div class="absolute bottom-0 left-0 right-0 flex justify-between px-2 text-[0.625rem] text-muted-foreground font-mono">
-            <span>0</span>
-            <span>{formatUs(maxUs / 2)}</span>
-            <span>{formatUs(maxUs)}</span>
-          </div>
-        </div>
         {#if layout === 'table'}
           {@render tableView(section.groups, maxUs, false, section.name)}
         {:else}
