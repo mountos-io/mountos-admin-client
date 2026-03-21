@@ -60,9 +60,9 @@
   // Sections rendered inside Overview (not as separate tabs)
   const overviewSections = new Set([
     'Overview', 'Runtime', 'DB Pool', 'Semaphore', 'TCP Connections',
-    'Raft', 'MetaEngine',
+    'Raft', 'MetaEngine Arena', 'MetaEngine Name Pool', 'MetaEngine Cache',
     'S3 Operations', 'RPC Operations', 'Cache', 'File Handles',
-    'TCP Connection', 'TCP Events', 'Config',
+    'TCP Connection', 'TCP Events', 'System', 'Config',
   ])
 
   let activeTab = $state<string>("overview");
@@ -101,11 +101,11 @@
     }
   }
 
-  const idKeys = new Set(['pid', 'port', 'view_mode'])
-  function isIdKey(name: string): boolean {
-    for (const k of idKeys) if (name === k || name.endsWith('_' + k)) return true
-    return false
-  }
+  const byteKeys = new Set([
+    'cache_size_bytes', 'cache_hit_bytes', 'cache_miss_bytes',
+    'sys_mem_total', 'sys_mem_available',
+  ])
+  const idSuffixes = ['_port', '_id']
 
   const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
   function fmtScalar(name: string, value: number | string): string {
@@ -114,7 +114,10 @@
       if (!isNaN(d) && /^\d{4}-\d{2}-\d{2}/.test(value)) return dateFmt.format(d)
       return value
     }
-    if (isIdKey(name)) return String(value)
+    if (name.endsWith('_bytes') || byteKeys.has(name)) return formatBytes(value)
+    if (name.endsWith('_pct')) return `${value}%`
+    if (name.endsWith('_ratio')) return value.toFixed(4)
+    if (name === 'pid' || name === 'view_mode' || idSuffixes.some(s => name.endsWith(s))) return String(value)
     return value.toLocaleString()
   }
 
@@ -333,8 +336,13 @@
         </CardContent>
       </Card>
     </div>
-    <!-- Extra scalar sections (TCP Connections, Raft, MetaEngine, Semaphore) -->
-    {@const extraSections = sections.filter(s => s.kind === 'scalar' && !['Overview', 'Runtime', 'DB Pool'].includes(s.name) && s.scalars.length > 0)}
+    <!-- System card (custom layout for load + memory) -->
+    {@const sysSection = sections.find(s => s.name === 'System' && s.kind === 'scalar' && s.scalars.length > 0)}
+    {#if sysSection}
+      {@render systemCard(sysSection)}
+    {/if}
+    <!-- Extra scalar sections (TCP Connections, Raft, MetaEngine, Semaphore, etc.) -->
+    {@const extraSections = sections.filter(s => s.kind === 'scalar' && !['Overview', 'Runtime', 'DB Pool', 'System'].includes(s.name) && s.scalars.length > 0)}
     {#if extraSections.length > 0}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {#each extraSections as sec}
