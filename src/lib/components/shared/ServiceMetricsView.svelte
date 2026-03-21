@@ -61,6 +61,8 @@
   const overviewSections = new Set([
     'Overview', 'Runtime', 'DB Pool', 'Semaphore', 'TCP Connections',
     'Raft', 'MetaEngine',
+    'S3 Operations', 'RPC Operations', 'Cache', 'File Handles',
+    'TCP Connection', 'TCP Events', 'Config',
   ])
 
   let activeTab = $state<string>("overview");

@@ -8,7 +8,6 @@
   import { Button } from '$lib/components/ui/button'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
-  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import ServiceMetricsView from '$lib/components/shared/ServiceMetricsView.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
@@ -33,39 +32,6 @@
     if (t === 'mfuse' || t === 'fuseserv') return 'FUSE (fuseserv)'
     return t ?? nodeId
   })
-
-  const isFuseserv = $derived(
-    node?.serviceType === 'fuseserv' || node?.serviceType === 'mfuse'
-  )
-
-  const isHub = $derived(
-    node?.serviceType === 'hub' || node?.serviceType === 'appserv'
-  )
-
-  // Group stats by section for fuseserv
-  const statSections = $derived.by(() => {
-    const sections: { name: string; metrics: { name: string; labels: string; value: number }[] }[] = []
-    for (const [section, metrics] of nodeStore.stats) {
-      sections.push({
-        name: section,
-        metrics: metrics.map(m => ({
-          name: m.name,
-          labels: Object.entries(m.labels).map(([k, v]) => `${k}="${v}"`).join(', '),
-          value: m.value,
-        })),
-      })
-    }
-    return sections
-  })
-
-  function formatMetricValue(v: number): string {
-    if (!Number.isFinite(v)) return String(v)
-    if (v >= 1e9) return `${(v / 1e9).toFixed(2)}G`
-    if (v >= 1e6) return `${(v / 1e6).toFixed(2)}M`
-    if (v >= 1e3) return `${(v / 1e3).toFixed(1)}K`
-    if (Number.isInteger(v)) return String(v)
-    return v.toFixed(3)
-  }
 
   $effect(() => {
     if (!auth.loading && !auth.can('serviceNodes', 'read')) {
@@ -193,36 +159,8 @@
         <p class="text-sm text-destructive">{nodeStore.statsError}</p>
       </CardContent>
     </Card>
-  {:else if isHub && nodeStore.statsRaw}
+  {:else if nodeStore.statsRaw}
     <ServiceMetricsView raw={nodeStore.statsRaw} />
-  {:else if statSections.length > 0}
-    {#each statSections as section}
-      <Card>
-        <CardHeader>
-          <CardTitle class="text-base font-mono">{section.name}</CardTitle>
-        </CardHeader>
-        <CardContent class="pt-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead class="th-cyber">Metric</TableHead>
-                <TableHead class="th-cyber">Labels</TableHead>
-                <TableHead class="th-cyber text-right">Value</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each section.metrics as m}
-                <TableRow>
-                  <TableCell class="font-mono text-sm">{m.name}</TableCell>
-                  <TableCell class="font-mono text-sm text-muted-foreground">{m.labels || '—'}</TableCell>
-                  <TableCell class="text-right font-mono text-sm tabular-nums">{formatMetricValue(m.value)}</TableCell>
-                </TableRow>
-              {/each}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    {/each}
   {:else if node}
     <Card>
       <CardHeader><CardTitle class="text-base">Metrics</CardTitle></CardHeader>

@@ -80,7 +80,7 @@ export function parseMetrics(text: string): MetricSection[] {
           labels[pair.slice(0, eq)] = pair.slice(eq + 2, -1)
         }
         const pk = Object.keys(labels).find(k => k !== 'le')
-        const pv = pk ? labels[pk] : 'unknown'
+        const pv = pk ? labels[pk] : metricName!.replace(/_bucket$/, '')
 
         if (!gmap.has(pv)) gmap.set(pv, { metrics: new Map(), buckets: [] })
         const g = gmap.get(pv)!
