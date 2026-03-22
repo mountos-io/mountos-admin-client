@@ -4,7 +4,7 @@ TS_EXEC_deno  := deno run -A
 TS_EXEC_node  := npx tsx
 TS_EXEC       := $(or $(TS_EXEC_$(TS_RUNTIME)),$(TS_RUNTIME))
 
-.PHONY: help dev build check proxy dev-all gen generate-test-token test-auto-login clean set-local-admin-sdk reset-local-admin-sdk
+.PHONY: help dev build check proxy dev-all gen generate-test-token test-auto-login clean setup-certs set-local-admin-sdk reset-local-admin-sdk
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
@@ -36,6 +36,10 @@ OPEN_CMD        := $(or $(OPEN_CMD_$(shell uname -s)),open)
 
 test-auto-login: ## Generate test token and open login URL in browser
 	@url="$$($(TS_EXEC) gen/test-token.ts)" && echo "$$url" && read -p "Press Enter to open in browser..." && $(OPEN_CMD) "$$url"
+
+setup-certs: ## Generate mkcert TLS certs for local HTTPS dev (requires: brew install mkcert && mkcert -install)
+	@mkdir -p .certs
+	mkcert -cert-file .certs/cert.pem -key-file .certs/key.pem local.mountos.app localhost 127.0.0.1
 
 clean: ## Remove build artifacts
 	rm -rf .svelte-kit build node_modules
