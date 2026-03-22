@@ -30,4 +30,5 @@ const token = await new jose.SignJWT({ name, email, role })
   .setExpirationTime('60s')
   .sign(privateKey)
 
-console.log(`http://localhost:5173?token=${token}`)
+const origin = process.env.WEBAUTHN_ORIGIN ?? 'http://localhost:5173'
+console.log(`${origin}?token=${token}`)
