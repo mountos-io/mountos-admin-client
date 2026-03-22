@@ -18,14 +18,14 @@
   import Network from '@lucide/svelte/icons/network'
 
   const SERVICE_COLORS: Record<string, string> = {
-    hub:           'oklch(0.70 0.12 310)',
-    dataserv:      'oklch(0.60 0.14 260)',
-    gcserv:        'oklch(0.55 0.18 25)',
-    fuseserv:      'oklch(0.70 0.14 55)',
-    mfuse:         'oklch(0.70 0.14 55)',
-    blockserv:     'oklch(0.65 0.12 200)',
-    s3gatewayserv: 'oklch(0.65 0.12 30)',
-    csiserv:       'oklch(0.60 0.10 170)',
+    hub:           'var(--pastel-region)',
+    dataserv:      'var(--pastel-user)',
+    gcserv:        'var(--pastel-role)',
+    fuseserv:      'var(--pastel-mount)',
+    mfuse:         'var(--pastel-mount)',
+    blockserv:     'var(--pastel-storage)',
+    s3gatewayserv: 'var(--pastel-license)',
+    csiserv:       'var(--pastel-session)',
   }
 
   const regionStore = useRegions()

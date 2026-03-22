@@ -276,7 +276,7 @@
           </button>
         {:else}
           <span class="legend-chip legend-inert" title="{s} — no data">
-            <span class="inline-flex items-center justify-center w-5 h-5 text-white/40" style="background: oklch(0.5 0 0 / 0.3); border-radius: 4px; border: 2px solid oklch(0.5 0 0 / 0.2);">
+            <span class="inline-flex items-center justify-center w-5 h-5 text-white/40" style="background: var(--muted-foreground, gray); opacity: 0.3; border-radius: 4px; border: 2px solid var(--muted-foreground, gray);">
               <Icon class="w-3 h-3" />
             </span>
             <span class="legend-label">{s}</span>

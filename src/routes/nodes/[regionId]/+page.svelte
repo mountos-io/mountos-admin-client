@@ -41,28 +41,28 @@
   const regionId = $derived(Number($page.params.regionId))
   const COLLAPSE_THRESHOLD = 8
   const STATUS_COLORS: Record<string, string> = {
-    healthy: 'oklch(0.6 0.18 145)',
-    registered: 'oklch(0.55 0.10 250)',
-    unhealthy: 'oklch(0.55 0.20 25)',
-    draining: 'oklch(0.7 0.15 80)',
+    healthy: 'var(--success)',
+    registered: 'var(--primary)',
+    unhealthy: 'var(--destructive)',
+    draining: 'var(--warning)',
   }
 
   const SERVICE_PALETTE: Record<string, { accent: string; bg: string; label: string; icon: typeof Shield }> = {
-    hub:           { accent: 'oklch(0.70 0.12 310)', bg: 'oklch(0.70 0.12 310 / 0.06)', label: 'Hub', icon: Shield },
-    dataserv:      { accent: 'oklch(0.60 0.14 260)', bg: 'oklch(0.60 0.14 260 / 0.06)', label: 'Metadata', icon: Database },
-    gcserv:        { accent: 'oklch(0.55 0.18 25)',  bg: 'oklch(0.55 0.18 25 / 0.06)',  label: 'Garbage Collection', icon: Trash2 },
-    fuseserv:      { accent: 'oklch(0.70 0.14 55)',  bg: 'oklch(0.70 0.14 55 / 0.06)',  label: 'FUSE', icon: HardDrive },
-    blockserv:     { accent: 'oklch(0.65 0.12 200)', bg: 'oklch(0.65 0.12 200 / 0.06)', label: 'Block', icon: Box },
-    s3gatewayserv: { accent: 'oklch(0.65 0.12 30)',  bg: 'oklch(0.65 0.12 30 / 0.06)',  label: 'S3 Gateway', icon: Cloud },
-    csiserv:       { accent: 'oklch(0.60 0.10 170)', bg: 'oklch(0.60 0.10 170 / 0.06)', label: 'CSI', icon: Container },
+    hub:           { accent: 'var(--pastel-region)',  bg: 'color-mix(in oklch, var(--pastel-region) 8%, transparent)',  label: 'Hub', icon: Shield },
+    dataserv:      { accent: 'var(--pastel-user)',    bg: 'color-mix(in oklch, var(--pastel-user) 8%, transparent)',    label: 'Metadata', icon: Database },
+    gcserv:        { accent: 'var(--pastel-role)',    bg: 'color-mix(in oklch, var(--pastel-role) 8%, transparent)',    label: 'Garbage Collection', icon: Trash2 },
+    fuseserv:      { accent: 'var(--pastel-mount)',   bg: 'color-mix(in oklch, var(--pastel-mount) 8%, transparent)',   label: 'FUSE', icon: HardDrive },
+    blockserv:     { accent: 'var(--pastel-storage)', bg: 'color-mix(in oklch, var(--pastel-storage) 8%, transparent)', label: 'Block', icon: Box },
+    s3gatewayserv: { accent: 'var(--pastel-license)', bg: 'color-mix(in oklch, var(--pastel-license) 8%, transparent)', label: 'S3 Gateway', icon: Cloud },
+    csiserv:       { accent: 'var(--pastel-session)', bg: 'color-mix(in oklch, var(--pastel-session) 8%, transparent)', label: 'CSI', icon: Container },
   }
 
   const TIER_COLORS: Record<string, string> = {
-    control: 'oklch(0.70 0.12 310)',
-    data: 'oklch(0.60 0.14 260)',
-    storage: 'oklch(0.65 0.12 200)',
-    gateway: 'oklch(0.65 0.12 30)',
-    edge: 'oklch(0.70 0.14 55)',
+    control: 'var(--pastel-region)',
+    data: 'var(--pastel-user)',
+    storage: 'var(--pastel-storage)',
+    gateway: 'var(--pastel-license)',
+    edge: 'var(--pastel-mount)',
   }
 
   const TIERS = [
@@ -112,10 +112,10 @@
     }
   })
 
-  function statusColor(s: string) { return STATUS_COLORS[s] ?? 'oklch(0.5 0 0)' }
+  function statusColor(s: string) { return STATUS_COLORS[s] ?? 'var(--muted-foreground)' }
 
   function palette(type: string) {
-    return SERVICE_PALETTE[type] ?? { accent: 'oklch(0.5 0.08 0)', bg: 'oklch(0.5 0.08 0 / 0.06)', label: type, icon: Box }
+    return SERVICE_PALETTE[type] ?? { accent: 'var(--muted-foreground)', bg: 'color-mix(in oklch, var(--muted-foreground) 8%, transparent)', label: type, icon: Box }
   }
 
   function toggleDim(type: string) {
@@ -244,11 +244,11 @@
             {/if}
             <div class="ml-auto flex items-center gap-1.5">
               {#if tier.id === 'data' || tier.id === 'control'}
-                <span class="tier-infra-icon" style="color: oklch(0.60 0.14 260);" title="Regional DB Access">
+                <span class="tier-infra-icon" style="color: var(--pastel-user);" title="Regional DB Access">
                   <Database class="h-3.5 w-3.5" />
                 </span>
               {/if}
-              <span class="tier-infra-icon" style="color: oklch(0.65 0.18 45);" title="Regional Vault Access">
+              <span class="tier-infra-icon" style="color: var(--pastel-key);" title="Regional Vault Access">
                 <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                   <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" />
                   <circle cx="12" cy="12" r="3" />

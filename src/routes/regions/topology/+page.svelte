@@ -32,15 +32,15 @@
   }
 
   const RAFT_STYLES: Record<string, RaftStyle> = {
-    'meta-raft': { color: 'oklch(0.55 0.18 260)', bgColor: 'oklch(0.55 0.18 260 / 0.08)', label: 'Meta' },
-    'blob-raft': { color: 'oklch(0.65 0.18 55)', bgColor: 'oklch(0.65 0.18 55 / 0.08)', label: 'Blob' },
-    'coord-raft': { color: 'oklch(0.55 0.15 175)', bgColor: 'oklch(0.55 0.15 175 / 0.08)', label: 'Coordinator' },
+    'meta-raft': { color: 'var(--pastel-user)', bgColor: 'color-mix(in oklch, var(--pastel-user) 8%, transparent)', label: 'Meta' },
+    'blob-raft': { color: 'var(--pastel-mount)', bgColor: 'color-mix(in oklch, var(--pastel-mount) 8%, transparent)', label: 'Blob' },
+    'coord-raft': { color: 'var(--pastel-session)', bgColor: 'color-mix(in oklch, var(--pastel-session) 8%, transparent)', label: 'Coordinator' },
   }
 
   const STATUS_COLORS: Record<NodeStatus, string> = {
-    active: 'oklch(0.6 0.18 145)',
-    draining: 'oklch(0.7 0.15 80)',
-    inactive: 'oklch(0.5 0 0)',
+    active: 'var(--success)',
+    draining: 'var(--warning)',
+    inactive: 'var(--muted-foreground)',
   }
 
   const region = { name: 'us-east-1', isActive: true }
@@ -274,7 +274,7 @@
               <div role="listitem"
                 class="node-slot flex items-center gap-2.5 px-3 py-2.5 transition-all duration-200"
                 class:node-slot-last={ni === rack.nodes.length - 1}
-                style:border-left="4px solid {node.raftGroup ? RAFT_STYLES[node.raftGroup].color : 'oklch(0.5 0 0 / 0.12)'}"
+                style:border-left="4px solid {node.raftGroup ? RAFT_STYLES[node.raftGroup].color : 'var(--border)'}"
                 style:opacity={nodeOpacity(node)}
                 style:box-shadow={nodeGlow(node)}
                 onmouseenter={() => enterNode(node)}
@@ -328,7 +328,7 @@
                 {@const node = matrixNode(serviceType, rack.address)}
                 {@const cellBg = node?.raftGroup
                   ? RAFT_STYLES[node.raftGroup].bgColor
-                  : !node ? 'repeating-linear-gradient(45deg,transparent,transparent 4px,oklch(0.5 0 0/0.04) 4px,oklch(0.5 0 0/0.04) 5px)' : 'transparent'}
+                  : !node ? 'repeating-linear-gradient(45deg,transparent,transparent 4px,var(--border) 4px,var(--border) 5px)' : 'transparent'}
                 <TableCell
                   class="transition-all duration-200"
                   style="background: {cellBg}; opacity: {nodeOpacity(node)}"
