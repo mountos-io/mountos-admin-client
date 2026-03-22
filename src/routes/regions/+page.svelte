@@ -65,7 +65,7 @@
     if (!region.isActive || !auth.guard("regions", "update")) return;
     dialog.confirm(
       'Deactivate Region',
-      `Deactivate "${region.name}"? Make sure to stop all nodes, deactivate all storages and volumes associated with this region first.`,
+      `Deactivate "${region.name}"? Make sure to stop all nodes, deactivate all storages and volumes associated with this region first. This action cannot be reverted.`,
       () => store.deactivateRegion(region.id),
     );
   }

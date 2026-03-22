@@ -248,7 +248,7 @@
               if (!auth.guard('storages', 'update')) return
               dialog.confirm(
                 'Deactivate',
-                `Deactivate "${storage!.name}"? Make sure all volumes on this storage are deactivated first.`,
+                `Deactivate "${storage!.name}"? Make sure all volumes on this storage are deactivated first. This action cannot be reverted.`,
                 () => store.deactivateStorage(id),
               )
             }}>

@@ -23,6 +23,7 @@ export type {
   EditVolumeRequest,
   GenerateVolumeAPIKeysRequest,
   RevokeVolumeAPIKeyRequest,
+  DeactivateVolumeRequest,
   UpdateVolumeQuotaRequest,
   ListOptions,
   PaginatedResponse,

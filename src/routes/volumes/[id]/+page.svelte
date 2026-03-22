@@ -12,9 +12,10 @@
   import { Separator } from '$lib/components/ui/separator'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
+  import DeactivateVolumeDialog from '$lib/components/shared/DeactivateVolumeDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import { formatBytes, formatQuota, quotaPercent } from '$lib/core/utils/format'
-  import type { Volume } from '$lib/core/api/types'
+  import type { Volume, DeactivateVolumeRequest } from '$lib/core/api/types'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
@@ -40,6 +41,13 @@
   let loading = $state(true)
   let stats = $state<{ diskSize: number; activeSize: number; size: number } | null>(null)
   const dialog = useConfirmDialog(() => reload())
+
+  let deactivateOpen = $state(false)
+
+  async function handleDeactivate(req: DeactivateVolumeRequest) {
+    await store.deactivateVolume(id, req)
+    await reload()
+  }
 
   let genUserId = $state(auth.userMountosUserId != null ? String(auth.userMountosUserId) : '')
   let genResult = $state<{ apiKey: string; apiSecret: string } | null>(null)
@@ -137,11 +145,7 @@
         {#if auth.can('volumes', 'update')}
           <CardFooter class="flex gap-2">
             {#if volume.isActive}
-              <Button variant="outline" size="sm" onclick={() => dialog.confirm(
-                'Deactivate',
-                `Deactivate "${volume!.name}"?`,
-                () => store.deactivateVolume(id),
-              )}>Deactivate</Button>
+              <Button variant="outline" size="sm" onclick={() => { deactivateOpen = true }}>Deactivate</Button>
             {/if}
             <Button variant="outline" size="sm" onclick={() => dialog.confirm(
               volume!.locked ? 'Unlock' : 'Lock',
@@ -232,3 +236,6 @@
   {/if}
 </div>
 <ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />
+{#if volume}
+  <DeactivateVolumeDialog bind:open={deactivateOpen} volumeName={volume.name} onConfirm={handleDeactivate} />
+{/if}

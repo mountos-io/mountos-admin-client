@@ -174,7 +174,7 @@
           {#if auth.can('users', 'update')}
             <CardFooter class="gap-2">
               {#if user.isActive}
-                <Button size="sm" onclick={() => dialog.confirm('Deactivate', `Deactivate "${user!.username}"?`, () => act(() => store.deactivateUser(id)))}>Deactivate</Button>
+                <Button size="sm" onclick={() => dialog.confirm('Deactivate', `Deactivate "${user!.username}"? This action cannot be reverted.`, () => act(() => store.deactivateUser(id)))}>Deactivate</Button>
               {/if}
             </CardFooter>
           {/if}

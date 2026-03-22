@@ -1,6 +1,6 @@
 import type {
   Volume, CreateVolumeRequest, EditVolumeRequest,
-  GenerateVolumeAPIKeysRequest, UpdateVolumeQuotaRequest,
+  DeactivateVolumeRequest, GenerateVolumeAPIKeysRequest, UpdateVolumeQuotaRequest,
 } from '$lib/core/api/types'
 import { api } from './client.svelte'
 
@@ -47,8 +47,8 @@ async function unlockVolume(id: number) {
   await api.volumes.unlock(id)
 }
 
-async function deactivateVolume(id: number) {
-  await api.volumes.deactivate(id)
+async function deactivateVolume(id: number, req: DeactivateVolumeRequest) {
+  await api.volumes.deactivate(id, req)
 }
 
 async function generateApiKeys(volumeId: number, req: GenerateVolumeAPIKeysRequest) {

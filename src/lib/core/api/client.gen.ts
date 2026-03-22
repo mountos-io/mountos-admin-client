@@ -7,8 +7,8 @@ import type {
   CreateAccountRequest, Account, EditAccountRequest, AddUserRequest, User, UserListOptions, 
   EditUserRequest, CreateRegionRequest, Region, EditRegionRequest, CreateStorageRequest, 
   Storage, StorageListOptions, EditStorageRequest, TestStorageBucketRequest, 
-  CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest, 
-  GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, UpdateVolumeQuotaRequest, 
+  CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest, DeactivateVolumeRequest,
+  GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, UpdateVolumeQuotaRequest,
   AuditLog, AuditLogListOptions, RegionAuditLogListOptions, ServiceNode, ClientSession, ClientSessionListOptions,
   SessionSummary, DiscoverMetaResponse, DashboardStats, LicenseDetails,
 } from '@mountos-app/admin-sdk'
@@ -362,8 +362,8 @@ class VolumesResource {
     return this.client.request('POST', `/volumes/${volumeId}/activate`)
   }
 
-  deactivate(volumeId: number): Promise<{ id: number }> {
-    return this.client.request('POST', `/volumes/${volumeId}/deactivate`)
+  deactivate(volumeId: number, req: DeactivateVolumeRequest): Promise<{ id: number }> {
+    return this.client.request('POST', `/volumes/${volumeId}/deactivate`, req)
   }
 
   generateAPIKeys(volumeId: number, req: GenerateVolumeAPIKeysRequest): Promise<{ apiKey: string; apiSecret: string }> {
