@@ -1,8 +1,11 @@
+import { findPreset, applySkin, clearSkin, familyVariant, defaultSkin, type SkinMode } from '$lib/core/themes'
+
 export type Theme = 'light' | 'dark' | 'system'
 export type FontSize = 'standard' | 'medium' | 'large' | 'extra-large' | 'jumbo'
 
 const KEYS = {
   theme: 'mountos-admin-theme',
+  skin: 'mountos-admin-skin',
   fontSize: 'mountos-admin-font-size',
   pageSize: 'mountos-admin-page-size',
   defaultAccountId: 'mountos-admin-default-account',
@@ -24,6 +27,7 @@ function save(key: string, value: unknown) {
 }
 
 let theme = $state<Theme>(load(KEYS.theme, 'system'))
+let skin = $state<string>(load(KEYS.skin, ''))
 let fontSize = $state<FontSize>(load(KEYS.fontSize, 'standard'))
 let pageSize = $state<number>(load(KEYS.pageSize, 20))
 let defaultAccountId = $state<number | null>(load(KEYS.defaultAccountId, null))
@@ -39,14 +43,41 @@ const fontScaleMap: Record<FontSize, string> = {
   jumbo: '150%',
 }
 
+function resolvedMode(): SkinMode {
+  if (theme === 'system') return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return theme
+}
+
 function applyTheme(t: Theme) {
   if (typeof document === 'undefined') return
   const el = document.documentElement
   el.classList.remove('light', 'dark')
-  const applied = t === 'system'
+  const mode = t === 'system'
     ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : t
-  el.classList.add(applied)
+  el.classList.add(mode)
+  applySkinPreset()
+}
+
+function applySkinPreset() {
+  if (typeof document === 'undefined') return
+  const mode = resolvedMode()
+  if (!skin) {
+    if (mode === 'dark') {
+      const mountOSDark = findPreset('mountOS Dark')
+      if (mountOSDark) { applySkin(mountOSDark.colors, 'dark'); return }
+    }
+    clearSkin()
+    return
+  }
+  let preset = findPreset(skin)
+  if (preset && preset.mode !== mode) {
+    const variant = familyVariant(skin, mode)
+    if (variant) { preset = variant; skin = variant.name }
+    else { skin = ''; clearSkin(); return }
+  }
+  if (!preset) { skin = ''; clearSkin(); return }
+  applySkin(preset.colors, preset.mode)
 }
 
 function applyFontSize(fs: FontSize) {
@@ -64,6 +95,7 @@ function applyFilters() {
 
 $effect.root(() => {
   $effect(() => { save(KEYS.theme, theme); applyTheme(theme) })
+  $effect(() => { save(KEYS.skin, skin); applySkinPreset() })
   $effect(() => { save(KEYS.fontSize, fontSize); applyFontSize(fontSize) })
   $effect(() => { save(KEYS.pageSize, pageSize) })
   $effect(() => { save(KEYS.defaultAccountId, defaultAccountId) })
@@ -87,6 +119,9 @@ export function usePreferences() {
   return {
     get theme() { return theme },
     set theme(v: Theme) { theme = v },
+    get skin() { return skin },
+    set skin(v: string) { skin = v },
+    get resolvedMode() { return resolvedMode() },
     get fontSize() { return fontSize },
     set fontSize(v: FontSize) { fontSize = v },
     get pageSize() { return pageSize },

@@ -40,8 +40,6 @@
 
   const regionId = $derived(Number($page.params.regionId))
   const COLLAPSE_THRESHOLD = 8
-  const NAVIGABLE_TYPES = new Set(['hub', 'dataserv', 'fuseserv'])
-
   const STATUS_COLORS: Record<string, string> = {
     healthy: 'oklch(0.6 0.18 145)',
     registered: 'oklch(0.55 0.10 250)',
@@ -115,11 +113,6 @@
   })
 
   function statusColor(s: string) { return STATUS_COLORS[s] ?? 'oklch(0.5 0 0)' }
-
-  function isNavigable(node: ServiceNode) {
-    const t = node.serviceType === 'mfuse' ? 'fuseserv' : node.serviceType
-    return NAVIGABLE_TYPES.has(t)
-  }
 
   function palette(type: string) {
     return SERVICE_PALETTE[type] ?? { accent: 'oklch(0.5 0.08 0)', bg: 'oklch(0.5 0.08 0 / 0.06)', label: type, icon: Box }
@@ -306,8 +299,6 @@
                   <!-- Node list -->
                   <div role="list" aria-label="{p.label} nodes" class="divide-y divide-border/20">
                     {#each visibleNodes as node}
-                      {@const navigable = isNavigable(node)}
-                      {#if navigable}
                         <button
                           class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
                           aria-label="View node {node.nodeId}, status {node.status}"
@@ -328,25 +319,6 @@
                           <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
                           <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
                         </button>
-                      {:else}
-                        <div
-                          role="listitem"
-                          class="node-row flex items-center gap-2.5 px-3 py-2"
-                          onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
-                          onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
-                          onpointerleave={() => hoveredNode = null}
-                        >
-                          <span
-                            class="led-dot block h-2 w-2 shrink-0 rounded-full"
-                            class:led-ping={node.status === 'healthy'}
-                            class:led-raft={isDataserv}
-                            style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
-                            title={node.status}
-                          ></span>
-                          <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
-                          <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
-                        </div>
-                      {/if}
                     {/each}
                   </div>
 
@@ -471,9 +443,7 @@
             <span class="text-foreground">{formatRelative(hoveredNode.node.lastHeartbeat)}</span>
           </div>
         {/if}
-        {#if isNavigable(hoveredNode.node)}
-          <div class="text-foreground/50 mt-1.5 text-center border-t border-border/30 pt-1.5">click to view details</div>
-        {/if}
+        <div class="text-foreground/50 mt-1.5 text-center border-t border-border/30 pt-1.5">click to view details</div>
       </div>
     </div>
   </div>

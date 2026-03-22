@@ -1,5 +1,6 @@
 <script lang="ts">
   import { usePreferences, type Theme, type FontSize } from '$lib/stores/preferences.svelte'
+  import { presetsForMode, type SkinMode } from '$lib/core/themes'
   import { useSettingsModal, type SettingsTab } from '$lib/stores/settings-modal.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { vendorSettingsTabs, vendorSettingsModalSize } from '$vendor/config/settings'
@@ -24,8 +25,8 @@
   const auth = useAuth()
   const licenseStore = useLicense()
 
-  const maxWidth = vendorSettingsModalSize?.maxWidth ?? '680px'
-  const minHeight = vendorSettingsModalSize?.minHeight ?? '360px'
+  const maxWidth = vendorSettingsModalSize?.maxWidth ?? '800px'
+  const minHeight = vendorSettingsModalSize?.minHeight ?? '480px'
 
   const builtinTabs = $derived<{ id: SettingsTab; label: string; icon: typeof Sun }[]>([
     { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -97,7 +98,7 @@
       <div class="flex-1 p-4 sm:p-6 overflow-y-auto">
         {#if modal.tab === 'appearance'}
           <div class="space-y-6">
-            <div class="space-y-3">
+            <div class="space-y-4">
               <h4 class="text-sm font-medium">Theme</h4>
               <div class="flex gap-2">
                 {#each themes as t}
@@ -114,6 +115,53 @@
                 {/each}
               </div>
             </div>
+            {#if prefs.theme === 'light'}
+              <div class="space-y-4">
+                <h4 class="text-sm font-medium">Skin</h4>
+                {@const skins = presetsForMode('light')}
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    class="skin-swatch {!prefs.skin ? 'ring-2 ring-primary' : ''}"
+                    style="--sw-bg: #FAF7EE; --sw-fg: #af5f44;"
+                    onclick={() => prefs.skin = ''}
+                    title="mountOS"
+                  >
+                    <span class="sw-dot"></span>
+                    <span class="sw-label">mountOS</span>
+                  </button>
+                  {#each skins as preset}
+                    <button
+                      class="skin-swatch {prefs.skin === preset.name ? 'ring-2 ring-primary' : ''}"
+                      style="--sw-bg: {preset.colors.background}; --sw-fg: {preset.colors.primary};"
+                      onclick={() => prefs.skin = preset.name}
+                      title={preset.name}
+                    >
+                      <span class="sw-dot"></span>
+                      <span class="sw-label">{preset.name.replace(/ Light$/, '')}</span>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {:else if prefs.theme === 'dark'}
+              <div class="space-y-4">
+                <h4 class="text-sm font-medium">Skin</h4>
+                {@const skins = presetsForMode('dark')}
+                <div class="flex flex-wrap gap-2">
+                  {#each skins as preset}
+                    {@const active = preset.name === 'mountOS Dark' ? !prefs.skin || prefs.skin === 'mountOS Dark' : prefs.skin === preset.name}
+                    <button
+                      class="skin-swatch {active ? 'ring-2 ring-primary' : ''}"
+                      style="--sw-bg: {preset.colors.background}; --sw-fg: {preset.colors.primary};"
+                      onclick={() => prefs.skin = preset.name === 'mountOS Dark' ? '' : preset.name}
+                      title={preset.name}
+                    >
+                      <span class="sw-dot"></span>
+                      <span class="sw-label">{preset.name === 'mountOS Dark' ? 'mountOS' : preset.name.replace(/ Dark$/, '')}</span>
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
             <div class="space-y-3">
               <h4 class="text-sm font-medium">Font Size</h4>
               <div class="flex flex-wrap gap-2">
@@ -301,3 +349,36 @@
     </div>
   </Dialog.DialogContent>
 </Dialog.Dialog>
+
+<style>
+  .skin-swatch {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--sw-bg);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .skin-swatch:hover {
+    transform: scale(1.05);
+  }
+
+  .sw-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--sw-fg);
+    box-shadow: 0 0 4px var(--sw-fg);
+  }
+
+  .sw-label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--sw-fg);
+    white-space: nowrap;
+  }
+</style>
