@@ -124,9 +124,9 @@
 
 <div class="space-y-6">
   <div class="flex items-center gap-4">
-    <Button variant="ghost" size="sm" href="/accounts"><ArrowLeft class="h-4 w-4" /></Button>
+    <Button variant="ghost" size="sm" href="/accounts" aria-label="Back to accounts"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight">{account?.name ?? 'Account'}</h1>
-    {#if account}<Badge variant="outline" style="border-color: var(--pastel-account); color: var(--pastel-account)">Account</Badge>{/if}
+    {#if account}<Badge variant="outline" style="border-color: var(--pastel-account); color: var(--pastel-account-text)">Account</Badge>{/if}
   </div>
 
   {#if loading}

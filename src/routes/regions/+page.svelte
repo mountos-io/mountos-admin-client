@@ -102,7 +102,7 @@
             <span class="inline-flex items-center gap-1">
               Export ID
               <span
-                title="Set as env on service instances to groups them under one regional umbrella"
+                title="Set as env on service instances to group them under one regional umbrella"
               >
                 <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
               </span>
@@ -155,8 +155,8 @@
                 <Button
                   variant="ghost"
                   size="sm"
-                  title="Deactivate"
-                  aria-label="Deactivate"
+                  title="Deactivate {region.name}"
+                  aria-label="Deactivate {region.name}"
                   onclick={(e: MouseEvent) => { e.stopPropagation(); deactivate(region) }}
                 >
                   <Power

@@ -111,9 +111,9 @@
 
 <div class="space-y-6">
   <div class="flex items-center gap-4">
-    <Button variant="ghost" size="sm" href="/storages"><ArrowLeft class="h-4 w-4" /></Button>
+    <Button variant="ghost" size="sm" href="/storages" aria-label="Back to storages"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight">{storage?.name ?? 'Storage'}</h1>
-    {#if storage}<Badge variant="outline" style="border-color: var(--pastel-storage); color: var(--pastel-storage)">Storage</Badge>{/if}
+    {#if storage}<Badge variant="outline" style="border-color: var(--pastel-storage); color: var(--pastel-storage-text)">Storage</Badge>{/if}
   </div>
   {#if loading}
     <LoadingSpinner />
@@ -174,7 +174,7 @@
               <button type="button" onclick={startEdit}
                 class="opacity-50 hover:opacity-100 hover:text-primary transition-all"
                 title="Edit storage" aria-label="Edit storage">
-                <PencilIcon class="size-4" />
+                <PencilIcon class="size-4" aria-hidden="true" />
               </button>
             {/if}
           </div>

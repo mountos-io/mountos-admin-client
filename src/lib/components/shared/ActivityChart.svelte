@@ -293,7 +293,7 @@
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
-    border: 1px solid var(--chip-accent, oklch(0.5 0 0 / 0.2));
+    border: 1px solid var(--chip-accent, color-mix(in oklch, var(--muted-foreground) 20%, transparent));
     border-radius: 4px;
     font-size: 1rem;
     cursor: pointer;
@@ -304,7 +304,7 @@
   }
 
   .legend-chip:hover {
-    background: color-mix(in oklch, var(--chip-accent, oklch(0.5 0 0)) 6%, transparent);
+    background: color-mix(in oklch, var(--chip-accent, var(--muted-foreground)) 6%, transparent);
   }
 
   .legend-label {
@@ -315,13 +315,13 @@
   .legend-dimmed {
     opacity: 0.35;
     filter: saturate(0.2);
-    border-color: oklch(0.5 0 0 / 0.15);
+    border-color: color-mix(in oklch, var(--muted-foreground) 15%, transparent);
   }
 
   .legend-inert {
     cursor: default;
     opacity: 0.25;
-    border-color: oklch(0.5 0 0 / 0.1);
+    border-color: color-mix(in oklch, var(--muted-foreground) 10%, transparent);
   }
 
 </style>

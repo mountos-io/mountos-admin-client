@@ -60,7 +60,13 @@
       </TableHeader>
       <TableBody>
         {#each storageStore.storages as storage}
-          <TableRow class="cursor-pointer" onclick={() => goto(`/storages/${storage.id}`)}>
+          <TableRow
+            class="cursor-pointer hover:bg-muted/50"
+            onclick={() => goto(`/storages/${storage.id}`)}
+            onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/storages/${storage.id}`))}
+            role="link"
+            tabindex={0}
+          >
             <TableCell class="font-medium max-w-[200px] truncate">{storage.name}</TableCell>
             <TableCell><Badge variant="outline">{storage.storageType}</Badge></TableCell>
             <TableCell><Badge variant="secondary">{storage.providerType}</Badge></TableCell>

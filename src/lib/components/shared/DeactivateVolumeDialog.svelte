@@ -55,16 +55,16 @@
         </div>
       </div>
 
-      <div class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+      <div role="alert" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
         This action cannot be reverted. The volume cannot be reactivated.
       </div>
 
-      <div class="flex flex-col gap-3">
-        <span class="text-sm font-medium">Cleanup options</span>
+      <fieldset class="flex flex-col gap-3 border-none p-0 m-0">
+        <legend class="text-sm font-medium">Cleanup options</legend>
         <Checkbox bind:checked={cleanupMeta} label="Cleanup metadata" disabled={loading} />
         <Checkbox bind:checked={cleanupStorage} label="Cleanup storage" disabled={loading} />
         <Checkbox bind:checked={cleanupVault} label="Cleanup vault" disabled={loading} />
-      </div>
+      </fieldset>
 
       <div class="pt-2">
         <div class="flex justify-end gap-2">

@@ -66,7 +66,7 @@
   <!-- Header -->
   <div class="flex items-start justify-between gap-4">
     <div class="flex items-center gap-3">
-      <Button variant="ghost" size="sm" onclick={() => goto(`/nodes/${regionId}`)}>
+      <Button variant="ghost" size="sm" onclick={() => goto(`/nodes/${regionId}`)} aria-label="Back to region nodes">
         <ArrowLeft class="h-4 w-4" />
       </Button>
       <div>
@@ -74,7 +74,7 @@
           <h1 class="text-xl font-bold tracking-tight font-mono">{nodeId}</h1>
           {#if node}
             <Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge>
-            <Badge variant="outline" style="border-color: var(--pastel-node); color: var(--pastel-node)">Node</Badge>
+            <Badge variant="outline" style="border-color: var(--pastel-node); color: var(--pastel-node-text)">Node</Badge>
             <Badge variant="outline">{serviceTypeLabel}</Badge>
           {/if}
         </div>
