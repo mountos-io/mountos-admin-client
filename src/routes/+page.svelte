@@ -21,6 +21,8 @@
   import MonitorDotIcon from '@lucide/svelte/icons/monitor-dot'
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
   import ExternalLinkIcon from '@lucide/svelte/icons/external-link'
+  import PlusIcon from '@lucide/svelte/icons/plus'
+  import BuildingIcon from '@lucide/svelte/icons/building'
   import RegionRow from '$lib/components/shared/RegionRow.svelte'
   import SessionSummaryChart from '$lib/components/shared/SessionSummaryChart.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
@@ -87,7 +89,7 @@
   })
 </script>
 
-<div class="space-y-6">
+<div class="flex flex-col gap-6" style="min-height: calc(100vh - 3.5rem - 3rem);">
   {#if !account}
     <EmptyState title="No account selected" description="Select an account to view dashboard" />
   {:else}
@@ -161,6 +163,42 @@
           </CardContent>
         </Card>
       {/if}
+
+      <!-- Quick Actions -->
+      {@const quickActions = [
+        { label: 'Account', icon: BuildingIcon, href: '/accounts/create', can: auth.can('accounts', 'create') },
+        { label: 'User', icon: UsersIcon, href: '/users/create', can: !!accountId && auth.can('users', 'create') },
+        { label: 'Volume', icon: DatabaseIcon, href: '/volumes/create', can: !!accountId && auth.can('volumes', 'create') },
+        { label: 'Storage', icon: HardDriveIcon, href: '/storages/create', can: !!accountId && auth.can('storages', 'create') },
+        { label: 'Region', icon: GlobeIcon, href: '/regions/create', can: auth.can('regions', 'create') },
+      ]}
+      <div class="flex flex-wrap justify-center gap-4">
+        {#each quickActions as action}
+          {@const Icon = action.icon}
+          {#if action.can}
+            <a href={action.href}
+              class="flex flex-col items-center justify-center gap-3 w-48 h-40 rounded-sm border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+              <div class="flex items-center justify-center w-16 h-16 rounded-md bg-primary/10">
+                <Icon class="w-8 h-8 text-primary" />
+              </div>
+              <span class="text-base font-medium flex items-center gap-1.5">
+                <PlusIcon class="w-4 h-4" />{action.label}
+              </span>
+            </a>
+          {:else}
+            <div class="flex flex-col items-center justify-center gap-3 w-48 h-40 rounded-sm border border-border opacity-25 cursor-not-allowed">
+              <div class="flex items-center justify-center w-16 h-16 rounded-md bg-primary/10">
+                <Icon class="w-8 h-8 text-primary" />
+              </div>
+              <span class="text-base font-medium flex items-center gap-1.5">
+                <PlusIcon class="w-4 h-4" />{action.label}
+              </span>
+            </div>
+          {/if}
+        {/each}
+      </div>
+
+      <div class="flex-1"></div>
 
       <!-- Sessions Summary -->
       {#if canReadSessions}
@@ -237,6 +275,7 @@
       {/if}
     {/if}
   {/if}
+  <div class="pb-6"></div>
 </div>
 
 <style>
