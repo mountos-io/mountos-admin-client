@@ -36,10 +36,6 @@ async function getUser(id: number) {
   return api.users.get(id)
 }
 
-async function activateUser(id: number) {
-  await api.users.activate(id)
-}
-
 async function deactivateUser(id: number) {
   await api.users.deactivate(id)
 }
@@ -54,7 +50,6 @@ export function useUsers() {
     addUser,
     editUser,
     getUser,
-    activateUser,
     deactivateUser,
   }
 }

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { useStorages } from '$lib/core/stores/storages.svelte'
   import { useRegions } from '$lib/core/stores/regions.svelte'
@@ -34,12 +35,17 @@
     }
   })
 
+  const preselectedRegionId = $page.url.searchParams.get('regionId') ?? ''
+
   let regionsLoaded = $state(false)
   $effect(() => {
     if (accountId) {
       regionId = ''
       regionsLoaded = false
-      regionStore.fetchRegions(1, 100).finally(() => { regionsLoaded = true })
+      regionStore.fetchRegions(1, 100).finally(() => {
+        if (preselectedRegionId) regionId = preselectedRegionId
+        regionsLoaded = true
+      })
     }
   })
 

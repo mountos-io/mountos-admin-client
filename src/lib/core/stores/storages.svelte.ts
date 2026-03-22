@@ -36,10 +36,6 @@ async function getStorage(id: number) {
   return api.storages.get(id)
 }
 
-async function activateStorage(id: number) {
-  await api.storages.activate(id)
-}
-
 async function deactivateStorage(id: number) {
   await api.storages.deactivate(id)
 }
@@ -62,7 +58,6 @@ export function useStorages() {
     createStorage,
     editStorage,
     getStorage,
-    activateStorage,
     deactivateStorage,
     testBucket,
     testStorageBucket,

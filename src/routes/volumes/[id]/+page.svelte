@@ -136,11 +136,13 @@
         </CardContent>
         {#if auth.can('volumes', 'update')}
           <CardFooter class="flex gap-2">
-            <Button variant="outline" size="sm" onclick={() => dialog.confirm(
-              volume!.isActive ? 'Deactivate' : 'Activate',
-              `${volume!.isActive ? 'Deactivate' : 'Activate'} "${volume!.name}"?`,
-              () => volume!.isActive ? store.deactivateVolume(id) : store.activateVolume(id),
-            )}>{volume.isActive ? 'Deactivate' : 'Activate'}</Button>
+            {#if volume.isActive}
+              <Button variant="outline" size="sm" onclick={() => dialog.confirm(
+                'Deactivate',
+                `Deactivate "${volume!.name}"?`,
+                () => store.deactivateVolume(id),
+              )}>Deactivate</Button>
+            {/if}
             <Button variant="outline" size="sm" onclick={() => dialog.confirm(
               volume!.locked ? 'Unlock' : 'Lock',
               `${volume!.locked ? 'Unlock' : 'Lock'} "${volume!.name}"?`,

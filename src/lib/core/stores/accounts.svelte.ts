@@ -58,11 +58,6 @@ async function unlockAccount(id: number) {
   await fetchAccounts(currentPage)
 }
 
-async function activateAccount(id: number) {
-  await api.accounts.activate(id)
-  await fetchAccounts(currentPage)
-}
-
 async function deactivateAccount(id: number) {
   await api.accounts.deactivate(id)
   await fetchAccounts(currentPage)
@@ -87,7 +82,6 @@ export function useAccounts() {
     editAccount,
     lockAccount,
     unlockAccount,
-    activateAccount,
     deactivateAccount,
     getAccount,
   }

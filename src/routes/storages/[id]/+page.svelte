@@ -243,17 +243,16 @@
               Create Volume
             </Button>
           {/if}
-          {#if auth.can('storages', 'update')}
-            <Button variant={storage.isActive ? 'outline' : 'default'} size="sm" onclick={() => {
+          {#if storage.isActive && auth.can('storages', 'update')}
+            <Button variant="outline" size="sm" onclick={() => {
               if (!auth.guard('storages', 'update')) return
-              const active = storage!.isActive
               dialog.confirm(
-                active ? 'Deactivate' : 'Activate',
-                `${active ? 'Deactivate' : 'Activate'} "${storage!.name}"?`,
-                async () => { active ? await store.deactivateStorage(id) : await store.activateStorage(id) },
+                'Deactivate',
+                `Deactivate "${storage!.name}"? Make sure all volumes on this storage are deactivated first.`,
+                () => store.deactivateStorage(id),
               )
             }}>
-              {storage.isActive ? 'Deactivate' : 'Activate'}
+              Deactivate
             </Button>
           {/if}
         </CardFooter>

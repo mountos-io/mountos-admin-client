@@ -22,10 +22,12 @@
   import { showErrorToast, showSuccessToast } from "$lib/core/utils/toast";
   import { useConfirmDialog } from "$lib/stores/confirm-dialog.svelte";
   import { Input } from "$lib/components/ui/input";
+  import { HUB_REGION_NAME } from "$lib/core/constants";
   import Plus from "@lucide/svelte/icons/plus";
   import Power from "@lucide/svelte/icons/power";
   import Copy from "@lucide/svelte/icons/copy";
   import Lightbulb from "@lucide/svelte/icons/lightbulb";
+  import HardDriveIcon from "@lucide/svelte/icons/hard-drive";
 
   const store = useRegions();
   const accountStore = useAccounts();
@@ -59,16 +61,12 @@
     }
   }
 
-  function toggle(region: { id: number; name: string; isActive: boolean }) {
-    if (!auth.guard("regions", "update")) return;
-    const act = region.isActive ? "Deactivate" : "Activate";
+  function deactivate(region: { id: number; name: string; isActive: boolean }) {
+    if (!region.isActive || !auth.guard("regions", "update")) return;
     dialog.confirm(
-      `${act} Region`, `${act} "${region.name}"?`,
-      async () => {
-        region.isActive
-          ? await store.deactivateRegion(region.id)
-          : await store.activateRegion(region.id);
-      },
+      'Deactivate Region',
+      `Deactivate "${region.name}"? Make sure to stop all nodes, deactivate all storages and volumes associated with this region first.`,
+      () => store.deactivateRegion(region.id),
     );
   }
 </script>
@@ -144,22 +142,30 @@
               >{formatDate(region.createdAt)}</TableCell
             >
             <TableCell>
-              {#if auth.can("regions", "update")}
+              <div class="flex justify-end gap-1">
+              {#if region.name !== HUB_REGION_NAME && auth.can("storages", "create")}
+                <Button variant="ghost" size="sm"
+                  href="/storages/create?regionId={region.id}"
+                  title="Create storage" aria-label="Create storage"
+                  onclick={(e: MouseEvent) => e.stopPropagation()}>
+                  <HardDriveIcon class="size-3.5" aria-hidden="true" />
+                </Button>
+              {/if}
+              {#if region.name !== HUB_REGION_NAME && region.isActive && auth.can("regions", "update")}
                 <Button
                   variant="ghost"
                   size="sm"
-                  title={region.isActive ? "Deactivate" : "Activate"}
-                  aria-label={region.isActive ? "Deactivate" : "Activate"}
-                  onclick={(e: MouseEvent) => { e.stopPropagation(); toggle(region) }}
+                  title="Deactivate"
+                  aria-label="Deactivate"
+                  onclick={(e: MouseEvent) => { e.stopPropagation(); deactivate(region) }}
                 >
                   <Power
                     aria-hidden="true"
-                    class="size-3.5 {region.isActive
-                      ? 'text-muted-foreground'
-                      : 'text-success'}"
+                    class="size-3.5 text-muted-foreground"
                   />
                 </Button>
               {/if}
+              </div>
             </TableCell>
           </TableRow>
         {/each}

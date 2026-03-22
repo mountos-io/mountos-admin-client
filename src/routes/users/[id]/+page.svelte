@@ -175,8 +175,6 @@
             <CardFooter class="gap-2">
               {#if user.isActive}
                 <Button size="sm" onclick={() => dialog.confirm('Deactivate', `Deactivate "${user!.username}"?`, () => act(() => store.deactivateUser(id)))}>Deactivate</Button>
-              {:else}
-                <Button size="sm" onclick={() => dialog.confirm('Activate', `Activate "${user!.username}"?`, () => act(() => store.activateUser(id)))}>Activate</Button>
               {/if}
             </CardFooter>
           {/if}

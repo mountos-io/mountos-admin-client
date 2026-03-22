@@ -36,11 +36,6 @@ async function getRegion(id: number) {
   return api.regions.get(id)
 }
 
-async function activateRegion(id: number) {
-  await api.regions.activate(id)
-  await fetchRegions(currentPage)
-}
-
 async function deactivateRegion(id: number) {
   await api.regions.deactivate(id)
   await fetchRegions(currentPage)
@@ -56,7 +51,6 @@ export function useRegions() {
     createRegion,
     editRegion,
     getRegion,
-    activateRegion,
     deactivateRegion,
   }
 }

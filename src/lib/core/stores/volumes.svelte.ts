@@ -47,10 +47,6 @@ async function unlockVolume(id: number) {
   await api.volumes.unlock(id)
 }
 
-async function activateVolume(id: number) {
-  await api.volumes.activate(id)
-}
-
 async function deactivateVolume(id: number) {
   await api.volumes.deactivate(id)
 }
@@ -83,7 +79,6 @@ export function useVolumes() {
     getVolume,
     lockVolume,
     unlockVolume,
-    activateVolume,
     deactivateVolume,
     generateApiKeys,
     revokeApiKey,
