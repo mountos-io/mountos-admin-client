@@ -63,11 +63,11 @@ function applySkinPreset() {
   if (typeof document === 'undefined') return
   const mode = resolvedMode()
   if (!skin) {
+    clearSkin()
     if (mode === 'dark') {
       const mountOSDark = findPreset('mountOS Dark')
       if (mountOSDark) { applySkin(mountOSDark.colors, 'dark'); return }
     }
-    clearSkin()
     return
   }
   let preset = findPreset(skin)
@@ -77,6 +77,7 @@ function applySkinPreset() {
     else { skin = ''; clearSkin(); return }
   }
   if (!preset) { skin = ''; clearSkin(); return }
+  clearSkin()
   applySkin(preset.colors, preset.mode)
 }
 
