@@ -189,7 +189,7 @@
                   {#each timeRangeOptions as { key, label, icon }}
                     {@const Icon = icon}
                     <Button variant={activityTimeRange === key ? 'primary' : 'ghost'} size="sm"
-                      class="h-7 w-[5.5rem] text-xs font-mono justify-center"
+                      class="h-7 w-[6.5rem] text-xs font-mono justify-center"
                       onclick={() => activityTimeRange = key}>
                       <Icon class="w-3 h-3 mr-1" />{label}
                     </Button>

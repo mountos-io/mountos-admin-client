@@ -18,6 +18,8 @@
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
+  import FlaskConical from '@lucide/svelte/icons/flask-conical'
+  import Loader2 from '@lucide/svelte/icons/loader-2'
   import type { Storage, EditStorageRequest } from '$lib/core/api/types'
 
   const store = useStorages()
@@ -41,6 +43,21 @@
   let editSecretKey = $state('')
   let editSubmitting = $state(false)
   let credTestPassed = $state(false)
+
+  let bucketTesting = $state(false)
+
+  async function runBucketTest() {
+    if (!storage || bucketTesting) return
+    bucketTesting = true
+    try {
+      await store.testStorageBucket(storage.id)
+      showSuccessToast('Bucket test passed')
+    } catch (e: unknown) {
+      showErrorToast(e instanceof Error ? e.message : 'Bucket test failed')
+    } finally {
+      bucketTesting = false
+    }
+  }
 
   const credsChanged = $derived(!!(editAccessKey.trim() || editSecretKey.trim()))
   const credsBothFilled = $derived(!credsChanged || (!!editAccessKey.trim() && !!editSecretKey.trim()))
@@ -206,13 +223,19 @@
               </div>
             {/if}
           </div>
-
-          {#if isObject}
-            <BucketTester storageId={storage.id} />
-          {/if}
         </CardContent>
-        {#if auth.can('storages', 'update')}
-          <CardFooter>
+        <CardFooter class="gap-3">
+          {#if isObject}
+            <Button variant="outline" size="sm" disabled={bucketTesting} onclick={runBucketTest}>
+              {#if bucketTesting}
+                <Loader2 class="h-4 w-4 animate-spin" />
+              {:else}
+                <FlaskConical class="h-4 w-4" />
+              {/if}
+              {bucketTesting ? 'Testing…' : 'Test Bucket'}
+            </Button>
+          {/if}
+          {#if auth.can('storages', 'update')}
             <Button variant={storage.isActive ? 'outline' : 'default'} size="sm" onclick={() => {
               if (!auth.guard('storages', 'update')) return
               const active = storage!.isActive
@@ -224,8 +247,8 @@
             }}>
               {storage.isActive ? 'Deactivate' : 'Activate'}
             </Button>
-          </CardFooter>
-        {/if}
+          {/if}
+        </CardFooter>
       {/if}
     </Card>
   {:else}
