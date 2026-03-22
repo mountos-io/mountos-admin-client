@@ -141,7 +141,7 @@
       {@const k = key as keyof typeof timeRanges}
       {@const Icon = icon}
       <button type="button"
-        class="chart-range-btn flex items-center gap-1 px-2 py-1 rounded-sm border text-xs font-mono transition-colors
+        class="chart-range-btn flex items-center gap-1 px-2.5 py-1 rounded-sm border text-base font-mono transition-colors
           {selectedTimeRange === k ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground hover:border-foreground/40'}"
         onclick={() => selectedTimeRange = k}>
         <Icon class="w-3 h-3" />{label}
@@ -150,16 +150,16 @@
   </div>
 
   <!-- Chart -->
-  <div class="relative border border-border rounded-sm bg-background overflow-hidden" style="padding: 1.5rem 1.5rem 2.5rem 3rem; height: 400px; contain: layout;">
+  <div class="relative border border-border rounded-sm bg-background overflow-hidden" style="padding: 1.5rem 1.5rem 3rem 4rem; height: 400px; contain: layout;">
     <!-- Y-axis labels -->
-    <div class="absolute left-2 top-6 bottom-10 w-10 flex flex-col justify-between text-[0.6rem] font-mono text-muted-foreground">
+    <div class="absolute left-2 top-6 bottom-10 w-14 flex flex-col justify-between text-base font-mono text-muted-foreground">
       {#each timeLabels as { label }}
         <div class="text-right pr-1">{label}</div>
       {/each}
     </div>
 
     <!-- Plot area -->
-    <div class="absolute left-12 right-4 top-6 bottom-10 border-l border-b border-border/50 overflow-visible">
+    <div class="absolute left-[4.5rem] right-4 top-6 bottom-10 border-l border-b border-border/50 overflow-visible">
       <!-- Grid -->
       {#each timeLabels as { y }}
         <div class="absolute left-0 right-0 border-t border-border/20" style="top: {y}%"></div>
@@ -188,7 +188,7 @@
     </div>
 
     <!-- X-axis labels -->
-    <div class="absolute left-12 right-4 bottom-3 flex justify-between text-[0.6rem] font-mono text-muted-foreground">
+    <div class="absolute left-[4.5rem] right-4 bottom-2 flex justify-between text-base font-mono text-muted-foreground">
       {#each dateLabels as { label }}
         <div class="text-center">{label}</div>
       {/each}
@@ -238,7 +238,7 @@
   {#if plottedLogs.length > 0}
     {@const subjects = [...new Set(plottedLogs.map(l => l.subject).filter(Boolean))] as string[]}
     {#if subjects.length > 1}
-      <div class="flex flex-wrap gap-3 mt-3 text-xs font-mono text-muted-foreground">
+      <div class="flex flex-wrap gap-3 mt-3 text-base font-mono text-muted-foreground">
         {#each subjects as s}
           {@const m = meta(s)}
           {@const Icon = m.icon}

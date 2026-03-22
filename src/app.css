@@ -61,7 +61,7 @@
   --scrollbar-thumb: oklch(0.61 0.14 39);
   --scrollbar-track: oklch(0.95 0 0);
 
-  --pastel-user: oklch(0.8 0.1 240);
+  --pastel-user: oklch(0.8 0.1 265);
   --pastel-volume: oklch(0.8 0.1 150);
 
   --pastel-account: oklch(0.8 0.1 50);
@@ -128,7 +128,7 @@
   --scrollbar-thumb: oklch(0.78 0.13 92);
   --scrollbar-track: oklch(0.11 0.005 200);
 
-  --pastel-user: oklch(0.65 0.12 240);
+  --pastel-user: oklch(0.65 0.12 265);
   --pastel-volume: oklch(0.65 0.12 150);
 
   --pastel-account: oklch(0.65 0.12 50);

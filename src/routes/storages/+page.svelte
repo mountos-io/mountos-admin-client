@@ -54,17 +54,15 @@
           <TableHead class="th-cyber">Type</TableHead>
           <TableHead class="th-cyber">Provider</TableHead>
           <TableHead class="th-cyber">Status</TableHead>
-          <TableHead class="w-24"></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {#each storageStore.storages as storage}
-          <TableRow>
+          <TableRow class="cursor-pointer" onclick={() => goto(`/storages/${storage.id}`)}>
             <TableCell class="font-medium max-w-[200px] truncate">{storage.name}</TableCell>
             <TableCell><Badge variant="outline">{storage.storageType}</Badge></TableCell>
             <TableCell><Badge variant="secondary">{storage.providerType}</Badge></TableCell>
             <TableCell><StatusBadge active={storage.isActive} /></TableCell>
-            <TableCell><Button variant="ghost" size="sm" href="/storages/{storage.id}">View</Button></TableCell>
           </TableRow>
         {/each}
       </TableBody>

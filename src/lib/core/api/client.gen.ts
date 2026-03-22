@@ -325,6 +325,10 @@ class StoragesResource {
   testBucket(req: TestStorageBucketRequest): Promise<{ bucketExists: boolean; list: boolean; write: boolean; read: boolean; delete: boolean; multipart: boolean }> {
     return this.client.request('POST', '/storages/test-bucket', req)
   }
+
+  testStorageBucket(storageId: number): Promise<{ bucketExists: boolean; list: boolean; write: boolean; read: boolean; delete: boolean; multipart: boolean }> {
+    return this.client.request('POST', `/storages/${storageId}/test-bucket`)
+  }
 }
 
 class VolumesResource {

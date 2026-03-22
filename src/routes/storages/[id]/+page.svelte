@@ -6,13 +6,19 @@
   import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
   import { Button } from '$lib/components/ui/button'
   import { Badge } from '$lib/components/ui/badge'
+  import { Separator } from '$lib/components/ui/separator'
+  import Input from '$lib/components/ui/input/input.svelte'
+  import SecretInput from '$lib/components/ui/input/secret-input.svelte'
+  import Label from '$lib/components/ui/label/label.svelte'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
+  import BucketTester from '$lib/components/shared/BucketTester.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
-  import { showErrorToast } from '$lib/core/utils/toast'
+  import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import type { Storage } from '$lib/core/api/types'
+  import PencilIcon from '@lucide/svelte/icons/pencil'
+  import type { Storage, EditStorageRequest } from '$lib/core/api/types'
 
   const store = useStorages()
   const auth = useAuth()
@@ -24,9 +30,21 @@
       goto('/', { replaceState: true })
     }
   })
+
   let storage = $state<Storage | null>(null)
   let loading = $state(true)
   const dialog = useConfirmDialog(() => reload())
+
+  let editing = $state(false)
+  let editName = $state('')
+  let editAccessKey = $state('')
+  let editSecretKey = $state('')
+  let editSubmitting = $state(false)
+  let credTestPassed = $state(false)
+
+  const credsChanged = $derived(!!(editAccessKey.trim() || editSecretKey.trim()))
+  const credsBothFilled = $derived(!credsChanged || (!!editAccessKey.trim() && !!editSecretKey.trim()))
+  const canSave = $derived(editName.trim() && !editSubmitting && credsBothFilled && (!credsChanged || credTestPassed))
 
   $effect(() => {
     if (Number.isNaN(id)) { loading = false; return }
@@ -37,6 +55,40 @@
   async function reload() {
     storage = await store.getStorage(id)
   }
+
+  function startEdit() {
+    if (!storage) return
+    editName = storage.name
+    editAccessKey = ''
+    editSecretKey = ''
+    credTestPassed = false
+    editing = true
+  }
+
+  function cancelEdit() {
+    editing = false
+  }
+
+  async function handleUpdate(e: Event) {
+    e.preventDefault()
+    if (!canSave || !storage) return
+    editSubmitting = true
+    try {
+      const req: EditStorageRequest = { name: editName.trim() }
+      if (editAccessKey.trim()) req.accessKey = editAccessKey.trim()
+      if (editSecretKey.trim()) req.secretKey = editSecretKey.trim()
+      await store.editStorage(id, req)
+      storage = await store.getStorage(id)
+      editing = false
+      showSuccessToast('Storage updated')
+    } catch (err: unknown) {
+      handleApiError(err, 'Failed to update storage')
+    } finally {
+      editSubmitting = false
+    }
+  }
+
+  const isObject = $derived(storage?.storageType === 'object')
 </script>
 
 <div class="space-y-6">
@@ -47,42 +99,133 @@
   {#if loading}
     <LoadingSpinner />
   {:else if storage}
-    <Card>
-      <CardHeader><CardTitle>{storage.name}</CardTitle></CardHeader>
-      <CardContent class="grid gap-3 md:grid-cols-2">
-        <div>
-          <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
-          <div class="mt-1"><StatusBadge active={storage.isActive} /></div>
-        </div>
-        <div>
-          <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Type</span>
-          <div class="mt-1 flex gap-2"><Badge variant="outline">{storage.storageType}</Badge><Badge variant="secondary">{storage.providerType}</Badge></div>
-        </div>
-        <div>
-          <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Endpoint</span>
-          <p class="mt-1 text-sm font-mono">{storage.endpoint}</p>
-        </div>
-        {#if storage.bucket}
-          <div>
-            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Bucket</span>
-            <p class="mt-1 text-sm font-mono">{storage.bucket}</p>
+    <Card cornerBrackets>
+      {#if editing}
+        <form onsubmit={handleUpdate} class="flex flex-col gap-6">
+          <CardHeader><CardTitle>Edit Storage</CardTitle></CardHeader>
+          <CardContent class="space-y-5">
+            <div class="space-y-2">
+              <Label for="edit-name">Name</Label>
+              <Input id="edit-name" bind:value={editName} placeholder="Storage name" required />
+            </div>
+
+            <Separator />
+
+            <p class="text-sm font-medium">Update Credentials</p>
+            <p class="text-xs text-muted-foreground">Leave blank to keep current credentials.</p>
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="space-y-2">
+                <Label for="edit-accessKey">Access Key</Label>
+                <Input id="edit-accessKey" bind:value={editAccessKey} placeholder="New access key" autocomplete="off" />
+              </div>
+              <div class="space-y-2">
+                <Label for="edit-secretKey">Secret Key</Label>
+                <SecretInput id="edit-secretKey" bind:value={editSecretKey} placeholder="New secret key" autocomplete="off" />
+              </div>
+            </div>
+
+            {#if credsChanged && !credsBothFilled}
+              <p class="text-xs text-destructive">Both access key and secret key are required when updating credentials.</p>
+            {/if}
+
+            {#if credsChanged && credsBothFilled}
+              <BucketTester
+                endpoint={storage.endpoint}
+                region={storage.region ?? ''}
+                bucket={storage.bucket ?? ''}
+                accessKey={editAccessKey}
+                secretKey={editSecretKey}
+                providerType={storage.providerType}
+                onresult={(passed) => { credTestPassed = passed }}
+              />
+            {/if}
+          </CardContent>
+          <CardFooter class="gap-3">
+            <Button variant="default" type="submit" size="sm" disabled={!canSave}>
+              {editSubmitting ? 'Saving…' : 'Save'}
+            </Button>
+            <Button variant="outline" size="sm" type="button" onclick={cancelEdit} disabled={editSubmitting}>Cancel</Button>
+          </CardFooter>
+        </form>
+      {:else}
+        <CardHeader>
+          <div class="flex items-center gap-3">
+            <CardTitle class="flex-1 truncate">{storage.name}</CardTitle>
+            {#if auth.can('storages', 'update')}
+              <button type="button" onclick={startEdit}
+                class="opacity-50 hover:opacity-100 hover:text-primary transition-all"
+                title="Edit storage" aria-label="Edit storage">
+                <PencilIcon class="size-4" />
+              </button>
+            {/if}
           </div>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
+              <div class="mt-1"><StatusBadge active={storage.isActive} /></div>
+            </div>
+            <div>
+              <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Type</span>
+              <div class="mt-1 flex gap-2">
+                <Badge variant="outline">{storage.storageType}</Badge>
+                <Badge variant="secondary">{storage.providerType}</Badge>
+              </div>
+            </div>
+          </div>
+
+          {#if storage.description}
+            <div>
+              <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
+              <p class="mt-1 text-sm">{storage.description}</p>
+            </div>
+          {/if}
+
+          <div class="grid gap-4 md:grid-cols-2">
+            <div>
+              <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Endpoint</span>
+              <p class="mt-1 text-sm font-mono truncate" title={storage.endpoint}>{storage.endpoint}</p>
+            </div>
+            {#if storage.bucket}
+              <div>
+                <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Bucket</span>
+                <p class="mt-1 text-sm font-mono">{storage.bucket}</p>
+              </div>
+            {/if}
+            {#if storage.region}
+              <div>
+                <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Region</span>
+                <p class="mt-1 text-sm font-mono">{storage.region}</p>
+              </div>
+            {/if}
+            {#if storage.base}
+              <div>
+                <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Base Path</span>
+                <p class="mt-1 text-sm font-mono">{storage.base}</p>
+              </div>
+            {/if}
+          </div>
+
+          {#if isObject}
+            <BucketTester storageId={storage.id} />
+          {/if}
+        </CardContent>
+        {#if auth.can('storages', 'update')}
+          <CardFooter>
+            <Button variant={storage.isActive ? 'outline' : 'default'} size="sm" onclick={() => {
+              if (!auth.guard('storages', 'update')) return
+              const active = storage!.isActive
+              dialog.confirm(
+                active ? 'Deactivate' : 'Activate',
+                `${active ? 'Deactivate' : 'Activate'} "${storage!.name}"?`,
+                async () => { active ? await store.deactivateStorage(id) : await store.activateStorage(id) },
+              )
+            }}>
+              {storage.isActive ? 'Deactivate' : 'Activate'}
+            </Button>
+          </CardFooter>
         {/if}
-      </CardContent>
-      {#if auth.can('storages', 'update')}
-        <CardFooter>
-          <Button variant={storage.isActive ? 'outline' : 'default'} size="sm" onclick={() => {
-            if (!auth.guard('storages', 'update')) return
-            const active = storage!.isActive
-            dialog.confirm(
-              active ? 'Deactivate' : 'Activate',
-              `${active ? 'Deactivate' : 'Activate'} "${storage!.name}"?`,
-              async () => { active ? await store.deactivateStorage(id) : await store.activateStorage(id) },
-            )
-          }}>
-            {storage.isActive ? 'Deactivate' : 'Activate'}
-          </Button>
-        </CardFooter>
       {/if}
     </Card>
   {:else}

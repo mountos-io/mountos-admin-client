@@ -10,18 +10,21 @@
   import Loader2 from '@lucide/svelte/icons/loader-2'
 
   let {
-    endpoint, region = '', bucket, accessKey, secretKey,
-    providerType = '', disabled = false, onresult,
+    endpoint = '', region = '', bucket = '', accessKey = '', secretKey = '',
+    providerType = '', storageId, disabled = false, onresult,
   }: {
-    endpoint: string
+    endpoint?: string
     region?: string
-    bucket: string
-    accessKey: string
-    secretKey: string
+    bucket?: string
+    accessKey?: string
+    secretKey?: string
     providerType?: string
+    storageId?: number
     disabled?: boolean
     onresult?: (passed: boolean) => void
   } = $props()
+
+  const isStorageMode = $derived(storageId !== undefined)
 
   const store = useStorages()
 
@@ -41,7 +44,9 @@
     { key: 'multipart', label: 'Multipart Upload' },
   ]
 
-  const fingerprint = $derived(`${endpoint}|${region}|${bucket}|${accessKey}|${secretKey}|${providerType}`)
+  const fingerprint = $derived(
+    isStorageMode ? `storage:${storageId}` : `${endpoint}|${region}|${bucket}|${accessKey}|${secretKey}|${providerType}`
+  )
   let lastFingerprint = $state('')
   let mounted = $state(false)
 
@@ -67,10 +72,12 @@
     error = ''
     result = null
     try {
-      const res = await store.testBucket({
-        endpoint, region: region || undefined, bucket, accessKey, secretKey,
-        providerType: providerType || undefined,
-      })
+      const res = isStorageMode
+        ? await store.testStorageBucket(storageId!)
+        : await store.testBucket({
+          endpoint, region: region || undefined, bucket, accessKey, secretKey,
+          providerType: providerType || undefined,
+        })
       if (gen !== testGeneration) return
       result = res
       onresult?.(Object.values(res).every(Boolean))
@@ -123,7 +130,6 @@
 
   <Button
     variant="outline"
-    class="w-full"
     disabled={disabled || testing}
     onclick={runTest}
   >

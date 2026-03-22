@@ -48,6 +48,10 @@ async function testBucket(req: TestStorageBucketRequest) {
   return api.storages.testBucket(req)
 }
 
+async function testStorageBucket(id: number) {
+  return api.storages.testStorageBucket(id)
+}
+
 export function useStorages() {
   return {
     get storages() { return storages },
@@ -61,5 +65,6 @@ export function useStorages() {
     activateStorage,
     deactivateStorage,
     testBucket,
+    testStorageBucket,
   }
 }

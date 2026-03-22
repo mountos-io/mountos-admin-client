@@ -12,6 +12,19 @@
   import { formatRelative } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
 
+  const subjectColors: Record<string, string> = {
+    user: 'var(--pastel-user)', volume: 'var(--pastel-volume)',
+    account: 'var(--pastel-account)', storage: 'var(--pastel-storage)',
+    role: 'var(--pastel-role)', region: 'var(--pastel-region)',
+    mount: 'var(--pastel-mount)', key: 'var(--pastel-key)',
+    session: 'var(--pastel-session)', node: 'var(--pastel-node)',
+    license: 'var(--pastel-license)',
+  }
+
+  function subjectColor(s?: string) {
+    return subjectColors[s ?? ''] ?? 'var(--muted-foreground)'
+  }
+
   const store = useAuditLogs()
   const accountStore = useAccounts()
   const auth = useAuth()
@@ -80,7 +93,13 @@
           <TableRow class="cursor-pointer" onclick={() => toggleRow(log.id)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggleRow(log.id))} role="button" tabindex={0}>
             <TableCell class="text-muted-foreground" aria-hidden="true">{expanded.has(log.id) ? '▾' : '▸'}</TableCell>
             <TableCell class="font-medium">{log.title}</TableCell>
-            <TableCell class="text-sm text-muted-foreground">{log.subject ?? '—'}</TableCell>
+            <TableCell>
+              {#if log.subject}
+                <span class="audit-subject" style="--sc: {subjectColor(log.subject)}">{log.subject}</span>
+              {:else}
+                <span class="text-sm text-muted-foreground">—</span>
+              {/if}
+            </TableCell>
             <TableCell><Badge variant={log.success ? 'default' : 'destructive'}>{log.success ? 'OK' : 'Fail'}</Badge></TableCell>
             <TableCell class="text-sm text-muted-foreground">{log.createdBy ?? '—'}</TableCell>
             <TableCell class="text-sm text-muted-foreground">{log.createdAt ? formatRelative(log.createdAt) : '—'}</TableCell>
@@ -89,12 +108,14 @@
             <TableRow>
               <TableCell></TableCell>
               <TableCell colspan={5}>
-                <div class="space-y-2 py-2">
+                <div class="audit-detail space-y-3 py-3">
                   {#if log.description}
-                    <p class="text-sm">{log.description}</p>
+                    <div class="audit-desc">{log.description}</div>
                   {/if}
                   {#if log.data}
-                    <pre class="text-sm bg-muted rounded-md p-3 overflow-x-auto max-h-64">{JSON.stringify(log.data, null, 2)}</pre>
+                    <div class="audit-data-wrap corner-brackets">
+                      <pre class="audit-data">{JSON.stringify(log.data, null, 2)}</pre>
+                    </div>
                   {/if}
                 </div>
               </TableCell>
@@ -112,3 +133,86 @@
     {/if}
   {/if}
 </div>
+
+<style>
+  .audit-desc {
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.8125rem;
+    letter-spacing: 0.04em;
+    color: var(--primary);
+    position: relative;
+    padding: 0.375rem 0.75rem;
+    border-left: 2px solid var(--primary);
+    background: color-mix(in oklch, var(--card) 94%, var(--primary));
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%);
+  }
+
+  .audit-desc::before {
+    content: "//";
+    color: var(--muted-foreground);
+    opacity: 0.5;
+    margin-right: 0.5rem;
+  }
+
+  .audit-desc::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--primary), transparent);
+    opacity: 0.4;
+  }
+
+  .audit-data-wrap {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 0;
+    background: var(--card);
+  }
+
+  .audit-data {
+    font-size: 0.8125rem;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    height: 12rem;
+    overflow-y: auto;
+    border-radius: 0;
+    color: var(--card-foreground);
+    background: transparent;
+    position: relative;
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent calc(1.6em - 1px),
+      var(--border) calc(1.6em - 1px),
+      var(--border) 1.6em
+    );
+    background-size: 100% 1.6em;
+    background-position: 0 0.75rem;
+    line-height: 1.6;
+  }
+
+  :global(.dark) .audit-desc {
+    background: color-mix(in oklch, var(--card) 92%, var(--primary));
+  }
+
+  .audit-subject {
+    display: inline-block;
+    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    padding: 0.125rem 0.375rem;
+    border: 1px solid var(--sc);
+    border-radius: 1px;
+    color: color-mix(in oklch, var(--sc) 80%, black);
+    background: color-mix(in oklch, var(--sc) 15%, transparent);
+  }
+
+  :global(.dark) .audit-subject {
+    color: var(--sc);
+    background: color-mix(in oklch, var(--sc) 10%, transparent);
+  }
+</style>
