@@ -116,9 +116,9 @@
               </div>
             </div>
             {#if prefs.theme === 'light'}
+              {@const skins = presetsForMode('light')}
               <div class="space-y-4">
                 <h4 class="text-sm font-medium">Skin</h4>
-                {@const skins = presetsForMode('light')}
                 <div class="flex flex-wrap gap-2">
                   <button
                     class="skin-swatch {!prefs.skin ? 'ring-2 ring-primary' : ''}"
@@ -143,9 +143,9 @@
                 </div>
               </div>
             {:else if prefs.theme === 'dark'}
+              {@const skins = presetsForMode('dark')}
               <div class="space-y-4">
                 <h4 class="text-sm font-medium">Skin</h4>
-                {@const skins = presetsForMode('dark')}
                 <div class="flex flex-wrap gap-2">
                   {#each skins as preset}
                     {@const active = preset.name === 'mountOS Dark' ? !prefs.skin || prefs.skin === 'mountOS Dark' : prefs.skin === preset.name}
