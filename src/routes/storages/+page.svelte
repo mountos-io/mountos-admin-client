@@ -13,6 +13,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import Plus from '@lucide/svelte/icons/plus'
+  import DatabaseIcon from '@lucide/svelte/icons/database'
 
   const storageStore = useStorages()
   const accountStore = useAccounts()
@@ -54,6 +55,7 @@
           <TableHead class="th-cyber">Type</TableHead>
           <TableHead class="th-cyber">Provider</TableHead>
           <TableHead class="th-cyber">Status</TableHead>
+          <TableHead class="th-cyber w-12"></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -63,6 +65,16 @@
             <TableCell><Badge variant="outline">{storage.storageType}</Badge></TableCell>
             <TableCell><Badge variant="secondary">{storage.providerType}</Badge></TableCell>
             <TableCell><StatusBadge active={storage.isActive} /></TableCell>
+            <TableCell>
+              {#if auth.can('volumes', 'create')}
+                <Button variant="ghost" size="sm"
+                  href="/volumes/create?storageId={storage.id}"
+                  title="Create volume" aria-label="Create volume"
+                  onclick={(e: MouseEvent) => e.stopPropagation()}>
+                  <DatabaseIcon class="size-3.5" aria-hidden="true" />
+                </Button>
+              {/if}
+            </TableCell>
           </TableRow>
         {/each}
       </TableBody>

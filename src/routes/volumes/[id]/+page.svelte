@@ -98,7 +98,8 @@
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" href="/volumes"><ArrowLeft class="h-4 w-4" /></Button>
-    <h1 class="text-2xl font-bold tracking-tight">Volume Detail</h1>
+    <h1 class="text-2xl font-bold tracking-tight">{volume?.name ?? 'Volume'}</h1>
+    {#if volume}<Badge variant="outline" style="border-color: var(--pastel-volume); color: var(--pastel-volume)">Volume</Badge>{/if}
   </div>
   {#if loading}
     <LoadingSpinner />

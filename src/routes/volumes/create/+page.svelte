@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { useVolumes } from '$lib/core/stores/volumes.svelte'
   import { useStorages } from '$lib/core/stores/storages.svelte'
@@ -16,6 +17,7 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import Copy from '@lucide/svelte/icons/copy'
+  import Lightbulb from '@lucide/svelte/icons/lightbulb'
 
   const volumeStore = useVolumes()
   const storageStore = useStorages()
@@ -30,12 +32,17 @@
     }
   })
 
+  const preselectedStorageId = $page.url.searchParams.get('storageId') ?? ''
+
   let storagesLoaded = $state(false)
   $effect(() => {
     if (accountId) {
       storageId = ''
       storagesLoaded = false
-      storageStore.fetchStorages(accountId, 1, 100).finally(() => { storagesLoaded = true })
+      storageStore.fetchStorages(accountId, 1, 100).finally(() => {
+        if (preselectedStorageId) storageId = preselectedStorageId
+        storagesLoaded = true
+      })
     }
   })
 
@@ -50,8 +57,7 @@
   let encryption = $state(false)
   let encryptionKey = $state('')
   let retentionPeriod = $state('')
-  let gracePeriod = $state('')
-  let gcOnDeactivation = $state(false)
+  let gracePeriod = $state('14')
   let quotaLimit = $state('')
   let submitting = $state(false)
   let createResult = $state<{ id: number; encryptionKey: string } | null>(null)
@@ -73,7 +79,6 @@
         encryptionKey: (encryption && encryptionKey.trim()) ? encryptionKey.trim() : undefined,
         retentionPeriod: retentionPeriod ? Number(retentionPeriod) : undefined,
         gracePeriod: gracePeriod ? Number(gracePeriod) : undefined,
-        gcOnDeactivation: gcOnDeactivation ? true : undefined,
         quotaLimit: quotaLimit ? Number(quotaLimit) : undefined,
       })
       createResult = result
@@ -166,15 +171,28 @@
           <p class="text-sm font-medium">Retention & Lifecycle</p>
           <div class="grid gap-4 md:grid-cols-2">
             <div class="space-y-2">
-              <Label for="retentionPeriod">Retention Period (seconds)</Label>
+              <Label for="retentionPeriod">
+                <span class="inline-flex items-center gap-1">
+                  Snapshot Window (days)
+                  <span title="How long deleted items and old versions are retained before cleanup. Beyond this window, point-in-time recovery is unavailable.">
+                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                  </span>
+                </span>
+              </Label>
               <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="0" min="0" />
             </div>
             <div class="space-y-2">
-              <Label for="gracePeriod">Grace Period (seconds)</Label>
-              <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="0" min="0" />
+              <Label for="gracePeriod">
+                <span class="inline-flex items-center gap-1">
+                  Grace Period (days)
+                  <span title="How long data stays before cleanup after deactivation">
+                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                  </span>
+                </span>
+              </Label>
+              <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" />
             </div>
           </div>
-          <Checkbox bind:checked={gcOnDeactivation} label="Run GC on deactivation" />
 
           <Separator />
 

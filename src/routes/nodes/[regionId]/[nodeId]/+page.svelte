@@ -74,6 +74,7 @@
           <h1 class="text-xl font-bold tracking-tight font-mono">{nodeId}</h1>
           {#if node}
             <Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge>
+            <Badge variant="outline" style="border-color: var(--pastel-node); color: var(--pastel-node)">Node</Badge>
             <Badge variant="outline">{serviceTypeLabel}</Badge>
           {/if}
         </div>

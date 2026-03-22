@@ -20,6 +20,7 @@
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import FlaskConical from '@lucide/svelte/icons/flask-conical'
   import Loader2 from '@lucide/svelte/icons/loader-2'
+  import DatabaseIcon from '@lucide/svelte/icons/database'
   import type { Storage, EditStorageRequest } from '$lib/core/api/types'
 
   const store = useStorages()
@@ -111,7 +112,8 @@
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" href="/storages"><ArrowLeft class="h-4 w-4" /></Button>
-    <h1 class="text-2xl font-bold tracking-tight">Storage Detail</h1>
+    <h1 class="text-2xl font-bold tracking-tight">{storage?.name ?? 'Storage'}</h1>
+    {#if storage}<Badge variant="outline" style="border-color: var(--pastel-storage); color: var(--pastel-storage)">Storage</Badge>{/if}
   </div>
   {#if loading}
     <LoadingSpinner />
@@ -233,6 +235,12 @@
                 <FlaskConical class="h-4 w-4" />
               {/if}
               {bucketTesting ? 'Testing…' : 'Test Bucket'}
+            </Button>
+          {/if}
+          {#if auth.can('volumes', 'create')}
+            <Button variant="outline" size="sm" href="/volumes/create?storageId={storage.id}" class="gap-1.5">
+              <DatabaseIcon class="h-4 w-4" />
+              Create Volume
             </Button>
           {/if}
           {#if auth.can('storages', 'update')}

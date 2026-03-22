@@ -8,6 +8,7 @@
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
   import AccountIcon from '$lib/components/shared/AccountIcon.svelte'
+  import { Badge } from '$lib/components/ui/badge'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
@@ -124,7 +125,8 @@
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" href="/accounts"><ArrowLeft class="h-4 w-4" /></Button>
-    <h1 class="text-2xl font-bold tracking-tight">Account Detail</h1>
+    <h1 class="text-2xl font-bold tracking-tight">{account?.name ?? 'Account'}</h1>
+    {#if account}<Badge variant="outline" style="border-color: var(--pastel-account); color: var(--pastel-account)">Account</Badge>{/if}
   </div>
 
   {#if loading}
