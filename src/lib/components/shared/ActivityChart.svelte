@@ -307,14 +307,6 @@
     background: color-mix(in oklch, var(--chip-accent, oklch(0.5 0 0)) 6%, transparent);
   }
 
-  .legend-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    box-shadow: 0 0 5px currentColor;
-  }
-
   .legend-label {
     font-weight: 500;
     letter-spacing: 0.02em;
@@ -324,10 +316,6 @@
     opacity: 0.35;
     filter: saturate(0.2);
     border-color: oklch(0.5 0 0 / 0.15);
-  }
-
-  .legend-dimmed .legend-dot {
-    box-shadow: none;
   }
 
   .legend-inert {

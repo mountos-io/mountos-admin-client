@@ -56,7 +56,7 @@
   let volumeType = $state('')
   let encryption = $state(false)
   let encryptionKey = $state('')
-  let retentionPeriod = $state('')
+  let retentionPeriod = $state('30')
   let gracePeriod = $state('14')
   let quotaLimit = $state('')
   let submitting = $state(false)
@@ -174,12 +174,12 @@
               <Label for="retentionPeriod">
                 <span class="inline-flex items-center gap-1">
                   Snapshot Window (days)
-                  <span title="How long deleted items and old versions are retained before cleanup. Beyond this window, point-in-time recovery is unavailable.">
+                  <span title="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data.">
                     <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
                   </span>
                 </span>
               </Label>
-              <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="0" min="0" />
+              <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="30" min="0" max="366" />
             </div>
             <div class="space-y-2">
               <Label for="gracePeriod">
@@ -190,7 +190,7 @@
                   </span>
                 </span>
               </Label>
-              <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" />
+              <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" max="91" />
             </div>
           </div>
 
