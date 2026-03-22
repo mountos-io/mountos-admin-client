@@ -75,7 +75,7 @@
               {#if auth.can('volumes', 'create')}
                 <Button variant="ghost" size="sm"
                   href="/volumes/create?storageId={storage.id}"
-                  title="Create volume" aria-label="Create volume"
+                  title="Create Volume" aria-label="Create Volume"
                   onclick={(e: MouseEvent) => e.stopPropagation()}>
                   <DatabaseIcon class="size-3.5" aria-hidden="true" />
                 </Button>

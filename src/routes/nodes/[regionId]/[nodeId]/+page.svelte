@@ -14,6 +14,7 @@
   import { formatRelative, nodeStatusVariant, formatDate } from '$lib/core/utils/format'
   import type { ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
+  import { POLL_OPTIONS } from '$lib/core/utils/options'
 
   const nodeStore = useNodes()
   const auth = useAuth()
@@ -22,7 +23,6 @@
   const nodeId = $derived($page.params.nodeId)
 
   const node = $derived<ServiceNode | undefined>(nodeStore.nodes.find(n => n.nodeId === nodeId))
-  import { POLL_OPTIONS } from '$lib/core/utils/options'
 
   let pollValue = $state('')
 
@@ -63,7 +63,6 @@
 </script>
 
 <div class="space-y-5">
-  <!-- Header -->
   <div class="flex items-start justify-between gap-4">
     <div class="flex items-center gap-3">
       <Button variant="ghost" size="sm" onclick={() => goto(`/nodes/${regionId}`)} aria-label="Back to region nodes">
@@ -91,7 +90,6 @@
     />
   </div>
 
-  <!-- Last updated -->
   {#if nodeStore.statsLastUpdated}
     <div class="flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground border-l-2 border-primary/30 pl-2">
       Last updated: {formatDate(nodeStore.statsLastUpdated)}
@@ -101,7 +99,6 @@
     </div>
   {/if}
 
-  <!-- Node info card -->
   {#if node}
     <Card>
       <CardHeader><CardTitle class="text-base">Node Info</CardTitle></CardHeader>
@@ -144,7 +141,6 @@
     </Card>
   {/if}
 
-  <!-- Stats section -->
   {#if node && (node.status !== 'healthy' || !node.isActive)}
     <Card>
       <CardHeader><CardTitle class="text-base">Metrics</CardTitle></CardHeader>

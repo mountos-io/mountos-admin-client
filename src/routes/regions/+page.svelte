@@ -65,7 +65,7 @@
     if (!region.isActive || !auth.guard("regions", "update")) return;
     dialog.confirm(
       'Deactivate Region',
-      `Deactivate "${region.name}"? Make sure to stop all nodes, deactivate all storages and volumes associated with this region first. This action cannot be reverted.`,
+      `Deactivate "${region.name}"? Make sure all nodes are stopped and all storages and volumes in this region are deactivated first. This action cannot be reverted.`,
       () => store.deactivateRegion(region.id),
     );
   }
@@ -146,7 +146,7 @@
               {#if region.name !== HUB_REGION_NAME && auth.can("storages", "create")}
                 <Button variant="ghost" size="sm"
                   href="/storages/create?regionId={region.id}"
-                  title="Create storage" aria-label="Create storage"
+                  title="Create Storage" aria-label="Create Storage"
                   onclick={(e: MouseEvent) => e.stopPropagation()}>
                   <HardDriveIcon class="size-3.5" aria-hidden="true" />
                 </Button>

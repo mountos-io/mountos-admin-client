@@ -149,7 +149,7 @@
     <LoadingSpinner />
   {:else if volume}
     <div class="grid gap-6 lg:grid-cols-2">
-      <Card>
+      <Card cornerBrackets>
         <CardHeader><CardTitle>Details</CardTitle></CardHeader>
         <CardContent class="grid gap-3">
           <div>

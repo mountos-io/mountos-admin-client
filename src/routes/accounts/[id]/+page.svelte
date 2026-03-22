@@ -21,7 +21,7 @@
   import { debounce } from '$lib/utils'
   import { generateIdenticon } from '$lib/core/utils/identicon'
   import { features } from '$lib/config/features'
-  import type { Account, AuditLog } from '$lib/core/api/types'
+  import type { Account } from '$lib/core/api/types'
   import { useAuditLogs } from '$lib/core/stores/audit.svelte'
 
   const store = useAccounts()
@@ -108,7 +108,6 @@
   $effect(() => {
     if (editOnLoad && account && !editing && auth.can('accounts', 'update')) startEdit()
   })
-
 
   $effect(() => {
     if (!Number.isNaN(id) && auth.can('auditLogs', 'read')) {

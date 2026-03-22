@@ -92,7 +92,6 @@
     if (editOnLoad && user && !editing && auth.can('users', 'update')) startEdit()
   })
 
-
   async function act(fn: () => Promise<void>) {
     await fn()
     user = await store.getUser(id)

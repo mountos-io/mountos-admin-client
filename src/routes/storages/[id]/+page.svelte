@@ -159,11 +159,11 @@
               />
             {/if}
           </CardContent>
-          <CardFooter class="gap-3">
-            <Button variant="default" type="submit" size="sm" disabled={!canSave}>
+          <CardFooter class="gap-4">
+            <Button variant="primary" type="submit" size="sm" class="cyberpunk-skewed-sm" disabled={!canSave}>
               {editSubmitting ? 'Saving…' : 'Save'}
             </Button>
-            <Button variant="outline" size="sm" type="button" onclick={cancelEdit} disabled={editSubmitting}>Cancel</Button>
+            <Button variant="secondary" size="sm" type="button" onclick={cancelEdit} disabled={editSubmitting}>Cancel</Button>
           </CardFooter>
         </form>
       {:else}
@@ -182,11 +182,11 @@
         <CardContent class="space-y-4">
           <div class="grid gap-4 md:grid-cols-2">
             <div>
-              <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
               <div class="mt-1"><StatusBadge active={storage.isActive} /></div>
             </div>
             <div>
-              <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Type</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Type</span>
               <div class="mt-1 flex gap-2">
                 <Badge variant="outline">{storage.storageType}</Badge>
                 <Badge variant="secondary">{storage.providerType}</Badge>
@@ -196,37 +196,37 @@
 
           {#if storage.description}
             <div>
-              <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
               <p class="mt-1 text-sm">{storage.description}</p>
             </div>
           {/if}
 
           <div class="grid gap-4 md:grid-cols-2">
             <div>
-              <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Endpoint</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Endpoint</span>
               <p class="mt-1 text-sm font-mono truncate" title={storage.endpoint}>{storage.endpoint}</p>
             </div>
             {#if storage.bucket}
               <div>
-                <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Bucket</span>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Bucket</span>
                 <p class="mt-1 text-sm font-mono">{storage.bucket}</p>
               </div>
             {/if}
             {#if storage.region}
               <div>
-                <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Region</span>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Region</span>
                 <p class="mt-1 text-sm font-mono">{storage.region}</p>
               </div>
             {/if}
             {#if storage.base}
               <div>
-                <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Base Path</span>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Base Path</span>
                 <p class="mt-1 text-sm font-mono">{storage.base}</p>
               </div>
             {/if}
           </div>
         </CardContent>
-        <CardFooter class="gap-3">
+        <CardFooter class="gap-2">
           {#if isObject}
             <Button variant="outline" size="sm" disabled={bucketTesting} onclick={runBucketTest}>
               {#if bucketTesting}
