@@ -25,6 +25,11 @@
   import SessionSummaryChart from '$lib/components/shared/SessionSummaryChart.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
   import { formatBytes, formatQuota } from '$lib/core/utils/format'
+  import ClockIcon from '@lucide/svelte/icons/clock'
+  import SunriseIcon from '@lucide/svelte/icons/sunrise'
+  import SunIcon from '@lucide/svelte/icons/sun'
+  import SunsetIcon from '@lucide/svelte/icons/sunset'
+  import MoonIcon from '@lucide/svelte/icons/moon'
 
   const accountStore = useAccounts()
   const dashboard = useDashboard()
@@ -39,6 +44,14 @@
   const canReadNodes = $derived(auth.can('serviceNodes', 'read'))
   const canReadAudit = $derived(auth.can('auditLogs', 'read'))
   let activityDays = $state(7)
+  let activityTimeRange = $state<'full' | 'morning' | 'afternoon' | 'evening' | 'night'>('full')
+  const timeRangeOptions = [
+    { key: 'full' as const, label: 'Full Day', icon: ClockIcon },
+    { key: 'morning' as const, label: '00–12', icon: SunriseIcon },
+    { key: 'afternoon' as const, label: '12–18', icon: SunIcon },
+    { key: 'evening' as const, label: '18–22', icon: SunsetIcon },
+    { key: 'night' as const, label: '22–24', icon: MoonIcon },
+  ]
   const activityCutoff = $derived(Date.now() - activityDays * 86400000)
   const filteredActivity = $derived(auditStore.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= activityCutoff))
 
@@ -168,14 +181,26 @@
       {#if canReadAudit}
         <Card cornerPlus>
           <CardHeader>
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
               <CardTitle>Recent Activity</CardTitle>
-              <div class="flex items-center gap-1">
-                {#each [7, 15, 30] as d}
-                  <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
-                    class="h-7 px-2 text-xs font-mono"
-                    onclick={() => activityDays = d}>{d}d</Button>
-                {/each}
+              <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
+                <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+                <div class="relative flex items-center gap-1.5 flex-wrap">
+                  {#each timeRangeOptions as { key, label, icon }}
+                    {@const Icon = icon}
+                    <Button variant={activityTimeRange === key ? 'primary' : 'ghost'} size="sm"
+                      class="h-7 w-[5.5rem] text-xs font-mono justify-center"
+                      onclick={() => activityTimeRange = key}>
+                      <Icon class="w-3 h-3 mr-1" />{label}
+                    </Button>
+                  {/each}
+                  <span class="filter-divider"></span>
+                  {#each [7, 15, 30] as d}
+                    <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
+                      class="h-7 w-10 text-xs font-mono justify-center"
+                      onclick={() => activityDays = d}>{d}d</Button>
+                  {/each}
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -190,7 +215,7 @@
               {#if filteredActivity.length === 0}
                 <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
               {:else}
-                <ActivityChart logs={filteredActivity} />
+                <ActivityChart logs={filteredActivity} bind:timeRange={activityTimeRange} />
               {/if}
             {/if}
           </CardContent>
@@ -213,3 +238,18 @@
     {/if}
   {/if}
 </div>
+
+<style>
+  .filter-divider {
+    width: 1px;
+    height: 24px;
+    margin: 0 10px;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      oklch(0.6 0.08 250 / 0.5) 30%,
+      oklch(0.6 0.08 250 / 0.25) 70%,
+      transparent 100%
+    );
+  }
+</style>

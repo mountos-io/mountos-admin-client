@@ -10,15 +10,11 @@
   import MonitorIcon from '@lucide/svelte/icons/monitor'
   import ServerIcon from '@lucide/svelte/icons/server'
   import ScrollIcon from '@lucide/svelte/icons/scroll'
-  import ClockIcon from '@lucide/svelte/icons/clock'
-  import SunriseIcon from '@lucide/svelte/icons/sunrise'
-  import SunIcon from '@lucide/svelte/icons/sun'
-  import SunsetIcon from '@lucide/svelte/icons/sunset'
-  import MoonIcon from '@lucide/svelte/icons/moon'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
 
-  let { logs = [] }: { logs: AuditLog[] } = $props()
+  type TimeRange = 'full' | 'morning' | 'afternoon' | 'evening' | 'night'
+  let { logs = [], timeRange = $bindable<TimeRange>('full') }: { logs: AuditLog[]; timeRange?: TimeRange } = $props()
 
   interface PlottedLog extends AuditLog {
     x: number; y: number; date: Date; timeMinutes: number
@@ -26,8 +22,8 @@
 
   let hoveredLog = $state<PlottedLog | null>(null)
   let popupPosition = $state({ left: '0px', top: '0px', transform: 'translate(-50%, -100%)' })
-  let selectedTimeRange = $state<'full' | 'morning' | 'afternoon' | 'evening' | 'night'>('full')
   let copiedId = $state<number | null>(null)
+  let disabledSubjects = $state<Set<string>>(new Set())
 
   async function handleCopy(log: PlottedLog) {
     const obj: Record<string, unknown> = { title: log.title }
@@ -43,12 +39,12 @@
     setTimeout(() => { copiedId = null }, 2000)
   }
 
-  const timeRanges = {
-    full:      { start: 0,    end: 1440, label: 'Full Day', icon: ClockIcon },
-    morning:   { start: 0,    end: 720,  label: '00–12',    icon: SunriseIcon },
-    afternoon: { start: 720,  end: 1080, label: '12–18',    icon: SunIcon },
-    evening:   { start: 1080, end: 1320, label: '18–22',    icon: SunsetIcon },
-    night:     { start: 1320, end: 1440, label: '22–24',    icon: MoonIcon },
+  const timeRanges: Record<TimeRange, { start: number; end: number }> = {
+    full:      { start: 0,    end: 1440 },
+    morning:   { start: 0,    end: 720 },
+    afternoon: { start: 720,  end: 1080 },
+    evening:   { start: 1080, end: 1320 },
+    night:     { start: 1320, end: 1440 },
   }
 
   const subjectMeta: Record<string, { color: string; icon: typeof UserIcon }> = {
@@ -71,7 +67,7 @@
 
   const plottedLogs = $derived.by((): PlottedLog[] => {
     if (!logs.length) return []
-    const range = timeRanges[selectedTimeRange]
+    const range = timeRanges[timeRange]
     const rangeMins = range.end - range.start
     const dates = logs.map(l => new Date(l.createdAt ?? '').getTime())
     const minD = Math.min(...dates), maxD = Math.max(...dates)
@@ -90,6 +86,28 @@
     }))
   })
 
+  const allSubjects = Object.keys(subjectMeta)
+
+  const presentSubjects = $derived(
+    new Set(logs.map(l => l.subject).filter(Boolean))
+  )
+
+  function hasData(subject: string) {
+    return presentSubjects.has(subject)
+  }
+
+  function isActive(subject?: string) {
+    return hasData(subject ?? '') && !disabledSubjects.has(subject ?? '')
+  }
+
+  function toggleSubject(s: string) {
+    if (!hasData(s)) return
+    const next = new Set(disabledSubjects)
+    if (next.has(s)) next.delete(s)
+    else next.add(s)
+    disabledSubjects = next
+  }
+
   const dateLabels = $derived.by(() => {
     if (!logs.length) return []
     const dates = logs.map(l => new Date(l.createdAt ?? ''))
@@ -105,7 +123,7 @@
   })
 
   const timeLabels = $derived.by(() => {
-    const range = timeRanges[selectedTimeRange]
+    const range = timeRanges[timeRange]
     const span = range.end - range.start
     return Array.from({ length: 5 }, (_, i) => {
       const ri = 4 - i
@@ -118,14 +136,15 @@
   function handleEnter(log: PlottedLog, event: MouseEvent) {
     hoveredLog = log
     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
-    const vw = window.innerWidth
+    const vw = window.innerWidth, vh = window.innerHeight
     let left = rect.left + rect.width / 2
-    let top = rect.top - 10
+    let top = rect.top - 14
     let transform = 'translate(-50%, -100%)'
-    const pw = 320, pad = 12
+    const pw = 384, ph = 300, pad = 16
     if (left - pw / 2 < pad) left = pad + pw / 2
     else if (left + pw / 2 > vw - pad) left = vw - pad - pw / 2
-    if (top - 200 < pad) { top = rect.bottom + 10; transform = 'translate(-50%, 0)' }
+    if (top - ph < pad) { top = rect.bottom + 14; transform = 'translate(-50%, 0)' }
+    if (top + ph > vh - pad) top = vh - pad - ph
     popupPosition = { left: `${left}px`, top: `${top}px`, transform }
   }
 
@@ -135,24 +154,10 @@
 </script>
 
 <div class="relative w-full">
-  <!-- Time range selector -->
-  <div class="flex items-center gap-1 mb-3 flex-wrap">
-    {#each Object.entries(timeRanges) as [key, { label, icon }]}
-      {@const k = key as keyof typeof timeRanges}
-      {@const Icon = icon}
-      <button type="button"
-        class="chart-range-btn flex items-center gap-1 px-2.5 py-1 rounded-sm border text-base font-mono transition-colors
-          {selectedTimeRange === k ? 'border-primary text-primary bg-primary/10' : 'border-border text-muted-foreground hover:border-foreground/40'}"
-        onclick={() => selectedTimeRange = k}>
-        <Icon class="w-3 h-3" />{label}
-      </button>
-    {/each}
-  </div>
-
   <!-- Chart -->
   <div class="relative border border-border rounded-sm bg-background overflow-hidden" style="padding: 1.5rem 1.5rem 3rem 4rem; height: 400px; contain: layout;">
     <!-- Y-axis labels -->
-    <div class="absolute left-2 top-6 bottom-10 w-14 flex flex-col justify-between text-base font-mono text-muted-foreground">
+    <div class="absolute left-2 top-6 bottom-10 w-14 flex flex-col justify-between text-[1rem] font-mono text-muted-foreground">
       {#each timeLabels as { label }}
         <div class="text-right pr-1">{label}</div>
       {/each}
@@ -168,8 +173,20 @@
         <div class="absolute top-0 bottom-0 border-l border-border/20" style="left: {x}%"></div>
       {/each}
 
-      <!-- Data points -->
-      {#each plottedLogs as log}
+      <!-- Inactive points (rendered first, behind) -->
+      {#each plottedLogs.filter(l => !isActive(l.subject)) as log}
+        {@const m = meta(log.subject)}
+        {@const Icon = m.icon}
+        <div class="absolute"
+          style="left: {log.x}%; top: {log.y}%; opacity: 0.15;">
+          <div class="flex items-center justify-center w-7 h-7 rounded-full bg-background border-2 shadow-sm"
+            style="border-color: {m.color}; color: {m.color}; transform: translate(-50%, -50%);">
+            <Icon class="w-3.5 h-3.5" />
+          </div>
+        </div>
+      {/each}
+      <!-- Active points (rendered last, on top) -->
+      {#each plottedLogs.filter(l => isActive(l.subject)) as log}
         {@const m = meta(log.subject)}
         {@const Icon = m.icon}
         <div class="absolute cursor-pointer will-change-transform"
@@ -179,16 +196,16 @@
           onclick={() => handleCopy(log)}
           onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), handleCopy(log))}
           role="button" tabindex="0">
-          <div class="flex items-center justify-center w-5 h-5 rounded-full bg-background border-2 shadow-sm transition-transform hover:scale-[1.8]"
+          <div class="flex items-center justify-center w-7 h-7 rounded-full bg-background border-2 shadow-sm transition-transform hover:scale-[1.8]"
             style="border-color: {m.color}; color: {m.color}; transform: translate(-50%, -50%);">
-            <Icon class="w-2.5 h-2.5" />
+            <Icon class="w-3.5 h-3.5" />
           </div>
         </div>
       {/each}
     </div>
 
     <!-- X-axis labels -->
-    <div class="absolute left-[4.5rem] right-4 bottom-2 flex justify-between text-base font-mono text-muted-foreground">
+    <div class="absolute left-[4.5rem] right-4 bottom-2 flex justify-between text-[1rem] font-mono text-muted-foreground">
       {#each dateLabels as { label }}
         <div class="text-center">{label}</div>
       {/each}
@@ -198,30 +215,30 @@
   <!-- Hover popup -->
   {#if hoveredLog}
     {@const m = meta(hoveredLog.subject)}
-    <div class="fixed z-50 w-80 rounded-sm border border-border bg-background shadow-lg p-3 space-y-2"
+    <div class="fixed z-50 w-96 rounded-sm border border-border bg-background shadow-lg p-4 space-y-3"
       style="left: {popupPosition.left}; top: {popupPosition.top}; transform: {popupPosition.transform};">
       <div class="flex items-center gap-2">
-        <h4 class="text-sm font-medium truncate flex-1">{hoveredLog.title}</h4>
+        <h4 class="text-[1rem] font-medium truncate flex-1">{hoveredLog.title}</h4>
         {#if hoveredLog.subject}
-          <span class="rounded-sm border px-1.5 py-0.5 text-[0.6rem] font-mono uppercase tracking-wider"
+          <span class="rounded-sm border px-2 py-0.5 text-[1rem] font-mono uppercase tracking-wider"
             style="border-color: {m.color}; color: {m.color};">{hoveredLog.subject}</span>
         {/if}
         {#if !hoveredLog.success}
-          <span class="rounded-sm border border-destructive text-destructive px-1.5 py-0.5 text-[0.6rem] font-mono uppercase">fail</span>
+          <span class="rounded-sm border border-destructive text-destructive px-2 py-0.5 text-[1rem] font-mono uppercase">fail</span>
         {/if}
-        <span class="rounded-sm border px-1.5 py-0.5 text-[0.6rem] font-mono uppercase tracking-wider flex items-center gap-1
+        <span class="rounded-sm border px-2 py-0.5 text-[1rem] font-mono uppercase tracking-wider flex items-center gap-1.5
           {copiedId === hoveredLog.id ? 'border-primary text-primary bg-primary/10' : 'border-muted-foreground/30 text-muted-foreground'}">
           {#if copiedId === hoveredLog.id}
-            <CheckIcon class="w-2.5 h-2.5" />Copied
+            <CheckIcon class="w-4 h-4" />Copied
           {:else}
-            <CopyIcon class="w-2.5 h-2.5" />Click to copy
+            <CopyIcon class="w-4 h-4" />Click to copy
           {/if}
         </span>
       </div>
       {#if hoveredLog.description}
-        <p class="text-xs text-muted-foreground">{hoveredLog.description}</p>
+        <p class="text-[1rem] text-muted-foreground">{hoveredLog.description}</p>
       {/if}
-      <div class="flex items-center gap-3 text-[0.6rem] text-muted-foreground font-mono">
+      <div class="flex items-center gap-3 text-[1rem] text-muted-foreground font-mono">
         <span>{hoveredLog.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
         <span>{fmtTime(hoveredLog.timeMinutes)}</span>
         {#if hoveredLog.createdBy}
@@ -229,27 +246,90 @@
         {/if}
       </div>
       {#if hoveredLog.data}
-        <pre class="overflow-x-auto rounded-sm border border-border bg-muted/30 p-2 text-[0.6rem] font-mono leading-relaxed max-h-36">{JSON.stringify(hoveredLog.data, null, 2)}</pre>
+        <pre class="overflow-x-auto rounded-sm border border-border bg-muted/30 p-2 text-[1rem] font-mono leading-relaxed max-h-44">{JSON.stringify(hoveredLog.data, null, 2)}</pre>
       {/if}
     </div>
   {/if}
 
   <!-- Legend -->
-  {#if plottedLogs.length > 0}
-    {@const subjects = [...new Set(plottedLogs.map(l => l.subject).filter(Boolean))] as string[]}
-    {#if subjects.length > 1}
-      <div class="flex flex-wrap gap-3 mt-3 text-base font-mono text-muted-foreground">
-        {#each subjects as s}
-          {@const m = meta(s)}
-          {@const Icon = m.icon}
-          <span class="flex items-center gap-1">
-            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full border-2" style="border-color: {m.color}; color: {m.color};">
-              <Icon class="w-2 h-2" />
-            </span>
-            {s}
+  <div class="relative border border-border/30 rounded-sm px-5 py-3 mt-3 mx-auto w-fit max-w-full">
+    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+    <div class="relative flex flex-wrap items-center justify-center gap-1.5">
+      {#each allSubjects as s}
+        {@const m = meta(s)}
+        {@const Icon = m.icon}
+        {@const has = hasData(s)}
+        {@const on = isActive(s)}
+        {#if has}
+          <button
+            class="legend-chip"
+            class:legend-dimmed={!on}
+            style="--chip-accent: {m.color};"
+            onclick={() => toggleSubject(s)}
+            aria-pressed={on}
+            title={s}
+          >
+            <Icon class="w-3.5 h-3.5" style="color: {m.color};" />
+            <span class="legend-label">{s}</span>
+          </button>
+        {:else}
+          <span class="legend-chip legend-inert" title="{s} — no data">
+            <Icon class="w-3.5 h-3.5" />
+            <span class="legend-label">{s}</span>
           </span>
-        {/each}
-      </div>
-    {/if}
-  {/if}
+        {/if}
+      {/each}
+    </div>
+  </div>
 </div>
+
+<style>
+  .legend-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--chip-accent, oklch(0.5 0 0 / 0.2));
+    border-radius: 2px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: opacity 0.2s, filter 0.2s, border-color 0.2s;
+    user-select: none;
+    background: transparent;
+    color: inherit;
+  }
+
+  .legend-chip:hover {
+    background: color-mix(in oklch, var(--chip-accent, oklch(0.5 0 0)) 6%, transparent);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    box-shadow: 0 0 5px currentColor;
+  }
+
+  .legend-label {
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .legend-dimmed {
+    opacity: 0.35;
+    filter: saturate(0.2);
+    border-color: oklch(0.5 0 0 / 0.15);
+  }
+
+  .legend-dimmed .legend-dot {
+    box-shadow: none;
+  }
+
+  .legend-inert {
+    cursor: default;
+    opacity: 0.25;
+    border-color: oklch(0.5 0 0 / 0.1);
+  }
+
+</style>
