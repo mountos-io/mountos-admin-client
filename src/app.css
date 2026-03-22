@@ -61,25 +61,24 @@
   --scrollbar-thumb: oklch(0.61 0.14 39);
   --scrollbar-track: oklch(0.95 0 0);
 
-  --pastel-user: oklch(0.8 0.1 265);
-  --pastel-volume: oklch(0.8 0.1 150);
-
-  --pastel-account: oklch(0.8 0.1 50);
-  --pastel-storage: oklch(0.8 0.1 200);
-  --pastel-role: oklch(0.8 0.1 10);
-  --pastel-region: oklch(0.8 0.1 90);
-  --pastel-mount: oklch(0.8 0.1 70);
-  --pastel-key: oklch(0.8 0.1 45);
-  --pastel-session: oklch(0.8 0.1 170);
-  --pastel-node: oklch(0.8 0.1 120);
-  --pastel-license: oklch(0.8 0.1 275);
+  --pastel-user: oklch(0.72 0.15 265);
+  --pastel-volume: oklch(0.72 0.15 155);
+  --pastel-account: oklch(0.75 0.14 55);
+  --pastel-storage: oklch(0.72 0.15 200);
+  --pastel-role: oklch(0.72 0.16 15);
+  --pastel-region: oklch(0.72 0.15 310);
+  --pastel-mount: oklch(0.75 0.14 90);
+  --pastel-key: oklch(0.72 0.16 350);
+  --pastel-session: oklch(0.72 0.15 175);
+  --pastel-node: oklch(0.72 0.15 125);
+  --pastel-license: oklch(0.75 0.14 40);
 }
 
 .dark {
   --background: oklch(0.07 0.005 200);
   --foreground: oklch(0.93 0.005 200);
 
-  --card: oklch(0.11 0.006 200);
+  --card: #010101;
   --card-foreground: oklch(0.93 0.005 200);
 
   --popover: oklch(0.09 0.006 200);
@@ -116,7 +115,7 @@
   --chart-4: oklch(0.4 0.03 92);
   --chart-5: oklch(0.3 0.02 92);
 
-  --sidebar: oklch(0.11 0.005 200);
+  --sidebar: oklch(0.09 0 0);
   --sidebar-foreground: oklch(0.90 0.005 200);
   --sidebar-primary: oklch(0.85 0.005 200);
   --sidebar-primary-foreground: oklch(0.12 0.005 200);
@@ -128,18 +127,17 @@
   --scrollbar-thumb: oklch(0.78 0.13 92);
   --scrollbar-track: oklch(0.11 0.005 200);
 
-  --pastel-user: oklch(0.65 0.12 265);
-  --pastel-volume: oklch(0.65 0.12 150);
-
-  --pastel-account: oklch(0.65 0.12 50);
-  --pastel-storage: oklch(0.65 0.12 200);
-  --pastel-role: oklch(0.65 0.12 10);
-  --pastel-region: oklch(0.65 0.12 90);
-  --pastel-mount: oklch(0.65 0.12 70);
-  --pastel-key: oklch(0.65 0.12 45);
-  --pastel-session: oklch(0.65 0.12 170);
-  --pastel-node: oklch(0.65 0.12 120);
-  --pastel-license: oklch(0.65 0.12 275);
+  --pastel-user: oklch(0.70 0.16 265);
+  --pastel-volume: oklch(0.70 0.16 155);
+  --pastel-account: oklch(0.73 0.15 55);
+  --pastel-storage: oklch(0.70 0.16 200);
+  --pastel-role: oklch(0.70 0.17 15);
+  --pastel-region: oklch(0.70 0.16 310);
+  --pastel-mount: oklch(0.73 0.15 90);
+  --pastel-key: oklch(0.70 0.17 350);
+  --pastel-session: oklch(0.70 0.16 175);
+  --pastel-node: oklch(0.70 0.16 125);
+  --pastel-license: oklch(0.73 0.15 40);
 }
 
 @theme inline {

@@ -179,8 +179,8 @@
         {@const Icon = m.icon}
         <div class="absolute"
           style="left: {log.x}%; top: {log.y}%; opacity: 0.15;">
-          <div class="flex items-center justify-center w-7 h-7 rounded-full bg-background border-2 shadow-sm"
-            style="border-color: {m.color}; color: {m.color}; transform: translate(-50%, -50%);">
+          <div class="flex items-center justify-center w-7 h-7 rounded-full shadow-sm text-white"
+            style="background: {m.color}; transform: translate(-50%, -50%);">
             <Icon class="w-3.5 h-3.5" />
           </div>
         </div>
@@ -196,8 +196,8 @@
           onclick={() => handleCopy(log)}
           onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), handleCopy(log))}
           role="button" tabindex="0">
-          <div class="flex items-center justify-center w-7 h-7 rounded-full bg-background border-2 shadow-sm transition-transform hover:scale-[1.8]"
-            style="border-color: {m.color}; color: {m.color}; transform: translate(-50%, -50%);">
+          <div class="flex items-center justify-center w-7 h-7 rounded-full shadow-sm text-white transition-transform hover:scale-[1.8]"
+            style="background: {m.color}; transform: translate(-50%, -50%);">
             <Icon class="w-3.5 h-3.5" />
           </div>
         </div>
@@ -254,7 +254,7 @@
   <!-- Legend -->
   <div class="relative border border-border/30 rounded-sm px-5 py-3 mt-3 mx-auto w-fit max-w-full">
     <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-    <div class="relative flex flex-wrap items-center justify-center gap-1.5">
+    <div class="relative flex flex-wrap items-center justify-center gap-3">
       {#each allSubjects as s}
         {@const m = meta(s)}
         {@const Icon = m.icon}
@@ -269,12 +269,16 @@
             aria-pressed={on}
             title={s}
           >
-            <Icon class="w-3.5 h-3.5" style="color: {m.color};" />
+            <span class="inline-flex items-center justify-center w-5 h-5 text-white" style="background: {m.color}; border-radius: 4px; border: 2px solid {m.color};">
+              <Icon class="w-3 h-3" />
+            </span>
             <span class="legend-label">{s}</span>
           </button>
         {:else}
           <span class="legend-chip legend-inert" title="{s} — no data">
-            <Icon class="w-3.5 h-3.5" />
+            <span class="inline-flex items-center justify-center w-5 h-5 text-white/40" style="background: oklch(0.5 0 0 / 0.3); border-radius: 4px; border: 2px solid oklch(0.5 0 0 / 0.2);">
+              <Icon class="w-3 h-3" />
+            </span>
             <span class="legend-label">{s}</span>
           </span>
         {/if}
@@ -290,7 +294,7 @@
     gap: 6px;
     padding: 4px 10px;
     border: 1px solid var(--chip-accent, oklch(0.5 0 0 / 0.2));
-    border-radius: 2px;
+    border-radius: 4px;
     font-size: 1rem;
     cursor: pointer;
     transition: opacity 0.2s, filter 0.2s, border-color 0.2s;
