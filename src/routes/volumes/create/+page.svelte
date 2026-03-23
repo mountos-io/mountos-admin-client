@@ -16,6 +16,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import { HUB_REGION_NAME } from '$lib/core/constants'
   import { gbToBytes } from '$lib/core/utils/format'
   import Copy from '@lucide/svelte/icons/copy'
   import Lightbulb from '@lucide/svelte/icons/lightbulb'
@@ -48,7 +49,9 @@
   })
 
   const storageOptions = $derived(
-    storageStore.storages.map(s => ({ value: String(s.id), label: s.name }))
+    storageStore.storages
+      .filter(s => s.regionInfo.name !== HUB_REGION_NAME)
+      .map(s => ({ value: String(s.id), label: s.name }))
   )
 
   let name = $state('')

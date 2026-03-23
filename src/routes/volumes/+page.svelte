@@ -15,8 +15,8 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { formatQuota } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import { HUB_REGION_NAME } from '$lib/core/constants'
   import Plus from '@lucide/svelte/icons/plus'
-  import Eye from '@lucide/svelte/icons/eye'
   import Lock from '@lucide/svelte/icons/lock'
   import Shield from '@lucide/svelte/icons/shield-check'
 
@@ -31,13 +31,27 @@
   let selectedRegionId = $state('')
   let selectedStorageId = $state('')
 
-  const allOption = { value: '', label: 'All' } as const
-  const regionOptions = $derived(
-    [allOption, ...regionStore.regions.map(r => ({ value: String(r.id), label: r.name }))]
+  const hubRegionIds = $derived(
+    new Set(regionStore.regions.filter(r => r.name === HUB_REGION_NAME).map(r => r.id))
   )
-  const storageOptions = $derived(
-    [allOption, ...storageStore.storages.map(s => ({ value: String(s.id), label: s.name }))]
-  )
+
+  const isHubSelected = $derived(selectedRegionId !== '' && hubRegionIds.has(Number(selectedRegionId)))
+  const canCreate = $derived(auth.can('volumes', 'create') && !isHubSelected)
+
+  const regionOptions = $derived([
+    { value: '', label: 'All Regions' },
+    ...regionStore.regions
+      .filter(r => r.name.toLowerCase() !== 'hub')
+      .map(r => ({ value: String(r.id), label: r.name })),
+  ])
+
+  const storageOptions = $derived([
+    { value: '', label: 'All Storage' },
+    ...storageStore.storages
+      .filter(s => !hubRegionIds.has(s.regionInfo.id))
+      .filter(s => !selectedRegionId || s.regionInfo.id === Number(selectedRegionId))
+      .map(s => ({ value: String(s.id), label: s.name })),
+  ])
 
   function refetch(page = 1) {
     if (!accountId) return
@@ -46,6 +60,20 @@
       selectedRegionId ? Number(selectedRegionId) : undefined,
       selectedStorageId ? Number(selectedStorageId) : undefined,
     )
+  }
+
+  function onRegionChange(v: string) {
+    selectedRegionId = v
+    if (v && selectedStorageId) {
+      const s = storageStore.storages.find(s => String(s.id) === selectedStorageId)
+      if (s && s.regionInfo.id !== Number(v)) selectedStorageId = ''
+    }
+    refetch()
+  }
+
+  function onStorageChange(v: string) {
+    selectedStorageId = v
+    refetch()
   }
 
   let filtersLoaded = false
@@ -69,7 +97,7 @@
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold tracking-tight">Volumes</h1>
-    {#if accountId && auth.can('volumes', 'create')}
+    {#if accountId && canCreate}
       <Button href="/volumes/create" variant="primary" size="sm" class="gap-1.5 cyberpunk-skewed-sm">
         <Plus class="h-4 w-4" />
         Create Volume
@@ -79,14 +107,27 @@
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account to view its volumes." />
   {:else}
-    <div class="flex flex-wrap items-center gap-2">
-      <FilterSelect options={regionOptions} value={selectedRegionId} placeholder="Region" onchange={(v) => { selectedRegionId = v }} />
-      <FilterSelect options={storageOptions} value={selectedStorageId} placeholder="Storage" onchange={(v) => { selectedStorageId = v }} />
+    <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full text-base">
+      <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+      <div class="relative flex flex-wrap items-center gap-3">
+        <FilterSelect class="text-base"
+          options={regionOptions}
+          value={selectedRegionId}
+          placeholder="All Regions"
+          onchange={onRegionChange}
+        />
+        <FilterSelect class="text-base"
+          options={storageOptions}
+          value={selectedStorageId}
+          placeholder="All Storage"
+          onchange={onStorageChange}
+        />
+      </div>
     </div>
     {#if volumeStore.loading}
       <LoadingSpinner />
     {:else if volumeStore.volumes.length === 0}
-      <EmptyState title="No volumes" action={auth.can('volumes', 'create') ? { label: 'Create Volume', href: '/volumes/create' } : undefined} />
+      <EmptyState title="No volumes" action={canCreate ? { label: 'Create Volume', href: '/volumes/create' } : undefined} />
     {:else}
       <Table>
         <TableHeader>
@@ -98,12 +139,17 @@
             <TableHead class="th-cyber w-10"><span class="sr-only">Encryption</span></TableHead>
             <TableHead class="th-cyber hidden md:table-cell">Quota</TableHead>
             <TableHead class="th-cyber">Status</TableHead>
-            <TableHead class="w-10"><span class="sr-only">Actions</span></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {#each volumeStore.volumes as volume}
-            <TableRow>
+            <TableRow
+              class="cursor-pointer hover:bg-muted/50"
+              onclick={() => goto(`/volumes/${volume.id}`)}
+              onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/volumes/${volume.id}`))}
+              role="link"
+              tabindex={0}
+            >
               <TableCell class="font-medium max-w-[200px] truncate">{volume.name}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.region.name}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.storage.name}</TableCell>
@@ -115,11 +161,6 @@
               </TableCell>
               <TableCell class="text-sm text-muted-foreground hidden md:table-cell">{formatQuota(volume.quotaUsed, volume.quotaLimit)}</TableCell>
               <TableCell><StatusBadge active={volume.isActive} locked={volume.locked} /></TableCell>
-              <TableCell>
-                <Button variant="ghost" size="icon" href="/volumes/{volume.id}" aria-label="View volume">
-                  <Eye class="size-4" />
-                </Button>
-              </TableCell>
             </TableRow>
           {/each}
         </TableBody>

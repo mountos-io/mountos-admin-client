@@ -230,36 +230,36 @@
       {#each tierData as tier}
         {@const tierColor = TIER_COLORS[tier.id]}
         <div class="monitor-frame flex flex-col items-center w-full md:w-auto">
-        <section class="tier-column corner-brackets flex flex-col gap-3 w-full border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
-          <div class="flex items-center gap-2">
-            <span
-              class="tier-label-glow text-xs font-bold uppercase tracking-wider whitespace-nowrap"
-              style:color={tierColor}
-            >{tier.label}</span>
-            {#if tier.nodeCount > 0}
-              <span class="text-xs text-muted-foreground tabular-nums">{tier.nodeCount}</span>
-            {/if}
-            <div class="ml-auto flex items-center gap-1.5">
-              {#if tier.id === 'data' || tier.id === 'control'}
-                <span class="tier-infra-icon" style="color: var(--pastel-user);" title="Regional DB Access">
-                  <Database class="h-3.5 w-3.5" />
-                </span>
+          <section class="tier-column corner-brackets flex flex-col gap-3 w-full border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
+            <div class="flex items-center gap-2">
+              <span
+                class="tier-label-glow text-xs font-bold uppercase tracking-wider whitespace-nowrap"
+                style:color={tierColor}
+              >{tier.label}</span>
+              {#if tier.nodeCount > 0}
+                <span class="text-xs text-muted-foreground tabular-nums">{tier.nodeCount}</span>
               {/if}
-              <span class="tier-infra-icon" style="color: var(--pastel-key);" title="Regional Vault Access">
-                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                  <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-              </span>
+              <div class="ml-auto flex items-center gap-1.5">
+                {#if tier.id === 'data' || tier.id === 'control'}
+                  <span class="tier-infra-icon" style="color: var(--pastel-user);" title="Regional DB Access">
+                    <Database class="h-3.5 w-3.5" />
+                  </span>
+                {/if}
+                <span class="tier-infra-icon" style="color: var(--pastel-key);" title="Regional Vault Access">
+                  <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+                    <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                </span>
+              </div>
             </div>
-          </div>
 
-          {#if tier.groups.length === 0}
-            <div class="flex items-center justify-center rounded-sm border border-dashed border-border/30 px-6 py-8 md:w-[420px] md:max-w-full">
-              <span class="text-xs uppercase tracking-wider text-muted-foreground/40">no nodes</span>
-            </div>
-          {/if}
-          {#each tier.groups as group}
+            {#if tier.groups.length === 0}
+              <div class="flex items-center justify-center rounded-sm border border-dashed border-border/30 px-6 py-8 md:w-[420px] md:max-w-full">
+                <span class="text-xs uppercase tracking-wider text-muted-foreground/40">no nodes</span>
+              </div>
+            {/if}
+            {#each tier.groups as group}
               {@const p = palette(group.type)}
               {@const Icon = p.icon}
               {@const isDataserv = group.type === 'dataserv'}
@@ -293,26 +293,26 @@
 
                   <div role="list" aria-label="{p.label} nodes" class="divide-y divide-border/20">
                     {#each visibleNodes as node}
-                        <button
-                          class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
-                          aria-label="View node {node.nodeId}, status {node.status}"
-                          onclick={() => goto(`${basePath}/${regionId}/${node.nodeId}`)}
-                          onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
-                          onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
-                          onpointerleave={() => hoveredNode = null}
-                          onfocus={(e: FocusEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); hoveredNode = { node, x: r.right, y: r.top } }}
-                          onblur={() => hoveredNode = null}
-                        >
-                          <span
-                            class="led-dot block h-2 w-2 shrink-0 rounded-full"
-                            class:led-ping={node.status === 'healthy'}
-                            class:led-raft={isDataserv}
-                            style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
-                            title={node.status}
-                          ></span>
-                          <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
-                          <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
-                        </button>
+                      <button
+                        class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
+                        aria-label="View node {node.nodeId}, status {node.status}"
+                        onclick={() => goto(`${basePath}/${regionId}/${node.nodeId}`)}
+                        onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
+                        onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
+                        onpointerleave={() => hoveredNode = null}
+                        onfocus={(e: FocusEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); hoveredNode = { node, x: r.right, y: r.top } }}
+                        onblur={() => hoveredNode = null}
+                      >
+                        <span
+                          class="led-dot block h-2 w-2 shrink-0 rounded-full"
+                          class:led-ping={node.status === 'healthy'}
+                          class:led-raft={isDataserv}
+                          style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
+                          title={node.status}
+                        ></span>
+                        <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
+                        <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
+                      </button>
                     {/each}
                   </div>
 
@@ -331,8 +331,8 @@
                 </div>
               </Card>
             {/each}
-        </section>
-        <div class="monitor-stand" style="--stand-color: {tierColor};"></div>
+          </section>
+          <div class="monitor-stand" style="--stand-color: {tierColor};"></div>
         </div>
       {/each}
     </div>
