@@ -59,9 +59,10 @@
       <a
         href={item.href}
         title={collapsed ? item.label : undefined}
+        aria-label={collapsed ? item.label : undefined}
         aria-current={active ? 'page' : undefined}
         class={cn(
-          'flex items-center rounded-md text-sm font-medium transition-colors',
+          'flex items-center rounded-md text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none',
           collapsed ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2',
           active
             ? 'bg-sidebar-accent text-sidebar-accent-foreground'

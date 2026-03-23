@@ -92,6 +92,10 @@
   })
 </script>
 
+<svelte:head>
+  <title>Volumes — mountOS Admin</title>
+</svelte:head>
+
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold tracking-tight">Volumes</h1>
@@ -147,6 +151,7 @@
               onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/volumes/${volume.id}`))}
               role="link"
               tabindex={0}
+              aria-label="Volume {volume.name}"
             >
               <TableCell class="font-medium max-w-[200px] truncate">{volume.name}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.region.name}</TableCell>

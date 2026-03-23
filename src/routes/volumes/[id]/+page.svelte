@@ -223,6 +223,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>{volume?.name ?? 'Volume'} — mountOS Admin</title>
+</svelte:head>
+
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" href="/volumes" aria-label="Back to volumes"><ArrowLeft class="h-4 w-4" /></Button>
@@ -399,7 +403,7 @@
           {:else if volSessions.length === 0}
             <p class="text-sm text-muted-foreground">No active sessions</p>
           {:else}
-            <Table>
+            <Table containerLabel="Active sessions">
               <TableHeader>
                 <TableRow>
                   <TableHead class="th-cyber">Client</TableHead>
@@ -451,14 +455,16 @@
       <Card>
         <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
         <CardContent class="space-y-4">
-          <div class="flex items-end gap-3">
-            <div class="w-64 space-y-1">
-              <Label for="api-key-user-id" class="inline-flex items-center gap-1">
-                User ID
-                <span title="Helps to track metadata operations">
-                  <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                </span>
-              </Label>
+          <fieldset class="space-y-3">
+            <legend class="text-sm font-semibold">Generate API Keys</legend>
+            <div class="flex items-end gap-3">
+              <div class="w-64 space-y-1">
+                <Label for="api-key-user-id" class="inline-flex items-center gap-1">
+                  User ID
+                  <span title="Helps to track metadata operations">
+                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                  </span>
+                </Label>
               {#if auth.isUserRole}
                 <Input id="api-key-user-id" value={selectedUserLabel || genUserId} readonly />
               {:else}
@@ -515,14 +521,18 @@
               </div>
             </div>
           {/if}
+          </fieldset>
           <Separator />
-          <div class="flex items-end gap-3">
-            <div class="w-64 space-y-1">
-              <Label for="revoke-key-id">Revoke API Key</Label>
-              <Input id="revoke-key-id" bind:value={revokeKey} placeholder="API key to revoke" />
+          <fieldset class="space-y-3">
+            <legend class="text-sm font-semibold">Revoke API Key</legend>
+            <div class="flex items-end gap-3">
+              <div class="w-64 space-y-1">
+                <Label for="revoke-key-id">API Key</Label>
+                <Input id="revoke-key-id" bind:value={revokeKey} placeholder="API key to revoke" />
+              </div>
+              <Button variant="destructive" size="sm" disabled={!revokeKey} onclick={handleRevokeKey}>Revoke</Button>
             </div>
-            <Button variant="destructive" size="sm" disabled={!revokeKey} onclick={handleRevokeKey}>Revoke</Button>
-          </div>
+          </fieldset>
         </CardContent>
       </Card>
     {/if}

@@ -78,12 +78,13 @@
     return s.charAt(0).toUpperCase() + s.slice(1)
   }
 
-  let { onOpenCommandPalette = () => {}, onToggleSidebar }: { onOpenCommandPalette?: () => void; onToggleSidebar?: () => void } = $props()
+  let { onOpenCommandPalette = () => {}, onToggleSidebar, sidebarToggleRef = $bindable(null) }: { onOpenCommandPalette?: () => void; onToggleSidebar?: () => void; sidebarToggleRef?: HTMLButtonElement | null } = $props()
   let signOutOpen = $state(false)
 </script>
 
 <header class="sticky top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-4">
   <button
+    bind:this={sidebarToggleRef}
     class="flex h-9 w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
     onclick={() => onToggleSidebar ? onToggleSidebar() : (prefs.sidebarCollapsed = !prefs.sidebarCollapsed)}
     aria-label="Toggle sidebar"
@@ -95,7 +96,7 @@
   <div class="h-4 w-px bg-border"></div>
 
   <Breadcrumb.Breadcrumb class="min-w-0 flex-1">
-    <Breadcrumb.BreadcrumbList class="flex-nowrap overflow-hidden">
+    <Breadcrumb.BreadcrumbList class="flex-nowrap overflow-x-auto scrollbar-none">
       {#each crumbs as crumb, i}
         {#if i > 0}
           <Breadcrumb.BreadcrumbSeparator />

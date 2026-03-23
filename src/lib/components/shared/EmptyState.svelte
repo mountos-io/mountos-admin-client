@@ -6,9 +6,9 @@
   } = $props()
 </script>
 
-<div class="flex flex-col items-center justify-center py-16 text-center">
+<section aria-label={title} class="flex flex-col items-center justify-center py-16 text-center">
   <div class="empty-bracket relative px-10 py-6">
-    <span class="font-mono text-sm tracking-widest text-muted-foreground/60">[ {title.toLowerCase()} ]</span>
+    <h2 class="font-mono text-sm tracking-widest text-muted-foreground/60 font-medium">[ {title.toLowerCase()} ]</h2>
   </div>
   {#if description}
     <p class="mt-3 text-sm text-muted-foreground/70 max-w-xs">{description}</p>
@@ -21,7 +21,7 @@
       {action.label}
     </a>
   {/if}
-</div>
+</section>
 
 <style>
   .empty-bracket::before,

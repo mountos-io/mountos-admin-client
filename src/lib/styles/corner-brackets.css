@@ -1,6 +1,15 @@
 /* Corner Bracket Design System */
 /* Inspired by technical/cyberpunk UI aesthetics */
 
+@layer base {
+  :root {
+    --bracket-color: oklch(0.4 0.002 200);
+    --bracket-color-dark: oklch(0.35 0.002 200);
+    --bracket-hover: oklch(0.65 0.18 45);
+    --bracket-hover-dark: oklch(0.78 0.13 92);
+  }
+}
+
 @layer components {
   /* Corner brackets - Standard (12px) */
   .corner-brackets {
@@ -26,7 +35,7 @@
         100% / 20px 2px,
       linear-gradient(to top, currentColor 20px, transparent 20px) 100% 100% / 2px 20px;
     background-repeat: no-repeat;
-    color: oklch(0.4 0.002 200);
+    color: var(--bracket-color);
     pointer-events: none;
   }
 
@@ -77,12 +86,12 @@
       linear-gradient(to top, currentColor clamp(24px, 8%, 60px), transparent clamp(24px, 8%, 60px))
         100% 100% / 2px clamp(24px, 8%, 60px);
     background-repeat: no-repeat;
-    color: oklch(0.4 0.002 200);
+    color: var(--bracket-color);
     pointer-events: none;
   }
 
   .dark .corner-brackets::before {
-    color: oklch(0.35 0.002 200);
+    color: var(--bracket-color-dark);
   }
 
   /* Large corner brackets */
@@ -136,7 +145,7 @@
       linear-gradient(to top, currentColor clamp(24px, 8%, 60px), transparent clamp(24px, 8%, 60px))
         100% 100% / 2px clamp(24px, 8%, 60px);
     background-repeat: no-repeat;
-    color: oklch(0.4 0.002 200);
+    color: var(--bracket-color);
     pointer-events: none;
     z-index: 1;
   }
@@ -156,21 +165,21 @@
       linear-gradient(to left, currentColor 32px, transparent 32px) 100% 100% / 32px 2px,
       linear-gradient(to top, currentColor 32px, transparent 32px) 100% 100% / 2px 32px;
     background-repeat: no-repeat;
-    color: oklch(0.4 0.002 200);
+    color: var(--bracket-color);
     pointer-events: none;
     z-index: 1;
   }
 
   .dark .corner-brackets-lg::before {
-    color: oklch(0.35 0.002 200);
+    color: var(--bracket-color-dark);
   }
 
   .dark .corner-brackets-dynamic::before {
-    color: oklch(0.35 0.002 200);
+    color: var(--bracket-color-dark);
   }
 
   .dark .corner-brackets-lg-fixed::before {
-    color: oklch(0.35 0.002 200);
+    color: var(--bracket-color-dark);
   }
 
   /* Hover and focus states - primary color */
@@ -225,7 +234,7 @@
     font-size: 14px;
     font-weight: 300;
     line-height: 1;
-    color: oklch(0.4 0.002 200);
+    color: var(--bracket-color);
     background: oklch(0.94 0.03 94.63);
     pointer-events: none;
     z-index: 2;
@@ -237,11 +246,11 @@
   }
 
   .corner-plus:hover::after {
-    color: oklch(0.65 0.18 45);
+    color: var(--bracket-hover);
   }
 
   .dark .corner-plus:hover::after {
-    color: oklch(0.78 0.13 92);
+    color: var(--bracket-hover-dark);
   }
 
   /* Corner plus at bottom-left */
@@ -260,7 +269,7 @@
     font-size: 14px;
     font-weight: 300;
     line-height: 1;
-    color: oklch(0.4 0.002 200);
+    color: var(--bracket-color);
     background: oklch(0.94 0.03 94.63);
     pointer-events: none;
     z-index: 2;
@@ -272,11 +281,11 @@
   }
 
   .corner-plus-bl:hover::after {
-    color: oklch(0.65 0.18 45);
+    color: var(--bracket-hover);
   }
 
   .dark .corner-plus-bl:hover::after {
-    color: oklch(0.78 0.13 92);
+    color: var(--bracket-hover-dark);
   }
 
   /* Technical grid pattern background */
@@ -339,21 +348,21 @@
       linear-gradient(135deg, currentColor 2px, transparent 2px) 0 0 / 28px 28px,
       linear-gradient(-45deg, currentColor 2px, transparent 2px) 100% 100% / 28px 28px;
     background-repeat: no-repeat;
-    color: oklch(0.4 0.002 200);
+    color: var(--bracket-color);
     pointer-events: none;
     z-index: 1;
   }
 
   .dark .cyberpunk-skewed::before {
-    color: oklch(0.35 0.002 200);
+    color: var(--bracket-color-dark);
   }
 
   .cyberpunk-skewed:hover::before {
-    color: oklch(0.65 0.18 45);
+    color: var(--bracket-hover);
   }
 
   .dark .cyberpunk-skewed:hover::before {
-    color: oklch(0.78 0.13 92);
+    color: var(--bracket-hover-dark);
   }
 
   /* Large variant with more pronounced skew */
@@ -377,21 +386,21 @@
       linear-gradient(135deg, currentColor 2px, transparent 2px) 0 0 / 45px 45px,
       linear-gradient(-45deg, currentColor 2px, transparent 2px) 100% 100% / 45px 45px;
     background-repeat: no-repeat;
-    color: oklch(0.4 0.002 200);
+    color: var(--bracket-color);
     pointer-events: none;
     z-index: 1;
   }
 
   .dark .cyberpunk-skewed-lg::before {
-    color: oklch(0.35 0.002 200);
+    color: var(--bracket-color-dark);
   }
 
   .cyberpunk-skewed-lg:hover::before {
-    color: oklch(0.65 0.18 45);
+    color: var(--bracket-hover);
   }
 
   .dark .cyberpunk-skewed-lg:hover::before {
-    color: oklch(0.78 0.13 92);
+    color: var(--bracket-hover-dark);
   }
 
   /* Small variant for buttons (6px cuts) */
@@ -415,21 +424,21 @@
       linear-gradient(135deg, currentColor 1px, transparent 1px) 0 0 / 9px 9px,
       linear-gradient(-45deg, currentColor 1px, transparent 1px) 100% 100% / 9px 9px;
     background-repeat: no-repeat;
-    color: oklch(0.4 0.002 200);
+    color: var(--bracket-color);
     pointer-events: none;
     z-index: 1;
   }
 
   .dark .cyberpunk-skewed-sm::before {
-    color: oklch(0.35 0.002 200);
+    color: var(--bracket-color-dark);
   }
 
   .cyberpunk-skewed-sm:hover::before {
-    color: oklch(0.65 0.18 45);
+    color: var(--bracket-hover);
   }
 
   .dark .cyberpunk-skewed-sm:hover::before {
-    color: oklch(0.78 0.13 92);
+    color: var(--bracket-hover-dark);
   }
 
   /* Cyberpunk card accent — top-edge glow + hover halo */
@@ -484,7 +493,7 @@
   .th-cyber {
     position: relative;
     font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     letter-spacing: 0.2em;
     color: oklch(0.45 0.03 200);
     padding-bottom: 0.5rem !important;
@@ -541,8 +550,8 @@
     width: 14px;
     height: 14px;
     border: none;
-    border-top: 1.5px solid oklch(0.4 0.002 200);
-    border-left: 1.5px solid oklch(0.4 0.002 200);
+    border-top: 1.5px solid var(--bracket-color);
+    border-left: 1.5px solid var(--bracket-color);
     opacity: 0.4;
     pointer-events: none;
   }
@@ -555,8 +564,8 @@
     width: 14px;
     height: 14px;
     border: none;
-    border-bottom: 1.5px solid oklch(0.4 0.002 200);
-    border-right: 1.5px solid oklch(0.4 0.002 200);
+    border-bottom: 1.5px solid var(--bracket-color);
+    border-right: 1.5px solid var(--bracket-color);
     opacity: 0.4;
     pointer-events: none;
   }
@@ -566,12 +575,12 @@
   }
 
   .dark thead:has(.th-cyber) th:first-child::before {
-    border-top-color: oklch(0.35 0.002 200);
-    border-left-color: oklch(0.35 0.002 200);
+    border-top-color: var(--bracket-color-dark);
+    border-left-color: var(--bracket-color-dark);
   }
 
   .dark thead:has(.th-cyber) th:last-child::before {
-    border-bottom-color: oklch(0.35 0.002 200);
-    border-right-color: oklch(0.35 0.002 200);
+    border-bottom-color: var(--bracket-color-dark);
+    border-right-color: var(--bracket-color-dark);
   }
 }

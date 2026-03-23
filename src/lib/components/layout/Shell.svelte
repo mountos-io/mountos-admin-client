@@ -20,6 +20,7 @@
   const licenseStore = useLicense()
   let commandOpen = $state(false)
   let mobileOpen = $state(false)
+  let sidebarToggleRef = $state<HTMLButtonElement | null>(null)
 
   const isMobile = () => typeof window !== 'undefined' && window.innerWidth < 768
 
@@ -80,15 +81,17 @@
   </div>
   <!-- Mobile sidebar overlay -->
   {#if mobileOpen}
-    <div class="fixed inset-0 z-50 md:hidden">
-      <button class="absolute inset-0 bg-foreground/50" aria-label="Close sidebar" onclick={() => mobileOpen = false}></button>
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <div class="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu" tabindex={-1}
+      onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') { mobileOpen = false; sidebarToggleRef?.focus() } }}>
+      <button class="absolute inset-0 bg-foreground/50" aria-label="Close navigation menu" onclick={() => { mobileOpen = false; sidebarToggleRef?.focus() }}></button>
       <div class="relative z-10 h-full w-60">
         <Sidebar collapsed={false} />
       </div>
     </div>
   {/if}
   <div class="flex flex-1 flex-col overflow-hidden">
-    <Header onOpenCommandPalette={() => commandOpen = true} onToggleSidebar={toggleSidebar} />
+    <Header onOpenCommandPalette={() => commandOpen = true} onToggleSidebar={toggleSidebar} bind:sidebarToggleRef />
     <main id="main-content" class="relative flex-1 overflow-y-auto bg-background">
       <div class="bg-doodle pointer-events-none absolute inset-0 z-0" aria-hidden="true"></div>
       <div class="relative z-[1] p-4 md:p-6">

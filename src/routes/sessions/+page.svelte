@@ -51,6 +51,10 @@
   }
 </script>
 
+<svelte:head>
+  <title>Sessions — mountOS Admin</title>
+</svelte:head>
+
 <div class="space-y-6">
   <div class="flex items-center gap-3">
     <h1 class="text-2xl font-bold tracking-tight">Sessions</h1>

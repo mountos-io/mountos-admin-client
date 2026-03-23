@@ -107,6 +107,8 @@
   border-radius: 1px !important;
   opacity: 0.5;
   transition: all 0.15s ease;
+  min-width: 28px !important;
+  min-height: 28px !important;
 }
 
 [data-sonner-toast] button[data-close-button]:hover {
