@@ -35,7 +35,7 @@
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold tracking-tight">Storages</h1>
     {#if accountId && auth.can('storages', 'create')}
-      <Button href="/storages/create" size="sm" class="gap-1.5">
+      <Button href="/storages/create" variant="primary" size="sm" class="gap-1.5 cyberpunk-skewed-sm">
         <Plus class="h-4 w-4" />
         Create Storage
       </Button>
@@ -52,6 +52,7 @@
       <TableHeader>
         <TableRow>
           <TableHead class="th-cyber">Name</TableHead>
+          <TableHead class="th-cyber">Region</TableHead>
           <TableHead class="th-cyber">Type</TableHead>
           <TableHead class="th-cyber">Provider</TableHead>
           <TableHead class="th-cyber">Status</TableHead>
@@ -68,6 +69,7 @@
             tabindex={0}
           >
             <TableCell class="font-medium max-w-[200px] truncate">{storage.name}</TableCell>
+            <TableCell class="text-sm text-muted-foreground">{storage.regionInfo.name}</TableCell>
             <TableCell><Badge variant="outline">{storage.storageType}</Badge></TableCell>
             <TableCell><Badge variant="secondary">{storage.providerType}</Badge></TableCell>
             <TableCell><StatusBadge active={storage.isActive} /></TableCell>

@@ -35,7 +35,7 @@
   let hoveredNode = $state<{ node: ServiceNode; x: number; y: number } | null>(null)
   let expandedGroups = $state(new Set<string>())
   let dimmedServices = $state(new Set<string>())
-  let auditView = $state<'chart' | 'feed'>('feed')
+  let auditView = $state<'chart' | 'feed'>('chart')
   let activityDays = $state(7)
 
   const regionId = $derived(Number($page.params.regionId))
@@ -354,52 +354,55 @@
           <CardHeader>
             <div class="flex items-center justify-between">
               <CardTitle>Region Audit Log</CardTitle>
-              <div class="flex items-center gap-1">
-                {#each ['feed', 'chart'] as v}
-                  <Button variant={auditView === v ? 'primary' : 'ghost'} size="sm"
-                    class="h-7 px-2 text-xs capitalize"
-                    onclick={() => auditView = v as 'chart' | 'feed'}>{v}</Button>
-                {/each}
-                {#if auditView === 'chart'}
-                  <div class="w-px h-4 bg-border mx-1"></div>
+              <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
+                <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+                <div class="relative flex items-center gap-1.5">
                   {#each [7, 15, 30] as d}
                     <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
-                      class="h-7 px-2 text-xs font-mono"
+                      class="h-7 w-10 text-xs font-mono justify-center"
                       onclick={() => activityDays = d}>{d}d</Button>
                   {/each}
-                {/if}
+                  <span class="filter-divider"></span>
+                  {#each ['feed', 'chart'] as v}
+                    <Button variant={auditView === v ? 'primary' : 'ghost'} size="sm"
+                      class="h-7 px-3 text-xs font-mono capitalize justify-center"
+                      onclick={() => auditView = v as 'chart' | 'feed'}>{v}</Button>
+                  {/each}
+                </div>
               </div>
             </div>
           </CardHeader>
           <CardContent aria-live="polite">
-            {#if regionAudit.loading && regionAudit.logs.length === 0}
-              <div class="flex items-center justify-center py-16" aria-busy="true">
-                <LoadingSpinner />
-              </div>
-            {:else if regionAudit.error}
-              <div class="flex items-center justify-center gap-2 py-16 text-sm text-destructive">
-                <span>Failed to load audit logs</span>
-                <Button variant="ghost" size="sm" class="h-7 px-2 text-xs"
-                  onclick={() => regionAudit.fetchLogs(regionId, { limit: 200, reset: true })}>Retry</Button>
-              </div>
-            {:else if regionAudit.logs.length === 0}
-              <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No regional audit activity</div>
-            {:else if auditView === 'chart'}
-              {@const cutoff = Date.now() - activityDays * 86400000}
-              {@const filtered = regionAudit.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= cutoff)}
-              {#if filtered.length === 0}
-                <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
+            <div class="audit-content-scroll">
+              {#if regionAudit.loading && regionAudit.logs.length === 0}
+                <div class="flex items-center justify-center py-16" aria-busy="true">
+                  <LoadingSpinner />
+                </div>
+              {:else if regionAudit.error}
+                <div class="flex items-center justify-center gap-2 py-16 text-sm text-destructive">
+                  <span>Failed to load audit logs</span>
+                  <Button variant="ghost" size="sm" class="h-7 px-2 text-xs"
+                    onclick={() => regionAudit.fetchLogs(regionId, { limit: 200, reset: true })}>Retry</Button>
+                </div>
+              {:else if regionAudit.logs.length === 0}
+                <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No regional audit activity</div>
+              {:else if auditView === 'chart'}
+                {@const cutoff = Date.now() - activityDays * 86400000}
+                {@const filtered = regionAudit.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= cutoff)}
+                {#if filtered.length === 0}
+                  <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
+                {:else}
+                  <ActivityChart logs={filtered} />
+                {/if}
               {:else}
-                <ActivityChart logs={filtered} />
+                <ActivityFeed
+                  logs={regionAudit.logs}
+                  loading={regionAudit.loading}
+                  hasMore={regionAudit.hasMore}
+                  onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200 })}
+                />
               {/if}
-            {:else}
-              <ActivityFeed
-                logs={regionAudit.logs}
-                loading={regionAudit.loading}
-                hasMore={regionAudit.hasMore}
-                onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200 })}
-              />
-            {/if}
+            </div>
           </CardContent>
         </Card>
       {:else}
@@ -450,6 +453,25 @@
 {/if}
 
 <style>
+  .audit-content-scroll {
+    min-height: 500px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
+  .filter-divider {
+    width: 1px;
+    height: 24px;
+    margin: 0 10px;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      oklch(0.6 0.08 250 / 0.5) 30%,
+      oklch(0.6 0.08 250 / 0.25) 70%,
+      transparent 100%
+    );
+  }
+
   /* HUD readout value glow */
   .hud-value {
     text-shadow: 0 0 12px var(--hud-glow, oklch(0.5 0 0 / 0.15));
@@ -622,7 +644,7 @@
     padding: 4px 10px;
     border: 1px solid var(--chip-accent, oklch(0.5 0 0 / 0.2));
     border-radius: 2px;
-    font-size: 11px;
+    font-size: 0.875rem;
     cursor: pointer;
     transition: opacity 0.2s, filter 0.2s, border-color 0.2s;
     user-select: none;
@@ -649,7 +671,7 @@
 
   .legend-count {
     font-family: var(--font-mono, monospace);
-    font-size: 10px;
+    font-size: 0.8rem;
     opacity: 0.6;
   }
 

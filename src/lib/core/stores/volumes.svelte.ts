@@ -10,12 +10,12 @@ let totalPages = $state(0)
 let currentPage = $state(1)
 let fetchCtrl: AbortController | null = null
 
-async function fetchVolumes(accountId: number, page = 1, limit = 20) {
+async function fetchVolumes(accountId: number, page = 1, limit = 20, regionId?: number, storageId?: number) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.volumes.list({ accountId, page, limit }, ctrl.signal)
+    const res = await api.volumes.list({ accountId, page, limit, regionId, storageId }, ctrl.signal)
     volumes = res.items
     totalPages = res.pagination?.totalPages ?? 0
     currentPage = res.pagination?.page ?? 1
@@ -59,6 +59,10 @@ async function revokeApiKey(volumeId: number, apiKey: string) {
   return api.volumes.revokeAPIKey(volumeId, { apiKey })
 }
 
+async function revokeApiKeysByUser(volumeId: number, userId: number) {
+  return api.volumes.revokeAPIKeysByUser(volumeId, { userId })
+}
+
 async function updateQuota(volumeId: number, quotaLimit: number) {
   return api.volumes.updateQuota(volumeId, { quotaLimit })
 }
@@ -82,6 +86,7 @@ export function useVolumes() {
     deactivateVolume,
     generateApiKeys,
     revokeApiKey,
+    revokeApiKeysByUser,
     updateQuota,
     getStats,
   }

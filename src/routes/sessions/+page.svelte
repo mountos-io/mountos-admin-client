@@ -82,10 +82,11 @@
           <TableRow>
             <TableHead class="th-cyber">Client</TableHead>
             <TableHead class="th-cyber">Host</TableHead>
+            <TableHead class="th-cyber">Region</TableHead>
             <TableHead class="th-cyber">Volume</TableHead>
             <TableHead class="th-cyber">Status</TableHead>
-            <TableHead class="th-cyber">Duration</TableHead>
-            <TableHead class="th-cyber">Last Heartbeat</TableHead>
+            <TableHead class="th-cyber hidden md:table-cell">Duration</TableHead>
+            <TableHead class="th-cyber hidden md:table-cell">Last Heartbeat</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -99,14 +100,15 @@
                 </div>
               </TableCell>
               <TableCell class="font-mono text-sm max-w-[160px] truncate">{session.hostname || session.ipAddr}</TableCell>
-              <TableCell class="font-mono text-sm max-w-[120px] truncate">{session.volumeId}</TableCell>
+              <TableCell class="text-sm text-muted-foreground">{session.region.name}</TableCell>
+              <TableCell class="text-sm max-w-[120px] truncate">{session.volumeName || session.volumeId}</TableCell>
               <TableCell>
                 <Badge variant={st.variant}>{st.label}</Badge>
               </TableCell>
-              <TableCell class="text-sm text-muted-foreground">
+              <TableCell class="text-sm text-muted-foreground hidden md:table-cell">
                 {session.connectedAt ? formatDuration(session.connectedAt, session.disconnectedAt) : '—'}
               </TableCell>
-              <TableCell class="text-sm text-muted-foreground">
+              <TableCell class="text-sm text-muted-foreground hidden md:table-cell">
                 {session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '—'}
               </TableCell>
             </TableRow>

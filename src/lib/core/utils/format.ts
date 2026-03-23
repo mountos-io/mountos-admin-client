@@ -55,6 +55,16 @@ export function formatQuota(used: number, limit: number): string {
   return `${formatBytes(used)} / ${formatBytes(limit)}`
 }
 
+const GB = 1024 ** 3
+
+export function gbToBytes(gb: number): number {
+  return Math.round(Math.max(0, gb) * GB)
+}
+
+export function bytesToGb(bytes: number): number {
+  return parseFloat((bytes / GB).toFixed(2))
+}
+
 export function quotaPercent(used: number, limit: number): number {
   if (limit === 0) return 0
   return Math.min(100, Math.round((used / limit) * 100))

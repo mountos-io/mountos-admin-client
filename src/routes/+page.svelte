@@ -23,15 +23,10 @@
   import ExternalLinkIcon from '@lucide/svelte/icons/external-link'
   import PlusIcon from '@lucide/svelte/icons/plus'
   import BuildingIcon from '@lucide/svelte/icons/building'
-  import RegionRow from '$lib/components/shared/RegionRow.svelte'
   import SessionSummaryChart from '$lib/components/shared/SessionSummaryChart.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
+  import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import { formatBytes, formatQuota } from '$lib/core/utils/format'
-  import ClockIcon from '@lucide/svelte/icons/clock'
-  import SunriseIcon from '@lucide/svelte/icons/sunrise'
-  import SunIcon from '@lucide/svelte/icons/sun'
-  import SunsetIcon from '@lucide/svelte/icons/sunset'
-  import MoonIcon from '@lucide/svelte/icons/moon'
 
   const accountStore = useAccounts()
   const dashboard = useDashboard()
@@ -46,14 +41,7 @@
   const canReadNodes = $derived(auth.can('serviceNodes', 'read'))
   const canReadAudit = $derived(auth.can('auditLogs', 'read'))
   let activityDays = $state(7)
-  let activityTimeRange = $state<'full' | 'morning' | 'afternoon' | 'evening' | 'night'>('full')
-  const timeRangeOptions = [
-    { key: 'full' as const, label: 'Full Day', icon: ClockIcon },
-    { key: 'morning' as const, label: '00–12', icon: SunriseIcon },
-    { key: 'afternoon' as const, label: '12–18', icon: SunIcon },
-    { key: 'evening' as const, label: '18–22', icon: SunsetIcon },
-    { key: 'night' as const, label: '22–24', icon: MoonIcon },
-  ]
+  let activityView = $state<'feed' | 'chart'>('chart')
   const activityCutoff = $derived(Date.now() - activityDays * 86400000)
   const filteredActivity = $derived(auditStore.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= activityCutoff))
 
@@ -223,62 +211,57 @@
               <CardTitle>Recent Activity</CardTitle>
               <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
                 <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-                <div class="relative flex items-center gap-1.5 flex-wrap">
-                  {#each timeRangeOptions as { key, label, icon }}
-                    {@const Icon = icon}
-                    <Button variant={activityTimeRange === key ? 'primary' : 'ghost'} size="sm"
-                      class="h-7 w-[6.5rem] text-xs font-mono justify-center"
-                      onclick={() => activityTimeRange = key}>
-                      <Icon class="w-3 h-3 mr-1" />{label}
-                    </Button>
-                  {/each}
-                  <span class="filter-divider"></span>
+                <div class="relative flex items-center gap-1.5">
                   {#each [7, 15, 30] as d}
                     <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
                       class="h-7 w-10 text-xs font-mono justify-center"
                       onclick={() => activityDays = d}>{d}d</Button>
                   {/each}
+                  <span class="filter-divider"></span>
+                  <Button variant={activityView === 'feed' ? 'primary' : 'ghost'} size="sm"
+                    class="h-7 px-3 text-xs font-mono justify-center"
+                    onclick={() => activityView = 'feed'}>Feed</Button>
+                  <Button variant={activityView === 'chart' ? 'primary' : 'ghost'} size="sm"
+                    class="h-7 px-3 text-xs font-mono justify-center"
+                    onclick={() => activityView = 'chart'}>Chart</Button>
                 </div>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            {#if auditStore.loading && auditStore.logs.length === 0}
-              <div class="flex items-center justify-center py-16">
-                <LoadingSpinner />
-              </div>
-            {:else if auditStore.logs.length === 0}
-              <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No recent activity</div>
-            {:else}
-              {#if filteredActivity.length === 0}
-                <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
+            <div class="audit-content-scroll">
+              {#if auditStore.loading && auditStore.logs.length === 0}
+                <div class="flex items-center justify-center py-16">
+                  <LoadingSpinner />
+                </div>
+              {:else if auditStore.logs.length === 0}
+                <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No recent activity</div>
               {:else}
-                <ActivityChart logs={filteredActivity} bind:timeRange={activityTimeRange} />
+                {#if filteredActivity.length === 0}
+                  <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
+                {:else if activityView === 'chart'}
+                  <ActivityChart logs={filteredActivity} />
+                {:else}
+                  <ActivityFeed logs={filteredActivity} loading={false} hasMore={false} />
+                {/if}
               {/if}
-            {/if}
-          </CardContent>
-        </Card>
-      {/if}
-
-      <!-- Per-Region Breakdown -->
-      {#if stats.regionBreakdown.length > 0}
-        <Card cornerPlus>
-          <CardHeader><CardTitle>Per-Region Breakdown</CardTitle></CardHeader>
-          <CardContent>
-            <div class="space-y-1">
-              {#each stats.regionBreakdown as region (region.regionId)}
-                <RegionRow {region} />
-              {/each}
             </div>
           </CardContent>
         </Card>
       {/if}
+
     {/if}
   {/if}
   <div class="pb-6"></div>
 </div>
 
 <style>
+  .audit-content-scroll {
+    min-height: 500px;
+    max-height: 500px;
+    overflow-y: auto;
+  }
+
   .filter-divider {
     width: 1px;
     height: 24px;

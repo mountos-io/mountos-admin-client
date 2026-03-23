@@ -173,7 +173,7 @@
           {#if auth.can('users', 'update')}
             <CardFooter class="gap-2">
               {#if user.isActive}
-                <Button size="sm" onclick={() => dialog.confirm('Deactivate', `Deactivate "${user!.username}"? This action cannot be reverted.`, () => act(() => store.deactivateUser(id)))}>Deactivate</Button>
+                <Button variant="destructive" size="sm" onclick={() => dialog.confirm('Deactivate', `Deactivate "${user!.username}"? This action cannot be reverted.`, () => act(() => store.deactivateUser(id)), 'destructive')}>Deactivate</Button>
               {/if}
             </CardFooter>
           {/if}
@@ -185,4 +185,4 @@
   {/if}
 </div>
 
-<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} variant={dialog.variant} onConfirm={dialog.action} />

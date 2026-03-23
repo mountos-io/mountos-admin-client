@@ -16,6 +16,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import { gbToBytes } from '$lib/core/utils/format'
   import Copy from '@lucide/svelte/icons/copy'
   import Lightbulb from '@lucide/svelte/icons/lightbulb'
 
@@ -79,7 +80,7 @@
         encryptionKey: (encryption && encryptionKey.trim()) ? encryptionKey.trim() : undefined,
         retentionPeriod: retentionPeriod ? Number(retentionPeriod) : undefined,
         gracePeriod: gracePeriod ? Number(gracePeriod) : undefined,
-        quotaLimit: quotaLimit ? Number(quotaLimit) : undefined,
+        quotaLimit: quotaLimit ? gbToBytes(Number(quotaLimit)) : undefined,
       })
       createResult = result
       showSuccessToast('Volume created')
@@ -197,8 +198,8 @@
           <Separator />
 
           <div class="space-y-2">
-            <Label for="quotaLimit">Quota Limit (bytes)</Label>
-            <Input id="quotaLimit" type="number" bind:value={quotaLimit} placeholder="0 = unlimited" min="0" />
+            <Label for="quotaLimit">Quota Limit (GB)</Label>
+            <Input id="quotaLimit" type="number" bind:value={quotaLimit} placeholder="0 = unlimited" min="0" step="0.01" />
           </div>
 
           <div class="flex gap-3 pt-2">

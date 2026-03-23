@@ -7,12 +7,12 @@ let totalPages = $state(0)
 let currentPage = $state(1)
 let fetchCtrl: AbortController | null = null
 
-async function fetchUsers(accountId: number, page = 1, limit = 20) {
+async function fetchUsers(accountId: number, page = 1, limit = 20, search?: string) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.users.list({ accountId, page, limit }, ctrl.signal)
+    const res = await api.users.list({ accountId, search, page, limit }, ctrl.signal)
     users = res.items
     totalPages = res.pagination?.totalPages ?? 0
     currentPage = res.pagination?.page ?? 1
@@ -40,6 +40,21 @@ async function deactivateUser(id: number) {
   await api.users.deactivate(id)
 }
 
+let searchCtrl: AbortController | null = null
+
+async function searchUsers(accountId: number, search: string, signal?: AbortSignal): Promise<User[]> {
+  searchCtrl?.abort()
+  const ctrl = searchCtrl = new AbortController()
+  if (signal) signal.addEventListener('abort', () => ctrl.abort(), { once: true })
+  try {
+    const res = await api.users.list({ accountId, search, limit: 20 }, ctrl.signal)
+    return res.items
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') return []
+    throw e
+  }
+}
+
 export function useUsers() {
   return {
     get users() { return users },
@@ -47,6 +62,7 @@ export function useUsers() {
     get totalPages() { return totalPages },
     get currentPage() { return currentPage },
     fetchUsers,
+    searchUsers,
     addUser,
     editUser,
     getUser,

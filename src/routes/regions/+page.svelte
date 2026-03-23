@@ -67,6 +67,7 @@
       'Deactivate Region',
       `Deactivate "${region.name}"? Make sure all nodes are stopped and all storages and volumes in this region are deactivated first. This action cannot be reverted.`,
       () => store.deactivateRegion(region.id),
+      'destructive',
     );
   }
 </script>
@@ -75,7 +76,7 @@
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold tracking-tight">Regions</h1>
     {#if accountId && auth.can("regions", "create")}
-      <Button href="/regions/create" size="sm" class="gap-1.5">
+      <Button href="/regions/create" variant="primary" size="sm" class="gap-1.5 cyberpunk-skewed-sm">
         <Plus class="h-4 w-4" />
         Create Region
       </Button>
@@ -161,7 +162,7 @@
                 >
                   <Power
                     aria-hidden="true"
-                    class="size-3.5 text-muted-foreground"
+                    class="size-3.5 text-destructive"
                   />
                 </Button>
               {/if}
@@ -182,5 +183,6 @@
   bind:open={dialog.open}
   title={dialog.title}
   description={dialog.desc}
+  variant={dialog.variant}
   onConfirm={dialog.action}
 />

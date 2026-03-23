@@ -244,12 +244,13 @@
             </Button>
           {/if}
           {#if storage.isActive && auth.can('storages', 'update')}
-            <Button variant="outline" size="sm" onclick={() => {
+            <Button variant="destructive" size="sm" onclick={() => {
               if (!auth.guard('storages', 'update')) return
               dialog.confirm(
                 'Deactivate',
                 `Deactivate "${storage!.name}"? Make sure all volumes on this storage are deactivated first. This action cannot be reverted.`,
                 () => store.deactivateStorage(id),
+                'destructive',
               )
             }}>
               Deactivate
@@ -262,4 +263,4 @@
     <p class="text-muted-foreground">Storage not found.</p>
   {/if}
 </div>
-<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} variant={dialog.variant} onConfirm={dialog.action} />

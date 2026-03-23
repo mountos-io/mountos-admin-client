@@ -1,4 +1,5 @@
 export type {
+  Ref,
   Account,
   User,
   Region,
@@ -23,6 +24,7 @@ export type {
   EditVolumeRequest,
   GenerateVolumeAPIKeysRequest,
   RevokeVolumeAPIKeyRequest,
+  RevokeVolumeAPIKeysByUserRequest,
   DeactivateVolumeRequest,
   UpdateVolumeQuotaRequest,
   ListOptions,
@@ -44,4 +46,4 @@ export type {
 } from '@mountos-app/admin-sdk'
 
 export { ApiError } from './errors.js'
-export { AdminClient, type ClientConfig } from './client.gen.js'
+export { AdminClient, type ClientConfig } from './client.js'

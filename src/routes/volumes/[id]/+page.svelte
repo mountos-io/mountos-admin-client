@@ -2,7 +2,9 @@
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { useVolumes } from '$lib/core/stores/volumes.svelte'
+  import { useUsers } from '$lib/core/stores/users.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { cn, debounce } from '$lib/utils'
   import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
   import { Button } from '$lib/components/ui/button'
   import { Badge } from '$lib/components/ui/badge'
@@ -10,18 +12,25 @@
   import { Textarea } from '$lib/components/ui/textarea'
   import { Label } from '$lib/components/ui/label'
   import { Separator } from '$lib/components/ui/separator'
+  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
+  import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '$lib/components/ui/command'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import DeactivateVolumeDialog from '$lib/components/shared/DeactivateVolumeDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
-  import { formatBytes, formatQuota, quotaPercent } from '$lib/core/utils/format'
-  import type { Volume, DeactivateVolumeRequest } from '$lib/core/api/types'
+  import { formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes } from '$lib/core/utils/format'
+  import type { Volume, User, DeactivateVolumeRequest } from '$lib/core/api/types'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Lightbulb from '@lucide/svelte/icons/lightbulb'
+  import PencilIcon from '@lucide/svelte/icons/pencil'
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
+  import Check from '@lucide/svelte/icons/check'
+  import Loader2 from '@lucide/svelte/icons/loader-2'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
 
   const store = useVolumes()
+  const userStore = useUsers()
   const auth = useAuth()
   const id = $derived(Number($page.params.id))
 
@@ -42,7 +51,9 @@
   let loading = $state(true)
   let stats = $state<{ diskSize: number; activeSize: number; size: number } | null>(null)
   const dialog = useConfirmDialog(() => reload())
+  const canEdit = $derived(volume?.isActive && auth.can('volumes', 'update'))
 
+  let editing = $state(false)
   let deactivateOpen = $state(false)
 
   async function handleDeactivate(req: DeactivateVolumeRequest) {
@@ -52,19 +63,39 @@
 
   let genUserId = $state(auth.userMountosUserId != null ? String(auth.userMountosUserId) : '')
   let genResult = $state<{ apiKey: string; apiSecret: string } | null>(null)
-  let revokeKey = $state('')
-  let quotaInput = $state('')
+  let userSelectOpen = $state(false)
+  let userSearchQuery = $state('')
+  let userOptions = $state<User[]>([])
+  let userSearchLoading = $state(false)
+  const selectedUserLabel = $derived(userOptions.find(u => String(u.id) === genUserId)?.username ?? (genUserId ? `User #${genUserId}` : ''))
 
+  const debouncedUserSearch = debounce(async (accountId: number, query: string) => {
+    userSearchLoading = true
+    try {
+      userOptions = await userStore.searchUsers(accountId, query)
+    } catch { /* swallow */ }
+    finally { userSearchLoading = false }
+  }, 300)
+
+  $effect(() => {
+    if (!userSelectOpen) return
+    if (!volume?.account?.id) return
+    debouncedUserSearch(volume.account.id, userSearchQuery)
+  })
+
+  let revokeKey = $state('')
   let editDesc = $state('')
   let editRetention = $state('')
   let editGrace = $state('')
+  let editQuota = $state('')
   let editSaving = $state(false)
 
   const editDirty = $derived(
     volume != null && (
       editDesc !== (volume.description ?? '') ||
       editRetention !== String(volume.retentionPeriod) ||
-      editGrace !== String(volume.gracePeriod)
+      editGrace !== String(volume.gracePeriod) ||
+      editQuota !== String(bytesToGb(volume.quotaLimit))
     )
   )
 
@@ -72,7 +103,7 @@
     editDesc = v.description ?? ''
     editRetention = String(v.retentionPeriod)
     editGrace = String(v.gracePeriod)
-    quotaInput = String(v.quotaLimit)
+    editQuota = String(bytesToGb(v.quotaLimit))
   }
 
   $effect(() => {
@@ -95,27 +126,41 @@
     syncEditFields(v)
   }
 
+  function cancelEdit() {
+    if (volume) syncEditFields(volume)
+    editing = false
+  }
+
   async function saveEdit() {
+    if (!volume) return
     editSaving = true
     try {
+      const quotaChanged = editQuota !== String(bytesToGb(volume.quotaLimit))
       await store.editVolume(id, {
         description: editDesc.trim() || undefined,
         retentionPeriod: editRetention ? Number(editRetention) : undefined,
         gracePeriod: editGrace ? Number(editGrace) : undefined,
       })
+      if (quotaChanged) {
+        const gb = Number(editQuota)
+        await store.updateQuota(id, isNaN(gb) || gb <= 0 ? 0 : gbToBytes(gb))
+      }
       showSuccessToast('Volume updated')
+      editing = false
       await reload()
     } catch (e: unknown) { handleApiError(e, 'Failed to update volume') }
     finally { editSaving = false }
   }
 
-  async function generateKeys() {
+  function generateKeys() {
     const uid = Number(genUserId)
     if (!genUserId || Number.isNaN(uid)) return
-    try {
-      genResult = await store.generateApiKeys(id, { userId: uid })
-      showSuccessToast('API keys generated')
-    } catch (e: unknown) { handleApiError(e, 'Failed to generate keys') }
+    dialog.confirm('Generate API Keys', 'Any existing key pair for this user will be revoked.', async () => {
+      try {
+        genResult = await store.generateApiKeys(id, { userId: uid })
+        showSuccessToast('API keys generated')
+      } catch (e: unknown) { handleApiError(e, 'Failed to generate keys') }
+    })
   }
 
   function handleRevokeKey() {
@@ -125,17 +170,17 @@
       await store.revokeApiKey(id, key)
       revokeKey = ''
       showSuccessToast('API key revoked')
-    })
+    }, 'destructive')
   }
 
-  async function updateQuota() {
-    const limit = Number(quotaInput)
-    if (isNaN(limit) || limit < 0) return
-    try {
-      await store.updateQuota(id, limit)
-      showSuccessToast('Quota updated')
-      await reload()
-    } catch (e: unknown) { handleApiError(e, 'Failed to update quota') }
+  function handleRevokeKeysByUser() {
+    const uid = Number(genUserId)
+    if (!genUserId || Number.isNaN(uid)) return
+    const label = selectedUserLabel || `User #${uid}`
+    dialog.confirm('Revoke All Keys', `Revoke all API keys for ${label}?`, async () => {
+      await store.revokeApiKeysByUser(id, uid)
+      showSuccessToast(`All API keys revoked for ${label}`)
+    }, 'destructive')
   }
 </script>
 
@@ -150,32 +195,78 @@
   {:else if volume}
     <div class="grid gap-6 lg:grid-cols-2">
       <Card cornerBrackets>
-        <CardHeader><CardTitle>Details</CardTitle></CardHeader>
-        <CardContent class="grid gap-3">
-          <div>
-            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
-            <div class="mt-1"><StatusBadge active={volume.isActive} locked={volume.locked} /></div>
+        <CardHeader>
+          <div class="flex items-center gap-3">
+            <CardTitle class="flex-1">Details</CardTitle>
+            {#if canEdit && !editing}
+              <button
+                type="button"
+                onclick={() => (editing = true)}
+                class="opacity-50 hover:opacity-100 hover:text-primary transition-all"
+                title="Edit volume" aria-label="Edit volume"
+              >
+                <PencilIcon class="size-4" aria-hidden="true" />
+              </button>
+            {/if}
           </div>
-          {#if volume.description}
+        </CardHeader>
+        <CardContent class="grid gap-3">
+          {#if editing}
+            <div class="space-y-1.5">
+              <Label for="edit-desc" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</Label>
+              <Textarea id="edit-desc" bind:value={editDesc} placeholder="Volume description" rows={2} />
+            </div>
+          {:else if volume.description}
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
               <p class="mt-1 text-sm break-words">{volume.description}</p>
             </div>
           {/if}
           <div>
+            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
+            <div class="mt-1"><StatusBadge active={volume.isActive} locked={volume.locked} /></div>
+          </div>
+          <div>
             <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Encryption</span>
             <div class="mt-1"><Badge variant={volume.encryption ? 'default' : 'outline'}>{volume.encryption ? 'Enabled' : 'Disabled'}</Badge></div>
           </div>
-          <div class="flex gap-4">
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Snapshot Window</span>
-              <p class="mt-1 text-sm">{volume.retentionPeriod} days</p>
+          {#if editing}
+            <div class="grid gap-4 md:grid-cols-2">
+              <div class="space-y-1.5">
+                <Label for="edit-retention" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                  <span class="inline-flex items-center gap-1">
+                    Snapshot Window (days)
+                    <span title="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data.">
+                      <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                    </span>
+                  </span>
+                </Label>
+                <Input id="edit-retention" type="number" bind:value={editRetention} placeholder="30" min="0" max="366" />
+              </div>
+              <div class="space-y-1.5">
+                <Label for="edit-grace" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                  <span class="inline-flex items-center gap-1">
+                    Grace Period (days)
+                    <span title="How long data stays before cleanup after deactivation">
+                      <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                    </span>
+                  </span>
+                </Label>
+                <Input id="edit-grace" type="number" bind:value={editGrace} placeholder="14" min="0" max="91" />
+              </div>
             </div>
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Grace Period</span>
-              <p class="mt-1 text-sm">{volume.gracePeriod} days</p>
+          {:else}
+            <div class="flex gap-4">
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Snapshot Window</span>
+                <p class="mt-1 text-sm">{volume.retentionPeriod} days</p>
+              </div>
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Grace Period</span>
+                <p class="mt-1 text-sm">{volume.gracePeriod} days</p>
+              </div>
             </div>
-          </div>
+          {/if}
           {#if !volume.isActive}
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
@@ -191,23 +282,37 @@
               </div>
             </div>
           {/if}
-          <div>
-            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota</span>
-            <p class="mt-1 text-sm">{formatQuota(volume.quotaUsed, volume.quotaLimit)}</p>
-            {#if volume.quotaLimit > 0}
-              {@const pct = quotaPercent(volume.quotaUsed, volume.quotaLimit)}
-              <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden" role="progressbar"
-                aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
-                aria-label="Quota usage {pct}%">
-                <div class="h-full rounded-full transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
-              </div>
-            {/if}
-          </div>
+          {#if editing}
+            <div class="space-y-1.5">
+              <Label for="edit-quota" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota Limit (GB)</Label>
+              <Input id="edit-quota" type="number" bind:value={editQuota} placeholder="0 = unlimited" min="0" step="0.01" />
+            </div>
+          {:else}
+            <div>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota</span>
+              <p class="mt-1 text-sm">{formatQuota(volume.quotaUsed, volume.quotaLimit)}</p>
+              {#if volume.quotaLimit > 0}
+                {@const pct = quotaPercent(volume.quotaUsed, volume.quotaLimit)}
+                <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden" role="progressbar"
+                  aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
+                  aria-label="Quota usage {pct}%">
+                  <div class="h-full rounded-full transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
+                </div>
+              {/if}
+            </div>
+          {/if}
         </CardContent>
-        {#if auth.can('volumes', 'update')}
+        {#if editing}
+          <CardFooter class="gap-4">
+            <Button variant="primary" size="sm" class="cyberpunk-skewed-sm" disabled={editSaving || !editDirty} onclick={saveEdit}>
+              {editSaving ? 'Saving...' : 'Update'}
+            </Button>
+            <Button variant="secondary" size="sm" onclick={cancelEdit} disabled={editSaving}>Cancel</Button>
+          </CardFooter>
+        {:else if auth.can('volumes', 'update')}
           <CardFooter class="flex gap-2">
             {#if volume.isActive}
-              <Button variant="outline" size="sm" onclick={() => { deactivateOpen = true }}>Deactivate</Button>
+              <Button variant="destructive" size="sm" onclick={() => { deactivateOpen = true }}>Deactivate</Button>
             {/if}
             <Button variant="outline" size="sm" onclick={() => dialog.confirm(
               volume!.locked ? 'Unlock' : 'Lock',
@@ -239,62 +344,6 @@
       {/if}
     </div>
 
-    {#if volume.isActive && auth.can('volumes', 'update')}
-      <Separator />
-
-      <Card>
-        <CardHeader><CardTitle>Edit Volume</CardTitle></CardHeader>
-        <CardContent class="space-y-4">
-          <div class="space-y-2">
-            <Label for="edit-desc">Description</Label>
-            <Textarea id="edit-desc" bind:value={editDesc} placeholder="Volume description" rows={2} />
-          </div>
-          <div class="grid gap-4 md:grid-cols-2">
-            <div class="space-y-2">
-              <Label for="edit-retention">
-                <span class="inline-flex items-center gap-1">
-                  Snapshot Window (days)
-                  <span title="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data.">
-                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                  </span>
-                </span>
-              </Label>
-              <Input id="edit-retention" type="number" bind:value={editRetention} placeholder="30" min="0" max="366" />
-            </div>
-            <div class="space-y-2">
-              <Label for="edit-grace">
-                <span class="inline-flex items-center gap-1">
-                  Grace Period (days)
-                  <span title="How long data stays before cleanup after deactivation">
-                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                  </span>
-                </span>
-              </Label>
-              <Input id="edit-grace" type="number" bind:value={editGrace} placeholder="14" min="0" max="91" />
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button size="sm" disabled={editSaving || !editDirty} onclick={saveEdit}>{editSaving ? 'Saving...' : 'Save'}</Button>
-        </CardFooter>
-      </Card>
-
-      <Separator />
-
-      <Card>
-        <CardHeader><CardTitle>Update Quota</CardTitle></CardHeader>
-        <CardContent>
-          <div class="flex items-end gap-3">
-            <div class="flex-1">
-              <Label for="quota-limit">Quota Limit (bytes)</Label>
-              <Input id="quota-limit" bind:value={quotaInput} placeholder="0 = unlimited" />
-            </div>
-            <Button size="sm" onclick={updateQuota}>Update</Button>
-          </div>
-        </CardContent>
-      </Card>
-    {/if}
-
     {#if auth.can('volumes', 'update') || auth.isUserRole}
       <Separator />
 
@@ -302,11 +351,55 @@
         <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
         <CardContent class="space-y-4">
           <div class="flex items-end gap-3">
-            <div class="flex-1">
-              <Label for="api-key-user-id">User ID</Label>
-              <Input id="api-key-user-id" bind:value={genUserId} placeholder="User ID to generate key for" readonly={auth.isUserRole} />
+            <div class="flex-1 space-y-1">
+              <Label for="api-key-user-id" class="inline-flex items-center gap-1">
+                User ID
+                <span title="Helps to track metadata operations">
+                  <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                </span>
+              </Label>
+              {#if auth.isUserRole}
+                <Input id="api-key-user-id" value={selectedUserLabel || genUserId} readonly />
+              {:else}
+                <Popover bind:open={userSelectOpen}>
+                  <PopoverTrigger>
+                    {#snippet child({ props })}
+                      <Button {...props} id="api-key-user-id" variant="outline" role="combobox" aria-expanded={userSelectOpen}
+                        class={cn("w-full justify-between font-normal", !genUserId && "text-muted-foreground")}>
+                        {selectedUserLabel || 'Select user...'}
+                        <ChevronsUpDown class="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    {/snippet}
+                  </PopoverTrigger>
+                  <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
+                    <Command shouldFilter={false}>
+                      <CommandInput placeholder="Search users..." bind:value={userSearchQuery} />
+                      <CommandList>
+                        {#if userSearchLoading}
+                          <div class="flex items-center justify-center py-4">
+                            <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+                          </div>
+                        {:else if userOptions.length === 0}
+                          <CommandEmpty>{userSearchQuery ? 'No users found.' : 'Type to search users...'}</CommandEmpty>
+                        {:else}
+                          {#each userOptions as user}
+                            <CommandItem value={String(user.id)} onSelect={() => { genUserId = String(user.id); userSelectOpen = false }}>
+                              <Check class={cn("h-4 w-4", genUserId === String(user.id) ? "opacity-100" : "opacity-0")} />
+                              <span>{user.username}</span>
+                              <span class="ml-auto text-xs text-muted-foreground">{user.email}</span>
+                            </CommandItem>
+                          {/each}
+                        {/if}
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              {/if}
             </div>
-            <Button size="sm" onclick={generateKeys}>Generate</Button>
+            <div class="flex gap-2">
+              <Button size="sm" disabled={!genUserId} onclick={generateKeys}>Generate</Button>
+              <Button variant="destructive" size="sm" disabled={!genUserId} onclick={handleRevokeKeysByUser}>Revoke All</Button>
+            </div>
           </div>
           {#if genResult}
             <div class="rounded-md border p-3 space-y-2 bg-muted/50">
@@ -323,11 +416,11 @@
           {/if}
           <Separator />
           <div class="flex items-end gap-3">
-            <div class="flex-1">
+            <div class="flex-1 space-y-1">
               <Label for="revoke-key-id">Revoke API Key</Label>
               <Input id="revoke-key-id" bind:value={revokeKey} placeholder="API key to revoke" />
             </div>
-            <Button variant="destructive" size="sm" onclick={handleRevokeKey}>Revoke</Button>
+            <Button variant="destructive" size="sm" disabled={!revokeKey} onclick={handleRevokeKey}>Revoke</Button>
           </div>
         </CardContent>
       </Card>
@@ -336,7 +429,7 @@
     <p class="text-muted-foreground">Volume not found.</p>
   {/if}
 </div>
-<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} onConfirm={dialog.action} />
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} variant={dialog.variant} onConfirm={dialog.action} />
 {#if volume}
   <DeactivateVolumeDialog bind:open={deactivateOpen} volumeName={volume.name} onConfirm={handleDeactivate} />
 {/if}

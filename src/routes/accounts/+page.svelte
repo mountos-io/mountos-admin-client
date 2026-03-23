@@ -33,7 +33,7 @@
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold tracking-tight">Accounts</h1>
     {#if auth.can('accounts', 'create')}
-      <Button href="/accounts/create" size="sm" class="gap-1.5">
+      <Button href="/accounts/create" variant="primary" size="sm" class="gap-1.5 cyberpunk-skewed-sm">
         <Plus class="h-4 w-4" />
         Create Account
       </Button>
