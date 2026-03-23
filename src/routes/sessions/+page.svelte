@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { useSessions } from '$lib/core/stores/sessions.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { Button } from '$lib/components/ui/button'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Badge } from '$lib/components/ui/badge'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
@@ -18,6 +20,8 @@
   const auth = useAuth()
   const account = $derived(accountStore.selectedAccount)
   const accountId = $derived(account?.id ?? null)
+  const volumeIdParam = $derived($page.url.searchParams.get('volumeId'))
+  const volumeId = $derived(volumeIdParam ? Number(volumeIdParam) : undefined)
   let redirected = false
 
   $effect(() => {
@@ -31,7 +35,7 @@
       return () => sessionStore.reset()
     }
     if (accountId) {
-      sessionStore.fetchSessions({ accountId })
+      sessionStore.fetchSessions({ accountId, volumeId })
       sessionStore.fetchSummary(accountId)
     } else {
       sessionStore.reset()
@@ -39,13 +43,25 @@
     return () => sessionStore.reset()
   })
 
-  function onPageChange(page: number) {
-    if (accountId) sessionStore.fetchSessions({ accountId, page })
+  function onPageChange(p: number) {
+    if (accountId) sessionStore.fetchSessions({ accountId, volumeId, page: p })
+  }
+
+  function clearVolumeFilter() {
+    goto('/sessions', { replaceState: true })
   }
 </script>
 
 <div class="space-y-6">
-  <h1 class="text-2xl font-bold tracking-tight">Sessions</h1>
+  <div class="flex items-center gap-3">
+    <h1 class="text-2xl font-bold tracking-tight">Sessions</h1>
+    {#if volumeId}
+      <Badge variant="outline" class="gap-1">
+        Volume #{volumeId}
+        <button type="button" class="ml-1 hover:text-destructive" onclick={clearVolumeFilter} aria-label="Clear volume filter">&times;</button>
+      </Badge>
+    {/if}
+  </div>
 
   {#if !account}
     <EmptyState title="No account selected" description="Select an account to view sessions." />

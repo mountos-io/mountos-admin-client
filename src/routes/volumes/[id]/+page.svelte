@@ -18,8 +18,11 @@
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import DeactivateVolumeDialog from '$lib/components/shared/DeactivateVolumeDialog.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
-  import { formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes } from '$lib/core/utils/format'
-  import type { Volume, User, DeactivateVolumeRequest } from '$lib/core/api/types'
+  import { formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes, formatClientType, formatSessionStatus, formatDuration, formatRelative } from '$lib/core/utils/format'
+  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
+  import Pagination from '$lib/components/shared/Pagination.svelte'
+  import { api } from '$lib/core/stores/client.svelte'
+  import type { Volume, User, DeactivateVolumeRequest, ClientSession } from '$lib/core/api/types'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Lightbulb from '@lucide/svelte/icons/lightbulb'
@@ -116,6 +119,7 @@
       volume = v
       stats = s
       syncEditFields(v)
+      fetchVolumeSessions()
     }).catch(() => { volume = null; stats = null }).finally(() => { loading = false })
   })
 
@@ -171,6 +175,37 @@
       revokeKey = ''
       showSuccessToast('API key revoked')
     }, 'destructive')
+  }
+
+  let volSessions = $state<ClientSession[]>([])
+  let sessionsLoading = $state(false)
+  let sessionsTotal = $state(0)
+  let sessionsTotalPages = $state(0)
+  let sessionsPage = $state(1)
+  let sessionsCtrl: AbortController | null = null
+
+  async function fetchVolumeSessions(page = 1) {
+    if (!volume) return
+    sessionsCtrl?.abort()
+    const ctrl = sessionsCtrl = new AbortController()
+    sessionsLoading = true
+    try {
+      const res = await api.clientSessions.list({
+        accountId: volume.account.id,
+        volumeId: id,
+        status: '1',
+        page,
+        limit: 10,
+      }, ctrl.signal)
+      volSessions = res.items
+      sessionsTotal = res.pagination?.total ?? 0
+      sessionsTotalPages = res.pagination?.totalPages ?? 0
+      sessionsPage = res.pagination?.page ?? 1
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return
+    } finally {
+      if (sessionsCtrl === ctrl) sessionsLoading = false
+    }
   }
 
   function handleRevokeKeysByUser() {
@@ -343,6 +378,68 @@
         </Card>
       {/if}
     </div>
+
+    {#if auth.can('clientSessions', 'read')}
+      <Card>
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <CardTitle>Active Sessions ({sessionsTotal})</CardTitle>
+            <Button variant="outline" size="sm" class="text-sm font-normal text-muted-foreground" href="/sessions?volumeId={id}">
+              View all sessions
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {#if sessionsLoading}
+            <LoadingSpinner />
+          {:else if volSessions.length === 0}
+            <p class="text-sm text-muted-foreground">No active sessions</p>
+          {:else}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead class="th-cyber">Client</TableHead>
+                  <TableHead class="th-cyber hidden md:table-cell">Host</TableHead>
+                  <TableHead class="th-cyber hidden lg:table-cell">Mount</TableHead>
+                  <TableHead class="th-cyber">Status</TableHead>
+                  <TableHead class="th-cyber hidden md:table-cell">Duration</TableHead>
+                  <TableHead class="th-cyber hidden lg:table-cell">Last Heartbeat</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {#each volSessions as session}
+                  {@const st = formatSessionStatus(session.status)}
+                  <TableRow>
+                    <TableCell class="text-sm">
+                      <span class="font-medium">{formatClientType(session.clientType)}</span>
+                      {#if session.osVersion}
+                        <span class="text-muted-foreground ml-1">{session.osName} {session.osVersion}</span>
+                      {/if}
+                    </TableCell>
+                    <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono">
+                      {session.hostname || session.ipAddr}
+                    </TableCell>
+                    <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
+                      {session.mountMode ?? '—'}
+                    </TableCell>
+                    <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
+                    <TableCell class="text-sm text-muted-foreground hidden md:table-cell">
+                      {session.connectedAt ? formatDuration(session.connectedAt) : '—'}
+                    </TableCell>
+                    <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
+                      {session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '—'}
+                    </TableCell>
+                  </TableRow>
+                {/each}
+              </TableBody>
+            </Table>
+            {#if sessionsTotalPages > 1}
+              <Pagination currentPage={sessionsPage} totalPages={sessionsTotalPages} onPageChange={(p) => fetchVolumeSessions(p)} />
+            {/if}
+          {/if}
+        </CardContent>
+      </Card>
+    {/if}
 
     {#if auth.can('volumes', 'update') || auth.isUserRole}
       <Separator />
