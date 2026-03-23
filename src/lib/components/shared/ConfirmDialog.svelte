@@ -57,7 +57,7 @@
         <div class="flex justify-end gap-2">
           <Button variant="outline" class="cyberpunk-skewed-sm" onclick={handleClose} disabled={loading}>Cancel</Button>
           <Button
-            variant={isDestructive ? 'destructive' : 'primary'}
+            variant="primary"
             class="cyberpunk-skewed-sm"
             disabled={loading}
             onclick={handleConfirm}

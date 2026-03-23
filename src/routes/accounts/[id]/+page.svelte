@@ -203,7 +203,7 @@
           {#if auth.can('accounts', 'update')}
             <CardFooter class="gap-2">
               {#if account.isActive}
-                <Button variant="destructive" size="sm" onclick={() => dialog.confirm('Deactivate', `Deactivate "${account!.name}"? Make sure all users, regions, storages, and volumes are deactivated first. This action cannot be reverted.`, () => act(() => store.deactivateAccount(id)), 'destructive')}>Deactivate</Button>
+                <Button variant="destructive" size="sm" onclick={() => dialog.confirm('Deactivate', `Permanently deactivate "${account!.name}"? All users, regions, storages, and volumes must be deactivated first.`, () => act(() => store.deactivateAccount(id)), 'destructive')}>Deactivate</Button>
               {/if}
               {#if features.accountLock}
                 {#if account.locked}

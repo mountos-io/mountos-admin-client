@@ -56,20 +56,20 @@
       </div>
 
       <div role="alert" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
-        This action cannot be reverted. The volume cannot be reactivated.
+        This volume will be permanently deactivated and cannot be reactivated.
       </div>
 
       <fieldset class="flex flex-col gap-3 border-none p-0 m-0">
         <legend class="text-sm font-medium">Cleanup options</legend>
-        <Checkbox bind:checked={cleanupMeta} label="Cleanup metadata" disabled={loading} />
-        <Checkbox bind:checked={cleanupStorage} label="Cleanup storage" disabled={loading} />
-        <Checkbox bind:checked={cleanupVault} label="Cleanup vault" disabled={loading} />
+        <Checkbox bind:checked={cleanupMeta} label="Remove metadata" disabled={loading} />
+        <Checkbox bind:checked={cleanupStorage} label="Delete stored data" disabled={loading} />
+        <Checkbox bind:checked={cleanupVault} label="Purge vault secrets" disabled={loading} />
       </fieldset>
 
       <div class="pt-2">
         <div class="flex justify-end gap-2">
           <Button variant="outline" class="cyberpunk-skewed-sm" onclick={handleClose} disabled={loading}>Cancel</Button>
-          <Button variant="destructive" class="cyberpunk-skewed-sm" disabled={loading} onclick={handleConfirm}>
+          <Button variant="primary" class="cyberpunk-skewed-sm" disabled={loading} onclick={handleConfirm}>
             {loading ? 'Processing...' : 'Deactivate'}
           </Button>
         </div>
