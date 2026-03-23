@@ -148,7 +148,14 @@
                 </span>
               </span>
             </TableHead>
-            <TableHead class="th-cyber hidden md:table-cell">Quota</TableHead>
+            <TableHead class="th-cyber hidden md:table-cell">
+              <span class="inline-flex items-center gap-1">
+                Quota
+                <span title="Total volume usage vs allocated quota limit">
+                  <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                </span>
+              </span>
+            </TableHead>
             <TableHead class="th-cyber">Status</TableHead>
           </TableRow>
         </TableHeader>

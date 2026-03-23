@@ -230,7 +230,7 @@
   {#if loading}
     <LoadingSpinner />
   {:else if volume}
-    <div class="grid gap-6 lg:grid-cols-2">
+    <div class="grid gap-6">
       <Card cornerBrackets>
         <CardHeader>
           <div class="flex items-center gap-3">
@@ -337,29 +337,32 @@
                 </div>
               {/if}
             </div>
-            <div class="flex gap-4">
+            <div class="flex flex-wrap gap-4">
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1"
+                  title="Sum of all files across forks for this volume.&#10;&#10;Can exceed total volume due to hard links, sparse files, etc.&#10;Only live (non-deleted) files are tracked.">
                   Live
-                  <span title="Sum of all files across forks for this volume.&#10;&#10;Can exceed total volume due to hard links, sparse files, etc.&#10;Only live (non-deleted) files are tracked.">
+                  <span>
                     <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
                   </span>
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveVolume)}</p>
               </div>
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1"
+                  title="Object / block storage space used.&#10;&#10;Includes all versions, pending, and yet-to-be-discarded file segments.">
                   Total
-                  <span title="Object / block storage space used.&#10;&#10;Includes all versions, pending, and yet-to-be-discarded file segments.">
+                  <span>
                     <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
                   </span>
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.totalVolume)}</p>
               </div>
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1"
+                  title="Pending or yet-to-be-discarded file segments.&#10;&#10;These segments are scheduled for cleanup after the retention window expires.">
                   Pending
-                  <span title="Pending or yet-to-be-discarded file segments.&#10;&#10;These segments are scheduled for cleanup after the retention window expires.">
+                  <span>
                     <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
                   </span>
                 </span>

@@ -114,16 +114,16 @@
         { label: 'Volumes', value: stats.volumeCount, href: '/volumes', icon: DatabaseIcon },
         { label: 'Regions', value: stats.regionCount, href: '/regions', icon: GlobeIcon },
         { label: 'Storages', value: stats.storageCount, href: '/storages', icon: HardDriveIcon },
-        { label: 'Storage', value: formatBytes(stats.totalVolumeUsed), subtitle: formatQuota(stats.totalVolumeUsed, stats.totalQuotaLimit), href: '/storages', icon: HardDriveIcon },
+        { label: 'Usage', value: formatBytes(stats.totalVolumeUsed), subtitle: formatQuota(stats.totalVolumeUsed, stats.totalQuotaLimit), href: '/volumes', icon: DatabaseIcon },
         ...(canReadNodes ? [{ label: 'Nodes', value: nodeStore.nodes.length, href: '/nodes', icon: ServerIcon }] : []),
         ...(canReadSessions ? [{ label: 'Sessions', value: stats.activeSessionCount, href: '/sessions', icon: MonitorDotIcon }] : []),
       ]}
       <div class="corner-brackets relative border border-border/30 rounded-sm">
         <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-        <div class="relative flex">
+        <div class="relative flex flex-wrap">
           {#each overviewItems as item, i}
             <a href={item.href}
-              class="group relative flex-1 flex items-center gap-3 px-4 py-3
+              class="group relative flex-1 min-w-[140px] flex items-center gap-3 px-4 py-3
                      hover:bg-muted/40 transition-colors
                      {i < overviewItems.length - 1 ? 'border-r border-border' : ''}">
               <div class="flex size-8 items-center justify-center rounded-md bg-muted/60 group-hover:bg-primary/10 transition-colors">
@@ -133,7 +133,7 @@
                 <p class="text-xl font-bold tabular-nums leading-none">{item.value}</p>
                 <p class="text-xs text-muted-foreground mt-0.5">{item.label}</p>
                 {#if item.subtitle}
-                  <p class="text-[10px] text-muted-foreground/60 leading-none mt-0.5">{item.subtitle}</p>
+                  <p class="text-xs text-muted-foreground/60 leading-none mt-0.5">{item.subtitle}</p>
                 {/if}
               </div>
               <ChevronRightIcon class="size-3 invisible group-hover:visible text-muted-foreground transition-colors absolute right-2 top-1/2 -translate-y-1/2" />
@@ -269,8 +269,8 @@
     background: linear-gradient(
       180deg,
       transparent 0%,
-      oklch(0.6 0.08 250 / 0.5) 30%,
-      oklch(0.6 0.08 250 / 0.25) 70%,
+      color-mix(in oklch, var(--border) 60%, transparent) 30%,
+      color-mix(in oklch, var(--border) 30%, transparent) 70%,
       transparent 100%
     );
   }

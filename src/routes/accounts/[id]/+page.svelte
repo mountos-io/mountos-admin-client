@@ -127,8 +127,8 @@
     <h1 class="text-2xl font-bold tracking-tight">{account?.name ?? 'Account'}</h1>
     {#if account}
       <Badge variant="outline" style="border-color: var(--pastel-account); color: var(--pastel-account-text)">Account</Badge>
-      <Badge variant="outline" class="font-mono text-xs" title="Sum of all live files across volumes in this account">Live: {formatBytes(account.liveVolume)}</Badge>
-      <Badge variant="outline" class="font-mono text-xs" title="Total storage space used across volumes in this account">Total: {formatBytes(account.totalVolume)}</Badge>
+      <Badge variant="outline" class="font-mono text-xs bg-muted/50" title="Sum of all live files across volumes in this account">Live: {formatBytes(account.liveVolume)}</Badge>
+      <Badge variant="outline" class="font-mono text-xs bg-muted/50" title="Total storage space used across volumes in this account">Total: {formatBytes(account.totalVolume)}</Badge>
     {/if}
   </div>
 

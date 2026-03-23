@@ -99,7 +99,7 @@
         <TableRow>
           <TableHead class="th-cyber">Name</TableHead>
           <TableHead class="th-cyber">Base DNS</TableHead>
-          <TableHead class="th-cyber">
+          <TableHead class="th-cyber hidden lg:table-cell">
             <span class="inline-flex items-center gap-1">
               Export ID
               <span
@@ -138,10 +138,11 @@
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/regions/${region.id}`))}
             role="link"
             tabindex={0}
+            aria-label="Region {region.name}"
           >
             <TableCell class="font-medium max-w-[160px] truncate">{region.name}</TableCell>
             <TableCell class="font-mono text-sm max-w-[200px] truncate">{region.dns}</TableCell>
-            <TableCell>
+            <TableCell class="hidden lg:table-cell">
               <span class="inline-flex items-center gap-1 font-mono text-sm">
                 {region.exportId}
                 <button
