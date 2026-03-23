@@ -340,7 +340,7 @@
             <div class="flex flex-wrap gap-4">
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1"
-                  title="Sum of all files across forks for this volume.&#10;&#10;Can exceed total volume due to hard links, sparse files, etc.&#10;Only live (non-deleted) files are tracked.">
+                  title="Sum of all files across forks for this volume.&#10;&#10;Can exceed total volume due to hard links, sparse files, etc.&#10;Only live (non-deleted, current version) files are tracked.">
                   Live
                   <span>
                     <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
