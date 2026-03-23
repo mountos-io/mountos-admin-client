@@ -351,7 +351,7 @@
         <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
         <CardContent class="space-y-4">
           <div class="flex items-end gap-3">
-            <div class="flex-1 space-y-1">
+            <div class="w-64 space-y-1">
               <Label for="api-key-user-id" class="inline-flex items-center gap-1">
                 User ID
                 <span title="Helps to track metadata operations">
@@ -416,7 +416,7 @@
           {/if}
           <Separator />
           <div class="flex items-end gap-3">
-            <div class="flex-1 space-y-1">
+            <div class="w-64 space-y-1">
               <Label for="revoke-key-id">Revoke API Key</Label>
               <Input id="revoke-key-id" bind:value={revokeKey} placeholder="API key to revoke" />
             </div>
