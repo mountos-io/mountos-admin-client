@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte'
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { useVolumes } from '$lib/core/stores/volumes.svelte'
@@ -111,6 +112,7 @@
 
   $effect(() => {
     if (Number.isNaN(id)) { loading = false; return }
+    volSessions = []; sessionsTotal = 0; sessionsTotalPages = 0; sessionsPage = 1
     loading = true
     Promise.all([
       store.getVolume(id),
@@ -122,6 +124,8 @@
       fetchVolumeSessions()
     }).catch(() => { volume = null; stats = null }).finally(() => { loading = false })
   })
+
+  onDestroy(() => { sessionsCtrl?.abort() })
 
   async function reload() {
     const v = await store.getVolume(id)
@@ -212,9 +216,9 @@
     const uid = Number(genUserId)
     if (!genUserId || Number.isNaN(uid)) return
     const label = selectedUserLabel || `User #${uid}`
-    dialog.confirm('Revoke All Keys', `Revoke all API keys for ${label}?`, async () => {
+    dialog.confirm('Revoke Key', `Revoke API key for ${label}?`, async () => {
       await store.revokeApiKeysByUser(id, uid)
-      showSuccessToast(`All API keys revoked for ${label}`)
+      showSuccessToast(`API key revoked for ${label}`)
     }, 'destructive')
   }
 </script>
@@ -495,7 +499,7 @@
             </div>
             <div class="flex gap-2">
               <Button size="sm" disabled={!genUserId} onclick={generateKeys}>Generate</Button>
-              <Button variant="destructive" size="sm" disabled={!genUserId} onclick={handleRevokeKeysByUser}>Revoke All</Button>
+              <Button variant="destructive" size="sm" disabled={!genUserId} onclick={handleRevokeKeysByUser}>Revoke</Button>
             </div>
           </div>
           {#if genResult}

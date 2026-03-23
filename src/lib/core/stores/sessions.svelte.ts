@@ -33,12 +33,12 @@ async function fetchSessions(opts?: ClientSessionListOptions) {
   }
 }
 
-async function fetchSummary(accountId?: number) {
+async function fetchSummary(accountId?: number, volumeId?: number) {
   summaryCtrl?.abort()
   const ctrl = summaryCtrl = new AbortController()
   summaryLoading = true
   try {
-    summary = await api.clientSessions.summary(accountId, ctrl.signal)
+    summary = await api.clientSessions.summary(accountId, volumeId, ctrl.signal)
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
     summary = []

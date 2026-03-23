@@ -68,15 +68,13 @@
       const s = storageStore.storages.find(s => String(s.id) === selectedStorageId)
       if (s && s.regionInfo.id !== Number(v)) selectedStorageId = ''
     }
-    refetch()
   }
 
   function onStorageChange(v: string) {
     selectedStorageId = v
-    refetch()
   }
 
-  let filtersLoaded = false
+  let filtersLoadedFor: number | null = null
   $effect(() => {
     if (!auth.loading && !auth.can('volumes', 'read')) {
       showErrorToast('Access denied')
@@ -84,10 +82,10 @@
       return
     }
     if (accountId) {
-      if (!filtersLoaded) {
+      if (filtersLoadedFor !== accountId) {
         regionStore.fetchRegions(1, 100)
         storageStore.fetchStorages(accountId, 1, 100)
-        filtersLoaded = true
+        filtersLoadedFor = accountId
       }
       refetch()
     }

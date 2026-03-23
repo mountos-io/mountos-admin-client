@@ -430,8 +430,8 @@ class ClientSessionsResource {
     return this.client.request('GET', `/client-sessions/${sessionId}`, undefined, signal)
   }
 
-  summary(accountId?: number, signal?: AbortSignal): Promise<SessionSummary[]> {
-    return this.client.request('GET', `/client-sessions/summary${queryString({ accountId: accountId })}`, undefined, signal)
+  summary(accountId?: number, volumeId?: number, signal?: AbortSignal): Promise<SessionSummary[]> {
+    return this.client.request('GET', `/client-sessions/summary${queryString({ accountId: accountId, volumeId: volumeId })}`, undefined, signal)
   }
 }
 

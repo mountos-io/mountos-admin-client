@@ -103,6 +103,8 @@ type StatusVariant = 'success' | 'secondary' | 'warning' | 'destructive' | 'outl
 
 const SESSION_STATUS_MAP: Record<string, { label: string; variant: StatusVariant }> = {
   connected: { label: 'Connected', variant: 'success' },
+  active: { label: 'Active', variant: 'success' },
+  unhealthy: { label: 'Unhealthy', variant: 'destructive' },
   disconnected: { label: 'Disconnected', variant: 'secondary' },
   idle: { label: 'Idle', variant: 'warning' },
   error: { label: 'Error', variant: 'destructive' },

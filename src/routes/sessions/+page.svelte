@@ -4,7 +4,6 @@
   import { useSessions } from '$lib/core/stores/sessions.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Button } from '$lib/components/ui/button'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Badge } from '$lib/components/ui/badge'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
@@ -36,7 +35,7 @@
     }
     if (accountId) {
       sessionStore.fetchSessions({ accountId, volumeId })
-      sessionStore.fetchSummary(accountId)
+      sessionStore.fetchSummary(accountId, volumeId)
     } else {
       sessionStore.reset()
     }
@@ -48,7 +47,7 @@
   }
 
   function clearVolumeFilter() {
-    goto('/sessions', { replaceState: true })
+    goto('/sessions')
   }
 </script>
 
