@@ -5,4 +5,4 @@
   const regionId = $derived(Number($page.params.regionId))
 </script>
 
-<RegionTopology {regionId} basePath="/nodes" />
+<RegionTopology {regionId} basePath="/regions" />

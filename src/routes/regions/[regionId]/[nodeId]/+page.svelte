@@ -6,4 +6,4 @@
   const nodeId = $derived($page.params.nodeId ?? '')
 </script>
 
-<NodeDetail {regionId} {nodeId} basePath="/nodes" />
+<NodeDetail {regionId} {nodeId} basePath="/regions" />

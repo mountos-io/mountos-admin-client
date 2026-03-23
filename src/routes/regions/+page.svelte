@@ -118,8 +118,8 @@
         {#each filteredRegions as region}
           <TableRow
             class="cursor-pointer hover:bg-muted/50"
-            onclick={() => goto(`/nodes/${region.id}`)}
-            onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/nodes/${region.id}`))}
+            onclick={() => goto(`/regions/${region.id}`)}
+            onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/regions/${region.id}`))}
             role="link"
             tabindex={0}
           >

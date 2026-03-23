@@ -1,4 +1,4 @@
-import { AdminClient } from '$lib/core/api/client'
+import { AdminClient } from '$lib/core/api/client.gen'
 import { authAdapter } from '$lib/config/auth'
 import { appConfig } from '$lib/config/app'
 import { createStepUpHandler } from '$lib/core/stores/stepup.svelte'

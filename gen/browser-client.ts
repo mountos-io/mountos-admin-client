@@ -487,8 +487,9 @@ function generate(spec: Spec): string {
 
 // --- Entry ---
 
+const sdkUrl = import.meta.resolve('@mountos-app/admin-sdk')
+const specPath = join(dirname(fileURLToPath(sdkUrl)), '..', 'api.yaml')
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const specPath = join(root, 'node_modules', '@mountos-app', 'admin-sdk', 'api.yaml')
 const outPath = join(root, 'src', 'lib', 'core', 'api', 'client.gen.ts')
 
 const spec = parse(readFileSync(specPath, 'utf-8')) as Spec

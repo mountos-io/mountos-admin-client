@@ -4,15 +4,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite dev --host",
-    "build": "vite build",
+    "gen": "bun run gen/browser-client.ts",
+    "dev": "bun run gen && vite dev --host",
+    "build": "bun run gen && vite build",
     "preview": "vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+    "check": "bun run gen && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "proxy": "bun run server/server.ts",
-    "dev:all": "concurrently \"vite dev --host\" \"bun run server/server.ts\""
+    "dev:all": "bun run gen && concurrently \"vite dev --host\" \"bun run server/server.ts\""
   },
   "dependencies": {
-    "@mountos-app/admin-sdk": "^0.20.0",
+    "@mountos-app/admin-sdk": "^0.21.0",
     "@simplewebauthn/server": "^13.1.1",
     "hono": "^4.7.0",
     "ioredis": "^5.10.0",

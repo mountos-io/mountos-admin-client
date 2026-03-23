@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
+  import { useRegions } from '$lib/core/stores/regions.svelte'
   import { navigation } from '$lib/config/navigation'
   import { features } from '$lib/config/features'
   import * as Breadcrumb from '$lib/components/ui/breadcrumb'
@@ -18,6 +19,7 @@
 
   const auth = useAuth()
   const accountStore = useAccounts()
+  const regionStore = useRegions()
   const prefs = usePreferences()
   const licenseStore = useLicense()
   const settingsModal = useSettingsModal()
@@ -51,7 +53,9 @@
           const label = resolveIdLabel(parts[i - 1], id)
           result.push(isLast ? { label } : { label, href: accumulated })
         } else {
-          result.push(isLast ? { label: capitalize(parts[i]) } : { label: capitalize(parts[i]), href: accumulated })
+          const prevIsId = i > 0 && !isNaN(parseInt(parts[i - 1]))
+          const label = prevIsId ? parts[i] : capitalize(parts[i])
+          result.push(isLast ? { label } : { label, href: accumulated })
         }
       }
     }
@@ -62,6 +66,10 @@
     if (parentSegment === 'accounts') {
       const account = accountStore.accounts.find(a => a.id === id)
       if (account) return account.name
+    }
+    if (parentSegment === 'regions' || parentSegment === 'nodes') {
+      const region = regionStore.regions.find(r => r.id === id)
+      if (region) return region.name
     }
     return `#${id}`
   }

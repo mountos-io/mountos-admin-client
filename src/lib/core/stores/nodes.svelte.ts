@@ -57,7 +57,7 @@ async function fetchAllNodes() {
   selectedRegionId = null
   loading = true
   try {
-    nodes = await api.serviceNodes.listAll(
+    nodes = await api.nodes.listAll(
       serviceType || undefined,
       statusFilter || undefined,
       inactiveHoursFilter,
