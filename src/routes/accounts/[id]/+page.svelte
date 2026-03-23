@@ -15,7 +15,7 @@
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
-  import { formatDate } from '$lib/core/utils/format'
+  import { formatDate, formatBytes } from '$lib/core/utils/format'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import { debounce } from '$lib/utils'
@@ -122,10 +122,14 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex items-center gap-4">
+  <div class="flex flex-wrap items-center gap-4">
     <Button variant="ghost" size="sm" href="/accounts" aria-label="Back to accounts"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight">{account?.name ?? 'Account'}</h1>
-    {#if account}<Badge variant="outline" style="border-color: var(--pastel-account); color: var(--pastel-account-text)">Account</Badge>{/if}
+    {#if account}
+      <Badge variant="outline" style="border-color: var(--pastel-account); color: var(--pastel-account-text)">Account</Badge>
+      <Badge variant="outline" class="font-mono text-xs" title="Sum of all live files across volumes in this account">Live: {formatBytes(account.liveVolume)}</Badge>
+      <Badge variant="outline" class="font-mono text-xs" title="Total storage space used across volumes in this account">Total: {formatBytes(account.totalVolume)}</Badge>
+    {/if}
   </div>
 
   {#if loading}

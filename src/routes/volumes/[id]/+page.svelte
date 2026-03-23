@@ -53,7 +53,6 @@
 
   let volume = $state<Volume | null>(null)
   let loading = $state(true)
-  let stats = $state<{ diskSize: number; activeSize: number; size: number } | null>(null)
   const dialog = useConfirmDialog(() => reload())
   const canEdit = $derived(volume?.isActive && auth.can('volumes', 'update'))
 
@@ -114,15 +113,11 @@
     if (Number.isNaN(id)) { loading = false; return }
     volSessions = []; sessionsTotal = 0; sessionsTotalPages = 0; sessionsPage = 1
     loading = true
-    Promise.all([
-      store.getVolume(id),
-      store.getStats(id).catch(() => null),
-    ]).then(([v, s]) => {
+    store.getVolume(id).then(v => {
       volume = v
-      stats = s
       syncEditFields(v)
       fetchVolumeSessions()
-    }).catch(() => { volume = null; stats = null }).finally(() => { loading = false })
+    }).catch(() => { volume = null }).finally(() => { loading = false })
   })
 
   onDestroy(() => { sessionsCtrl?.abort() })
@@ -130,7 +125,6 @@
   async function reload() {
     const v = await store.getVolume(id)
     volume = v
-    stats = await store.getStats(id).catch(() => null)
     syncEditFields(v)
   }
 
@@ -333,15 +327,44 @@
           {:else}
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota</span>
-              <p class="mt-1 text-sm">{formatQuota(volume.quotaUsed, volume.quotaLimit)}</p>
+              <p class="mt-1 text-sm">{formatQuota(volume.totalVolume, volume.quotaLimit)}</p>
               {#if volume.quotaLimit > 0}
-                {@const pct = quotaPercent(volume.quotaUsed, volume.quotaLimit)}
+                {@const pct = quotaPercent(volume.totalVolume, volume.quotaLimit)}
                 <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden" role="progressbar"
                   aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
                   aria-label="Quota usage {pct}%">
                   <div class="h-full rounded-full transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
                 </div>
               {/if}
+            </div>
+            <div class="flex gap-4">
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Live
+                  <span title="Sum of all files across forks for this volume.&#10;&#10;Can exceed total volume due to hard links, sparse files, etc.&#10;Only live (non-deleted) files are tracked.">
+                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                  </span>
+                </span>
+                <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveVolume)}</p>
+              </div>
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Total
+                  <span title="Object / block storage space used.&#10;&#10;Includes all versions, pending, and yet-to-be-discarded file segments.">
+                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                  </span>
+                </span>
+                <p class="mt-1 font-mono text-sm">{formatBytes(volume.totalVolume)}</p>
+              </div>
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Pending
+                  <span title="Pending or yet-to-be-discarded file segments.&#10;&#10;These segments are scheduled for cleanup after the retention window expires.">
+                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                  </span>
+                </span>
+                <p class="mt-1 font-mono text-sm">{formatBytes(volume.pendingVolume)}</p>
+              </div>
             </div>
           {/if}
         </CardContent>
@@ -366,25 +389,6 @@
         {/if}
       </Card>
 
-      {#if stats}
-        <Card>
-          <CardHeader><CardTitle>Storage Stats</CardTitle></CardHeader>
-          <CardContent class="grid gap-3">
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Disk Size</span>
-              <p class="mt-1 font-mono text-sm">{formatBytes(stats.diskSize)}</p>
-            </div>
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Active Size</span>
-              <p class="mt-1 font-mono text-sm">{formatBytes(stats.activeSize)}</p>
-            </div>
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Total Size</span>
-              <p class="mt-1 font-mono text-sm">{formatBytes(stats.size)}</p>
-            </div>
-          </CardContent>
-        </Card>
-      {/if}
     </div>
 
     {#if auth.can('clientSessions', 'read')}

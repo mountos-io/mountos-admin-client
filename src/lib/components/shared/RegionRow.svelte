@@ -17,9 +17,9 @@
   </div>
   <div class="flex-1">
     {#if region.totalQuotaLimit > 0}
-      <QuotaBar used={region.totalQuotaUsed} limit={region.totalQuotaLimit} />
+      <QuotaBar used={region.totalVolumeUsed} limit={region.totalQuotaLimit} />
     {:else}
-      <p class="text-sm text-right font-medium">{formatBytes(region.totalQuotaUsed)}</p>
+      <p class="text-sm text-right font-medium">{formatBytes(region.totalVolumeUsed)}</p>
     {/if}
   </div>
 </div>

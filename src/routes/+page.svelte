@@ -114,7 +114,7 @@
         { label: 'Volumes', value: stats.volumeCount, href: '/volumes', icon: DatabaseIcon },
         { label: 'Regions', value: stats.regionCount, href: '/regions', icon: GlobeIcon },
         { label: 'Storages', value: stats.storageCount, href: '/storages', icon: HardDriveIcon },
-        { label: 'Storage', value: formatBytes(stats.totalQuotaUsed), subtitle: formatQuota(stats.totalQuotaUsed, stats.totalQuotaLimit), href: '/storages', icon: HardDriveIcon },
+        { label: 'Storage', value: formatBytes(stats.totalVolumeUsed), subtitle: formatQuota(stats.totalVolumeUsed, stats.totalQuotaLimit), href: '/storages', icon: HardDriveIcon },
         ...(canReadNodes ? [{ label: 'Nodes', value: nodeStore.nodes.length, href: '/nodes', icon: ServerIcon }] : []),
         ...(canReadSessions ? [{ label: 'Sessions', value: stats.activeSessionCount, href: '/sessions', icon: MonitorDotIcon }] : []),
       ]}
@@ -147,7 +147,7 @@
         <Card cornerPlus>
           <CardHeader><CardTitle>Quota Usage</CardTitle></CardHeader>
           <CardContent>
-            <QuotaBar used={stats.totalQuotaUsed} limit={stats.totalQuotaLimit} />
+            <QuotaBar used={stats.totalVolumeUsed} limit={stats.totalQuotaLimit} />
           </CardContent>
         </Card>
       {/if}

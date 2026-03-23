@@ -13,12 +13,13 @@
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import { formatQuota } from '$lib/core/utils/format'
+  import { formatBytes, formatQuota } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { HUB_REGION_NAME } from '$lib/core/constants'
   import Plus from '@lucide/svelte/icons/plus'
   import Lock from '@lucide/svelte/icons/lock'
   import Shield from '@lucide/svelte/icons/shield-check'
+  import Lightbulb from '@lucide/svelte/icons/lightbulb'
 
   const volumeStore = useVolumes()
   const accountStore = useAccounts()
@@ -139,6 +140,14 @@
             <TableHead class="th-cyber hidden lg:table-cell">Storage</TableHead>
             <TableHead class="th-cyber w-10"><span class="sr-only">Lock</span></TableHead>
             <TableHead class="th-cyber w-10"><span class="sr-only">Encryption</span></TableHead>
+            <TableHead class="th-cyber hidden md:table-cell">
+              <span class="inline-flex items-center gap-1">
+                Live
+                <span title="Sum of all live files for this volume">
+                  <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+                </span>
+              </span>
+            </TableHead>
             <TableHead class="th-cyber hidden md:table-cell">Quota</TableHead>
             <TableHead class="th-cyber">Status</TableHead>
           </TableRow>
@@ -162,7 +171,8 @@
               <TableCell>
                 {#if volume.encryption}<Shield class="size-4 text-primary" aria-label="Encrypted" />{/if}
               </TableCell>
-              <TableCell class="text-sm text-muted-foreground hidden md:table-cell">{formatQuota(volume.quotaUsed, volume.quotaLimit)}</TableCell>
+              <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono">{formatBytes(volume.liveVolume)}</TableCell>
+              <TableCell class="text-sm text-muted-foreground hidden md:table-cell">{formatQuota(volume.totalVolume, volume.quotaLimit)}</TableCell>
               <TableCell><StatusBadge active={volume.isActive} locked={volume.locked} /></TableCell>
             </TableRow>
           {/each}

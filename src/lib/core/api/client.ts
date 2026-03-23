@@ -360,7 +360,7 @@ class VolumesResource {
     return this.client.request('PUT', `/volumes/${volumeId}/quota`, req)
   }
 
-  stats(volumeId: number): Promise<{ volumeId: string; diskSize: number; activeSize: number; size: number }> {
+  stats(volumeId: number): Promise<{ volumeId: string; liveVolume: number; totalVolume: number; pendingVolume: number }> {
     return this.client.request('GET', `/volumes/${volumeId}/stats`)
   }
 }

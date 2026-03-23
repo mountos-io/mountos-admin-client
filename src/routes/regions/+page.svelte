@@ -18,7 +18,7 @@
   import LoadingSpinner from "$lib/components/shared/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
   import ConfirmDialog from "$lib/components/shared/ConfirmDialog.svelte";
-  import { formatDate } from "$lib/core/utils/format";
+  import { formatDate, formatBytes } from "$lib/core/utils/format";
   import { showErrorToast, showSuccessToast } from "$lib/core/utils/toast";
   import { useConfirmDialog } from "$lib/stores/confirm-dialog.svelte";
   import { Input } from "$lib/components/ui/input";
@@ -109,6 +109,22 @@
               </span>
             </span>
           </TableHead>
+          <TableHead class="th-cyber hidden md:table-cell">
+            <span class="inline-flex items-center gap-1">
+              Live
+              <span title="Sum of all live files across volumes in this region">
+                <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+              </span>
+            </span>
+          </TableHead>
+          <TableHead class="th-cyber hidden md:table-cell">
+            <span class="inline-flex items-center gap-1">
+              Total
+              <span title="Total storage space used across volumes in this region">
+                <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
+              </span>
+            </span>
+          </TableHead>
           <TableHead class="th-cyber">Status</TableHead>
           <TableHead class="th-cyber">Created</TableHead>
           <TableHead class="w-24"></TableHead>
@@ -138,6 +154,8 @@
                 </button>
               </span>
             </TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono">{formatBytes(region.liveVolume)}</TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono">{formatBytes(region.totalVolume)}</TableCell>
             <TableCell><StatusBadge active={region.isActive} /></TableCell>
             <TableCell class="text-muted-foreground"
               >{formatDate(region.createdAt)}</TableCell
