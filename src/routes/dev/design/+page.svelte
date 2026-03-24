@@ -4,10 +4,90 @@
   import { Badge } from '$lib/components/ui/badge'
   import Button from '$lib/components/ui/button/button.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
+  import StepUpModal from '$lib/components/shared/StepUpModal.svelte'
+  import { Input } from '$lib/components/ui/input'
+  import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
+  import { useStepUp, createStepUpHandler } from '$lib/core/stores/stepup.svelte'
   import {
     showSuccessToast, showErrorToast, showWarningToast, showInfoToast,
     showLoadingToastWithUpdate, dismissAllToasts,
   } from '$lib/core/utils/toast'
+
+  const webauthn = useWebAuthn()
+  const stepUp = useStepUp()
+  const demandStepUp = createStepUpHandler()
+
+  let renameId = $state('')
+  let renameLabel = $state('')
+  let deleteId = $state('')
+  let webauthnLog = $state<string[]>([])
+
+  function log(msg: string) {
+    webauthnLog = [...webauthnLog, `[${new Date().toLocaleTimeString()}] ${msg}`]
+  }
+
+  async function handleFetchCredentials() {
+    try {
+      await webauthn.fetchCredentials()
+      log(`Fetched ${webauthn.credentialCount} credential(s)`)
+    } catch (e: unknown) {
+      log(`Fetch error: ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
+  async function handleRegister() {
+    try {
+      log('Registering...')
+      await webauthn.registerCredential()
+      log(`Registered — total: ${webauthn.credentialCount}`)
+    } catch (e: unknown) {
+      log(`Register error: ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
+  async function handleAuthenticate() {
+    try {
+      log('Authenticating...')
+      const token = await webauthn.authenticate()
+      log(`Authenticated — stepUpToken: ${token.slice(0, 20)}...`)
+    } catch (e: unknown) {
+      log(`Auth error: ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteId) return
+    try {
+      log(`Deleting credential ${deleteId}...`)
+      await webauthn.deleteCredential(deleteId)
+      log(`Deleted — remaining: ${webauthn.credentialCount}`)
+      deleteId = ''
+    } catch (e: unknown) {
+      log(`Delete error: ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
+  async function handleRename() {
+    if (!renameId || !renameLabel) return
+    try {
+      await webauthn.renameCredential(renameId, renameLabel)
+      log(`Renamed ${renameId} → "${renameLabel}"`)
+      renameId = ''
+      renameLabel = ''
+    } catch (e: unknown) {
+      log(`Rename error: ${e instanceof Error ? e.message : e}`)
+    }
+  }
+
+  async function handleStepUpFlow() {
+    try {
+      log('Requesting step-up verification (modal)...')
+      const token = await demandStepUp()
+      log(`Step-up complete — token: ${token.slice(0, 20)}...`)
+    } catch (e: unknown) {
+      log(`Step-up cancelled/error: ${e instanceof Error ? e.message : e}`)
+    }
+  }
 
   const nodes = [
     { id: 'sn-0x7a3f', name: 'appserv-us-east-1a', type: 'appserv', addr: '10.0.12.41:9090', status: 'online', cpu: 23, mem: 61, uptime: '14d 7h' },
@@ -512,4 +592,142 @@
       </div>
     </div>
   </section>
+
+  <!-- WebAuthn Testing -->
+  <section class="space-y-4">
+    <div>
+      <h2 class="text-xl font-semibold tracking-tight">WebAuthn Testing</h2>
+      <p class="mt-1 text-sm text-muted-foreground">Register, authenticate, and manage security keys</p>
+    </div>
+
+    <div class="grid gap-6 md:grid-cols-2">
+      <!-- Status -->
+      <Card cornerBrackets>
+        <CardHeader><CardTitle>Status</CardTitle></CardHeader>
+        <CardContent class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Enrolled</span>
+            <Badge variant={webauthn.enrolled ? 'success' : 'secondary'}>
+              {webauthn.enrolled ? 'Yes' : 'No'}
+            </Badge>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Credentials</span>
+            <span class="font-mono">{webauthn.credentialCount}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-muted-foreground">Loading</span>
+            <span class="font-mono">{webauthn.loading}</span>
+          </div>
+          <div class="pt-2">
+            <Button variant="outline" size="sm" onclick={handleFetchCredentials}>
+              Fetch Credentials
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Register -->
+      <Card cornerBrackets>
+        <CardHeader><CardTitle>Register Key</CardTitle></CardHeader>
+        <CardContent class="space-y-3">
+          <p class="text-sm text-muted-foreground">Triggers browser security key prompt, server auto-labels with rpName</p>
+          <Button size="sm" onclick={handleRegister}>Register</Button>
+        </CardContent>
+      </Card>
+
+      <!-- Authenticate -->
+      <Card cornerBrackets>
+        <CardHeader><CardTitle>Authenticate</CardTitle></CardHeader>
+        <CardContent class="space-y-3">
+          <p class="text-sm text-muted-foreground">Direct authentication — returns a step-up token</p>
+          <Button variant="outline" size="sm" onclick={handleAuthenticate}>Authenticate</Button>
+        </CardContent>
+      </Card>
+
+      <!-- Step-Up Modal Flow -->
+      <Card cornerBrackets>
+        <CardHeader><CardTitle>Step-Up Modal</CardTitle></CardHeader>
+        <CardContent class="space-y-3">
+          <p class="text-sm text-muted-foreground">Full modal flow — register if not enrolled, then authenticate</p>
+          <Button variant="primary" size="sm" onclick={handleStepUpFlow}>Test Step-Up Flow</Button>
+        </CardContent>
+      </Card>
+
+      <!-- Delete -->
+      <Card cornerBrackets>
+        <CardHeader><CardTitle>Delete Credential</CardTitle></CardHeader>
+        <CardContent class="space-y-3">
+          <div class="flex items-end gap-2">
+            <div class="flex-1">
+              <Input bind:value={deleteId} placeholder="Credential ID" class="h-9" />
+            </div>
+            <Button variant="destructive" size="sm" onclick={handleDelete}>Delete</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <!-- Rename -->
+      <Card cornerBrackets>
+        <CardHeader><CardTitle>Rename Credential</CardTitle></CardHeader>
+        <CardContent class="space-y-3">
+          <div class="flex items-end gap-2">
+            <div class="flex-1 space-y-2">
+              <Input bind:value={renameId} placeholder="Credential ID" class="h-9" />
+              <Input bind:value={renameLabel} placeholder="New label" class="h-9" />
+            </div>
+            <Button variant="outline" size="sm" onclick={handleRename}>Rename</Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+
+    <!-- Credential List -->
+    {#if webauthn.credentials.length > 0}
+      <div class="space-y-2">
+        <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-widest">Registered Credentials</h3>
+        <div class="corner-brackets-lg relative rounded-sm border bg-card">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Label</TableHead>
+                <TableHead>Counter</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Last Used</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {#each webauthn.credentials as c}
+                <TableRow>
+                  <TableCell class="font-mono text-xs max-w-[200px] truncate">{c.id}</TableCell>
+                  <TableCell>{c.label}</TableCell>
+                  <TableCell class="font-mono text-xs">{c.counter}</TableCell>
+                  <TableCell class="text-xs text-muted-foreground">{new Date(c.createdAt).toLocaleString()}</TableCell>
+                  <TableCell class="text-xs text-muted-foreground">{new Date(c.lastUsedAt).toLocaleString()}</TableCell>
+                </TableRow>
+              {/each}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Log -->
+    {#if webauthnLog.length > 0}
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-widest">Log</h3>
+          <Button variant="ghost" size="sm" onclick={() => webauthnLog = []}>Clear</Button>
+        </div>
+        <div class="rounded-sm border bg-card p-4 font-mono text-xs max-h-48 overflow-y-auto space-y-1">
+          {#each webauthnLog as entry}
+            <div class="text-muted-foreground">{entry}</div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </section>
 </div>
+
+<StepUpModal />

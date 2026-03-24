@@ -29,10 +29,13 @@ if (missing.length) {
 
 await dashboardAuth.init()
 
+const rpId = process.env.WEBAUTHN_RP_ID ?? 'localhost'
 const webauthnConfig: WebAuthnConfig = {
-  rpId: process.env.WEBAUTHN_RP_ID ?? 'localhost',
+  rpId,
   rpName: process.env.WEBAUTHN_RP_NAME ?? 'mountOS Dashboard',
-  origin: (process.env.WEBAUTHN_ORIGIN ?? 'http://localhost:5173').replace(/\/+$/, ''),
+  origin: process.env.WEBAUTHN_ORIGIN
+    ? process.env.WEBAUTHN_ORIGIN.replace(/\/+$/, '')
+    : [`https://${rpId}:5173`, 'http://localhost:5173'],
   ...vendorWebAuthnConfig,
 }
 const webauthnManager = new WebAuthnManager(dashboardAuth.redisClient, webauthnConfig)
@@ -223,9 +226,9 @@ app.post('/api/webauthn/register/options', async (c) => {
 
 app.post('/api/webauthn/register/verify', async (c) => {
   try {
-    const { response, label } = await c.req.json()
+    const { response } = await c.req.json()
     const user = c.get('mountosUser')
-    const { publicKey: _, ...cred } = await webauthnManager.verifyRegistration(user.id, response, label || 'Security Key')
+    const { publicKey: _, ...cred } = await webauthnManager.verifyRegistration(user.id, response, webauthnConfig.rpName)
     webauthnOpsTotal.inc({ op: 'register', result: 'success' })
     return c.json(cred)
   } catch {

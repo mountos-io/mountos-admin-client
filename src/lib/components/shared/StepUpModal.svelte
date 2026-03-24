@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog'
   import { Button } from '$lib/components/ui/button'
-  import { Input } from '$lib/components/ui/input'
   import { useStepUp, type StepUpRequest } from '$lib/core/stores/stepup.svelte'
   import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
   import Shield from '@lucide/svelte/icons/shield'
@@ -11,7 +10,6 @@
   const webauthn = useWebAuthn()
 
   let phase = $state<'register' | 'authenticate'>('authenticate')
-  let keyLabel = $state('')
   let registering = $state(false)
   let authenticating = $state(false)
   let error = $state('')
@@ -26,10 +24,10 @@
     handledRequest = req
     phase = req.mode
     error = ''
-    keyLabel = ''
     registering = false
     authenticating = false
     if (req.mode === 'authenticate') startAuthentication()
+    else handleRegister()
   })
 
   async function startAuthentication() {
@@ -51,8 +49,7 @@
     registering = true
     error = ''
     try {
-      await webauthn.registerCredential(keyLabel || 'Security Key')
-      keyLabel = ''
+      await webauthn.registerCredential()
     } catch (e: unknown) {
       error = e instanceof Error ? e.message : 'Registration failed'
       return
@@ -96,19 +93,14 @@
     <div class="flex flex-col items-center gap-4 py-6">
       {#if phase === 'register'}
         <KeyRound class="h-10 w-10 text-muted-foreground" />
-        <div class="w-full space-y-3">
-          <div class="flex items-end gap-2">
-            <div class="flex-1">
-              <Input bind:value={keyLabel} placeholder="Key label" class="h-9" />
-            </div>
-            <Button size="sm" disabled={registering} onclick={handleRegister}>
-              {registering ? 'Registering...' : 'Register'}
-            </Button>
+        {#if registering}
+          <p class="text-sm text-muted-foreground">Waiting for security key...</p>
+        {:else if error}
+          <div class="space-y-3 text-center">
+            <p class="text-sm text-destructive" role="alert">{error}</p>
+            <Button variant="outline" size="sm" onclick={handleRegister}>Retry</Button>
           </div>
-          {#if error}
-            <p class="text-sm text-destructive text-center" role="alert">{error}</p>
-          {/if}
-        </div>
+        {/if}
       {:else}
         <Shield class="h-10 w-10 text-muted-foreground" />
         {#if authenticating}

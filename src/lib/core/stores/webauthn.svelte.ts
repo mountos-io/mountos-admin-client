@@ -57,10 +57,10 @@ export function useWebAuthn() {
       }
     },
 
-    async registerCredential(label: string) {
+    async registerCredential() {
       const options = await api('/register/options', 'POST')
       const attestation = await startRegistration({ optionsJSON: options })
-      const cred = await api('/register/verify', 'POST', { response: attestation, label })
+      const cred = await api('/register/verify', 'POST', { response: attestation })
       credentials = [...credentials, cred]
       credentialCount = credentials.length
       enrolled = true

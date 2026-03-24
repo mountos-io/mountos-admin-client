@@ -32,7 +32,7 @@ export interface StepUpRule {
 export interface WebAuthnConfig {
   rpId: string
   rpName: string
-  origin: string
+  origin: string | string[]
 }
 
 export interface StoredCredential {
