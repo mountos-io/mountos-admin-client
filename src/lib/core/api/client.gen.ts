@@ -298,7 +298,7 @@ class StoragesResource {
   }
 
   list(opts: StorageListOptions, signal?: AbortSignal): Promise<PaginatedResponse<Storage>> {
-    return this.client.request('GET', `/storages/list${queryString({ accountId: opts.accountId, page: opts.page, limit: opts.limit })}`, undefined, signal)
+    return this.client.request('GET', `/storages/list${queryString({ accountId: opts.accountId, search: opts.search, regionId: opts.regionId, storageType: opts.storageType, providerType: opts.providerType, page: opts.page, limit: opts.limit })}`, undefined, signal)
   }
 
   get(storageId: number, signal?: AbortSignal): Promise<Storage> {
