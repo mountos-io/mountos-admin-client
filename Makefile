@@ -22,7 +22,7 @@ proxy: ## Run proxy server
 	npm run proxy
 
 dev-all: ## Run dev server with proxy
-	npm run dev:all
+	NODE_EXTRA_CA_CERTS="$(shell mkcert -CAROOT)/rootCA.pem" npm run dev:all
 
 gen: ## Generate browser client from SDK
 	$(TS_EXEC) gen/browser-client.ts

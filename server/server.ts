@@ -284,7 +284,7 @@ app.use('/*', serveStatic({ root: './build' }))
 app.get('*', serveStatic({ path: './build/index.html' }))
 
 const port = Number(process.env.PORT ?? 3001)
-console.log(`Admin server listening on :${port}`)
+console.log(`Admin server listening on :${port} → ${process.env.MOUNTOS_APPSERV_URL}`)
 
 export default {
   port,
