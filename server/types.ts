@@ -7,6 +7,7 @@ export interface AdminUser {
   name: string
   email?: string
   role: string
+  username?: string
   accountId?: number
   userId?: number
   volumeId?: number

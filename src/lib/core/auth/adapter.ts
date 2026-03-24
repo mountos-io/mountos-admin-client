@@ -11,6 +11,7 @@ export interface UserInfo {
   email?: string
   avatar?: string
   role: string
+  username?: string
   capabilities: Capabilities
   webauthn?: WebAuthnState
   accountId?: number
@@ -26,6 +27,7 @@ export function toUserInfo(data: Record<string, unknown>): UserInfo {
     email: u.email as string | undefined,
     avatar: u.avatar as string | undefined,
     role: (u.role as string) ?? 'l2admin',
+    username: u.username as string | undefined,
     capabilities: (data.capabilities ?? {}) as Capabilities,
     webauthn: data.webauthn as WebAuthnState | undefined,
     accountId: u.accountId as number | undefined,

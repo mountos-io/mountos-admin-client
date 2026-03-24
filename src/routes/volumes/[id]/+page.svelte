@@ -31,6 +31,9 @@
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
   import Check from '@lucide/svelte/icons/check'
   import Loader2 from '@lucide/svelte/icons/loader-2'
+  import * as Dialog from '$lib/components/ui/dialog'
+  import Copy from '@lucide/svelte/icons/copy'
+  import ShieldAlert from '@lucide/svelte/icons/shield-alert'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
 
   const store = useVolumes()
@@ -64,13 +67,14 @@
     await reload()
   }
 
-  let genUserId = $state(auth.userMountosUserId != null ? String(auth.userMountosUserId) : '')
+  let revokeUserId = $state('')
   let genResult = $state<{ apiKey: string; apiSecret: string } | null>(null)
+  let credentialsOpen = $state(false)
   let userSelectOpen = $state(false)
   let userSearchQuery = $state('')
   let userOptions = $state<User[]>([])
   let userSearchLoading = $state(false)
-  const selectedUserLabel = $derived(userOptions.find(u => String(u.id) === genUserId)?.username ?? (genUserId ? `User #${genUserId}` : ''))
+  const selectedUserLabel = $derived(userOptions.find(u => String(u.id) === revokeUserId)?.username ?? (revokeUserId ? `User #${revokeUserId}` : ''))
 
   const debouncedUserSearch = debounce(async (accountId: number, query: string) => {
     userSearchLoading = true
@@ -155,14 +159,28 @@
   }
 
   function generateKeys() {
-    const uid = Number(genUserId)
-    if (!genUserId || Number.isNaN(uid)) return
+    const uid = auth.userMountosUserId
+    if (uid == null) return
     dialog.confirm('Generate API Keys', 'Any existing key pair for this user will be revoked.', async () => {
       try {
         genResult = await store.generateApiKeys(id, { userId: uid })
-        showSuccessToast('API keys generated')
+        credentialsOpen = true
       } catch (e: unknown) { handleApiError(e, 'Failed to generate keys') }
     })
+  }
+
+  function closeCredentials() {
+    credentialsOpen = false
+    genResult = null
+  }
+
+  let copiedField = $state<string | null>(null)
+  async function copyToClipboard(text: string, field: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      copiedField = field
+      setTimeout(() => { if (copiedField === field) copiedField = null }, 1500)
+    } catch { showErrorToast('Failed to copy') }
   }
 
   function handleRevokeKey() {
@@ -207,8 +225,8 @@
   }
 
   function handleRevokeKeysByUser() {
-    const uid = Number(genUserId)
-    if (!genUserId || Number.isNaN(uid)) return
+    const uid = Number(revokeUserId)
+    if (!revokeUserId || Number.isNaN(uid)) return
     const label = selectedUserLabel || `User #${uid}`
     dialog.confirm('Revoke Key', `Revoke API key for ${label}?`, async () => {
       await store.revokeApiKeysByUser(id, uid)
@@ -441,88 +459,82 @@
       </Card>
     {/if}
 
-    {#if auth.can('volumes', 'update') || auth.isUserRole}
+    {#if auth.can('volumes', 'update') || auth.userMountosUserId != null}
       <Separator />
 
       <Card>
         <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
         <CardContent class="space-y-4">
-          <fieldset class="space-y-3">
-            <legend class="text-sm font-semibold">Generate API Keys</legend>
-            <div class="flex items-end gap-3">
-              <div class="w-64 space-y-1">
-                <Label for="api-key-user-id" class="inline-flex items-center gap-1">
-                  User ID
-                  <InfoTip text="Helps to track metadata operations" />
-                </Label>
-              {#if auth.isUserRole}
-                <Input id="api-key-user-id" value={selectedUserLabel || genUserId} readonly />
-              {:else}
-                <Popover bind:open={userSelectOpen}>
-                  <PopoverTrigger>
-                    {#snippet child({ props })}
-                      <Button {...props} id="api-key-user-id" variant="outline" role="combobox" aria-expanded={userSelectOpen}
-                        class={cn("w-full justify-between font-normal", !genUserId && "text-muted-foreground")}>
-                        {selectedUserLabel || 'Select user...'}
-                        <ChevronsUpDown class="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    {/snippet}
-                  </PopoverTrigger>
-                  <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
-                    <Command shouldFilter={false}>
-                      <CommandInput placeholder="Search users..." bind:value={userSearchQuery} />
-                      <CommandList>
-                        {#if userSearchLoading}
-                          <div class="flex items-center justify-center py-4">
-                            <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
-                          </div>
-                        {:else if userOptions.length === 0}
-                          <CommandEmpty>{userSearchQuery ? 'No users found.' : 'Type to search users...'}</CommandEmpty>
-                        {:else}
-                          {#each userOptions as user}
-                            <CommandItem value={String(user.id)} onSelect={() => { genUserId = String(user.id); userSelectOpen = false }}>
-                              <Check class={cn("h-4 w-4", genUserId === String(user.id) ? "opacity-100" : "opacity-0")} />
-                              <span>{user.username}</span>
-                              <span class="ml-auto text-xs text-muted-foreground">{user.email}</span>
-                            </CommandItem>
-                          {/each}
-                        {/if}
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              {/if}
-            </div>
-            <div class="flex gap-2">
-              <Button size="sm" disabled={!genUserId} onclick={generateKeys}>Generate</Button>
-              <Button variant="destructive" size="sm" disabled={!genUserId} onclick={handleRevokeKeysByUser}>Revoke</Button>
-            </div>
-          </div>
-          {#if genResult}
-            <div class="rounded-md border p-3 space-y-2 bg-muted/50">
-              <p class="text-sm font-medium">Save these credentials now. They can't be retrieved later.</p>
-              <div>
-                <span class="text-sm text-muted-foreground">API Key</span>
-                <p class="font-mono text-sm break-all">{genResult.apiKey}</p>
+          {#if auth.userMountosUserId != null}
+            <fieldset class="space-y-3">
+              <legend class="text-sm font-semibold">Generate API Keys</legend>
+              <div class="flex items-end gap-3">
+                <div class="w-full max-w-64 space-y-1">
+                  <Label for="api-key-user">User</Label>
+                  <Input id="api-key-user" value={auth.username ?? `User #${auth.userMountosUserId}`} readonly />
+                </div>
+                <Button size="sm" class="shrink-0" aria-describedby="api-key-user" onclick={generateKeys}>Generate</Button>
               </div>
-              <div>
-                <span class="text-sm text-muted-foreground">API Secret</span>
-                <p class="font-mono text-sm break-all">{genResult.apiSecret}</p>
-              </div>
+            </fieldset>
+          {/if}
+          {#if auth.can('volumes', 'update')}
+            {#if auth.userMountosUserId != null}<Separator />{/if}
+            <div class="space-y-4 rounded-md bg-destructive/5 p-3">
+              <fieldset class="space-y-3">
+                <legend class="text-sm font-semibold">Revoke by User</legend>
+                <div class="flex items-end gap-3">
+                  <div class="w-full max-w-64 space-y-1">
+                    <Label for="revoke-user-id">User</Label>
+                    <Popover bind:open={userSelectOpen}>
+                      <PopoverTrigger>
+                        {#snippet child({ props })}
+                          <Button {...props} id="revoke-user-id" variant="outline" role="combobox" aria-expanded={userSelectOpen}
+                            class={cn("w-full justify-between font-normal", !revokeUserId && "text-muted-foreground")}>
+                            {selectedUserLabel || 'Select user...'}
+                            <ChevronsUpDown class="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        {/snippet}
+                      </PopoverTrigger>
+                      <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
+                        <Command shouldFilter={false}>
+                          <CommandInput placeholder="Search users..." bind:value={userSearchQuery} />
+                          <CommandList>
+                            {#if userSearchLoading}
+                              <div class="flex items-center justify-center py-4">
+                                <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+                              </div>
+                            {:else if userOptions.length === 0}
+                              <CommandEmpty>{userSearchQuery ? 'No users found.' : 'Type to search users...'}</CommandEmpty>
+                            {:else}
+                              {#each userOptions as user}
+                                <CommandItem value={String(user.id)} onSelect={() => { revokeUserId = String(user.id); userSelectOpen = false }}>
+                                  <Check class={cn("h-4 w-4", revokeUserId === String(user.id) ? "opacity-100" : "opacity-0")} />
+                                  <span>{user.username}</span>
+                                  <span class="ml-auto text-xs text-muted-foreground">{user.email}</span>
+                                </CommandItem>
+                              {/each}
+                            {/if}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <Button variant="destructive" size="sm" class="shrink-0" disabled={!revokeUserId} onclick={handleRevokeKeysByUser}>Revoke</Button>
+                </div>
+              </fieldset>
+              <Separator class="opacity-50" />
+              <fieldset class="space-y-3">
+                <legend class="text-sm font-semibold">Revoke API Key</legend>
+                <div class="flex items-end gap-3">
+                  <div class="w-full max-w-64 space-y-1">
+                    <Label for="revoke-key-id">API Key</Label>
+                    <Input id="revoke-key-id" bind:value={revokeKey} placeholder="API key to revoke" />
+                  </div>
+                  <Button variant="destructive" size="sm" class="shrink-0" disabled={!revokeKey} onclick={handleRevokeKey}>Revoke</Button>
+                </div>
+              </fieldset>
             </div>
           {/if}
-          </fieldset>
-          <Separator />
-          <fieldset class="space-y-3">
-            <legend class="text-sm font-semibold">Revoke API Key</legend>
-            <div class="flex items-end gap-3">
-              <div class="w-64 space-y-1">
-                <Label for="revoke-key-id">API Key</Label>
-                <Input id="revoke-key-id" bind:value={revokeKey} placeholder="API key to revoke" />
-              </div>
-              <Button variant="destructive" size="sm" disabled={!revokeKey} onclick={handleRevokeKey}>Revoke</Button>
-            </div>
-          </fieldset>
         </CardContent>
       </Card>
     {/if}
@@ -534,3 +546,51 @@
 {#if volume}
   <DeactivateVolumeDialog bind:open={deactivateOpen} volumeName={volume.name} onConfirm={handleDeactivate} />
 {/if}
+
+<Dialog.Root bind:open={credentialsOpen}>
+  <Dialog.Content class="cyberpunk-skewed sm:max-w-lg p-0 gap-0 border-none"
+    showCloseButton={false}
+    interactOutsideBehavior="ignore"
+    escapeKeydownBehavior="ignore">
+    <div class="cyberpunk-skewed-inner flex flex-col gap-4">
+      <div class="flex items-start gap-3">
+        <ShieldAlert class="size-5 shrink-0 text-warning mt-0.5" />
+        <div class="flex flex-col gap-1">
+          <Dialog.Title class="text-base font-semibold tracking-tight">API Credentials Generated</Dialog.Title>
+          <Dialog.Description class="text-sm text-muted-foreground leading-relaxed">
+            Copy and save these credentials now. They will not be shown again.
+          </Dialog.Description>
+        </div>
+      </div>
+      {#if genResult}
+        <div class="space-y-3">
+          <div class="space-y-1">
+            <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">API Key</span>
+            <div class="flex items-center gap-2">
+              <code class="flex-1 font-mono text-sm break-all bg-muted/50 rounded-sm px-2.5 py-1.5 border select-all">{genResult.apiKey}</code>
+              <button type="button"
+                class="shrink-0 size-11 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                onclick={() => copyToClipboard(genResult!.apiKey, 'key')} aria-label="Copy API key">
+                {#if copiedField === 'key'}<Check class="size-4 text-success" />{:else}<Copy class="size-4" />{/if}
+              </button>
+            </div>
+          </div>
+          <div class="space-y-1">
+            <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">API Secret</span>
+            <div class="flex items-center gap-2">
+              <code class="flex-1 font-mono text-sm break-all bg-muted/50 rounded-sm px-2.5 py-1.5 border select-all">{genResult.apiSecret}</code>
+              <button type="button"
+                class="shrink-0 size-11 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                onclick={() => copyToClipboard(genResult!.apiSecret, 'secret')} aria-label="Copy API secret">
+                {#if copiedField === 'secret'}<Check class="size-4 text-success" />{:else}<Copy class="size-4" />{/if}
+              </button>
+            </div>
+          </div>
+        </div>
+      {/if}
+      <div class="pt-2 flex justify-end">
+        <Button variant="primary" class="cyberpunk-skewed-sm" onclick={closeCredentials}>Done</Button>
+      </div>
+    </div>
+  </Dialog.Content>
+</Dialog.Root>

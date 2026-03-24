@@ -1,12 +1,14 @@
 import * as jose from 'jose'
 import Redis from 'ioredis'
-import { MountOSAdmin } from '@mountos-app/admin-sdk'
+import { MountOSAdmin, MountOSError } from '@mountos-app/admin-sdk'
 import type { AdminUser, Capabilities, DashboardAuthConfig } from './types'
 import { vendorAuthConfig } from '../src/vendor/server/config'
 
 const AUD_DASHBOARD = 'mountos/dashboard'
 const AUD_SESSION = 'mountos/dashboard/session'
 const AUD_REFRESH = 'mountos/dashboard/refresh'
+const SYSTEM_ACCOUNT_ID = 0
+const SYSTEM_EMAIL_DOMAIN = 'system.local'
 
 const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'clientSessions', 'discover', 'cache', 'dashboard', 'license'] as const
 const allCaps = (v: number) => Object.fromEntries(RESOURCES.map(r => [r, v]))
@@ -68,21 +70,19 @@ function adminUserFromPayload(payload: jose.JWTPayload): AdminUser {
     email: payload.email as string | undefined,
     role,
   }
-  if (role === 'user') {
-    if (payload.account_id != null) user.accountId = payload.account_id as number
-    if (payload.user_id != null) user.userId = payload.user_id as number
-    if (payload.volume_id != null) user.volumeId = payload.volume_id as number
-  }
+  if (payload.username) user.username = payload.username as string
+  if (payload.account_id != null) user.accountId = payload.account_id as number
+  if (payload.user_id != null) user.userId = payload.user_id as number
+  if (payload.volume_id != null) user.volumeId = payload.volume_id as number
   return user
 }
 
 function userRoleClaims(user: AdminUser): Record<string, unknown> {
   const claims: Record<string, unknown> = { name: user.name, email: user.email, role: user.role }
-  if (user.role === 'user') {
-    if (user.accountId != null) claims.account_id = user.accountId
-    if (user.userId != null) claims.user_id = user.userId
-    if (user.volumeId != null) claims.volume_id = user.volumeId
-  }
+  if (user.username) claims.username = user.username
+  if (user.accountId != null) claims.account_id = user.accountId
+  if (user.userId != null) claims.user_id = user.userId
+  if (user.volumeId != null) claims.volume_id = user.volumeId
   return claims
 }
 
@@ -122,13 +122,18 @@ class DashboardAuth {
       maxTokenAge: '120s',
     })
     const user = adminUserFromPayload(payload)
-    if (user.role === 'user') {
-      if (user.accountId == null) throw new Error('user role requires account_id claim')
-      const username = payload.username as string | undefined
-      if (!username) throw new Error('user role requires username claim')
-      const match = await this.findActiveUser(user.accountId, username)
-      if (!match) throw new Error('no active user found for account')
-      user.userId = match.id
+    if (user.username) {
+      if (user.role === 'user') {
+        if (user.accountId == null) throw new Error('user role requires account_id claim')
+        const match = await this.findActiveUser(user.accountId, user.username)
+        if (!match) throw new Error('no active user found for account')
+        user.userId = match.id
+      } else {
+        const match = await this.findOrCreateSystemUser(user)
+        user.userId = match.id
+      }
+    } else if (user.role === 'user') {
+      throw new Error('user role requires username claim')
     }
     return user
   }
@@ -180,12 +185,27 @@ class DashboardAuth {
   }
 
   private async findActiveUser(accountId: number, username: string) {
-    const limit = 100
-    for (let page = 1; ; page++) {
-      const { items, pagination } = await this.sdk.users.list({ accountId, page, limit })
-      const found = items.find(u => u.username === username && u.isActive)
-      if (found) return found
-      if (page >= pagination.totalPages) return null
+    const { items } = await this.sdk.users.list({ accountId, search: username, page: 1, limit: 10 })
+    return items.find(u => u.username === username && u.isActive) ?? null
+  }
+
+  private async findOrCreateSystemUser(user: AdminUser) {
+    const match = await this.findActiveUser(SYSTEM_ACCOUNT_ID, user.username!)
+    if (match) return match
+    try {
+      const res = await this.sdk.users.add({
+        accountId: SYSTEM_ACCOUNT_ID,
+        username: user.username!,
+        email: user.email ?? `${user.username}@${SYSTEM_EMAIL_DOMAIN}`,
+        name: user.name,
+      })
+      return { id: res.id }
+    } catch (err) {
+      if (err instanceof MountOSError && err.status === 409) {
+        const retry = await this.findActiveUser(SYSTEM_ACCOUNT_ID, user.username!)
+        if (retry) return retry
+      }
+      throw err
     }
   }
 

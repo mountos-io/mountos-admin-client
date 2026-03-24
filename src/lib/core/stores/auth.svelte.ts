@@ -13,6 +13,7 @@ let initialized = $state(false)
 const authenticated = $derived(user !== null)
 const capabilities = $derived<Capabilities>(user?.capabilities ?? {})
 const isUserRole = $derived(user?.role === 'user')
+const username = $derived(user?.username ?? null)
 const userAccountId = $derived(user?.accountId ?? null)
 const userMountosUserId = $derived(user?.userId ?? null)
 const userVolumeId = $derived(user?.volumeId ?? null)
@@ -55,6 +56,7 @@ export function useAuth() {
     get authenticated() { return authenticated },
     get capabilities() { return capabilities },
     get isUserRole() { return isUserRole },
+    get username() { return username },
     get userAccountId() { return userAccountId },
     get userMountosUserId() { return userMountosUserId },
     get userVolumeId() { return userVolumeId },
