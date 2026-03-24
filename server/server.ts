@@ -29,13 +29,14 @@ if (missing.length) {
 
 await dashboardAuth.init()
 
-const rpId = process.env.WEBAUTHN_RP_ID ?? 'localhost'
+const hasLocalCerts = await Bun.file('.certs/cert.pem').exists()
+const rpId = process.env.WEBAUTHN_RP_ID ?? (hasLocalCerts ? 'local.mountos.app' : 'localhost')
 const webauthnConfig: WebAuthnConfig = {
   rpId,
   rpName: process.env.WEBAUTHN_RP_NAME ?? 'mountOS Dashboard',
   origin: process.env.WEBAUTHN_ORIGIN
     ? process.env.WEBAUTHN_ORIGIN.replace(/\/+$/, '')
-    : [`https://${rpId}:5173`, 'http://localhost:5173'],
+    : hasLocalCerts ? `https://${rpId}:5173` : 'http://localhost:5173',
   ...vendorWebAuthnConfig,
 }
 const webauthnManager = new WebAuthnManager(dashboardAuth.redisClient, webauthnConfig)
@@ -231,7 +232,8 @@ app.post('/api/webauthn/register/verify', async (c) => {
     const { publicKey: _, ...cred } = await webauthnManager.verifyRegistration(user.id, response, webauthnConfig.rpName)
     webauthnOpsTotal.inc({ op: 'register', result: 'success' })
     return c.json(cred)
-  } catch {
+  } catch (e) {
+    console.error('WebAuthn register/verify failed:', e)
     webauthnOpsTotal.inc({ op: 'register', result: 'failure' })
     return c.json({ status: 'failure', message: 'registration failed' }, 400)
   }

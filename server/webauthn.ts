@@ -108,10 +108,11 @@ export class WebAuthnManager {
       rpID: this.config.rpId,
       userName,
       excludeCredentials: existing.map(c => ({
-        id: Buffer.from(c.id, 'base64url'),
+        id: c.id,
         transports: c.transports as AuthenticatorTransport[],
       })),
       authenticatorSelection: {
+        authenticatorAttachment: 'platform',
         residentKey: 'preferred',
         userVerification: 'preferred',
       },
@@ -136,6 +137,7 @@ export class WebAuthnManager {
       expectedChallenge: challenge,
       expectedOrigin: this.config.origin,
       expectedRPID: this.config.rpId,
+      requireUserVerification: false,
     })
     if (!verification.verified || !verification.registrationInfo) {
       throw new Error('registration verification failed')
@@ -163,7 +165,7 @@ export class WebAuthnManager {
     const options = await generateAuthenticationOptions({
       rpID: this.config.rpId,
       allowCredentials: creds.map(c => ({
-        id: Buffer.from(c.id, 'base64url'),
+        id: c.id,
         transports: c.transports as AuthenticatorTransport[],
       })),
       userVerification: 'preferred',
@@ -193,6 +195,7 @@ export class WebAuthnManager {
       expectedChallenge: challenge,
       expectedOrigin: this.config.origin,
       expectedRPID: this.config.rpId,
+      requireUserVerification: false,
       credential: {
         id: cred.id,
         publicKey: Buffer.from(cred.publicKey, 'base64url'),
