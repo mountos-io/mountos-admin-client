@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
   import { Button } from '$lib/components/ui/button'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
@@ -23,7 +24,7 @@
   import ExternalLinkIcon from '@lucide/svelte/icons/external-link'
   import PlusIcon from '@lucide/svelte/icons/plus'
   import BuildingIcon from '@lucide/svelte/icons/building'
-  import SessionSummaryChart from '$lib/components/shared/SessionSummaryChart.svelte'
+  import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import { formatBytes, formatQuota } from '$lib/core/utils/format'
@@ -59,12 +60,10 @@
   })
 
   $effect(() => {
-    if (accountId && canReadSessions) {
-      sessionStore.fetchSummary(accountId)
-    } else {
-      sessionStore.reset()
+    const acctId = accountId
+    if (acctId && canReadSessions) {
+      untrack(() => sessionStore.fetchAllSessions(acctId))
     }
-    return () => sessionStore.reset()
   })
 
   $effect(() => {
@@ -116,7 +115,7 @@
         { label: 'Storages', value: stats.storageCount, href: '/storages', icon: HardDriveIcon },
         { label: 'Usage', value: formatBytes(stats.totalVolumeUsed), subtitle: formatQuota(stats.totalVolumeUsed, stats.totalQuotaLimit), href: '/volumes', icon: DatabaseIcon },
         ...(canReadNodes ? [{ label: 'Nodes', value: nodeStore.nodes.length, href: '/nodes', icon: ServerIcon }] : []),
-        ...(canReadSessions ? [{ label: 'Sessions', value: stats.activeSessionCount, href: '/sessions', icon: MonitorDotIcon }] : []),
+        ...(canReadSessions ? [{ label: 'Sessions', value: sessionStore.summary.activeCount || stats.activeSessionCount, href: '/sessions', icon: MonitorDotIcon }] : []),
       ]}
       <div class="corner-brackets relative border border-border/30 rounded-sm">
         <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
@@ -198,7 +197,7 @@
             </div>
           </CardHeader>
           <CardContent>
-            <SessionSummaryChart summary={sessionStore.summary} loading={sessionStore.summaryLoading} />
+            <SessionSummaryStrip summary={sessionStore.summary} loading={sessionStore.loading} />
           </CardContent>
         </Card>
       {/if}

@@ -162,3 +162,32 @@ export function parsePrometheusText(text: string): Map<string, PrometheusMetric[
   }
   return sections
 }
+
+const PLATFORM_LABELS: Record<string, string> = {
+  macfuse: 'macFUSE', nfs: 'NFS', fuse: 'FUSE', fskit: 'FSKit',
+  winfsp: 'WinFSP', 'fuse+iouring': 'FUSE io_uring', 'csi-driver': 'CSI Driver',
+  cfapi: 'CloudFilter', fp: 'File Provider',
+}
+
+export function formatPlatform(raw: string): string {
+  return PLATFORM_LABELS[raw] ?? raw
+}
+
+const OS_LABELS: Record<string, string> = { darwin: 'macOS', linux: 'Linux', windows: 'Win' }
+
+export function formatOs(raw: string): string {
+  return OS_LABELS[raw] ?? raw
+}
+
+export function formatUptime(seconds: number): string {
+  if (!seconds) return '—'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  if (h > 24) return `${Math.floor(h / 24)}d ${h % 24}h`
+  if (h > 0) return `${h}h ${m}m`
+  return `${m}m`
+}
+
+export function formatNum(n: number): string {
+  return n.toLocaleString()
+}

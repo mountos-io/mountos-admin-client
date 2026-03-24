@@ -7,12 +7,25 @@ let totalPages = $state(0)
 let currentPage = $state(1)
 let fetchCtrl: AbortController | null = null
 
-async function fetchStorages(accountId: number, page = 1, limit = 20) {
+export interface StorageFilters {
+  search?: string
+  regionId?: number
+  storageType?: string
+  providerType?: string
+}
+
+async function fetchStorages(accountId: number, page = 1, limit = 20, filters?: StorageFilters) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.storages.list({ accountId, page, limit }, ctrl.signal)
+    const res = await api.storages.list({
+      accountId, page, limit,
+      search: filters?.search,
+      regionId: filters?.regionId,
+      storageType: filters?.storageType,
+      providerType: filters?.providerType,
+    }, ctrl.signal)
     storages = res.items
     totalPages = res.pagination?.totalPages ?? 0
     currentPage = res.pagination?.page ?? 1
