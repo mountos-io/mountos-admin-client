@@ -26,7 +26,7 @@
   import type { Volume, User, DeactivateVolumeRequest, ClientSession } from '$lib/core/api/types'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import Lightbulb from '@lucide/svelte/icons/lightbulb'
+  import InfoTip from '$lib/components/shared/InfoTip.svelte'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
   import Check from '@lucide/svelte/icons/check'
@@ -273,9 +273,7 @@
                 <Label for="edit-retention" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   <span class="inline-flex items-center gap-1">
                     Snapshot Window (days)
-                    <span title="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data.">
-                      <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                    </span>
+                    <InfoTip text="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data." />
                   </span>
                 </Label>
                 <Input id="edit-retention" type="number" bind:value={editRetention} placeholder="30" min="0" max="366" />
@@ -284,9 +282,7 @@
                 <Label for="edit-grace" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   <span class="inline-flex items-center gap-1">
                     Grace Period (days)
-                    <span title="How long data stays before cleanup after deactivation">
-                      <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                    </span>
+                    <InfoTip text="How long data stays before cleanup after deactivation" />
                   </span>
                 </Label>
                 <Input id="edit-grace" type="number" bind:value={editGrace} placeholder="14" min="0" max="91" />
@@ -308,9 +304,7 @@
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                 Cleanup
-                <span title="Can be changed on deactivate">
-                  <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                </span>
+                <InfoTip text="Can be changed on deactivate" />
               </span>
               <div class="mt-1 flex gap-2" role="list" aria-label="Cleanup flags">
                 <span role="listitem"><Badge variant={volume.isCleanupMetaEnabled ? 'default' : 'outline'} aria-label="Meta: {volume.isCleanupMetaEnabled ? 'enabled' : 'disabled'}">Meta</Badge></span>
@@ -339,32 +333,23 @@
             </div>
             <div class="flex flex-wrap gap-4">
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1"
-                  title="Sum of all files across forks for this volume.&#10;&#10;Can exceed total volume due to hard links, sparse files, etc.&#10;Only live (non-deleted, current version) files are tracked.">
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Live
-                  <span>
-                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                  </span>
+                  <InfoTip text={"Sum of all files across forks for this volume.\n\nCan exceed total volume due to hard links, sparse files, etc.\nOnly live (non-deleted, current version) files are tracked."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveVolume)}</p>
               </div>
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1"
-                  title="Object / block storage space used.&#10;&#10;Includes all versions, pending, and yet-to-be-discarded file segments.">
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Total
-                  <span>
-                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                  </span>
+                  <InfoTip text={"Object / block storage space used.\n\nIncludes all versions, pending, and yet-to-be-discarded file segments."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.totalVolume)}</p>
               </div>
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1"
-                  title="Pending or yet-to-be-discarded file segments.&#10;&#10;These segments are scheduled for cleanup after the retention window expires.">
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Pending
-                  <span>
-                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                  </span>
+                  <InfoTip text={"Pending or yet-to-be-discarded file segments.\n\nThese segments are scheduled for cleanup after the retention window expires."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.pendingVolume)}</p>
               </div>
@@ -468,9 +453,7 @@
               <div class="w-64 space-y-1">
                 <Label for="api-key-user-id" class="inline-flex items-center gap-1">
                   User ID
-                  <span title="Helps to track metadata operations">
-                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                  </span>
+                  <InfoTip text="Helps to track metadata operations" />
                 </Label>
               {#if auth.isUserRole}
                 <Input id="api-key-user-id" value={selectedUserLabel || genUserId} readonly />
@@ -517,7 +500,7 @@
           </div>
           {#if genResult}
             <div class="rounded-md border p-3 space-y-2 bg-muted/50">
-              <p class="text-sm font-medium">Generated credentials (save now, shown once):</p>
+              <p class="text-sm font-medium">Save these credentials now. They can't be retrieved later.</p>
               <div>
                 <span class="text-sm text-muted-foreground">API Key</span>
                 <p class="font-mono text-sm break-all">{genResult.apiKey}</p>

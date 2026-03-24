@@ -19,7 +19,7 @@
   import { HUB_REGION_NAME } from '$lib/core/constants'
   import { gbToBytes } from '$lib/core/utils/format'
   import Copy from '@lucide/svelte/icons/copy'
-  import Lightbulb from '@lucide/svelte/icons/lightbulb'
+  import InfoTip from '$lib/components/shared/InfoTip.svelte'
 
   const volumeStore = useVolumes()
   const storageStore = useStorages()
@@ -178,9 +178,7 @@
               <Label for="retentionPeriod">
                 <span class="inline-flex items-center gap-1">
                   Snapshot Window (days)
-                  <span title="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data.">
-                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                  </span>
+                  <InfoTip text="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data." />
                 </span>
               </Label>
               <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="30" min="0" max="366" />
@@ -189,9 +187,7 @@
               <Label for="gracePeriod">
                 <span class="inline-flex items-center gap-1">
                   Grace Period (days)
-                  <span title="How long data stays before cleanup after deactivation">
-                    <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                  </span>
+                  <InfoTip text="How long data stays before cleanup after deactivation" />
                 </span>
               </Label>
               <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" max="91" />

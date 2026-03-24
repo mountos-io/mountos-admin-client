@@ -19,7 +19,7 @@
   import Plus from '@lucide/svelte/icons/plus'
   import Lock from '@lucide/svelte/icons/lock'
   import Shield from '@lucide/svelte/icons/shield-check'
-  import Lightbulb from '@lucide/svelte/icons/lightbulb'
+  import InfoTip from '$lib/components/shared/InfoTip.svelte'
 
   const volumeStore = useVolumes()
   const accountStore = useAccounts()
@@ -143,17 +143,13 @@
             <TableHead class="th-cyber hidden md:table-cell">
               <span class="inline-flex items-center gap-1">
                 Live
-                <span title="Sum of all live files for this volume">
-                  <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                </span>
+                <InfoTip text="Sum of all live files for this volume" />
               </span>
             </TableHead>
             <TableHead class="th-cyber hidden md:table-cell">
               <span class="inline-flex items-center gap-1">
                 Quota
-                <span title="Total volume usage vs allocated quota limit">
-                  <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-                </span>
+                <InfoTip text="Total volume usage vs allocated quota limit" />
               </span>
             </TableHead>
             <TableHead class="th-cyber">Status</TableHead>

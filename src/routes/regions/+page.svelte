@@ -26,7 +26,7 @@
   import Plus from "@lucide/svelte/icons/plus";
   import Power from "@lucide/svelte/icons/power";
   import Copy from "@lucide/svelte/icons/copy";
-  import Lightbulb from "@lucide/svelte/icons/lightbulb";
+  import InfoTip from '$lib/components/shared/InfoTip.svelte';
   import HardDriveIcon from "@lucide/svelte/icons/hard-drive";
 
   const store = useRegions();
@@ -102,27 +102,19 @@
           <TableHead class="th-cyber hidden lg:table-cell">
             <span class="inline-flex items-center gap-1">
               Export ID
-              <span
-                title="Set as env on service instances to group them under one regional umbrella"
-              >
-                <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-              </span>
+              <InfoTip text="Set as env on service instances to group them under one regional umbrella" />
             </span>
           </TableHead>
           <TableHead class="th-cyber hidden md:table-cell">
             <span class="inline-flex items-center gap-1">
               Live
-              <span title="Sum of all live files across volumes in this region">
-                <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-              </span>
+              <InfoTip text="Sum of all live files across volumes in this region" />
             </span>
           </TableHead>
           <TableHead class="th-cyber hidden md:table-cell">
             <span class="inline-flex items-center gap-1">
               Total
-              <span title="Total storage space used across volumes in this region">
-                <Lightbulb class="size-3.5 text-warning" aria-hidden="true" />
-              </span>
+              <InfoTip text="Total storage space used across volumes in this region" />
             </span>
           </TableHead>
           <TableHead class="th-cyber">Status</TableHead>
