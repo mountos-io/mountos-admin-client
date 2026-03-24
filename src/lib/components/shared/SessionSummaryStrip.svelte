@@ -13,7 +13,7 @@
 </script>
 
 {#if loading && summary.total === 0}
-  <span class="text-sm text-muted-foreground">Loading...</span>
+  <span class="text-sm text-muted-foreground" role="status">Loading...</span>
 {:else}
   <div class="summary-stats">
     <div class="summary-stat">
@@ -21,14 +21,14 @@
       <span class="summary-val">{summary.activeCount}<span class="summary-sub">/{summary.total}</span></span>
       <span class="summary-label">Active</span>
     </div>
-    <span class="summary-divider"></span>
+    <span class="summary-divider hidden sm:block" aria-hidden="true"></span>
     {#each summary.byStatus as [status, count]}
       <div class="summary-stat">
         <Badge variant={statusVariant(status)}>{status}</Badge>
         <span class="summary-val">{count}</span>
       </div>
     {/each}
-    <span class="summary-divider"></span>
+    <span class="summary-divider hidden sm:block" aria-hidden="true"></span>
     <div class="summary-stat">
       <MapPin class="h-5 w-5 text-primary" />
       <span class="summary-val">{summary.regionCount}</span>

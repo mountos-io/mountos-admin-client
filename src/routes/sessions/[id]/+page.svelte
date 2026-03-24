@@ -76,15 +76,15 @@
   }
 </script>
 
-<svelte:head><title>Session #{id} — mountOS Admin</title></svelte:head>
+<svelte:head><title>Session #{isNaN(id) ? 'Invalid' : id} — mountOS Admin</title></svelte:head>
 
 <div class="space-y-6">
   <!-- Header -->
   <div class="flex items-center gap-3 flex-wrap">
-    <a href="/sessions" class="p-2 rounded-sm hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors" aria-label="Back to sessions">
+    <a href="/sessions" class="p-2 rounded-sm hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring" aria-label="Back to sessions">
       <ArrowLeft class="h-5 w-5" />
     </a>
-    <h1 class="text-2xl font-bold tracking-tight">Session #{id}</h1>
+    <h1 class="text-2xl font-bold tracking-tight">Session #{isNaN(id) ? 'Invalid' : id}</h1>
     {#if session}
       <Badge variant={statusVariant(session.status)}>{session.status}</Badge>
       {#if !session.isActive}
@@ -92,7 +92,7 @@
       {/if}
     {/if}
     <div class="flex items-center gap-2 ml-auto">
-      <Button variant="ghost" size="sm" onclick={() => fetchSession()} aria-label="Refresh">
+      <Button variant="ghost" size="sm" onclick={() => fetchSession()} aria-label="Refresh" title="Refresh">
         <RefreshCw class="h-4 w-4" />
       </Button>
       <FilterSelect options={POLL_OPTIONS} value={pollValue} placeholder="Poll Off" onchange={setPoll} />
@@ -101,10 +101,14 @@
 
   {#if loading && !session}
     <div class="flex justify-center py-12" role="status" aria-label="Loading session"><LoadingSpinner /></div>
-  {:else if error}
+  {:else if error && !session}
     <Card><CardContent class="py-8"><p class="text-center text-destructive" role="alert">{error}</p></CardContent></Card>
   {:else if session}
     {@const m = getMetrics(session)}
+
+    {#if error}
+      <div class="rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive" role="alert">Refresh failed: {error}</div>
+    {/if}
 
     <!-- Info -->
     <div class="corner-brackets relative border border-border/30 rounded-sm">

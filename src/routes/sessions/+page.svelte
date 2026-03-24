@@ -79,7 +79,7 @@
     {#if store.volumeIdFilter}
       <Badge variant="outline" class="gap-1">
         Volume #{store.volumeIdFilter}
-        <button type="button" class="ml-1 hover:text-destructive" onclick={clearVolumeFilter} aria-label="Clear volume filter">&times;</button>
+        <button type="button" class="ml-1 p-1 hover:text-destructive" onclick={clearVolumeFilter} aria-label="Clear volume filter">&times;</button>
       </Badge>
     {/if}
     {#if store.capped}
@@ -243,9 +243,9 @@
   .session-platform, .session-os, .session-region {
     display: inline-block;
     font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     padding: 0.25rem 0.5rem;
     border-radius: 2px;
   }
@@ -273,9 +273,9 @@
     align-items: center;
     gap: 0.375rem;
     font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     padding: 0.25rem 0.5rem 0.25rem 0.25rem;
     border: 1px solid var(--tc);
     border-radius: 1px;
@@ -287,11 +287,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 1.375rem;
-    height: 1.375rem;
+    min-width: 1.5rem;
+    height: 1.5rem;
     padding: 0 0.25rem;
     border-radius: 9999px;
-    font-size: 0.75rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1;
