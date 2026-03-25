@@ -133,8 +133,8 @@
             tabindex={0}
             aria-label="Region {region.name}"
           >
-            <TableCell class="font-medium max-w-[160px] truncate">{region.name}</TableCell>
-            <TableCell class="font-mono text-sm max-w-[200px] truncate">{region.dns}</TableCell>
+            <TableCell class="font-medium max-w-[160px] truncate" title={region.name}>{region.name}</TableCell>
+            <TableCell class="font-mono text-sm max-w-[200px] truncate" title={region.dns}>{region.dns}</TableCell>
             <TableCell class="hidden lg:table-cell">
               <span class="inline-flex items-center gap-1 font-mono text-sm">
                 {region.exportId}

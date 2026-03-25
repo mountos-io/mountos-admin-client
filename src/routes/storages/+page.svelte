@@ -139,7 +139,7 @@
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/storages/${storage.id}`))}
             tabindex={0}
           >
-            <TableCell class="font-medium max-w-[200px] truncate">{storage.name}</TableCell>
+            <TableCell class="font-medium max-w-[200px] truncate" title={storage.name}>{storage.name}</TableCell>
             <TableCell class="text-sm text-muted-foreground">{storage.regionInfo.name}</TableCell>
             <TableCell><Badge variant="outline">{storage.storageType}</Badge></TableCell>
             <TableCell><Badge variant="secondary">{storage.providerType}</Badge></TableCell>

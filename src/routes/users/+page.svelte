@@ -92,9 +92,9 @@
       <TableBody>
         {#each userStore.users as user}
           <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => goto(`/users/${user.id}`)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/users/${user.id}`))} tabindex={0}>
-            <TableCell class="font-medium max-w-[160px] truncate">{user.username}</TableCell>
-            <TableCell class="max-w-[160px] truncate">{user.name}</TableCell>
-            <TableCell class="text-muted-foreground max-w-[200px] truncate">{user.email}</TableCell>
+            <TableCell class="font-medium max-w-[160px] truncate" title={user.username}>{user.username}</TableCell>
+            <TableCell class="max-w-[160px] truncate" title={user.name}>{user.name}</TableCell>
+            <TableCell class="text-muted-foreground max-w-[200px] truncate" title={user.email}>{user.email}</TableCell>
             <TableCell><StatusBadge active={user.isActive} /></TableCell>
           </TableRow>
         {/each}

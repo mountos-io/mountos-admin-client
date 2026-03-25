@@ -60,7 +60,7 @@
         {#each store.accounts as account}
           <TableRow>
             <TableCell class="font-medium max-w-[200px]">
-              <a href="/accounts/{account.id}" class="hover:text-primary truncate block transition-colors">{account.name}</a>
+              <a href="/accounts/{account.id}" class="hover:text-primary truncate block transition-colors" title={account.name}>{account.name}</a>
             </TableCell>
             <TableCell><StatusBadge active={account.isActive} locked={account.locked} /></TableCell>
             <TableCell class="text-muted-foreground">{formatDate(account.createdAt)}</TableCell>

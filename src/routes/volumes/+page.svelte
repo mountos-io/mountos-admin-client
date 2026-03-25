@@ -164,7 +164,7 @@
               tabindex={0}
               aria-label="Volume {volume.name}"
             >
-              <TableCell class="font-medium max-w-[200px] truncate">{volume.name}</TableCell>
+              <TableCell class="font-medium max-w-[200px] truncate" title={volume.name}>{volume.name}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.region.name}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.storage.name}</TableCell>
               <TableCell>

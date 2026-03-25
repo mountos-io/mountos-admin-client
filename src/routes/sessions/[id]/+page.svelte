@@ -124,7 +124,7 @@
         <!-- Host + badges -->
         <div class="flex flex-wrap items-center gap-4">
           <div class="min-w-0 flex-1">
-            <p class="text-xl font-bold truncate">{session.hostname || session.ipAddr}</p>
+            <p class="text-xl font-bold truncate" title={session.hostname || session.ipAddr}>{session.hostname || session.ipAddr}</p>
             <p class="text-sm text-muted-foreground font-mono">{session.ipAddr}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">

@@ -289,7 +289,7 @@
                     <span class="absolute inset-0 rounded-full ping-led" style:background={STATUS_COLORS[node.status]}></span>
                   {/if}
                 </span>
-                <span class="font-mono text-sm flex-1 truncate tracking-tight">{node.nodeId}</span>
+                <span class="font-mono text-sm flex-1 truncate tracking-tight" title={node.nodeId}>{node.nodeId}</span>
                 <Badge variant="outline" class="text-xs px-1.5 py-0 shrink-0">{node.serviceType}</Badge>
                 {#if node.isRaftLeader}
                   <Badge variant="primary" class="text-xs px-1.5 py-0 shrink-0 leader-badge">LEADER</Badge>
@@ -527,7 +527,7 @@
                       <span class="absolute inset-0 rounded-full ping-led" style:background={STATUS_COLORS[node.status]}></span>
                     {/if}
                   </span>
-                  <span class="font-mono text-sm font-medium truncate">{node.nodeId}</span>
+                  <span class="font-mono text-sm font-medium truncate" title={node.nodeId}>{node.nodeId}</span>
                 </div>
                 <div class="space-y-1 text-sm text-muted-foreground">
                   <div><Badge variant="outline" class="text-xs px-1.5 py-0">{node.serviceType}</Badge></div>
