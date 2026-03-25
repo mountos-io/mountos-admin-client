@@ -10,7 +10,7 @@
   import { api } from '$lib/core/stores/client.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
-  import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
+  import { formatRelative, formatUptime, formatBytes, formatNum, formatLatency, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { showErrorToast } from '$lib/core/utils/toast'
   import type { ClientSession } from '$lib/core/api/types'
@@ -69,10 +69,17 @@
   })
 
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
-  function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, number> }
+  function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
   function getPlatform(s: ClientSession): string {
     const md = s.metadata as { platform?: string } | undefined
     return md?.platform ?? s.clientType
+  }
+
+  interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number }
+  function getRpcLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
+    const rl = m.rpcLatency as Record<string, RpcMethodLatency> | undefined
+    if (!rl) return []
+    return Object.entries(rl).sort((a, b) => b[1].count - a[1].count)
   }
 </script>
 
@@ -125,6 +132,7 @@
             <Badge variant="secondary" class="text-sm px-3 py-1">{formatOs(session.osName)}</Badge>
             <Badge class="text-sm px-3 py-1">{session.region.name}</Badge>
             {#if session.mountMode}<Badge variant={session.mountMode === 'readonly' ? 'warning' : 'success'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
+            {#if session.forkName}<Badge variant={session.isTemporaryFork ? 'warning' : 'outline'} class="text-sm px-3 py-1">{session.isTemporaryFork ? 'TMP' : 'FORK'} {session.forkName}</Badge>{/if}
             <Badge variant="secondary" class="text-sm px-3 py-1">{session.clientType}</Badge>
           </div>
         </div>
@@ -133,10 +141,13 @@
 
         <!-- Detail grid -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
-          <div><p class="detail-label">Account</p><p class="text-sm">{session.account.name}</p></div>
-          <div><p class="detail-label">Volume</p><p class="text-sm">{session.volumeName || session.volumeId}</p></div>
+          <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm">{session.account.name}</a></div>
+          <div><p class="detail-label">Volume</p><a href="/volumes/{session.volumeId}" class="detail-link text-sm">{session.volumeName || session.volumeId}</a></div>
           <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '—'}</p></div>
           <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
+          {#if session.forkName}
+            <div><p class="detail-label">Fork</p><p class="text-sm font-mono">{session.forkName}{#if session.isTemporaryFork} <span class="text-warning">(temporary)</span>{/if}</p></div>
+          {/if}
           <div><p class="detail-label">Uptime</p><p class="text-sm">{formatUptime(m.uptimeSeconds ?? 0)}</p></div>
           <div><p class="detail-label">Connected</p><p class="text-sm">{session.connectedAt ? formatRelative(session.connectedAt) : '—'}</p></div>
           <div><p class="detail-label">Last Heartbeat</p><p class="text-sm">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '—'}</p></div>
@@ -149,8 +160,8 @@
 
         <!-- IDs -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
-          <div><p class="detail-label">Volume ID</p><p class="text-sm font-mono truncate" title={session.volumeId}>{session.volumeId}</p></div>
-          <div><p class="detail-label">User ID</p><p class="text-sm font-mono truncate" title={session.userId ?? ''}>{session.userId ?? '—'}</p></div>
+          <div><p class="detail-label">Volume ID</p><a href="/volumes/{session.volumeId}" class="detail-link text-sm font-mono truncate" title={session.volumeId}>{session.volumeId}</a></div>
+          <div><p class="detail-label">User ID</p>{#if session.userId}<a href="/users/{session.userId}" class="detail-link text-sm font-mono truncate" title={session.userId}>{session.userId}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
           {#if session.appVersion}
             <div><p class="detail-label">App Version</p><p class="text-sm font-mono">{session.appVersion}</p></div>
           {/if}
@@ -196,26 +207,70 @@
               <div class="metric-row {(m.s3Errors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.s3Errors ?? 0)}</span></div>
             </div>
             <div class="metric-group">
-              <p class="detail-label">Runtime</p>
-              <div class="metric-row"><span>Goroutines</span><span>{formatNum(m.goroutines ?? 0)}</span></div>
-              <div class="metric-row"><span>Mem Alloc</span><span>{formatBytes(m.memAlloc ?? 0)}</span></div>
-              <div class="metric-row"><span>RPC Count</span><span>{formatNum(m.rpcCount ?? 0)}</span></div>
-              <div class="metric-row {(m.rpcErrors ?? 0) ? 'text-destructive' : ''}"><span>RPC Errors</span><span>{formatNum(m.rpcErrors ?? 0)}</span></div>
+              <p class="detail-label">Network</p>
+              <div class="metric-row"><span>Ping RTT</span><span>{m.pingRttMs ? `${m.pingRttMs} ms` : '—'}</span></div>
+              <div class="metric-row {(m.connFailures ?? 0) ? 'text-destructive' : ''}"><span>Conn Failures</span><span>{formatNum(m.connFailures ?? 0)}</span></div>
+              <div class="metric-row {(m.connDropped ?? 0) ? 'text-destructive' : ''}"><span>Conn Dropped</span><span>{formatNum(m.connDropped ?? 0)}</span></div>
               <div class="metric-row"><span>TCP Conns</span><span>{formatNum(m.tcpActiveConns ?? 0)}</span></div>
               <div class="metric-row"><span>TCP Recv</span><span>{formatBytes(m.tcpBytesRecv ?? 0)}</span></div>
               <div class="metric-row"><span>TCP Sent</span><span>{formatBytes(m.tcpBytesSent ?? 0)}</span></div>
               <div class="metric-row"><span>Events Recv</span><span>{formatNum(m.tcpEventsRecv ?? 0)}</span></div>
               <div class="metric-row"><span>Events Sent</span><span>{formatNum(m.tcpEventsSent ?? 0)}</span></div>
             </div>
+            <div class="metric-group">
+              <p class="detail-label">Runtime</p>
+              <div class="metric-row"><span>Goroutines</span><span>{formatNum(m.goroutines ?? 0)}</span></div>
+              <div class="metric-row"><span>Mem Alloc</span><span>{formatBytes(m.memAlloc ?? 0)}</span></div>
+              <div class="metric-row"><span>RPC Count</span><span>{formatNum(m.rpcCount ?? 0)}</span></div>
+              <div class="metric-row {(m.rpcErrors ?? 0) ? 'text-destructive' : ''}"><span>RPC Errors</span><span>{formatNum(m.rpcErrors ?? 0)}</span></div>
+              <div class="metric-row"><span>Uptime</span><span>{formatUptime(m.uptimeSeconds ?? 0)}</span></div>
+            </div>
           </div>
         </div>
       </div>
+
+      <!-- RPC Latency Breakdown -->
+      {@const rpcEntries = getRpcLatency(m)}
+      {#if rpcEntries.length > 0}
+        <div class="corner-brackets relative border border-border/30 rounded-sm">
+          <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+          <div class="relative p-5">
+            <h2 class="text-lg font-semibold mb-4">RPC Latency</h2>
+            <div class="overflow-x-auto">
+              <table class="rpc-table">
+                <thead>
+                  <tr>
+                    <th class="text-left">Method</th>
+                    <th class="text-right">Count</th>
+                    <th class="text-right">Avg</th>
+                    <th class="text-right">Min</th>
+                    <th class="text-right">Max</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each rpcEntries as [method, lat], i}
+                    <tr class:rpc-zebra={i % 2 === 1}>
+                      <td class="font-mono text-sm">{method}</td>
+                      <td class="text-right font-mono text-sm tabular-nums">{formatNum(lat.count)}</td>
+                      <td class="text-right font-mono text-sm tabular-nums">{formatLatency(lat.avgUs)}</td>
+                      <td class="text-right font-mono text-sm tabular-nums">{formatLatency(lat.minUs)}</td>
+                      <td class="text-right font-mono text-sm tabular-nums">{formatLatency(lat.maxUs)}</td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      {/if}
     {/if}
   {/if}
 </div>
 
 <style>
   .detail-label { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); margin-bottom: 0.25rem; }
+  .detail-link { display: block; color: var(--foreground); text-decoration: none; transition: color 0.15s; }
+  .detail-link:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
   .metric-group { display: flex; flex-direction: column; gap: 0.5rem; }
   .metric-group > .detail-label {
     font-size: 0.875rem;
@@ -228,4 +283,10 @@
   .metric-row { display: flex; justify-content: space-between; font-size: 1rem; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace; }
   .metric-row > span:first-child { color: var(--muted-foreground); }
   .metric-row > span:last-child { font-variant-numeric: tabular-nums; }
+
+  .rpc-table { width: 100%; border-collapse: collapse; }
+  .rpc-table th { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--primary); }
+  .rpc-table td { padding: 0.375rem 0.75rem; }
+  .rpc-zebra { background: color-mix(in oklch, var(--muted) 30%, transparent); }
+  .tabular-nums { font-variant-numeric: tabular-nums; }
 </style>

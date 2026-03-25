@@ -16,7 +16,7 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
-  import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
+  import { formatRelative, formatUptime, formatBytes, formatNum, formatLatency, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
   import { SESSION_POLL_OPTIONS } from '$lib/core/utils/options'
   import { showErrorToast } from '$lib/core/utils/toast'
   import type { ClientSession } from '$lib/core/api/types'
@@ -61,7 +61,7 @@
 
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
   function mountModeVariant(m: string) { return m === 'readonly' ? 'outline' as const : 'default' as const }
-  function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, number> }
+  function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
   function getPlatform(s: ClientSession): string {
     const md = s.metadata as { platform?: string } | undefined
     return md?.platform ?? s.clientType
@@ -183,13 +183,16 @@
                       View Details
                     </a>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div><p class="detail-label">Account</p><p class="text-sm">{session.account.name}</p></div>
+                        <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm" onclick={(e: MouseEvent) => e.stopPropagation()}>{session.account.name}</a></div>
                         <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '—'}</p></div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
                         <div><p class="detail-label">Uptime</p><p class="text-sm">{formatUptime(m.uptimeSeconds ?? 0)}</p></div>
-                        <div><p class="detail-label">Volume ID</p><p class="text-sm font-mono truncate" title={session.volumeId}>{session.volumeId}</p></div>
-                        <div><p class="detail-label">User ID</p><p class="text-sm font-mono truncate" title={session.userId ?? ''}>{session.userId ?? '—'}</p></div>
+                        <div><p class="detail-label">Volume ID</p><a href="/volumes/{session.volumeId}" class="detail-link text-sm font-mono truncate" title={session.volumeId} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volumeId}</a></div>
+                        <div><p class="detail-label">User ID</p>{#if session.userId}<a href="/users/{session.userId}" class="detail-link text-sm font-mono truncate" title={session.userId} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.userId}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
                         <div><p class="detail-label">Client Type</p><Badge variant="outline">{session.clientType}</Badge></div>
+                        {#if session.forkName}
+                          <div><p class="detail-label">Fork</p><p class="text-sm font-mono">{session.forkName}{#if session.isTemporaryFork} <span class="text-yellow-500">(tmp)</span>{/if}</p></div>
+                        {/if}
                         <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
                     </div>
                     {#if m.reads !== undefined}
@@ -217,12 +220,12 @@
                             <div class="metric-row {(m.s3Errors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.s3Errors ?? 0)}</span></div>
                           </div>
                           <div class="metric-group">
-                            <p class="detail-label">Runtime</p>
-                            <div class="metric-row"><span>Goroutines</span><span>{formatNum(m.goroutines ?? 0)}</span></div>
-                            <div class="metric-row"><span>Mem Alloc</span><span>{formatBytes(m.memAlloc ?? 0)}</span></div>
+                            <p class="detail-label">Network</p>
+                            <div class="metric-row"><span>Ping RTT</span><span>{m.pingRttMs ? `${m.pingRttMs} ms` : '—'}</span></div>
+                            <div class="metric-row {(m.connFailures ?? 0) ? 'text-destructive' : ''}"><span>Conn Failures</span><span>{formatNum(m.connFailures ?? 0)}</span></div>
+                            <div class="metric-row"><span>TCP Conns</span><span>{formatNum(m.tcpActiveConns ?? 0)}</span></div>
                             <div class="metric-row"><span>RPC</span><span>{formatNum(m.rpcCount ?? 0)}</span></div>
                             <div class="metric-row {(m.rpcErrors ?? 0) ? 'text-destructive' : ''}"><span>RPC Errors</span><span>{formatNum(m.rpcErrors ?? 0)}</span></div>
-                            <div class="metric-row"><span>TCP Conns</span><span>{formatNum(m.tcpActiveConns ?? 0)}</span></div>
                           </div>
                         </div>
                       </div>
@@ -256,6 +259,8 @@
 
   /* Compact variant — detail page uses larger sizes */
   .detail-label { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); margin-bottom: 0.125rem; }
+  .detail-link { display: block; color: var(--foreground); text-decoration: none; transition: color 0.15s; }
+  .detail-link:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
   .metric-group { display: flex; flex-direction: column; gap: 0.375rem; }
   .metric-group > .detail-label {
     font-weight: 700;
