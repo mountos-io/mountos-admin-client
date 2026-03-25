@@ -423,7 +423,7 @@ class ClientSessionsResource {
   constructor(private client: AdminClient) {}
 
   list(opts?: ClientSessionListOptions, signal?: AbortSignal): Promise<PaginatedResponse<ClientSession>> {
-    return this.client.request('GET', `/client-sessions/list${queryString({ accountId: opts?.accountId, regionId: opts?.regionId, volumeId: opts?.volumeId, clientType: opts?.clientType, status: opts?.status, page: opts?.page, limit: opts?.limit })}`, undefined, signal)
+    return this.client.request('GET', `/client-sessions/list${queryString({ accountId: opts?.accountId, regionId: opts?.regionId, volumeId: opts?.volumeId, userId: opts?.userId, clientType: opts?.clientType, status: opts?.status, isActive: opts?.isActive, page: opts?.page, limit: opts?.limit })}`, undefined, signal)
   }
 
   get(sessionId: number, signal?: AbortSignal): Promise<ClientSession> {

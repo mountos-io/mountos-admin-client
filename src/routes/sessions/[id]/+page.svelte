@@ -142,11 +142,11 @@
         <!-- Detail grid -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
           <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm">{session.account.name}</a></div>
-          <div><p class="detail-label">Volume</p><a href="/volumes/{session.volumeId}" class="detail-link text-sm">{session.volumeName || session.volumeId}</a></div>
+          <div><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm">{session.volume.name || `#${session.volume.id}`}</a></div>
           <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '—'}</p></div>
           <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
           {#if session.forkName}
-            <div><p class="detail-label">Fork</p><p class="text-sm font-mono">{session.forkName}{#if session.isTemporaryFork} <span class="text-warning">(temporary)</span>{/if}</p></div>
+            <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
           {/if}
           <div><p class="detail-label">Uptime</p><p class="text-sm">{formatUptime(m.uptimeSeconds ?? 0)}</p></div>
           <div><p class="detail-label">Connected</p><p class="text-sm">{session.connectedAt ? formatRelative(session.connectedAt) : '—'}</p></div>
@@ -160,8 +160,8 @@
 
         <!-- IDs -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
-          <div class="min-w-0"><p class="detail-label">Volume ID</p><p class="text-sm font-mono truncate" title={session.volumeId}>{session.volumeId}</p></div>
-          <div class="min-w-0"><p class="detail-label">User ID</p>{#if session.userId}<a href="/users/{session.userId}" class="detail-link text-sm font-mono truncate" title={session.userId}>{session.userId}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
+          <div class="min-w-0"><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate">{session.volume.name || `#${session.volume.id}`}</a></div>
+          <div class="min-w-0"><p class="detail-label">User</p>{#if session.user}<a href="/users/{session.user.id}" class="detail-link text-sm font-mono truncate" title={session.user.name}>{session.user.name || `#${session.user.id}`}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
           {#if session.appVersion}
             <div><p class="detail-label">App Version</p><p class="text-sm font-mono">{session.appVersion}</p></div>
           {/if}

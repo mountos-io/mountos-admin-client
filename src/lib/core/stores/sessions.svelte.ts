@@ -28,6 +28,7 @@ let error = $state<string | null>(null)
 let capped = $state(false)
 let cappedTotal = $state(0)
 let fetchedForAccountId = $state<number | null>(null)
+let fetchedIsActive = $state<string>('true')
 let fetchCtrl: AbortController | null = null
 
 // Filter state
@@ -37,6 +38,7 @@ let regionFilter = $state('')
 let osFilter = $state('')
 let volumeIdFilter = $state<number | undefined>(undefined)
 let searchQuery = $state('')
+let showInactive = $state(false)
 let displayPage = $state(1)
 let expanded = $state<Set<number>>(new Set())
 
@@ -46,7 +48,7 @@ const summary: SessionSummaryData = $derived.by(() => {
   const byPlatform: Record<string, number> = {}
   const byOs: Record<string, number> = {}
   const regions = new Set<number>()
-  const volumes = new Set<string>()
+  const volumes = new Set<number>()
   const hosts = new Set<string>()
   let activeCount = 0
   for (const s of allSessions) {
@@ -55,7 +57,7 @@ const summary: SessionSummaryData = $derived.by(() => {
     byPlatform[p] = (byPlatform[p] ?? 0) + 1
     byOs[s.osName] = (byOs[s.osName] ?? 0) + 1
     regions.add(s.region.id)
-    volumes.add(s.volumeId)
+    volumes.add(s.volume.id)
     if (s.hostname) hosts.add(s.hostname)
     if (s.status === 'active') activeCount++
   }
@@ -97,11 +99,11 @@ const filtered = $derived(allSessions.filter(s => {
   if (platformFilter && getPlatform(s) !== platformFilter) return false
   if (regionFilter && s.region.name !== regionFilter) return false
   if (osFilter && s.osName !== osFilter) return false
-  if (volumeIdFilter && s.region.id !== volumeIdFilter) return false
+  if (volumeIdFilter && s.volume.id !== volumeIdFilter) return false
   if (searchQuery) {
     const q = searchQuery.toLowerCase()
     return (s.hostname?.toLowerCase().includes(q))
-      || (s.volumeName?.toLowerCase().includes(q))
+      || (s.volume.name?.toLowerCase().includes(q))
       || (s.mountPath?.toLowerCase().includes(q))
       || s.account.name.toLowerCase().includes(q)
       || s.ipAddr.includes(q)
@@ -120,8 +122,10 @@ function resetFilters() {
 function resetPage() { displayPage = 1 }
 
 async function fetchAllSessions(accountId: number) {
-  if (fetchedForAccountId === accountId) return
+  const isActiveParam = showInactive ? 'all' : 'true'
+  if (fetchedForAccountId === accountId && fetchedIsActive === isActiveParam) return
   fetchedForAccountId = accountId
+  fetchedIsActive = isActiveParam
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
@@ -132,7 +136,7 @@ async function fetchAllSessions(accountId: number) {
 
   try {
     for (let page = 1; page <= MAX_ROUNDS; page++) {
-      const res = await api.clientSessions.list({ accountId, page, limit: BACKEND_PAGE_SIZE }, ctrl.signal)
+      const res = await api.clientSessions.list({ accountId, isActive: isActiveParam, page, limit: BACKEND_PAGE_SIZE }, ctrl.signal)
       allSessions = page === 1 ? res.items : [...allSessions, ...res.items]
       if (page >= (res.pagination?.totalPages ?? 1)) break
       if (page === MAX_ROUNDS && (res.pagination?.total ?? 0) > MAX_ROUNDS * BACKEND_PAGE_SIZE) {
@@ -161,9 +165,11 @@ function reset() {
   capped = false
   cappedTotal = 0
   fetchedForAccountId = null
+  fetchedIsActive = 'true'
   fetchCtrl?.abort()
   fetchCtrl = null
   resetFilters()
+  showInactive = false
   expanded = new Set()
 }
 
@@ -190,6 +196,7 @@ export function useSessions() {
     get osFilter() { return osFilter },
     get volumeIdFilter() { return volumeIdFilter },
     get searchQuery() { return searchQuery },
+    get showInactive() { return showInactive },
     get expanded() { return expanded },
 
     get statusOptions() { return statusOptions },
@@ -204,6 +211,7 @@ export function useSessions() {
     setOsFilter(v: string) { osFilter = v; resetPage() },
     setVolumeIdFilter(v: number | undefined) { volumeIdFilter = v; resetPage() },
     setSearchQuery(v: string) { searchQuery = v; resetPage() },
+    setShowInactive(v: boolean) { showInactive = v; refetch() },
     toggleExpanded(id: number) {
       const next = new Set(expanded)
       next.has(id) ? next.delete(id) : next.add(id)

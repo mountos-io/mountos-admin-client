@@ -209,7 +209,6 @@
       const res = await api.clientSessions.list({
         accountId: volume.account.id,
         volumeId: id,
-        status: '1',
         page,
         limit: 10,
       }, ctrl.signal)

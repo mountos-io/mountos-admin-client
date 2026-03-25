@@ -120,6 +120,10 @@
           <Button variant="ghost" size="sm" onclick={() => store.clearFilters()}>Clear</Button>
         {/if}
         <div class="flex items-center gap-2 ml-auto">
+          <label class="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none">
+            <input type="checkbox" checked={store.showInactive} onchange={() => store.setShowInactive(!store.showInactive)} class="accent-primary" />
+            Inactive
+          </label>
           <span class="text-sm text-muted-foreground">{store.filtered.length} result{store.filtered.length !== 1 ? 's' : ''}</span>
           <FilterSelect options={SESSION_POLL_OPTIONS} value={pollValue} placeholder="Poll Off" onchange={setPoll} />
         </div>
@@ -164,7 +168,7 @@
                   <span class="session-platform">{formatPlatform(getPlatform(session))}</span>
                 </div>
               </TableCell>
-              <TableCell class="text-sm max-w-[120px] truncate" title={session.volumeName || session.volumeId}>{session.volumeName || session.volumeId}</TableCell>
+              <TableCell class="text-sm max-w-[120px] truncate" title={session.volume.name || String(session.volume.id)}>{session.volume.name || `#${session.volume.id}`}</TableCell>
               <TableCell><span class="session-region">{session.region.name}</span></TableCell>
               <TableCell><Badge variant={statusVariant(session.status)}>{session.status}</Badge></TableCell>
               <TableCell class="hidden md:table-cell">
@@ -187,11 +191,11 @@
                         <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '—'}</p></div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
                         <div><p class="detail-label">Uptime</p><p class="text-sm">{formatUptime(m.uptimeSeconds ?? 0)}</p></div>
-                        <div class="min-w-0"><p class="detail-label">Volume ID</p><a href="/volumes/{session.volumeId}" class="detail-link text-sm font-mono truncate" title={session.volumeId} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volumeId}</a></div>
-                        <div class="min-w-0"><p class="detail-label">User ID</p>{#if session.userId}<a href="/users/{session.userId}" class="detail-link text-sm font-mono truncate" title={session.userId} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.userId}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
+                        <div class="min-w-0"><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate" title={session.volume.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volume.name || `#${session.volume.id}`}</a></div>
+                        <div class="min-w-0"><p class="detail-label">User</p>{#if session.user}<a href="/users/{session.user.id}" class="detail-link text-sm font-mono truncate" title={session.user.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.user.name || `#${session.user.id}`}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
                         <div><p class="detail-label">Client Type</p><Badge variant="outline">{session.clientType}</Badge></div>
                         {#if session.forkName}
-                          <div><p class="detail-label">Fork</p><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</div>
+                          <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
                         {/if}
                         <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
                     </div>
