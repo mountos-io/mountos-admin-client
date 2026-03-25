@@ -77,7 +77,7 @@
     {#if store.volumeIdFilter}
       <Badge variant="outline" class="gap-1">
         Volume #{store.volumeIdFilter}
-        <button type="button" class="ml-1 p-1 hover:text-destructive" onclick={clearVolumeFilter} aria-label="Clear volume filter">&times;</button>
+        <button type="button" class="ml-1 p-2 -m-1 hover:text-destructive" onclick={clearVolumeFilter} aria-label="Clear volume filter">&times;</button>
       </Badge>
     {/if}
     {#if store.capped}
@@ -119,7 +119,7 @@
         {/if}
         <div class="flex items-center gap-2 ml-auto">
           <label class="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none">
-            <input type="checkbox" checked={store.showInactive} onchange={() => store.setShowInactive(!store.showInactive)} class="accent-primary" aria-label="Show inactive sessions" />
+            <input type="checkbox" checked={store.showInactive} onchange={() => store.setShowInactive(!store.showInactive)} class="accent-primary" />
             Inactive
           </label>
           <span class="text-sm text-muted-foreground">{store.filtered.length} result{store.filtered.length !== 1 ? 's' : ''}</span>
@@ -150,9 +150,9 @@
         </TableHeader>
         <TableBody>
           {#each store.displaySessions as session (session.id)}
-            <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => store.toggleExpanded(session.id)} tabindex={0} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); store.toggleExpanded(session.id) } }}>
+            <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => store.toggleExpanded(session.id)}>
               <TableCell class="text-muted-foreground">
-                <button type="button" class="p-1" aria-expanded={store.expanded.has(session.id)} aria-label="Toggle session details">{#if store.expanded.has(session.id)}<ChevronDown class="h-4 w-4" />{:else}<ChevronRight class="h-4 w-4" />{/if}</button>
+                <button type="button" class="p-2 -m-1" aria-expanded={store.expanded.has(session.id)} aria-label="Toggle session details" onclick={(e: MouseEvent) => e.stopPropagation()} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); store.toggleExpanded(session.id) } }}>{#if store.expanded.has(session.id)}<ChevronDown class="h-4 w-4" />{:else}<ChevronRight class="h-4 w-4" />{/if}</button>
               </TableCell>
               <TableCell>
                 <div>

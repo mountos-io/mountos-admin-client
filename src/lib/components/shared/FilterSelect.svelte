@@ -43,7 +43,7 @@
           role="option"
           aria-selected={opt.value === value}
           class={cn(
-            "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none cursor-pointer",
+            "flex w-full items-center gap-2 rounded-sm px-2 py-2 text-sm outline-none cursor-pointer",
             "hover:bg-accent hover:text-accent-foreground",
             "focus-visible:bg-accent focus-visible:text-accent-foreground",
             opt.value === value && "bg-accent/50"
