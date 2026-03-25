@@ -57,7 +57,7 @@ const summary: SessionSummaryData = $derived.by(() => {
     regions.add(s.region.id)
     volumes.add(s.volumeId)
     if (s.hostname) hosts.add(s.hostname)
-    if (s.isActive) activeCount++
+    if (s.status === 'active') activeCount++
   }
   const sortDesc = (obj: Record<string, number>) =>
     Object.entries(obj).sort((a, b) => b[1] - a[1])
