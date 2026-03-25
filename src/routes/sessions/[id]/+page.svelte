@@ -132,7 +132,7 @@
             <Badge variant="secondary" class="text-sm px-3 py-1">{formatOs(session.osName)}</Badge>
             <Badge class="text-sm px-3 py-1">{session.region.name}</Badge>
             {#if session.mountMode}<Badge variant={session.mountMode === 'readonly' ? 'warning' : 'success'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
-            {#if session.forkName}<Badge variant={session.isTemporaryFork ? 'warning' : 'outline'} class="text-sm px-3 py-1">{session.isTemporaryFork ? 'TMP' : 'FORK'} {session.forkName}</Badge>{/if}
+            {#if session.forkName}<Badge variant="outline" class="text-sm px-3 py-1">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning" class="text-sm px-3 py-1">Temporary</Badge>{/if}{/if}
             <Badge variant="secondary" class="text-sm px-3 py-1">{session.clientType}</Badge>
           </div>
         </div>

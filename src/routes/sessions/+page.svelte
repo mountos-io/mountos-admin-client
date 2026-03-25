@@ -191,7 +191,7 @@
                         <div class="min-w-0"><p class="detail-label">User ID</p>{#if session.userId}<a href="/users/{session.userId}" class="detail-link text-sm font-mono truncate" title={session.userId} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.userId}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
                         <div><p class="detail-label">Client Type</p><Badge variant="outline">{session.clientType}</Badge></div>
                         {#if session.forkName}
-                          <div><p class="detail-label">Fork</p><Badge variant={session.isTemporaryFork ? 'warning' : 'outline'}>{session.isTemporaryFork ? 'TMP' : 'FORK'} {session.forkName}</Badge></div>
+                          <div><p class="detail-label">Fork</p><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</div>
                         {/if}
                         <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
                     </div>

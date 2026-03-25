@@ -184,7 +184,7 @@
         bucket: (!isStandard && bucket.trim()) ? bucket.trim() : undefined,
         base: (!isStandard && base.trim()) ? base.trim() : undefined,
         blockType: isBlock ? blockType : undefined,
-        blockSize: isBlock ? Number(blockSize) : undefined,
+        blockSize: Number(blockSize),
         accessKey: (!isStandard && accessKey.trim()) ? accessKey.trim() : undefined,
         secretKey: (!isStandard && secretKey.trim()) ? secretKey.trim() : undefined,
       })
