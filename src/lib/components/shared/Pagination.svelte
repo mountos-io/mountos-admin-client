@@ -7,16 +7,18 @@
   function handlePrevKey(e: KeyboardEvent) {
     if (e.key === 'ArrowRight') {
       e.preventDefault()
-      const next = e.currentTarget as HTMLElement
-      ;(next.nextElementSibling?.nextElementSibling as HTMLElement | null)?.focus()
+      const nav = (e.currentTarget as HTMLElement).closest('nav')
+      const buttons = nav?.querySelectorAll<HTMLElement>('button')
+      if (buttons?.[1]) buttons[1].focus()
     }
   }
 
   function handleNextKey(e: KeyboardEvent) {
     if (e.key === 'ArrowLeft') {
       e.preventDefault()
-      const prev = e.currentTarget as HTMLElement
-      ;(prev.previousElementSibling?.previousElementSibling as HTMLElement | null)?.focus()
+      const nav = (e.currentTarget as HTMLElement).closest('nav')
+      const buttons = nav?.querySelectorAll<HTMLElement>('button')
+      if (buttons?.[0]) buttons[0].focus()
     }
   }
 </script>

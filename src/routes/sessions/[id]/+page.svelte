@@ -14,6 +14,7 @@
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { showErrorToast } from '$lib/core/utils/toast'
   import type { ClientSession } from '$lib/core/api/types'
+  import { getPlatform } from '$lib/core/stores/sessions.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
 
@@ -70,10 +71,6 @@
 
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
   function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
-  function getPlatform(s: ClientSession): string {
-    const md = s.metadata as { platform?: string } | undefined
-    return md?.platform ?? s.clientType
-  }
 
   interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number }
   function getRpcLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
@@ -236,7 +233,7 @@
           <div class="relative p-5">
             <h2 class="text-lg font-semibold mb-4">RPC Latency</h2>
             <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-            <div class="overflow-x-auto" tabindex="0" role="region" aria-label="RPC latency data">
+            <div class="overflow-x-auto rpc-scroll-hint" tabindex="0" role="region" aria-label="RPC latency data">
               <table class="rpc-table">
                 <caption class="sr-only">RPC method latency breakdown</caption>
                 <thead>
@@ -272,5 +269,12 @@
   .rpc-table { width: 100%; border-collapse: collapse; }
   .rpc-table th { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--primary); }
   .rpc-table td { padding: 0.375rem 0.75rem; }
-  .rpc-zebra { background: color-mix(in oklch, var(--muted) 30%, transparent); }
+  .rpc-zebra { background: color-mix(in oklch, var(--muted) 40%, transparent); }
+  .rpc-scroll-hint {
+    -webkit-overflow-scrolling: touch;
+    mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+  }
+  .rpc-scroll-hint:not(.is-scrolled-end) { mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent); }
+  @media (min-width: 640px) { .rpc-scroll-hint { mask-image: none; -webkit-mask-image: none; } }
 </style>

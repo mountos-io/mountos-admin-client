@@ -7,6 +7,12 @@
     --bracket-color-dark: oklch(0.35 0.002 200);
     --bracket-hover: oklch(0.65 0.18 45);
     --bracket-hover-dark: oklch(0.78 0.13 92);
+    --th-color: oklch(0.45 0.03 200);
+    --th-color-hover: oklch(0.55 0.08 200);
+    --th-color-dark: oklch(0.50 0.03 200);
+    --th-color-dark-hover: oklch(0.65 0.08 200);
+    --th-line: oklch(0.4 0.08 200);
+    --th-line-dark: oklch(0.55 0.08 200);
   }
 }
 
@@ -495,7 +501,7 @@
     font-family: var(--font-mono);
     font-size: 0.7rem;
     letter-spacing: 0.2em;
-    color: oklch(0.45 0.03 200);
+    color: var(--th-color);
     padding-bottom: 0.5rem !important;
   }
 
@@ -506,7 +512,7 @@
     left: 0;
     width: 100%;
     height: 1px;
-    background: linear-gradient(90deg, transparent, oklch(0.4 0.08 200), transparent);
+    background: linear-gradient(90deg, transparent, var(--th-line), transparent);
     transform: scaleX(0);
     transform-origin: left;
     transition: transform 0.4s ease;
@@ -517,23 +523,23 @@
   }
 
   .th-cyber:hover {
-    color: oklch(0.55 0.08 200);
+    color: var(--th-color-hover);
   }
 
   .dark .th-cyber {
-    color: oklch(0.50 0.03 200);
+    color: var(--th-color-dark);
   }
 
   .dark .th-cyber::after {
-    background: linear-gradient(90deg, transparent, oklch(0.55 0.08 200), transparent);
+    background: linear-gradient(90deg, transparent, var(--th-line-dark), transparent);
   }
 
   .dark .th-cyber:hover {
-    color: oklch(0.65 0.08 200);
+    color: var(--th-color-dark-hover);
   }
 
   thead:has(.th-cyber) tr {
-    border-bottom-color: oklch(0.4 0.002 200 / 0.3);
+    border-bottom-color: oklch(from var(--bracket-color) l c h / 0.3);
   }
 
   /* Ensure all th in cyber rows can host brackets */
@@ -571,7 +577,7 @@
   }
 
   .dark thead:has(.th-cyber) tr {
-    border-bottom-color: oklch(0.35 0.002 200 / 0.3);
+    border-bottom-color: oklch(from var(--bracket-color-dark) l c h / 0.3);
   }
 
   .dark thead:has(.th-cyber) th:first-child::before {

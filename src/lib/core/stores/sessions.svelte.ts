@@ -16,7 +16,7 @@ export interface SessionSummaryData {
   total: number
 }
 
-function getPlatform(s: ClientSession): string {
+export function getPlatform(s: ClientSession): string {
   const md = s.metadata as { platform?: string } | undefined
   return md?.platform ?? s.clientType
 }
@@ -28,7 +28,7 @@ let error = $state<string | null>(null)
 let capped = $state(false)
 let cappedTotal = $state(0)
 let fetchedForAccountId = $state<number | null>(null)
-let fetchedIsActive = $state<string>('true')
+let fetchedIsActive = $state<'true' | 'false' | 'all'>('true')
 let fetchCtrl: AbortController | null = null
 
 // Filter state
@@ -218,6 +218,7 @@ export function useSessions() {
       expanded = next
     },
     clearFilters: resetFilters,
+    getPlatform,
 
     fetchAllSessions,
     refetch,

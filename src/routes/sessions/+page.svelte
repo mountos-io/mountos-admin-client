@@ -21,6 +21,8 @@
   import { showErrorToast } from '$lib/core/utils/toast'
   import type { ClientSession } from '$lib/core/api/types'
   import ExternalLink from '@lucide/svelte/icons/external-link'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
+  import ChevronDown from '@lucide/svelte/icons/chevron-down'
 
   const store = useSessions()
   const accountStore = useAccounts()
@@ -62,10 +64,6 @@
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
   function mountModeVariant(m: string) { return m === 'readonly' ? 'outline' as const : 'default' as const }
   function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
-  function getPlatform(s: ClientSession): string {
-    const md = s.metadata as { platform?: string } | undefined
-    return md?.platform ?? s.clientType
-  }
   function clearVolumeFilter() { goto('/sessions') }
 
   const hasFilters = $derived(store.statusFilter || store.platformFilter || store.regionFilter || store.osFilter || store.searchQuery)
@@ -121,7 +119,7 @@
         {/if}
         <div class="flex items-center gap-2 ml-auto">
           <label class="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none">
-            <input type="checkbox" checked={store.showInactive} onchange={() => store.setShowInactive(!store.showInactive)} class="accent-primary" />
+            <input type="checkbox" checked={store.showInactive} onchange={() => store.setShowInactive(!store.showInactive)} class="accent-primary" aria-label="Show inactive sessions" />
             Inactive
           </label>
           <span class="text-sm text-muted-foreground">{store.filtered.length} result{store.filtered.length !== 1 ? 's' : ''}</span>
@@ -154,7 +152,7 @@
           {#each store.displaySessions as session (session.id)}
             <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => store.toggleExpanded(session.id)} tabindex={0} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); store.toggleExpanded(session.id) } }}>
               <TableCell class="text-muted-foreground">
-                <button type="button" class="p-1" aria-expanded={store.expanded.has(session.id)} aria-label="Toggle session details">{store.expanded.has(session.id) ? '▾' : '▸'}</button>
+                <button type="button" class="p-1" aria-expanded={store.expanded.has(session.id)} aria-label="Toggle session details">{#if store.expanded.has(session.id)}<ChevronDown class="h-4 w-4" />{:else}<ChevronRight class="h-4 w-4" />{/if}</button>
               </TableCell>
               <TableCell>
                 <div>
@@ -165,7 +163,7 @@
               <TableCell>
                 <div class="flex items-center gap-1.5">
                   <span class="session-os">{formatOs(session.osName)}</span>
-                  <span class="session-platform">{formatPlatform(getPlatform(session))}</span>
+                  <span class="session-platform">{formatPlatform(store.getPlatform(session))}</span>
                 </div>
               </TableCell>
               <TableCell class="text-sm max-w-[120px] truncate" title={session.volume.name || String(session.volume.id)}>{session.volume.name || `#${session.volume.id}`}</TableCell>
@@ -258,7 +256,7 @@
   }
   .session-platform { border: 1px solid var(--primary); color: color-mix(in oklch, var(--primary) 80%, var(--foreground)); background: color-mix(in oklch, var(--primary) 15%, transparent); }
   :global(.dark) .session-platform { color: var(--primary); background: color-mix(in oklch, var(--primary) 10%, transparent); }
-  .session-os { border: 1px solid var(--foreground); color: var(--foreground); opacity: 0.6; }
+  .session-os { border: 1px solid var(--foreground); color: var(--foreground); opacity: 0.75; }
   .session-region { border: 1px solid var(--border); color: var(--muted-foreground); }
 
   .count-tag {
@@ -272,9 +270,9 @@
     padding: 0.25rem 0.5rem 0.25rem 0.25rem;
     border: 1px solid var(--tc);
     border-radius: 1px;
-    color: color-mix(in oklch, var(--tc) 80%, var(--foreground));
+    color: color-mix(in oklch, var(--tc) 85%, var(--foreground));
   }
-  :global(.dark) .count-tag { color: var(--tc); }
+  :global(.dark) .count-tag { color: color-mix(in oklch, var(--tc) 90%, white); }
 
   .count-pill {
     display: inline-flex;

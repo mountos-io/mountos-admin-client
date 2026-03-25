@@ -24,6 +24,7 @@
   <PopoverTrigger>
     {#snippet child({ props })}
       <Button {...props} variant="outline" size="sm"
+        aria-haspopup="listbox"
         class={cn(
           "justify-between gap-1.5 min-w-24",
           value ? "font-semibold" : "font-normal text-muted-foreground",
