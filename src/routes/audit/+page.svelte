@@ -94,7 +94,7 @@
         {#each store.logs as log}
           <TableRow class="cursor-pointer" onclick={() => toggleRow(log.id)} tabindex={0} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRow(log.id) } }}>
             <TableCell class="text-muted-foreground">
-              <button type="button" class="p-1" aria-expanded={expanded.has(log.id)} aria-label="Toggle log details">{expanded.has(log.id) ? '▾' : '▸'}</button>
+              <button type="button" class="p-2" aria-expanded={expanded.has(log.id)} aria-label="Toggle log details">{expanded.has(log.id) ? '▾' : '▸'}</button>
             </TableCell>
             <TableCell class="font-medium">{log.title}</TableCell>
             <TableCell>
@@ -140,7 +140,7 @@
 
 <style>
   .audit-desc {
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-family: var(--font-mono);
     font-size: 0.8125rem;
     letter-spacing: 0.04em;
     color: var(--primary);
@@ -204,7 +204,7 @@
 
   .audit-subject {
     display: inline-block;
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-family: var(--font-mono);
     font-size: 0.6rem;
     text-transform: uppercase;
     letter-spacing: 0.15em;

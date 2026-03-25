@@ -1105,7 +1105,7 @@
   }
 
   .gauge-lbl {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-family: var(--font-mono);
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.15em;
@@ -1113,7 +1113,7 @@
   }
 
   .gauge-val {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-family: var(--font-mono);
     font-size: 1.5rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
@@ -1121,7 +1121,7 @@
   }
 
   .gauge-sub {
-    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    font-family: var(--font-mono);
     font-size: 0.8rem;
     color: var(--muted-foreground);
   }

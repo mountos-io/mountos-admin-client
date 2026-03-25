@@ -154,7 +154,7 @@
               </TableCell>
               <TableCell>
                 <div>
-                  <p class="text-sm font-medium truncate max-w-[200px]">{session.hostname || session.ipAddr}</p>
+                  <p class="text-sm font-medium truncate max-w-[200px]" title={session.hostname || session.ipAddr}>{session.hostname || session.ipAddr}</p>
                   <p class="text-sm text-muted-foreground font-mono">{session.ipAddr}</p>
                 </div>
               </TableCell>
@@ -164,7 +164,7 @@
                   <span class="session-platform">{formatPlatform(getPlatform(session))}</span>
                 </div>
               </TableCell>
-              <TableCell class="text-sm max-w-[120px] truncate">{session.volumeName || session.volumeId}</TableCell>
+              <TableCell class="text-sm max-w-[120px] truncate" title={session.volumeName || session.volumeId}>{session.volumeName || session.volumeId}</TableCell>
               <TableCell><span class="session-region">{session.region.name}</span></TableCell>
               <TableCell><Badge variant={statusVariant(session.status)}>{session.status}</Badge></TableCell>
               <TableCell class="hidden md:table-cell">
@@ -245,7 +245,7 @@
 <style>
   .session-platform, .session-os, .session-region {
     display: inline-block;
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-family: var(--font-mono);
     font-size: 0.875rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -261,7 +261,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-family: var(--font-mono);
     font-size: 0.875rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;

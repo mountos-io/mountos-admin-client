@@ -492,7 +492,7 @@
   /* Cyberpunk table header labels — scan-line underline */
   .th-cyber {
     position: relative;
-    font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+    font-family: var(--font-mono);
     font-size: 0.7rem;
     letter-spacing: 0.2em;
     color: oklch(0.45 0.03 200);

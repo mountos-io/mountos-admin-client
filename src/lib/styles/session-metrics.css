@@ -39,7 +39,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.875rem;
-  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+  font-family: var(--font-mono);
 }
 
 .metric-row > span:first-child {

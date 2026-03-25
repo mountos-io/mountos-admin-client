@@ -117,7 +117,7 @@
       type="button"
       onclick={onOpenCommandPalette}
       aria-label="Open command palette"
-      class="flex items-center gap-2 rounded-sm border border-border bg-transparent px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground focus:outline-none focus:ring-1 focus:ring-ring md:min-w-[180px] md:px-3 justify-between"
+      class="flex items-center gap-2 rounded-sm border border-border bg-transparent px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-w-[180px] md:px-3 justify-between"
     >
       <div class="flex items-center gap-2">
         <Search class="h-4 w-4" />
