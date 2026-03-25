@@ -16,7 +16,7 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
-  import { formatRelative, formatUptime, formatBytes, formatNum, formatLatency, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
+  import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
   import { SESSION_POLL_OPTIONS } from '$lib/core/utils/options'
   import { showErrorToast } from '$lib/core/utils/toast'
   import type { ClientSession } from '$lib/core/api/types'
@@ -187,11 +187,11 @@
                         <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '—'}</p></div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
                         <div><p class="detail-label">Uptime</p><p class="text-sm">{formatUptime(m.uptimeSeconds ?? 0)}</p></div>
-                        <div><p class="detail-label">Volume ID</p><a href="/volumes/{session.volumeId}" class="detail-link text-sm font-mono truncate" title={session.volumeId} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volumeId}</a></div>
-                        <div><p class="detail-label">User ID</p>{#if session.userId}<a href="/users/{session.userId}" class="detail-link text-sm font-mono truncate" title={session.userId} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.userId}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
+                        <div class="min-w-0"><p class="detail-label">Volume ID</p><a href="/volumes/{session.volumeId}" class="detail-link text-sm font-mono truncate" title={session.volumeId} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volumeId}</a></div>
+                        <div class="min-w-0"><p class="detail-label">User ID</p>{#if session.userId}<a href="/users/{session.userId}" class="detail-link text-sm font-mono truncate" title={session.userId} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.userId}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
                         <div><p class="detail-label">Client Type</p><Badge variant="outline">{session.clientType}</Badge></div>
                         {#if session.forkName}
-                          <div><p class="detail-label">Fork</p><p class="text-sm font-mono">{session.forkName}{#if session.isTemporaryFork} <span class="text-yellow-500">(tmp)</span>{/if}</p></div>
+                          <div><p class="detail-label">Fork</p><Badge variant={session.isTemporaryFork ? 'warning' : 'outline'}>{session.isTemporaryFork ? 'TMP' : 'FORK'} {session.forkName}</Badge></div>
                         {/if}
                         <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
                     </div>
@@ -259,8 +259,8 @@
 
   /* Compact variant — detail page uses larger sizes */
   .detail-label { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); margin-bottom: 0.125rem; }
-  .detail-link { display: block; color: var(--foreground); text-decoration: none; transition: color 0.15s; }
-  .detail-link:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+  .detail-link { display: block; color: var(--foreground); text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; transition: color 0.15s, text-decoration-color 0.15s; }
+  .detail-link:hover, .detail-link:focus-visible { color: var(--primary); text-decoration-color: var(--primary); }
   .metric-group { display: flex; flex-direction: column; gap: 0.375rem; }
   .metric-group > .detail-label {
     font-weight: 700;

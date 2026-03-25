@@ -160,8 +160,8 @@
 
         <!-- IDs -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
-          <div><p class="detail-label">Volume ID</p><a href="/volumes/{session.volumeId}" class="detail-link text-sm font-mono truncate" title={session.volumeId}>{session.volumeId}</a></div>
-          <div><p class="detail-label">User ID</p>{#if session.userId}<a href="/users/{session.userId}" class="detail-link text-sm font-mono truncate" title={session.userId}>{session.userId}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
+          <div class="min-w-0"><p class="detail-label">Volume ID</p><p class="text-sm font-mono truncate" title={session.volumeId}>{session.volumeId}</p></div>
+          <div class="min-w-0"><p class="detail-label">User ID</p>{#if session.userId}<a href="/users/{session.userId}" class="detail-link text-sm font-mono truncate" title={session.userId}>{session.userId}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
           {#if session.appVersion}
             <div><p class="detail-label">App Version</p><p class="text-sm font-mono">{session.appVersion}</p></div>
           {/if}
@@ -176,7 +176,7 @@
         <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
         <div class="relative p-5">
           <h2 class="text-lg font-semibold mb-4">Metrics</h2>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-5">
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-8 gap-y-5">
             <div class="metric-group">
               <p class="detail-label">I/O</p>
               <div class="metric-row"><span>Reads</span><span>{formatNum(m.reads ?? 0)}</span></div>
@@ -223,7 +223,6 @@
               <div class="metric-row"><span>Mem Alloc</span><span>{formatBytes(m.memAlloc ?? 0)}</span></div>
               <div class="metric-row"><span>RPC Count</span><span>{formatNum(m.rpcCount ?? 0)}</span></div>
               <div class="metric-row {(m.rpcErrors ?? 0) ? 'text-destructive' : ''}"><span>RPC Errors</span><span>{formatNum(m.rpcErrors ?? 0)}</span></div>
-              <div class="metric-row"><span>Uptime</span><span>{formatUptime(m.uptimeSeconds ?? 0)}</span></div>
             </div>
           </div>
         </div>
@@ -236,15 +235,17 @@
           <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
           <div class="relative p-5">
             <h2 class="text-lg font-semibold mb-4">RPC Latency</h2>
-            <div class="overflow-x-auto">
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+            <div class="overflow-x-auto" tabindex="0" role="region" aria-label="RPC latency data">
               <table class="rpc-table">
+                <caption class="sr-only">RPC method latency breakdown</caption>
                 <thead>
                   <tr>
-                    <th class="text-left">Method</th>
-                    <th class="text-right">Count</th>
-                    <th class="text-right">Avg</th>
-                    <th class="text-right">Min</th>
-                    <th class="text-right">Max</th>
+                    <th scope="col" class="text-left">Method</th>
+                    <th scope="col" class="text-right">Count</th>
+                    <th scope="col" class="text-right">Avg</th>
+                    <th scope="col" class="text-right">Min</th>
+                    <th scope="col" class="text-right">Max</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -269,8 +270,8 @@
 
 <style>
   .detail-label { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); margin-bottom: 0.25rem; }
-  .detail-link { display: block; color: var(--foreground); text-decoration: none; transition: color 0.15s; }
-  .detail-link:hover { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; }
+  .detail-link { display: block; color: var(--foreground); text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; transition: color 0.15s, text-decoration-color 0.15s; }
+  .detail-link:hover, .detail-link:focus-visible { color: var(--primary); text-decoration-color: var(--primary); }
   .metric-group { display: flex; flex-direction: column; gap: 0.5rem; }
   .metric-group > .detail-label {
     font-size: 0.875rem;
@@ -288,5 +289,4 @@
   .rpc-table th { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--primary); }
   .rpc-table td { padding: 0.375rem 0.75rem; }
   .rpc-zebra { background: color-mix(in oklch, var(--muted) 30%, transparent); }
-  .tabular-nums { font-variant-numeric: tabular-nums; }
 </style>
