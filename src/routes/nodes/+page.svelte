@@ -128,10 +128,12 @@
   }
 </script>
 
+<svelte:head><title>Nodes — mountOS Admin</title></svelte:head>
+
 <div class="space-y-4">
   <h1 class="text-2xl font-bold tracking-tight">Nodes</h1>
 
-  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full text-base">
+  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full text-base">
     <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
     <div class="relative flex flex-wrap items-center gap-3">
       <FilterSelect class="text-base"
@@ -197,7 +199,6 @@
             class="cursor-pointer hover:bg-muted/50"
             onclick={() => goto(`/nodes/${node.regionId}/${node.nodeId}`)}
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/nodes/${node.regionId}/${node.nodeId}`))}
-            role="link"
             tabindex={0}
           >
             <TableCell class="font-mono text-sm">{node.nodeId}</TableCell>

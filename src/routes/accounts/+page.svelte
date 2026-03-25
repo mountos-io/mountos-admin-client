@@ -29,6 +29,8 @@
   })
 </script>
 
+<svelte:head><title>Accounts — mountOS Admin</title></svelte:head>
+
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold tracking-tight">Accounts</h1>

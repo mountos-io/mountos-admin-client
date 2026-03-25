@@ -198,6 +198,8 @@
   }
 </script>
 
+<svelte:head><title>Create Storage — mountOS Admin</title></svelte:head>
+
 <div class="mx-auto max-w-2xl space-y-6">
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before creating a storage." />
@@ -213,11 +215,11 @@
         <form onsubmit={handleSubmit} class="space-y-4">
           <div class="space-y-2">
             <Label for="name">Name</Label>
-            <Input id="name" bind:value={name} placeholder="Storage name" required />
+            <Input id="name" bind:value={name} placeholder="Storage name" required autocomplete="off" />
           </div>
           <div class="space-y-2">
             <Label for="description">Description</Label>
-            <Input id="description" bind:value={description} placeholder="Description" />
+            <Input id="description" bind:value={description} placeholder="Description" autocomplete="off" />
           </div>
           <div class="space-y-2">
             <Label>Region</Label>

@@ -257,22 +257,6 @@
   .session-os { border: 1px solid var(--foreground); color: var(--foreground); opacity: 0.6; }
   .session-region { border: 1px solid var(--border); color: var(--muted-foreground); }
 
-  /* Compact variant — detail page uses larger sizes */
-  .detail-label { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); margin-bottom: 0.125rem; }
-  .detail-link { display: block; color: var(--foreground); text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; transition: color 0.15s, text-decoration-color 0.15s; }
-  .detail-link:hover, .detail-link:focus-visible { color: var(--primary); text-decoration-color: var(--primary); }
-  .metric-group { display: flex; flex-direction: column; gap: 0.375rem; }
-  .metric-group > .detail-label {
-    font-weight: 700;
-    color: var(--foreground);
-    padding-bottom: 0.25rem;
-    border-bottom: 2px solid var(--primary);
-    margin-bottom: 0.125rem;
-  }
-  .metric-row { display: flex; justify-content: space-between; font-size: 0.875rem; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace; }
-  .metric-row > span:first-child { color: var(--muted-foreground); }
-  .metric-row > span:last-child { font-variant-numeric: tabular-nums; }
-
   .count-tag {
     display: inline-flex;
     align-items: center;

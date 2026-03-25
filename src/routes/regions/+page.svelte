@@ -72,6 +72,8 @@
   }
 </script>
 
+<svelte:head><title>Regions — mountOS Admin</title></svelte:head>
+
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold tracking-tight">Regions</h1>
@@ -82,7 +84,7 @@
       </Button>
     {/if}
   </div>
-  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full">
+  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full">
     <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
     <div class="relative">
       <Input bind:value={nameFilter} placeholder="Filter by name..." aria-label="Filter by name" class="max-w-sm" />
@@ -128,7 +130,6 @@
             class="cursor-pointer hover:bg-muted/50"
             onclick={() => goto(`/regions/${region.id}`)}
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/regions/${region.id}`))}
-            role="link"
             tabindex={0}
             aria-label="Region {region.name}"
           >

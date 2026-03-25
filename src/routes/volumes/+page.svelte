@@ -110,7 +110,7 @@
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account to view its volumes." />
   {:else}
-    <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full text-base">
+    <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full text-base">
       <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
       <div class="relative flex flex-wrap items-center gap-3">
         <FilterSelect class="text-base"
@@ -161,7 +161,6 @@
               class="cursor-pointer hover:bg-muted/50"
               onclick={() => goto(`/volumes/${volume.id}`)}
               onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/volumes/${volume.id}`))}
-              role="link"
               tabindex={0}
               aria-label="Volume {volume.name}"
             >

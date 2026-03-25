@@ -76,7 +76,9 @@
   })
 </script>
 
-<div class="flex flex-col gap-6" style="min-height: calc(100vh - 3.5rem - 3rem);">
+<svelte:head><title>Dashboard — mountOS Admin</title></svelte:head>
+
+<div class="flex flex-1 flex-col gap-6">
   {#if !account}
     <EmptyState title="No account selected" description="Select an account to view dashboard" />
   {:else}
@@ -122,9 +124,9 @@
         <div class="relative flex flex-wrap">
           {#each overviewItems as item, i}
             <a href={item.href}
-              class="group relative flex-1 min-w-[140px] flex items-center gap-3 px-4 py-3
+              class="group relative flex-1 min-w-[120px] sm:min-w-[140px] flex items-center gap-3 px-4 py-3
                      hover:bg-muted/40 transition-colors
-                     {i < overviewItems.length - 1 ? 'border-r border-border' : ''}">
+                     border-r border-border last:border-r-0">
               <div class="flex size-8 items-center justify-center rounded-md bg-muted/60 group-hover:bg-primary/10 transition-colors">
                 <item.icon class="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
@@ -164,20 +166,22 @@
           {@const Icon = action.icon}
           {#if action.can}
             <a href={action.href}
-              class="flex flex-col items-center justify-center gap-3 w-48 h-40 rounded-sm border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
-              <div class="flex items-center justify-center w-16 h-16 rounded-md bg-primary/10">
-                <Icon class="w-8 h-8 text-primary" />
+              class="flex flex-col items-center justify-center gap-3 w-36 h-32 md:w-48 md:h-40 rounded-sm border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+              <div class="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-md bg-primary/10">
+                <Icon class="w-6 h-6 md:w-8 md:h-8 text-primary" />
               </div>
-              <span class="text-base font-medium flex items-center gap-1.5">
+              <span class="text-sm md:text-base font-medium flex items-center gap-1.5">
                 <PlusIcon class="w-4 h-4" />{action.label}
               </span>
             </a>
           {:else}
-            <div class="flex flex-col items-center justify-center gap-3 w-48 h-40 rounded-sm border border-border opacity-25 cursor-not-allowed">
-              <div class="flex items-center justify-center w-16 h-16 rounded-md bg-primary/10">
-                <Icon class="w-8 h-8 text-primary" />
+            <div class="flex flex-col items-center justify-center gap-3 w-36 h-32 md:w-48 md:h-40 rounded-sm border border-border opacity-25 cursor-not-allowed"
+              title="Requires {action.label.toLowerCase()} create permission"
+              aria-label="Create {action.label} (no permission)">
+              <div class="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-md bg-primary/10">
+                <Icon class="w-6 h-6 md:w-8 md:h-8 text-primary" />
               </div>
-              <span class="text-base font-medium flex items-center gap-1.5">
+              <span class="text-sm md:text-base font-medium flex items-center gap-1.5">
                 <PlusIcon class="w-4 h-4" />{action.label}
               </span>
             </div>
@@ -256,8 +260,8 @@
 
 <style>
   .audit-content-scroll {
-    min-height: 500px;
-    max-height: 500px;
+    min-height: 300px;
+    max-height: min(500px, 60vh);
     overflow-y: auto;
   }
 

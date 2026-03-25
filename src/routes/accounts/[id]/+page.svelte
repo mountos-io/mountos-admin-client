@@ -121,6 +121,8 @@
   }
 </script>
 
+<svelte:head><title>{account?.name ?? 'Account'} — mountOS Admin</title></svelte:head>
+
 <div class="space-y-6">
   <div class="flex flex-wrap items-center gap-4">
     <Button variant="ghost" size="sm" href="/accounts" aria-label="Back to accounts"><ArrowLeft class="h-4 w-4" /></Button>
@@ -155,15 +157,15 @@
             <CardContent class="space-y-5">
               <div class="space-y-2">
                 <Label for="edit-name">Name</Label>
-                <Input id="edit-name" bind:value={editName} placeholder="Account name" required />
+                <Input id="edit-name" bind:value={editName} placeholder="Account name" required autocomplete="organization" />
               </div>
               <div class="space-y-2">
                 <Label for="edit-description">Description</Label>
-                <Input id="edit-description" bind:value={editDescription} placeholder="Description" />
+                <Input id="edit-description" bind:value={editDescription} placeholder="Description" autocomplete="off" />
               </div>
               <div class="space-y-2">
                 <Label for="edit-iconUrl">Icon URL</Label>
-                <Input id="edit-iconUrl" bind:value={editIconUrl} placeholder="https://example.com/icon.png" />
+                <Input id="edit-iconUrl" bind:value={editIconUrl} placeholder="https://example.com/icon.png" autocomplete="url" />
               </div>
             </CardContent>
             <CardFooter class="gap-4">

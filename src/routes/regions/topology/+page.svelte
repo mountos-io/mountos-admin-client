@@ -177,6 +177,8 @@
   }
 </script>
 
+<svelte:head><title>Topology — mountOS Admin</title></svelte:head>
+
 <div class="space-y-5">
   <!-- Header -->
   <div class="flex items-start justify-between gap-4">

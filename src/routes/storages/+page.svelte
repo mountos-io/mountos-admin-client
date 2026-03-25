@@ -85,6 +85,8 @@
   })
 </script>
 
+<svelte:head><title>Storages — mountOS Admin</title></svelte:head>
+
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold tracking-tight">Storages</h1>
@@ -97,7 +99,7 @@
   </div>
 
   {#if accountId}
-    <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full">
+    <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full">
       <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
       <div class="relative flex flex-wrap items-center gap-3">
         <div class="relative">
@@ -135,7 +137,6 @@
             class="cursor-pointer hover:bg-muted/50"
             onclick={() => goto(`/storages/${storage.id}`)}
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/storages/${storage.id}`))}
-            role="link"
             tabindex={0}
           >
             <TableCell class="font-medium max-w-[200px] truncate">{storage.name}</TableCell>

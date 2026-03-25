@@ -95,7 +95,7 @@
 
   <div class="h-4 w-px bg-border"></div>
 
-  <Breadcrumb.Breadcrumb class="min-w-0 flex-1">
+  <Breadcrumb.Breadcrumb class="min-w-0 flex-1 relative mask-breadcrumb">
     <Breadcrumb.BreadcrumbList class="flex-nowrap overflow-x-auto scrollbar-none">
       {#each crumbs as crumb, i}
         {#if i > 0}
@@ -171,3 +171,10 @@
 </header>
 
 <ConfirmDialog bind:open={signOutOpen} title="Sign Out" description="Are you sure you want to sign out? Your session will be terminated." confirmLabel="Sign Out" icon={LogOut} onConfirm={() => auth.signOut()} />
+
+<style>
+  :global(.mask-breadcrumb) {
+    mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+  }
+</style>

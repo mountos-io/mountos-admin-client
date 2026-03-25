@@ -269,22 +269,6 @@
 </div>
 
 <style>
-  .detail-label { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); margin-bottom: 0.25rem; }
-  .detail-link { display: block; color: var(--foreground); text-decoration: underline; text-decoration-color: var(--border); text-underline-offset: 2px; transition: color 0.15s, text-decoration-color 0.15s; }
-  .detail-link:hover, .detail-link:focus-visible { color: var(--primary); text-decoration-color: var(--primary); }
-  .metric-group { display: flex; flex-direction: column; gap: 0.5rem; }
-  .metric-group > .detail-label {
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--foreground);
-    padding-bottom: 0.375rem;
-    border-bottom: 2px solid var(--primary);
-    margin-bottom: 0.25rem;
-  }
-  .metric-row { display: flex; justify-content: space-between; font-size: 1rem; font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace; }
-  .metric-row > span:first-child { color: var(--muted-foreground); }
-  .metric-row > span:last-child { font-variant-numeric: tabular-nums; }
-
   .rpc-table { width: 100%; border-collapse: collapse; }
   .rpc-table th { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--primary); }
   .rpc-table td { padding: 0.375rem 0.75rem; }

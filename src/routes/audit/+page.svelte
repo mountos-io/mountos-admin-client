@@ -59,10 +59,12 @@
   }
 </script>
 
+<svelte:head><title>Audit Logs — mountOS Admin</title></svelte:head>
+
 <div class="space-y-4">
   <h1 class="text-2xl font-bold tracking-tight">Audit Logs</h1>
 
-  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full">
+  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full">
     <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
     <div class="relative flex gap-3 items-end">
       <div class="flex-1 max-w-sm">
@@ -90,8 +92,10 @@
       </TableHeader>
       <TableBody>
         {#each store.logs as log}
-          <TableRow class="cursor-pointer" onclick={() => toggleRow(log.id)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggleRow(log.id))} role="button" tabindex={0}>
-            <TableCell class="text-muted-foreground" aria-hidden="true">{expanded.has(log.id) ? '▾' : '▸'}</TableCell>
+          <TableRow class="cursor-pointer" onclick={() => toggleRow(log.id)} tabindex={0} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRow(log.id) } }}>
+            <TableCell class="text-muted-foreground">
+              <button type="button" class="p-1" aria-expanded={expanded.has(log.id)} aria-label="Toggle log details">{expanded.has(log.id) ? '▾' : '▸'}</button>
+            </TableCell>
             <TableCell class="font-medium">{log.title}</TableCell>
             <TableCell>
               {#if log.subject}

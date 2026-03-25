@@ -61,6 +61,8 @@
   }
 </script>
 
+<svelte:head><title>Create Account — mountOS Admin</title></svelte:head>
+
 <div class="mx-auto max-w-xl">
   <Card cornerBrackets>
     <form onsubmit={handleSubmit}>
@@ -87,15 +89,15 @@
       <CardContent class="space-y-4">
         <div class="space-y-2">
           <Label for="name">Name</Label>
-          <Input id="name" bind:value={name} placeholder="Account name" required />
+          <Input id="name" bind:value={name} placeholder="Account name" required autocomplete="organization" />
         </div>
         <div class="space-y-2">
           <Label for="description">Description</Label>
-          <Input id="description" bind:value={description} placeholder="Description" />
+          <Input id="description" bind:value={description} placeholder="Description" autocomplete="off" />
         </div>
         <div class="space-y-2">
           <Label for="iconUrl">Icon URL</Label>
-          <Input id="iconUrl" bind:value={iconUrl} placeholder="https://example.com/icon.png" />
+          <Input id="iconUrl" bind:value={iconUrl} placeholder="https://example.com/icon.png" autocomplete="url" />
         </div>
         <div class="flex gap-3 pt-2">
           <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !name.trim()}>

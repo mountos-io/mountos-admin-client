@@ -98,6 +98,8 @@
   }
 </script>
 
+<svelte:head><title>{user?.username ?? 'User'} — mountOS Admin</title></svelte:head>
+
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" href="/users" aria-label="Back to users"><ArrowLeft class="h-4 w-4" /></Button>
@@ -118,18 +120,18 @@
             <CardContent class="space-y-5">
               <div class="space-y-2">
                 <Label for="edit-username">Username</Label>
-                <Input id="edit-username" bind:value={editUsername} placeholder="Username" maxlength={16} required aria-invalid={!!usernameError || undefined} aria-describedby={usernameError ? 'edit-username-error' : undefined} />
+                <Input id="edit-username" bind:value={editUsername} placeholder="Username" maxlength={16} required autocomplete="username" aria-invalid={!!usernameError || undefined} aria-describedby={usernameError ? 'edit-username-error' : undefined} />
                 {#if usernameError}
                   <p id="edit-username-error" class="text-destructive text-xs" role="alert">{usernameError}</p>
                 {/if}
               </div>
               <div class="space-y-2">
                 <Label for="edit-email">Email</Label>
-                <Input id="edit-email" type="email" bind:value={editEmail} placeholder="user@example.com" required />
+                <Input id="edit-email" type="email" bind:value={editEmail} placeholder="user@example.com" required autocomplete="email" />
               </div>
               <div class="space-y-2">
                 <Label for="edit-name">Display Name</Label>
-                <Input id="edit-name" bind:value={editName} placeholder="Display name" />
+                <Input id="edit-name" bind:value={editName} placeholder="Display name" autocomplete="name" />
               </div>
             </CardContent>
             <CardFooter class="gap-4">

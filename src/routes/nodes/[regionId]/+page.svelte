@@ -5,4 +5,6 @@
   const regionId = $derived(Number($page.params.regionId))
 </script>
 
+<svelte:head><title>Region Nodes — mountOS Admin</title></svelte:head>
+
 <RegionTopology {regionId} basePath="/nodes" />

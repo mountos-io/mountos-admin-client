@@ -48,6 +48,8 @@
   }
 </script>
 
+<svelte:head><title>Users — mountOS Admin</title></svelte:head>
+
 <div class="space-y-4">
   <div class="flex items-center justify-between">
     <h1 class="text-2xl font-bold tracking-tight">Users</h1>
@@ -60,7 +62,7 @@
   </div>
 
   {#if accountId}
-    <div class="corner-brackets relative border border-border/30 rounded-sm p-4 w-fit max-w-full text-base">
+    <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full text-base">
       <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
       <div class="relative flex flex-wrap items-center gap-3">
         <div class="relative">
@@ -89,7 +91,7 @@
       </TableHeader>
       <TableBody>
         {#each userStore.users as user}
-          <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => goto(`/users/${user.id}`)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/users/${user.id}`))} role="link" tabindex={0}>
+          <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => goto(`/users/${user.id}`)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/users/${user.id}`))} tabindex={0}>
             <TableCell class="font-medium max-w-[160px] truncate">{user.username}</TableCell>
             <TableCell class="max-w-[160px] truncate">{user.name}</TableCell>
             <TableCell class="text-muted-foreground max-w-[200px] truncate">{user.email}</TableCell>

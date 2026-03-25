@@ -3,6 +3,7 @@
 @import "tw-animate-css";
 @import "$lib/styles/corner-brackets.css";
 @import "$lib/styles/toast.css";
+@import "$lib/styles/session-metrics.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -90,7 +91,7 @@
   --background: oklch(0.07 0.005 200);
   --foreground: oklch(0.93 0.005 200);
 
-  --card: #010101;
+  --card: oklch(0.03 0 0);
   --card-foreground: oklch(0.93 0.005 200);
 
   --popover: oklch(0.09 0.006 200);
@@ -223,12 +224,12 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
   }
 
   body {
     @apply bg-background text-foreground;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -278,12 +279,17 @@
     color: var(--card-foreground) !important;
   }
 
-  *::-webkit-scrollbar { width: 8px; height: 8px; }
-  *::-webkit-scrollbar-track { background: var(--scrollbar-track); }
-  *::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
-  *::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb); opacity: 0.8; }
+  body::-webkit-scrollbar, [data-slot="table-container"]::-webkit-scrollbar, .overflow-y-auto::-webkit-scrollbar, .overflow-x-auto::-webkit-scrollbar { width: 8px; height: 8px; }
+  body::-webkit-scrollbar-track, [data-slot="table-container"]::-webkit-scrollbar-track, .overflow-y-auto::-webkit-scrollbar-track, .overflow-x-auto::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+  body::-webkit-scrollbar-thumb, [data-slot="table-container"]::-webkit-scrollbar-thumb, .overflow-y-auto::-webkit-scrollbar-thumb, .overflow-x-auto::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+  body::-webkit-scrollbar-thumb:hover, [data-slot="table-container"]::-webkit-scrollbar-thumb:hover, .overflow-y-auto::-webkit-scrollbar-thumb:hover, .overflow-x-auto::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb); opacity: 0.8; }
 
-  ::selection { background: var(--primary); color: var(--secondary); }
+  [data-slot="table-container"], .overflow-y-auto, .overflow-x-auto {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  ::selection { background: var(--primary); color: var(--primary-foreground); }
 
   .bg-doodle {
     background: url('/bg.avif') repeat;

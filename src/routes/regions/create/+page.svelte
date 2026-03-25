@@ -54,6 +54,8 @@
   }
 </script>
 
+<svelte:head><title>Create Region — mountOS Admin</title></svelte:head>
+
 <div class="mx-auto max-w-lg space-y-6">
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before creating a region." />
@@ -67,14 +69,14 @@
         <form onsubmit={handleSubmit} class="space-y-4">
           <div class="space-y-2">
             <Label for="name">Name</Label>
-            <Input id="name" bind:value={name} placeholder="e.g. ap-south-1a" required aria-invalid={!!nameError || undefined} aria-describedby={nameError ? 'name-error' : undefined} />
+            <Input id="name" bind:value={name} placeholder="e.g. ap-south-1a" required autocomplete="off" aria-invalid={!!nameError || undefined} aria-describedby={nameError ? 'name-error' : undefined} />
             {#if nameError}
               <p id="name-error" class="text-destructive text-sm" role="alert">{nameError}</p>
             {/if}
           </div>
           <div class="space-y-2">
             <Label for="dns">Base DNS</Label>
-            <Input id="dns" bind:value={dns} placeholder="e.g. ap-south-1a.example.com" required />
+            <Input id="dns" bind:value={dns} placeholder="e.g. ap-south-1a.example.com" required autocomplete="off" />
             <p class="text-muted-foreground text-sm">Used to build the S3 endpoint for direct S3 access.</p>
           </div>
           <div class="flex gap-3 pt-2">

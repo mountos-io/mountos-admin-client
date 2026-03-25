@@ -6,6 +6,7 @@
   let show = $state(false)
   let pos = $state({ left: '0px', top: '0px', transform: 'translate(-50%, -100%)' })
   let el: HTMLSpanElement | undefined = $state()
+  const tipId = `infotip-${Math.random().toString(36).slice(2, 9)}`
 
   function open(e: PointerEvent | FocusEvent) {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -25,12 +26,13 @@
   function close() { show = false }
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
 <span
   bind:this={el}
   class="inline-flex cursor-help"
-  role="button"
   tabindex={0}
-  aria-label="Info"
+  aria-describedby={show ? tipId : undefined}
   onpointerenter={open}
   onpointerleave={close}
   onfocus={open}
@@ -41,6 +43,7 @@
 
 {#if show}
   <div
+    id={tipId}
     role="tooltip"
     class="fixed z-50 pointer-events-none rounded-sm border border-border bg-card shadow-lg px-3 py-2 max-w-[260px]"
     style:left={pos.left}

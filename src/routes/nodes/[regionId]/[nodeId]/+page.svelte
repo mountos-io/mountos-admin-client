@@ -6,4 +6,6 @@
   const nodeId = $derived($page.params.nodeId ?? '')
 </script>
 
+<svelte:head><title>Node Detail — mountOS Admin</title></svelte:head>
+
 <NodeDetail {regionId} {nodeId} basePath="/nodes" />
