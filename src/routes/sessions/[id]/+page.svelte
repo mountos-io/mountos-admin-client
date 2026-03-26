@@ -10,7 +10,9 @@
   import { api } from '$lib/core/stores/client.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
-  import { formatRelative, formatUptime, formatBytes, formatNum, formatLatency, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
+  import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
+  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, betaVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { showErrorToast } from '$lib/core/utils/toast'
   import type { ClientSession } from '$lib/core/api/types'
@@ -72,11 +74,27 @@
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
   function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
 
-  interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number }
+  const HIST_BOUNDS: number[] = [1,2,3,5,7,10,15,20,30,50,75,100,150,200,300,500,750,1000,1500,2000,3000,5000,7500,10000,15000,20000,30000,50000,75000,100000,150000,200000,300000,500000,750000,1000000,1500000,2000000,3000000,5000000,7500000,10000000]
+
+  interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number; durationNs?: number; buckets?: number[] }
   function getRpcLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
     const rl = m.rpcLatency as Record<string, RpcMethodLatency> | undefined
     if (!rl) return []
     return Object.entries(rl).sort((a, b) => b[1].count - a[1].count)
+  }
+
+  function toBuckets(raw?: number[]): HistBucket[] {
+    if (!raw || raw.length !== HIST_BOUNDS.length) return []
+    return raw.map((count, i) => ({ le: formatUs(HIST_BOUNDS[i]), leUs: HIST_BOUNDS[i], count }))
+  }
+
+  let rpcExpanded = $state<Set<string>>(new Set())
+  let rpcMetricMode = $state<'latency' | 'percentiles'>('latency')
+
+  function toggleRpcExpand(method: string) {
+    const next = new Set(rpcExpanded)
+    next.has(method) ? next.delete(method) : next.add(method)
+    rpcExpanded = next
   }
 </script>
 
@@ -225,32 +243,110 @@
       <!-- RPC Latency Breakdown -->
       {@const rpcEntries = getRpcLatency(m)}
       {#if rpcEntries.length > 0}
+        {@const totalHits = rpcEntries.reduce((s, [, l]) => s + l.count, 0)}
+        {@const totalTimeSec = rpcEntries.reduce((s, [, l]) => s + (l.durationNs != null ? l.durationNs / 1e9 : (l.count * l.avgUs) / 1e6), 0)}
+        {@const bands = { sub1ms: 0, sub10ms: 0, sub100ms: 0, over100ms: 0 }}
+        {@const _ = rpcEntries.forEach(([, l]) => { if (l.avgUs < 1000) bands.sub1ms++; else if (l.avgUs < 10000) bands.sub10ms++; else if (l.avgUs < 100000) bands.sub100ms++; else bands.over100ms++ })}
+        {@const hasBuckets = rpcEntries.some(([, l]) => l.buckets?.some(c => c > 0))}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
           <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
           <div class="relative p-5">
-            <h2 class="text-lg font-semibold mb-4">RPC Latency</h2>
+            <div class="flex flex-wrap items-center gap-3 mb-4">
+              <h2 class="text-lg font-semibold">RPC Latency</h2>
+              <span class="text-sm text-muted-foreground font-mono">{rpcEntries.length} methods</span>
+              <span class="text-sm text-muted-foreground font-mono">{formatNum(totalHits)} hits</span>
+              <span class="text-sm text-muted-foreground font-mono">{formatTotalTime(totalTimeSec)} total</span>
+              <div class="flex items-center gap-1.5 ml-auto">
+                {#if bands.sub1ms}<Badge variant="success" class="font-mono text-xs">&lt;1ms: {bands.sub1ms}</Badge>{/if}
+                {#if bands.sub10ms}<Badge variant="outline" class="font-mono text-xs">1-10ms: {bands.sub10ms}</Badge>{/if}
+                {#if bands.sub100ms}<Badge variant="warning" class="font-mono text-xs">10-100ms: {bands.sub100ms}</Badge>{/if}
+                {#if bands.over100ms}<Badge variant="destructive" class="font-mono text-xs">&gt;100ms: {bands.over100ms}</Badge>{/if}
+                {#if hasBuckets}
+                  <div class="rpc-toggle-group flex items-center font-mono overflow-hidden ml-2">
+                    <button class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'latency'} onclick={() => rpcMetricMode = 'latency'}>Latency</button>
+                    <span class="text-border/40">|</span>
+                    <button class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'percentiles'} onclick={() => rpcMetricMode = 'percentiles'}>Percentiles</button>
+                  </div>
+                {/if}
+              </div>
+            </div>
             <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
             <div class="overflow-x-auto rpc-scroll-hint" tabindex="0" role="region" aria-label="RPC latency data">
               <table class="rpc-table">
                 <caption class="sr-only">RPC method latency breakdown</caption>
                 <thead>
                   <tr>
+                    {#if hasBuckets}<th scope="col" class="w-6"></th>{/if}
                     <th scope="col" class="text-left">Method</th>
                     <th scope="col" class="text-right">Count</th>
+                    <th scope="col" class="text-right">Ops/s</th>
+                    <th scope="col" class="text-right">Total</th>
                     <th scope="col" class="text-right">Avg</th>
-                    <th scope="col" class="text-right">Min</th>
-                    <th scope="col" class="text-right">Max</th>
+                    {#if hasBuckets}<th scope="col" class="text-right">&beta;</th>{/if}
+                    {#if rpcMetricMode === 'latency'}
+                      <th scope="col" class="text-right">Min</th>
+                      <th scope="col" class="text-right">Max</th>
+                    {:else}
+                      <th scope="col" class="text-right">p50</th>
+                      <th scope="col" class="text-right">p95</th>
+                      <th scope="col" class="text-right">p99</th>
+                    {/if}
                   </tr>
                 </thead>
                 <tbody>
                   {#each rpcEntries as [method, lat], i}
-                    <tr class:rpc-zebra={i % 2 === 1}>
+                    {@const bkts = toBuckets(lat.buckets)}
+                    {@const isOpen = rpcExpanded.has(method)}
+                    {@const cv = bkts.length > 0 ? estimateCV(bkts, lat.avgUs) : -1}
+                    <tr class="cursor-pointer hover:bg-muted/50 transition-colors {isOpen ? 'bg-muted/30' : ''}" class:rpc-zebra={!isOpen && i % 2 === 1} onclick={() => bkts.length > 0 && toggleRpcExpand(method)} onkeydown={(e: KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && bkts.length > 0) { e.preventDefault(); toggleRpcExpand(method) } }} tabindex={bkts.length > 0 ? 0 : undefined} role={bkts.length > 0 ? 'button' : undefined} aria-expanded={bkts.length > 0 ? isOpen : undefined}>
+                      {#if hasBuckets}
+                        <td class="w-6">
+                          {#if bkts.length > 0}
+                            <ChevronRight class="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 {isOpen ? 'rotate-90' : ''}" />
+                          {/if}
+                        </td>
+                      {/if}
                       <td class="font-mono text-sm">{method}</td>
                       <td class="text-right font-mono text-sm tabular-nums">{formatNum(lat.count)}</td>
-                      <td class="text-right font-mono text-sm tabular-nums">{formatLatency(lat.avgUs)}</td>
-                      <td class="text-right font-mono text-sm tabular-nums">{formatLatency(lat.minUs)}</td>
-                      <td class="text-right font-mono text-sm tabular-nums">{formatLatency(lat.maxUs)}</td>
+                      <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{formatOpsPerSec(lat.avgUs)}</td>
+                      <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{formatTotalTime(lat.durationNs != null ? lat.durationNs / 1e9 : (lat.count * lat.avgUs) / 1e6)}</td>
+                      <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.avgUs)}">{formatUs(lat.avgUs)}</td>
+                      {#if hasBuckets}
+                        <td class="text-right">
+                          {#if cv >= 0}<Badge variant={betaVariant(cv)} class="font-mono text-xs px-1 py-0">{cv.toFixed(2)}</Badge>{/if}
+                        </td>
+                      {/if}
+                      {#if rpcMetricMode === 'latency'}
+                        <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.minUs)}">{formatUs(lat.minUs)}</td>
+                        <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.maxUs)}">{formatUs(lat.maxUs)}</td>
+                      {:else}
+                        <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.avgUs)}">{fmtPercentile(bkts, 50)}</td>
+                        <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.avgUs)}">{fmtPercentile(bkts, 95)}</td>
+                        <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.avgUs)}">{fmtPercentile(bkts, 99)}</td>
+                      {/if}
                     </tr>
+                    {#if isOpen && bkts.length > 0}
+                      {@const totalCount = bkts.reduce((s, b) => s + b.count, 0)}
+                      <tr>
+                        <td colspan={rpcMetricMode === 'latency' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)} class="p-0">
+                          <div class="py-2 px-4 space-y-1 border-l-2 border-border/50 ml-4">
+                            {#each bkts as bkt, bi}
+                              {@const bktPct = totalCount > 0 ? (bkt.count / totalCount) * 100 : 0}
+                              {#if bkt.count > 0}
+                                <div class="flex items-center gap-2 text-sm font-mono tabular-nums {bi % 2 === 1 ? 'rpc-zebra' : ''}">
+                                  <span class="w-16 text-muted-foreground">&le; {bkt.le}</span>
+                                  <span class="w-12 text-right">{bkt.count}</span>
+                                  <span class="w-14 text-right text-muted-foreground">{bktPct.toFixed(1)}%</span>
+                                  <div class="flex-1 h-3 rounded-sm bg-muted overflow-hidden">
+                                    <div class="h-full rounded-sm transition-transform origin-left duration-500" style="background: {bucketBarColor(bkt.leUs)}; transform: scaleX({bktPct / 100})"></div>
+                                  </div>
+                                </div>
+                              {/if}
+                            {/each}
+                          </div>
+                        </td>
+                      </tr>
+                    {/if}
                   {/each}
                 </tbody>
               </table>
@@ -274,4 +370,25 @@
   }
   .rpc-scroll-hint:not(.is-scrolled-end) { mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent); }
   @media (min-width: 640px) { .rpc-scroll-hint { mask-image: none; -webkit-mask-image: none; } }
+  .rpc-toggle-group {
+    clip-path: polygon(0 3px, 3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%);
+    background: oklch(0.4 0.002 200 / 0.06);
+  }
+  .rpc-toggle-btn {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+    padding: 0.25rem 0.625rem;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    color: var(--muted-foreground);
+    transition: color 0.15s, background 0.15s;
+  }
+  .rpc-toggle-active {
+    color: var(--foreground);
+    background: oklch(0.45 0.08 200 / 0.12);
+  }
+  :global(.dark) .rpc-toggle-group { background: oklch(0.35 0.002 200 / 0.12); }
+  :global(.dark) .rpc-toggle-active { background: oklch(0.5 0.08 200 / 0.15); }
 </style>
