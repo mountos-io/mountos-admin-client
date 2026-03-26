@@ -1,17 +1,8 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button'
   import { formatRelative } from '$lib/core/utils/format'
+  import { getSubjectMeta } from '$lib/core/utils/subjects'
   import type { AuditLog } from '$lib/core/api/types'
-  import UserIcon from '@lucide/svelte/icons/user'
-  import DatabaseIcon from '@lucide/svelte/icons/database'
-  import BuildingIcon from '@lucide/svelte/icons/building'
-  import HardDriveIcon from '@lucide/svelte/icons/hard-drive'
-  import ShieldIcon from '@lucide/svelte/icons/shield'
-  import GlobeIcon from '@lucide/svelte/icons/globe'
-  import KeyIcon from '@lucide/svelte/icons/key'
-  import MonitorIcon from '@lucide/svelte/icons/monitor'
-  import ServerIcon from '@lucide/svelte/icons/server'
-  import ScrollIcon from '@lucide/svelte/icons/scroll'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import XCircle from '@lucide/svelte/icons/x-circle'
 
@@ -34,23 +25,7 @@
     expanded = next
   }
 
-  const subjectMap: Record<string, { color: string; icon: typeof UserIcon }> = {
-    user:    { color: 'var(--pastel-user)',    icon: UserIcon },
-    volume:  { color: 'var(--pastel-volume)',  icon: DatabaseIcon },
-    account: { color: 'var(--pastel-account)', icon: BuildingIcon },
-    storage: { color: 'var(--pastel-storage)', icon: HardDriveIcon },
-    role:    { color: 'var(--pastel-role)',    icon: ShieldIcon },
-    region:  { color: 'var(--pastel-region)',  icon: GlobeIcon },
-    mount:   { color: 'var(--pastel-mount)',   icon: HardDriveIcon },
-    key:     { color: 'var(--pastel-key)',     icon: KeyIcon },
-    session: { color: 'var(--pastel-session)', icon: MonitorIcon },
-    node:    { color: 'var(--pastel-node)',    icon: ServerIcon },
-    license: { color: 'var(--pastel-license)', icon: ScrollIcon },
-  }
-
-  function meta(subject?: string) {
-    return subjectMap[subject ?? ''] ?? { color: 'var(--muted-foreground)', icon: ServerIcon }
-  }
+  function meta(subject?: string) { return getSubjectMeta(subject) }
 
   // group logs by date
   type Group = { label: string; logs: AuditLog[] }

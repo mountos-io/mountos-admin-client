@@ -258,6 +258,106 @@
     return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
+  function formatShortDate(ms: number): string {
+    if (!ms) return ''
+    return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }
+
+  let forkView = $state<'list' | 'timeline'>('list')
+
+  const graphPalette = [
+    'oklch(0.65 0.15 45)',   // warm brown (main)
+    'oklch(0.62 0.16 160)',  // teal
+    'oklch(0.58 0.16 250)',  // blue
+    'oklch(0.62 0.16 330)',  // magenta
+    'oklch(0.64 0.14 80)',   // gold
+    'oklch(0.58 0.16 200)',  // cyan
+    'oklch(0.62 0.12 110)',  // green
+    'oklch(0.58 0.14 290)',  // purple
+  ]
+
+  const graphPaletteDark = [
+    'oklch(0.78 0.12 45)',   // warm brown (main)
+    'oklch(0.75 0.13 160)',  // teal
+    'oklch(0.72 0.13 250)',  // blue
+    'oklch(0.75 0.13 330)',  // magenta
+    'oklch(0.77 0.11 80)',   // gold
+    'oklch(0.72 0.13 200)',  // cyan
+    'oklch(0.75 0.10 110)',  // green
+    'oklch(0.72 0.11 290)',  // purple
+  ]
+
+  const isDark = $derived(typeof document !== 'undefined' && document.documentElement.classList.contains('dark'))
+
+  function graphColor(index: number): string {
+    if (!isDark && index < graphPalette.length) return graphPalette[index]
+    if (isDark && index < graphPaletteDark.length) return graphPaletteDark[index]
+    const hue = (index * 137.508) % 360
+    const lightness = isDark ? 0.72 + (index % 3) * 0.03 : 0.58 + (index % 3) * 0.04
+    return `oklch(${lightness} 0.15 ${hue.toFixed(1)})`
+  }
+
+  interface BranchRow {
+    fid: number; name: string; row: number; parentRow: number
+    branchNorm: number; snapshotTs: number; createdAt: number
+    createdBy?: string; color: string
+  }
+
+  function computeGraph(items: Fork[]) {
+    const tree = buildForkTree(items)
+    const rows: BranchRow[] = []
+    const timestamps: number[] = []
+    const occupied = new Set<number>()
+
+    function claimRow(preferred: number, direction: number): number {
+      let r = preferred
+      while (occupied.has(r)) r += direction
+      occupied.add(r)
+      return r
+    }
+
+    function walkRoot(node: ForkNode) {
+      occupied.add(0)
+      rows.push({ fid: node.fid, name: node.name, row: 0, parentRow: 0, branchNorm: 0,
+        snapshotTs: node.snapshotTs, createdAt: node.createdAt, createdBy: node.createdBy, color: graphColor(0) })
+      for (let i = 0; i < node.children.length; i++) {
+        walkChild(node.children[i], 0, i % 2 === 0 ? -1 : 1)
+      }
+    }
+
+    function walkChild(node: ForkNode, parentRow: number, direction: number) {
+      if (node.snapshotTs) timestamps.push(node.snapshotTs)
+      const row = claimRow(parentRow + direction, direction)
+      const ci = rows.length
+      rows.push({ fid: node.fid, name: node.name, row, parentRow, branchNorm: 0,
+        snapshotTs: node.snapshotTs, createdAt: node.createdAt, createdBy: node.createdBy, color: graphColor(ci) })
+      for (let i = 0; i < node.children.length; i++) {
+        walkChild(node.children[i], row, i % 2 === 0 ? direction : -direction)
+      }
+    }
+
+    for (const root of tree) walkRoot(root)
+
+    timestamps.sort((a, b) => a - b)
+    const minTs = timestamps[0] ?? 0, maxTs = timestamps[timestamps.length - 1] ?? 0, range = maxTs - minTs || 1
+    for (const r of rows) r.branchNorm = r.fid === 0 ? 0 : (r.snapshotTs - minTs) / range
+
+    const minRow = Math.min(...rows.map(r => r.row))
+    for (const r of rows) { r.row -= minRow; r.parentRow -= minRow }
+    return { rows, totalRows: Math.max(...rows.map(r => r.row)) + 1 }
+  }
+
+  const G_ROW = 52, G_TOP = 20, G_LEFT = 24, G_LABEL = 160, G_TIMELINE = 480, G_RIGHT = 200, G_DOT = 5, G_CR = 12
+  function gRowY(row: number) { return G_TOP + row * G_ROW + G_ROW / 2 }
+  function gTimeX(norm: number) { return G_LEFT + G_LABEL + norm * G_TIMELINE }
+  const gNowX = G_LEFT + G_LABEL + G_TIMELINE
+
+  function gBranchPath(pRow: number, cRow: number, bx: number) {
+    const py = gRowY(pRow), cy = gRowY(cRow), dy = cy - py
+    const r = Math.min(G_CR, Math.abs(dy) / 2, 12), sign = dy > 0 ? 1 : -1
+    return `M${bx},${py} L${bx},${cy - sign * r} Q${bx},${cy} ${bx + r},${cy}`
+  }
+
   function handleRevokeKeysByUser() {
     const uid = Number(revokeUserId)
     if (!revokeUserId || Number.isNaN(uid)) return
@@ -433,14 +533,31 @@
 
     <Card cornerBrackets>
       <CardHeader>
-        <CardTitle>Forks ({forks.length > 1 ? forks.length - 1 : 0})</CardTitle>
+        <div class="flex items-center justify-between">
+          <CardTitle>Forks ({forks.length > 1 ? forks.length - 1 : 0})</CardTitle>
+          {#if forks.length > 1}
+            <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
+              <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+              <div class="relative flex items-center gap-1.5" role="group" aria-label="Fork view">
+                <Button variant={forkView === 'list' ? 'primary' : 'ghost'} size="sm"
+                  class="h-7 px-3 text-xs font-mono justify-center"
+                  aria-pressed={forkView === 'list'}
+                  onclick={() => forkView = 'list'}>List</Button>
+                <Button variant={forkView === 'timeline' ? 'primary' : 'ghost'} size="sm"
+                  class="h-7 px-3 text-xs font-mono justify-center"
+                  aria-pressed={forkView === 'timeline'}
+                  onclick={() => forkView = 'timeline'}>Timeline</Button>
+              </div>
+            </div>
+          {/if}
+        </div>
       </CardHeader>
       <CardContent>
         {#if forksLoading}
           <LoadingSpinner />
         {:else if forks.length <= 1}
           <p class="text-sm text-muted-foreground">No forks</p>
-        {:else}
+        {:else if forkView === 'list'}
           {#snippet forkNode(node: ForkNode, depth: number, isLast: boolean)}
             <div class="flex items-start gap-2 {depth > 0 ? 'ml-5' : ''}" role="treeitem" aria-selected="false" aria-expanded={node.children.length > 0 ? true : undefined}>
               {#if depth > 0}
@@ -483,6 +600,47 @@
             {#each tree as root, i}
               {@render forkNode(root, 0, i === tree.length - 1)}
             {/each}
+          </div>
+        {:else}
+          {@const g = computeGraph(forks)}
+          {@const svgW = G_LEFT + G_LABEL + G_TIMELINE + G_RIGHT}
+          {@const svgH = G_TOP + g.totalRows * G_ROW + 8}
+          <div class="overflow-x-auto -mx-2">
+            <svg width={svgW} height={svgH} class="select-none" aria-label="Fork branch graph">
+              {#each g.rows as br}
+                {@const y = gRowY(br.row)}
+                {@const startX = br.fid === 0 ? G_LEFT + G_LABEL : gTimeX(br.branchNorm)}
+                <line x1={startX} y1={y} x2={gNowX} y2={y}
+                  stroke={br.color} stroke-width="3" stroke-linecap="round" />
+                <polygon points="{gNowX + 8},{y} {gNowX},{y - 4} {gNowX},{y + 4}" fill={br.color} />
+                {#if br.fid !== 0}
+                  {@const bx = gTimeX(br.branchNorm)}
+                  <path d={gBranchPath(br.parentRow, br.row, bx)}
+                    fill="none" stroke={br.color} stroke-width="3" stroke-linecap="round" />
+                  <circle cx={bx} cy={gRowY(br.parentRow)} r="4"
+                    fill={g.rows[br.parentRow].color} stroke="var(--background)" stroke-width="2" />
+                  <circle cx={bx} cy={y} r={G_DOT}
+                    fill={br.color} stroke="var(--background)" stroke-width="2" />
+                  {@const above = br.row < br.parentRow}
+                  <text x={bx} y={above ? y - G_DOT - 6 : y + G_DOT + 16}
+                    text-anchor="middle" dominant-baseline="auto"
+                    fill={br.color} opacity="0.7"
+                    class="font-mono" style="font-size: 13px">{formatShortDate(br.snapshotTs)}</text>
+                {:else}
+                  <circle cx={startX} cy={y} r={G_DOT + 1}
+                    fill={br.color} stroke="var(--background)" stroke-width="2" />
+                {/if}
+                <text x={G_LEFT + G_LABEL - 12} y={y}
+                  text-anchor="end" dominant-baseline="central"
+                  fill={br.color}
+                  class="font-semibold" style="font-size: 16px">{br.name}</text>
+                {#if br.fid !== 0}
+                  <text x={gNowX + 14} y={y}
+                    dominant-baseline="central"
+                    class="font-mono" style="font-size: 13px" fill="currentColor" opacity="0.55">{formatRelative(br.createdAt / 1000)}{br.createdBy ? ` · ${br.createdBy}` : ''}</text>
+                {/if}
+              {/each}
+            </svg>
           </div>
         {/if}
       </CardContent>

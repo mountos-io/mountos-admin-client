@@ -10,20 +10,8 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { formatRelative } from '$lib/core/utils/format'
+  import { getSubjectColor } from '$lib/core/utils/subjects'
   import { showErrorToast } from '$lib/core/utils/toast'
-
-  const subjectColors: Record<string, string> = {
-    user: 'var(--pastel-user)', volume: 'var(--pastel-volume)',
-    account: 'var(--pastel-account)', storage: 'var(--pastel-storage)',
-    role: 'var(--pastel-role)', region: 'var(--pastel-region)',
-    mount: 'var(--pastel-mount)', key: 'var(--pastel-key)',
-    session: 'var(--pastel-session)', node: 'var(--pastel-node)',
-    license: 'var(--pastel-license)',
-  }
-
-  function subjectColor(s?: string) {
-    return subjectColors[s ?? ''] ?? 'var(--muted-foreground)'
-  }
 
   const store = useAuditLogs()
   const accountStore = useAccounts()
@@ -99,7 +87,7 @@
             <TableCell class="font-medium">{log.title}</TableCell>
             <TableCell>
               {#if log.subject}
-                <span class="audit-subject" style="--sc: {subjectColor(log.subject)}">{log.subject}</span>
+                <span class="audit-subject" style="--sc: {getSubjectColor(log.subject)}">{log.subject}</span>
               {:else}
                 <span class="text-sm text-muted-foreground">—</span>
               {/if}

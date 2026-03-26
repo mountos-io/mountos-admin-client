@@ -73,6 +73,9 @@
   --pastel-session: oklch(0.72 0.15 175);
   --pastel-node: oklch(0.72 0.15 125);
   --pastel-license: oklch(0.75 0.14 40);
+  --pastel-volume-stats: oklch(0.72 0.15 230);
+  --pastel-volume-fork: oklch(0.72 0.15 285);
+  --pastel-quota: oklch(0.72 0.15 108);
 
   --pastel-user-text: oklch(0.50 0.15 265);
   --pastel-volume-text: oklch(0.50 0.15 155);
@@ -85,6 +88,9 @@
   --pastel-session-text: oklch(0.50 0.15 175);
   --pastel-node-text: oklch(0.50 0.15 125);
   --pastel-license-text: oklch(0.52 0.14 40);
+  --pastel-volume-stats-text: oklch(0.50 0.15 230);
+  --pastel-volume-fork-text: oklch(0.50 0.15 285);
+  --pastel-quota-text: oklch(0.50 0.15 108);
 }
 
 .dark {
@@ -151,6 +157,9 @@
   --pastel-session: oklch(0.70 0.16 175);
   --pastel-node: oklch(0.70 0.16 125);
   --pastel-license: oklch(0.73 0.15 40);
+  --pastel-volume-stats: oklch(0.70 0.16 230);
+  --pastel-volume-fork: oklch(0.70 0.16 285);
+  --pastel-quota: oklch(0.70 0.16 108);
 
   --pastel-user-text: oklch(0.70 0.16 265);
   --pastel-volume-text: oklch(0.70 0.16 155);
@@ -163,6 +172,9 @@
   --pastel-session-text: oklch(0.70 0.16 175);
   --pastel-node-text: oklch(0.70 0.16 125);
   --pastel-license-text: oklch(0.73 0.15 40);
+  --pastel-volume-stats-text: oklch(0.70 0.16 230);
+  --pastel-volume-fork-text: oklch(0.70 0.16 285);
+  --pastel-quota-text: oklch(0.70 0.16 108);
 }
 
 @theme inline {

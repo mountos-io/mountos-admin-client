@@ -1,15 +1,6 @@
 <script lang="ts">
   import type { AuditLog } from '$lib/core/api/types'
-  import UserIcon from '@lucide/svelte/icons/user'
-  import DatabaseIcon from '@lucide/svelte/icons/database'
-  import BuildingIcon from '@lucide/svelte/icons/building'
-  import HardDriveIcon from '@lucide/svelte/icons/hard-drive'
-  import ShieldIcon from '@lucide/svelte/icons/shield'
-  import GlobeIcon from '@lucide/svelte/icons/globe'
-  import KeyIcon from '@lucide/svelte/icons/key'
-  import MonitorIcon from '@lucide/svelte/icons/monitor'
-  import ServerIcon from '@lucide/svelte/icons/server'
-  import ScrollIcon from '@lucide/svelte/icons/scroll'
+  import { getSubjectMeta, allSubjects as allSubjectKeys } from '$lib/core/utils/subjects'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
 
@@ -47,23 +38,7 @@
     night:     { start: 1320, end: 1440 },
   }
 
-  const subjectMeta: Record<string, { color: string; icon: typeof UserIcon }> = {
-    user:    { color: 'var(--pastel-user)',    icon: UserIcon },
-    volume:  { color: 'var(--pastel-volume)',  icon: DatabaseIcon },
-    account: { color: 'var(--pastel-account)', icon: BuildingIcon },
-    storage: { color: 'var(--pastel-storage)', icon: HardDriveIcon },
-    role:    { color: 'var(--pastel-role)',    icon: ShieldIcon },
-    region:  { color: 'var(--pastel-region)',  icon: GlobeIcon },
-    mount:   { color: 'var(--pastel-mount)',   icon: HardDriveIcon },
-    key:     { color: 'var(--pastel-key)',     icon: KeyIcon },
-    session: { color: 'var(--pastel-session)', icon: MonitorIcon },
-    node:    { color: 'var(--pastel-node)',    icon: ServerIcon },
-    license: { color: 'var(--pastel-license)', icon: ScrollIcon },
-  }
-
-  function meta(subject?: string) {
-    return subjectMeta[subject ?? ''] ?? { color: 'var(--muted-foreground)', icon: ServerIcon }
-  }
+  function meta(subject?: string) { return getSubjectMeta(subject) }
 
   const plottedLogs = $derived.by((): PlottedLog[] => {
     if (!logs.length) return []
@@ -86,7 +61,7 @@
     }))
   })
 
-  const allSubjects = Object.keys(subjectMeta)
+  const allSubjects = allSubjectKeys
 
   const presentSubjects = $derived(
     new Set(logs.map(l => l.subject).filter(Boolean))
