@@ -38,7 +38,7 @@
 .metric-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-family: var(--font-mono);
 }
 

@@ -91,16 +91,15 @@
     <h1 class="text-2xl font-bold tracking-tight">Session #{isNaN(id) ? 'Invalid' : id}</h1>
     {#if session}
       <Badge variant={statusVariant(session.status)}>{session.status}</Badge>
-      {#if !session.isActive}
-        <span class="text-sm text-muted-foreground" role="status">Inactive — polling stopped</span>
-      {/if}
     {/if}
-    <div class="flex items-center gap-2 ml-auto">
-      <Button variant="ghost" size="sm" onclick={() => fetchSession()} aria-label="Refresh" title="Refresh">
-        <RefreshCw class="h-4 w-4" />
-      </Button>
-      <FilterSelect options={POLL_OPTIONS} value={pollValue} placeholder="Poll Off" onchange={setPoll} />
-    </div>
+    {#if !session || session.isActive}
+      <div class="flex items-center gap-2 ml-auto">
+        <Button variant="ghost" size="sm" onclick={() => fetchSession()} aria-label="Refresh" title="Refresh">
+          <RefreshCw class="h-4 w-4" />
+        </Button>
+        <FilterSelect options={POLL_OPTIONS} value={pollValue} placeholder="Poll Off" onchange={setPoll} />
+      </div>
+    {/if}
   </div>
 
   {#if loading && !session}
@@ -152,8 +151,6 @@
             <div><p class="detail-label">Disconnected</p><p class="text-sm">{formatRelative(session.disconnectedAt)}</p></div>
           {/if}
         </div>
-
-        <div class="border-t border-border/40"></div>
 
         <!-- IDs -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
