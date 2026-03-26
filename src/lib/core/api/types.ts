@@ -5,6 +5,7 @@ export type {
   Region,
   Storage,
   Volume,
+  Fork,
   AuditLog,
   ServiceNode,
   DiscoverMetaResponse,

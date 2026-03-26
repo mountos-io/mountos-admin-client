@@ -67,6 +67,10 @@ async function updateQuota(volumeId: number, quotaLimit: number) {
   return api.volumes.updateQuota(volumeId, { quotaLimit })
 }
 
+async function listForks(volumeId: number) {
+  return api.volumes.listForks(volumeId)
+}
+
 export function useVolumes() {
   return {
     get volumes() { return volumes },
@@ -84,5 +88,6 @@ export function useVolumes() {
     revokeApiKey,
     revokeApiKeysByUser,
     updateQuota,
+    listForks,
   }
 }

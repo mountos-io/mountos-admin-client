@@ -23,7 +23,7 @@
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import { api } from '$lib/core/stores/client.svelte'
-  import type { Volume, User, DeactivateVolumeRequest, ClientSession } from '$lib/core/api/types'
+  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork } from '$lib/core/api/types'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
@@ -121,6 +121,7 @@
       volume = v
       syncEditFields(v)
       fetchVolumeSessions()
+      fetchForks()
     }).catch(() => { volume = null }).finally(() => { loading = false })
   })
 
@@ -221,6 +222,40 @@
     } finally {
       if (sessionsCtrl === ctrl) sessionsLoading = false
     }
+  }
+
+  let forks = $state<Fork[]>([])
+  let forksLoading = $state(false)
+
+  async function fetchForks() {
+    if (!volume) return
+    forksLoading = true
+    try {
+      forks = await store.listForks(id)
+    } catch { forks = [] }
+    finally { forksLoading = false }
+  }
+
+  type ForkNode = Fork & { children: ForkNode[] }
+
+  function buildForkTree(forks: Fork[]): ForkNode[] {
+    const map = new Map<number, ForkNode>()
+    for (const f of forks) map.set(f.fid, { ...f, children: [] })
+    const roots: ForkNode[] = []
+    for (const node of map.values()) {
+      const parent = map.get(node.parentFid)
+      if (parent && parent !== node) parent.children.push(node)
+      else roots.push(node)
+    }
+    for (const node of map.values()) {
+      node.children.sort((a, b) => a.createdAt - b.createdAt)
+    }
+    return roots
+  }
+
+  function formatTimestamp(ms: number): string {
+    if (!ms) return ''
+    return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
   }
 
   function handleRevokeKeysByUser() {
@@ -395,6 +430,63 @@
       </Card>
 
     </div>
+
+    <Card cornerBrackets>
+      <CardHeader>
+        <CardTitle>Forks ({forks.length > 1 ? forks.length - 1 : 0})</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {#if forksLoading}
+          <LoadingSpinner />
+        {:else if forks.length <= 1}
+          <p class="text-sm text-muted-foreground">No forks</p>
+        {:else}
+          {#snippet forkNode(node: ForkNode, depth: number, isLast: boolean)}
+            <div class="flex items-start gap-2 {depth > 0 ? 'ml-5' : ''}" role="treeitem" aria-selected="false" aria-expanded={node.children.length > 0 ? true : undefined}>
+              {#if depth > 0}
+                <span class="shrink-0 text-muted-foreground/40 font-mono text-sm select-none" aria-hidden="true">{isLast ? '└─' : '├─'}</span>
+              {/if}
+              <div class="flex-1 min-w-0 py-0.5">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <Badge variant={node.fid === 0 ? 'default' : 'outline'}>{node.name}</Badge>
+                  {#if node.fid !== 0 && node.snapshotTs}
+                    <span class="text-xs text-muted-foreground whitespace-nowrap">
+                      snapshot of <span class="font-medium">{node.parentName}</span> @ <span class="font-mono">{formatTimestamp(node.snapshotTs)}</span>
+                    </span>
+                  {/if}
+                  {#if node.childrenCount > 0}
+                    <Badge variant="secondary" class="text-[10px] px-1.5 py-0">{node.childrenCount}</Badge>
+                  {/if}
+                </div>
+                {#if node.fid !== 0}
+                  <div class="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                    {#if node.createdAt}
+                      <span>created <span class="font-mono">{formatRelative(node.createdAt / 1000)}</span></span>
+                    {/if}
+                    {#if node.createdBy}
+                      <span>by {node.createdBy}</span>
+                    {/if}
+                  </div>
+                {/if}
+              </div>
+            </div>
+            {#if node.children.length > 0}
+              <div class="{depth > 0 && !isLast ? 'ml-5 border-l border-muted-foreground/20 pl-0' : depth > 0 ? 'ml-5' : ''}" role="group">
+                {#each node.children as child, i}
+                  {@render forkNode(child, depth + 1, i === node.children.length - 1)}
+                {/each}
+              </div>
+            {/if}
+          {/snippet}
+          {@const tree = buildForkTree(forks)}
+          <div role="tree" aria-label="Fork hierarchy">
+            {#each tree as root, i}
+              {@render forkNode(root, 0, i === tree.length - 1)}
+            {/each}
+          </div>
+        {/if}
+      </CardContent>
+    </Card>
 
     {#if auth.can('clientSessions', 'read')}
       <Card>
