@@ -536,7 +536,7 @@
         <div class="flex items-center justify-between">
           <CardTitle>Forks ({forks.length > 1 ? forks.length - 1 : 0})</CardTitle>
           {#if forks.length > 1}
-            <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
+            <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit hidden md:block">
               <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
               <div class="relative flex items-center gap-1.5" role="group" aria-label="Fork view">
                 <Button variant={forkView === 'list' ? 'primary' : 'ghost'} size="sm"
