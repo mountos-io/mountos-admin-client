@@ -342,7 +342,7 @@ function generate(spec: Spec): string {
   w("} from '@mountos-app/admin-sdk'\n\n")
 
   // queryString helper
-  w('function queryString(params: Record<string, string | number | undefined>): string {\n')
+  w('function queryString(params: Record<string, string | number | boolean | undefined>): string {\n')
   w('  const entries = Object.entries(params).filter(([, v]) => v !== undefined)\n')
   w("  if (entries.length === 0) return ''\n")
   w("  return '?' + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join('&')\n")

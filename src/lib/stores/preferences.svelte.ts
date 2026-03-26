@@ -12,6 +12,7 @@ const KEYS = {
   sidebarCollapsed: 'mountos-admin-sidebar-collapsed',
   grayscale: 'mountos-admin-grayscale',
   brightness: 'mountos-admin-brightness',
+  alertSound: 'mountos-admin-alert-sound',
 } as const
 
 function load<T>(key: string, fallback: T): T {
@@ -34,6 +35,7 @@ let defaultAccountId = $state<number | null>(load(KEYS.defaultAccountId, null))
 let sidebarCollapsed = $state<boolean>(load(KEYS.sidebarCollapsed, false))
 let grayscale = $state<boolean>(load(KEYS.grayscale, false))
 let brightness = $state<number>(load(KEYS.brightness, 100))
+let alertSound = $state<boolean>(load(KEYS.alertSound, false))
 
 const fontScaleMap: Record<FontSize, string> = {
   standard: '100%',
@@ -103,6 +105,7 @@ $effect.root(() => {
   $effect(() => { save(KEYS.sidebarCollapsed, sidebarCollapsed) })
   $effect(() => { save(KEYS.grayscale, grayscale); applyFilters() })
   $effect(() => { save(KEYS.brightness, brightness); applyFilters() })
+  $effect(() => { save(KEYS.alertSound, alertSound) })
 })
 
 function initBrowser() {
@@ -135,5 +138,7 @@ export function usePreferences() {
     set grayscale(v: boolean) { grayscale = v },
     get brightness() { return brightness },
     set brightness(v: number) { brightness = Math.max(50, Math.min(150, v)) },
+    get alertSound() { return alertSound },
+    set alertSound(v: boolean) { alertSound = v },
   }
 }

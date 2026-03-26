@@ -44,6 +44,9 @@ export type {
   LicenseDetails,
   LicenseStatus,
   LicenseType,
+  ServiceAlert,
+  AlertListOptions,
+  AlertCountResponse,
 } from '@mountos-app/admin-sdk'
 
 export { ApiError } from './errors.js'

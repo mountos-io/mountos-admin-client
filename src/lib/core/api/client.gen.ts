@@ -12,10 +12,10 @@ import type {
   RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, Fork, AuditLog, 
   AuditLogListOptions, RegionAuditLogListOptions, ServiceNode, ClientSession, 
   ClientSessionListOptions, SessionSummary, DiscoverMetaResponse, DashboardStats, 
-  LicenseDetails,
+  LicenseDetails, ServiceAlert, AlertListOptions, AlertCountResponse,
 } from '@mountos-app/admin-sdk'
 
-function queryString(params: Record<string, string | number | undefined>): string {
+function queryString(params: Record<string, string | number | boolean | undefined>): string {
   const entries = Object.entries(params).filter(([, v]) => v !== undefined)
   if (entries.length === 0) return ''
   return '?' + entries.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join('&')
@@ -52,6 +52,7 @@ export class AdminClient {
   private _discover?: DiscoverResource
   private _dashboard?: DashboardResource
   private _license?: LicenseResource
+  private _alerts?: AlertsResource
   private _cache?: CacheResource
 
   constructor(config: ClientConfig = {}) {
@@ -112,6 +113,10 @@ export class AdminClient {
 
   get license(): LicenseResource {
     return (this._license ??= new LicenseResource(this))
+  }
+
+  get alerts(): AlertsResource {
+    return (this._alerts ??= new AlertsResource(this))
   }
 
   get cache(): CacheResource {
@@ -460,6 +465,22 @@ class LicenseResource {
 
   get(signal?: AbortSignal): Promise<LicenseDetails> {
     return this.client.request('GET', '/license', undefined, signal)
+  }
+}
+
+class AlertsResource {
+  constructor(private client: AdminClient) {}
+
+  list(opts?: AlertListOptions, signal?: AbortSignal): Promise<PaginatedResponse<ServiceAlert>> {
+    return this.client.request('GET', `/alerts/list${queryString({ active: opts?.active, accountId: opts?.accountId, regionId: opts?.regionId, severity: opts?.severity, category: opts?.category, since: opts?.since, page: opts?.page, limit: opts?.limit })}`, undefined, signal)
+  }
+
+  count(signal?: AbortSignal): Promise<AlertCountResponse> {
+    return this.client.request('GET', '/alerts/count', undefined, signal)
+  }
+
+  resolve(alertId: string): Promise<void> {
+    return this.client.request('POST', `/alerts/${encodeURIComponent(alertId)}/resolve`)
   }
 }
 

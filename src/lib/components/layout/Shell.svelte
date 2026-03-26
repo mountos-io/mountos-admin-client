@@ -9,6 +9,8 @@
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useLicense } from '$lib/core/stores/license.svelte'
+  import { useAlerts } from '$lib/core/stores/alerts.svelte'
+  import { features } from '$lib/config/features'
   import type { Snippet } from 'svelte'
 
   let { children }: { children?: Snippet } = $props()
@@ -18,6 +20,7 @@
   const accountStore = useAccounts()
   const auth = useAuth()
   const licenseStore = useLicense()
+  const alertStore = useAlerts()
   let commandOpen = $state(false)
   let mobileOpen = $state(false)
   let sidebarToggleRef = $state<HTMLButtonElement | null>(null)
@@ -31,6 +34,13 @@
 
   $effect(() => {
     if (!auth.loading && !auth.isUserRole) licenseStore.fetchLicense()
+  })
+
+  $effect(() => {
+    if (!auth.loading && !auth.isUserRole && features.alerts) {
+      alertStore.startPolling()
+      return () => alertStore.stopPolling()
+    }
   })
 
   function handleKeydown(e: KeyboardEvent) {

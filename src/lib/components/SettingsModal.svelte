@@ -254,6 +254,21 @@
                 <p class="text-sm text-muted-foreground">No accounts available</p>
               {/if}
             </div>
+            {#if !auth.isUserRole}
+              <div class="space-y-3">
+                <h4 class="text-sm font-medium">Notifications</h4>
+                <div class="flex items-center gap-3">
+                  <Button
+                    variant={prefs.alertSound ? 'primary' : 'outline'}
+                    size="sm"
+                    onclick={() => prefs.alertSound = !prefs.alertSound}
+                  >
+                    {prefs.alertSound ? 'On' : 'Off'}
+                  </Button>
+                  <span class="text-sm text-muted-foreground">Play sound on new alerts</span>
+                </div>
+              </div>
+            {/if}
           </div>
 
         {:else if modal.tab === 'shortcuts'}

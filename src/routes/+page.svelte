@@ -8,6 +8,7 @@
   import { useNodes } from '$lib/core/stores/nodes.svelte'
   import { useAuditLogs } from '$lib/core/stores/audit.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { useAlerts } from '$lib/core/stores/alerts.svelte'
   import { features } from '$lib/config/features'
   import AccountIcon from '$lib/components/shared/AccountIcon.svelte'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
@@ -24,6 +25,7 @@
   import ExternalLinkIcon from '@lucide/svelte/icons/external-link'
   import PlusIcon from '@lucide/svelte/icons/plus'
   import BuildingIcon from '@lucide/svelte/icons/building'
+  import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert'
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
@@ -35,6 +37,7 @@
   const nodeStore = useNodes()
   const auditStore = useAuditLogs()
   const auth = useAuth()
+  const alertStore = useAlerts()
   const account = $derived(accountStore.selectedAccount)
   const accountId = $derived(account?.id ?? null)
   const stats = $derived(dashboard.stats)
@@ -190,6 +193,46 @@
       </div>
 
       <div class="flex-1"></div>
+
+      <!-- Active Alerts -->
+      {#if features.alerts && !auth.isUserRole && alertStore.activeCount > 0}
+        <Card cornerPlus>
+          <CardHeader>
+            <div class="flex items-center justify-between">
+              <CardTitle class="flex items-center gap-2">
+                <ShieldAlertIcon class="h-4 w-4 text-destructive" />
+                Active Alerts
+              </CardTitle>
+              <a href="/alerts" class="text-sm text-primary hover:underline">View All &rarr;</a>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div class="flex gap-4">
+              {#if alertStore.criticalCount > 0}
+                <div class="flex items-center gap-2">
+                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500"></span>
+                  <span class="text-sm font-medium">{alertStore.criticalCount}</span>
+                  <span class="text-sm text-muted-foreground">Critical</span>
+                </div>
+              {/if}
+              {#if alertStore.warningCount > 0}
+                <div class="flex items-center gap-2">
+                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-500"></span>
+                  <span class="text-sm font-medium">{alertStore.warningCount}</span>
+                  <span class="text-sm text-muted-foreground">Warning</span>
+                </div>
+              {/if}
+              {#if alertStore.infoCount > 0}
+                <div class="flex items-center gap-2">
+                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-blue-500"></span>
+                  <span class="text-sm font-medium">{alertStore.infoCount}</span>
+                  <span class="text-sm text-muted-foreground">Info</span>
+                </div>
+              {/if}
+            </div>
+          </CardContent>
+        </Card>
+      {/if}
 
       <!-- Sessions Summary -->
       {#if canReadSessions}
