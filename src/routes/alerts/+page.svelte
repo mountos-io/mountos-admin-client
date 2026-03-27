@@ -9,8 +9,8 @@
   import { Button } from '$lib/components/ui/button'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import { Skeleton } from '$lib/components/ui/skeleton'
   import { formatRelative } from '$lib/core/utils/format'
   import { showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert'
@@ -133,7 +133,35 @@
   </div>
 
   {#if store.loading && store.alerts.length === 0}
-    <div class="flex justify-center py-12" role="status" aria-label="Loading alerts"><LoadingSpinner /></div>
+    <Card cornerPlus>
+      <Table>
+        <caption class="sr-only">Loading alerts</caption>
+        <TableHeader>
+          <TableRow>
+            <TableHead class="w-28">Severity</TableHead>
+            <TableHead class="w-24">Category</TableHead>
+            <TableHead>Title</TableHead>
+            <TableHead class="hidden lg:table-cell">Source</TableHead>
+            <TableHead class="hidden xl:table-cell">Node</TableHead>
+            <TableHead class="w-32">Time</TableHead>
+            <TableHead class="w-20">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {#each { length: 5 } as _}
+            <TableRow>
+              <TableCell><Skeleton class="h-5 w-16" /></TableCell>
+              <TableCell><Skeleton class="h-4 w-14" /></TableCell>
+              <TableCell><Skeleton class="h-4 w-48" /></TableCell>
+              <TableCell class="hidden lg:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
+              <TableCell class="hidden xl:table-cell"><Skeleton class="h-4 w-24" /></TableCell>
+              <TableCell><Skeleton class="h-4 w-20" /></TableCell>
+              <TableCell><Skeleton class="h-5 w-16" /></TableCell>
+            </TableRow>
+          {/each}
+        </TableBody>
+      </Table>
+    </Card>
   {:else if store.error}
     <Card cornerPlus>
       <CardContent class="py-8 space-y-3">
@@ -193,7 +221,7 @@
               <TableCell>
                 {#if !alert.resolvedAt}
                   {@const isResolving = resolvingId === alert.alertId}
-                  <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 gap-1 text-xs">
+                  <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 min-h-[44px] sm:min-h-0 gap-1 text-xs">
                     {#if isResolving}
                       <Loader2 class="h-3.5 w-3.5 animate-spin" />
                     {:else}

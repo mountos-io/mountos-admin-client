@@ -75,10 +75,9 @@
         )}
       >
         {#if Icon}
-          <Icon class={cn(
-            collapsed ? 'h-5 w-5' : 'h-4 w-4', 'shrink-0',
-            isBell && alertStore.hasNewAlert && 'bell-ring'
-          )} />
+          <span class={cn('inline-flex shrink-0', isBell && alertStore.hasNewAlert && 'bell-ring')}>
+            <Icon class={cn(collapsed ? 'h-5 w-5' : 'h-4 w-4')} />
+          </span>
         {/if}
         {#if !collapsed}
           <span class="truncate">{item.label}</span>
@@ -125,7 +124,7 @@
     font-size: 0.6rem;
   }
 
-  :global(.bell-ring) {
+  .bell-ring {
     animation: ring 0.6s ease-in-out 3;
     transform-origin: 50% 4px;
   }
