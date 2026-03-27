@@ -16,6 +16,8 @@
   import { formatBytes, formatQuota } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { HUB_REGION_NAME } from '$lib/core/constants'
+  import PageHeader from '$lib/components/shared/PageHeader.svelte'
+  import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import Plus from '@lucide/svelte/icons/plus'
   import Lock from '@lucide/svelte/icons/lock'
   import Shield from '@lucide/svelte/icons/shield-check'
@@ -98,35 +100,24 @@
 </svelte:head>
 
 <div class="space-y-4">
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold tracking-tight">Volumes</h1>
-    {#if accountId && canCreate}
-      <Button href="/volumes/create" variant="primary" size="sm" class="gap-1.5 cyberpunk-skewed-sm">
-        <Plus class="h-4 w-4" />
-        Create Volume
-      </Button>
-    {/if}
-  </div>
+  <PageHeader title="Volumes" action={accountId && canCreate ? { label: 'Create Volume', href: '/volumes/create', icon: Plus } : undefined} />
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account to view its volumes." />
   {:else}
-    <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full text-base">
-      <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-      <div class="relative flex flex-wrap items-center gap-3">
-        <FilterSelect class="text-base"
-          options={regionOptions}
-          value={selectedRegionId}
-          placeholder="All Regions"
-          onchange={onRegionChange}
-        />
-        <FilterSelect class="text-base"
-          options={storageOptions}
-          value={selectedStorageId}
-          placeholder="All Storage"
-          onchange={onStorageChange}
-        />
-      </div>
-    </div>
+    <FilterPanel class="max-w-full text-base">
+      <FilterSelect class="text-base"
+        options={regionOptions}
+        value={selectedRegionId}
+        placeholder="All Regions"
+        onchange={onRegionChange}
+      />
+      <FilterSelect class="text-base"
+        options={storageOptions}
+        value={selectedStorageId}
+        placeholder="All Storage"
+        onchange={onStorageChange}
+      />
+    </FilterPanel>
     {#if volumeStore.loading}
       <LoadingSpinner />
     {:else if volumeStore.volumes.length === 0}
@@ -159,6 +150,7 @@
           {#each volumeStore.volumes as volume}
             <TableRow
               class="cursor-pointer hover:bg-muted/50"
+              role="link"
               onclick={() => goto(`/volumes/${volume.id}`)}
               onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/volumes/${volume.id}`))}
               tabindex={0}

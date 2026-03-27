@@ -14,6 +14,7 @@
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
+  import { isUsernameValid, usernameErrorMessage } from '$lib/core/utils/validation'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import type { User } from '$lib/core/api/types'
 
@@ -39,15 +40,8 @@
   let editName = $state('')
   let editSubmitting = $state(false)
 
-  const usernameRe = /^[a-zA-Z0-9_-]{3,16}$/
-  const usernameValid = $derived(usernameRe.test(editUsername))
-  const usernameError = $derived(
-    !editUsername ? '' :
-    /\s/.test(editUsername) ? 'Spaces not allowed' :
-    /[^a-zA-Z0-9_-]/.test(editUsername) ? 'Only letters, digits, hyphen and underscore' :
-    editUsername.length < 3 ? 'At least 3 characters' :
-    editUsername.length > 16 ? 'At most 16 characters' : ''
-  )
+  const usernameValid = $derived(isUsernameValid(editUsername))
+  const usernameError = $derived(usernameErrorMessage(editUsername))
 
   function startEdit() {
     if (!user) return

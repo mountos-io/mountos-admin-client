@@ -443,6 +443,7 @@
           {@const r = node.isRaftLeader ? 14 : 10}
           {@const rstyle = node.raftGroup ? RAFT_STYLES[node.raftGroup] : null}
           <g class="topo-node" role="button" tabindex="0"
+            aria-label="Node {node.nodeId}, {node.serviceType}, status: {node.status}{node.isRaftLeader ? ', RAFT leader' : ''}"
             style="opacity: {dim ? 0.1 : 1}; transition: opacity 0.3s ease;"
             onpointerenter={(e: PointerEvent) => { enterNode(node); svgTip = { node, x: e.clientX, y: e.clientY } }}
             onpointermove={(e: PointerEvent) => { if (svgTip) svgTip = { node, x: e.clientX, y: e.clientY } }}

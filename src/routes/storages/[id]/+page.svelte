@@ -171,7 +171,7 @@
       {:else}
         <CardHeader>
           <div class="flex items-center gap-3">
-            <CardTitle class="flex-1 truncate">{storage.name}</CardTitle>
+            <CardTitle class="flex-1 truncate" title={storage.name}>{storage.name}</CardTitle>
             {#if auth.can('storages', 'update')}
               <button type="button" onclick={startEdit}
                 class="opacity-50 hover:opacity-100 hover:text-primary transition-all"

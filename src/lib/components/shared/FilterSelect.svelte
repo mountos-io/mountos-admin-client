@@ -54,7 +54,10 @@
           onkeydown={(e: KeyboardEvent) => {
             const el = e.currentTarget as HTMLElement
             if (e.key === 'ArrowDown') { e.preventDefault(); (el.nextElementSibling as HTMLElement | null)?.focus() }
-            if (e.key === 'ArrowUp') { e.preventDefault(); (el.previousElementSibling as HTMLElement | null)?.focus() }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); (el.previousElementSibling as HTMLElement | null)?.focus() }
+            else if (e.key === 'Home') { e.preventDefault(); (el.parentElement?.firstElementChild as HTMLElement | null)?.focus() }
+            else if (e.key === 'End') { e.preventDefault(); (el.parentElement?.lastElementChild as HTMLElement | null)?.focus() }
+            else if (e.key === 'Escape') { e.preventDefault(); open = false }
           }}
         >
           <Check class={cn("h-4 w-4 shrink-0", opt.value === value ? "opacity-100" : "opacity-0")} aria-hidden="true" />

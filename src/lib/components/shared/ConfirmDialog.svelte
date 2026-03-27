@@ -37,7 +37,7 @@
 </script>
 
 <Dialog.Root bind:open onOpenChange={(v) => { if (!v) { loading = false } }}>
-  <Dialog.Content class="cyberpunk-skewed sm:max-w-md p-0 gap-0 border-none" showCloseButton={false}>
+  <Dialog.Content class="cyberpunk-skewed sm:max-w-md p-0 gap-0 border-none" showCloseButton={false} role="alertdialog" aria-busy={loading}>
     <div class="cyberpunk-skewed-inner flex flex-col gap-4">
       <div class="flex items-start gap-4">
         {#if icon}

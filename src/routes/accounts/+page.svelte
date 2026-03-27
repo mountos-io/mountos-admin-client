@@ -11,6 +11,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { formatDate } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import PageHeader from '$lib/components/shared/PageHeader.svelte'
   import Plus from '@lucide/svelte/icons/plus'
   import Pencil from '@lucide/svelte/icons/pencil'
   import ArrowRightLeft from '@lucide/svelte/icons/arrow-right-left'
@@ -32,15 +33,7 @@
 <svelte:head><title>Accounts — mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold tracking-tight">Accounts</h1>
-    {#if auth.can('accounts', 'create')}
-      <Button href="/accounts/create" variant="primary" size="sm" class="gap-1.5 cyberpunk-skewed-sm">
-        <Plus class="h-4 w-4" />
-        Create Account
-      </Button>
-    {/if}
-  </div>
+  <PageHeader title="Accounts" action={auth.can('accounts', 'create') ? { label: 'Create Account', href: '/accounts/create', icon: Plus } : undefined} />
 
   {#if store.loading}
     <LoadingSpinner />

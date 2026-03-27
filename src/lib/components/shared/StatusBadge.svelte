@@ -4,7 +4,7 @@
   const label = $derived(locked ? 'Locked' : active ? 'Active' : 'Inactive')
 </script>
 
-<span aria-label="Status: {label}">
+<span>
   {#if locked}
     <Badge variant="warning">Locked</Badge>
   {:else if active}

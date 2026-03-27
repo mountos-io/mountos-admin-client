@@ -7,6 +7,7 @@
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
+  import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
@@ -102,35 +103,32 @@
     </div>
   </div>
 
-  <div class="corner-brackets relative border border-border/30 rounded-sm p-4">
-    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-    <div class="relative flex flex-wrap items-center gap-2">
-      <FilterSelect
-        options={severityOptions}
-        value={sevFilterStr}
-        placeholder="Severity"
-        label="Filter by severity"
-        onchange={onSevChange}
-      />
-      <FilterSelect
-        options={categoryOptions}
-        value={store.categoryFilter}
-        placeholder="Category"
-        label="Filter by category"
-        onchange={(v) => store.setCategoryFilter(v)}
-      />
-      <FilterSelect
-        options={timeOptions}
-        value={store.sinceFilter}
-        placeholder="Time range"
-        label="Filter by time range"
-        onchange={(v) => store.setSinceFilter(v)}
-      />
-      {#if store.severityFilter !== undefined || store.categoryFilter || store.sinceFilter !== '30m'}
-        <Button variant="ghost" size="sm" onclick={() => store.clearFilters()}>Clear filters</Button>
-      {/if}
-    </div>
-  </div>
+  <FilterPanel>
+    <FilterSelect
+      options={severityOptions}
+      value={sevFilterStr}
+      placeholder="Severity"
+      label="Filter by severity"
+      onchange={onSevChange}
+    />
+    <FilterSelect
+      options={categoryOptions}
+      value={store.categoryFilter}
+      placeholder="Category"
+      label="Filter by category"
+      onchange={(v) => store.setCategoryFilter(v)}
+    />
+    <FilterSelect
+      options={timeOptions}
+      value={store.sinceFilter}
+      placeholder="Time range"
+      label="Filter by time range"
+      onchange={(v) => store.setSinceFilter(v)}
+    />
+    {#if store.severityFilter !== undefined || store.categoryFilter || store.sinceFilter !== '30m'}
+      <Button variant="ghost" size="sm" onclick={() => store.clearFilters()}>Clear filters</Button>
+    {/if}
+  </FilterPanel>
 
   {#if store.loading && store.alerts.length === 0}
     <Card cornerPlus>

@@ -10,6 +10,7 @@
   import { Separator } from '$lib/components/ui/separator'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import { isUsernameValid, usernameErrorMessage } from '$lib/core/utils/validation'
 
   const userStore = useUsers()
   const accountStore = useAccounts()
@@ -23,21 +24,13 @@
     }
   })
 
-  const usernameRe = /^[a-zA-Z0-9_-]{3,16}$/
-
   let username = $state('')
   let email = $state('')
   let name = $state('')
   let submitting = $state(false)
 
-  const usernameValid = $derived(usernameRe.test(username))
-  const usernameError = $derived(
-    !username ? '' :
-    /\s/.test(username) ? 'Spaces not allowed' :
-    /[^a-zA-Z0-9_-]/.test(username) ? 'Only letters, digits, hyphen and underscore' :
-    username.length < 3 ? 'At least 3 characters' :
-    username.length > 16 ? 'At most 16 characters' : ''
-  )
+  const usernameValid = $derived(isUsernameValid(username))
+  const usernameError = $derived(usernameErrorMessage(username))
 
   async function handleSubmit(e: Event) {
     e.preventDefault()

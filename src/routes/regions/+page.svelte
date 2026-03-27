@@ -26,6 +26,8 @@
   import Plus from "@lucide/svelte/icons/plus";
   import Power from "@lucide/svelte/icons/power";
   import Copy from "@lucide/svelte/icons/copy";
+  import PageHeader from '$lib/components/shared/PageHeader.svelte';
+  import FilterPanel from '$lib/components/shared/FilterPanel.svelte';
   import InfoTip from '$lib/components/shared/InfoTip.svelte';
   import HardDriveIcon from "@lucide/svelte/icons/hard-drive";
 
@@ -75,21 +77,10 @@
 <svelte:head><title>Regions — mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold tracking-tight">Regions</h1>
-    {#if accountId && auth.can("regions", "create")}
-      <Button href="/regions/create" variant="primary" size="sm" class="gap-1.5 cyberpunk-skewed-sm">
-        <Plus class="h-4 w-4" />
-        Create Region
-      </Button>
-    {/if}
-  </div>
-  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full">
-    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-    <div class="relative">
-      <Input bind:value={nameFilter} placeholder="Filter by name..." aria-label="Filter by name" class="max-w-sm" />
-    </div>
-  </div>
+  <PageHeader title="Regions" action={accountId && auth.can("regions", "create") ? { label: 'Create Region', href: '/regions/create', icon: Plus } : undefined} />
+  <FilterPanel class="max-w-full">
+    <Input bind:value={nameFilter} placeholder="Filter by name..." aria-label="Filter by name" class="max-w-sm" />
+  </FilterPanel>
 
   {#if store.loading}
     <LoadingSpinner />
@@ -128,6 +119,7 @@
         {#each filteredRegions as region}
           <TableRow
             class="cursor-pointer hover:bg-muted/50"
+            role="link"
             onclick={() => goto(`/regions/${region.id}`)}
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/regions/${region.id}`))}
             tabindex={0}
@@ -141,7 +133,7 @@
                 <button
                   type="button"
                   title="Copy Export ID" aria-label="Copy Export ID"
-                  class="text-muted-foreground hover:text-foreground transition-colors"
+                  class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-1.5 -m-1.5 text-muted-foreground hover:text-foreground transition-colors"
                   onclick={(e: MouseEvent) => { e.stopPropagation(); copyExportId(region.exportId) }}
                 >
                   <Copy class="size-3.5" aria-hidden="true" />

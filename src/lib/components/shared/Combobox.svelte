@@ -22,6 +22,7 @@
   let open = $state(false)
   let searchQuery = $state('')
   const selectedLabel = $derived(options.find(o => o.value === value)?.label ?? '')
+  const listId = `combobox-list-${Math.random().toString(36).slice(2, 9)}`
 
   $effect(() => {
     if (open) searchQuery = ''
@@ -44,8 +45,8 @@
   </PopoverTrigger>
   <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
     <Command>
-      <CommandInput placeholder="Search..." aria-label="Search options" bind:value={searchQuery} />
-      <CommandList>
+      <CommandInput placeholder="Search..." aria-label="Search options" aria-controls={listId} bind:value={searchQuery} />
+      <CommandList id={listId}>
         <CommandEmpty>{emptyText}</CommandEmpty>
         {#each options as opt}
           <CommandItem value={opt.label} onSelect={() => { value = opt.value; open = false }}>

@@ -16,6 +16,8 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import PageHeader from '$lib/components/shared/PageHeader.svelte'
+  import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import Plus from '@lucide/svelte/icons/plus'
   import Search from '@lucide/svelte/icons/search'
   import DatabaseIcon from '@lucide/svelte/icons/database'
@@ -88,29 +90,18 @@
 <svelte:head><title>Storages — mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold tracking-tight">Storages</h1>
-    {#if accountId && auth.can('storages', 'create')}
-      <Button href="/storages/create" variant="primary" size="sm" class="gap-1.5 cyberpunk-skewed-sm">
-        <Plus class="h-4 w-4" />
-        Create Storage
-      </Button>
-    {/if}
-  </div>
+  <PageHeader title="Storages" action={accountId && auth.can('storages', 'create') ? { label: 'Create Storage', href: '/storages/create', icon: Plus } : undefined} />
 
   {#if accountId}
-    <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full">
-      <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-      <div class="relative flex flex-wrap items-center gap-3">
-        <div class="relative">
-          <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input class="pl-8 w-[200px] text-base" placeholder="Search by name..." value={search} oninput={onSearchInput} aria-label="Search storages" />
-        </div>
-        <FilterSelect options={regionOptions} bind:value={regionFilter} placeholder="All Regions" />
-        <FilterSelect options={typeOptions} bind:value={typeFilter} placeholder="All Types" />
-        <FilterSelect options={providerOptions} bind:value={providerFilter} placeholder="All Providers" />
+    <FilterPanel class="max-w-full">
+      <div class="relative">
+        <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+        <Input class="pl-8 w-[200px] text-base" placeholder="Search by name..." value={search} oninput={onSearchInput} aria-label="Search storages" />
       </div>
-    </div>
+      <FilterSelect options={regionOptions} bind:value={regionFilter} placeholder="All Regions" />
+      <FilterSelect options={typeOptions} bind:value={typeFilter} placeholder="All Types" />
+      <FilterSelect options={providerOptions} bind:value={providerFilter} placeholder="All Providers" />
+    </FilterPanel>
   {/if}
 
   {#if !accountId}
@@ -135,9 +126,11 @@
         {#each storageStore.storages as storage}
           <TableRow
             class="cursor-pointer hover:bg-muted/50"
+            role="link"
             onclick={() => goto(`/storages/${storage.id}`)}
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/storages/${storage.id}`))}
             tabindex={0}
+            aria-label="Storage {storage.name}"
           >
             <TableCell class="font-medium max-w-[200px] truncate" title={storage.name}>{storage.name}</TableCell>
             <TableCell class="text-sm text-muted-foreground">{storage.regionInfo.name}</TableCell>

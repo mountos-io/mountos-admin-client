@@ -120,7 +120,7 @@
       class="flex items-center gap-2 rounded-sm border border-border bg-transparent px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:min-w-[180px] md:px-3 justify-between"
     >
       <div class="flex items-center gap-2">
-        <Search class="h-4 w-4" />
+        <Search class="h-4 w-4" aria-hidden="true" />
         <span class="hidden sm:inline">Search</span>
       </div>
       <kbd class="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground">
@@ -155,8 +155,8 @@
       </button>
     {/if}
     {#if auth.user}
-      <span class="hidden lg:inline rounded-sm bg-muted px-1.5 py-0.5 text-sm font-medium text-muted-foreground">{auth.user.role}</span>
-      <span class="hidden md:inline text-sm text-muted-foreground truncate max-w-[120px]">{auth.user.name}</span>
+      <span class="hidden lg:inline rounded-sm bg-muted px-1.5 py-0.5 text-sm font-medium text-muted-foreground" aria-label="Role: {auth.user.role}">{auth.user.role}</span>
+      <span class="hidden md:inline text-sm text-muted-foreground truncate max-w-[clamp(80px,15vw,200px)]" aria-label="User: {auth.user.name}">{auth.user.name}</span>
     {/if}
     <button
       type="button"

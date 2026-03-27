@@ -13,6 +13,8 @@
   import { Button } from '$lib/components/ui/button'
   import { showErrorToast } from '$lib/core/utils/toast'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
+  import PageHeader from '$lib/components/shared/PageHeader.svelte'
+  import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import Plus from '@lucide/svelte/icons/plus'
   import Search from '@lucide/svelte/icons/search'
 
@@ -51,26 +53,15 @@
 <svelte:head><title>Users — mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
-  <div class="flex items-center justify-between">
-    <h1 class="text-2xl font-bold tracking-tight">Users</h1>
-    {#if accountId && auth.can('users', 'create')}
-      <Button href="/users/create" variant="primary" size="sm" class="gap-1.5 cyberpunk-skewed-sm">
-        <Plus class="h-4 w-4" />
-        Add User
-      </Button>
-    {/if}
-  </div>
+  <PageHeader title="Users" action={accountId && auth.can('users', 'create') ? { label: 'Add User', href: '/users/create', icon: Plus } : undefined} />
 
   {#if accountId}
-    <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full text-base">
-      <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-      <div class="relative flex flex-wrap items-center gap-3">
-        <div class="relative">
-          <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input class="pl-8 w-64 text-base" placeholder="Search users..." value={search} oninput={onSearchInput} aria-label="Search users" />
-        </div>
+    <FilterPanel class="max-w-full text-base">
+      <div class="relative">
+        <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
+        <Input class="pl-8 w-64 text-base" placeholder="Search users..." value={search} oninput={onSearchInput} aria-label="Search users" />
       </div>
-    </div>
+    </FilterPanel>
   {/if}
 
   {#if !accountId}
@@ -91,7 +82,7 @@
       </TableHeader>
       <TableBody>
         {#each userStore.users as user}
-          <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => goto(`/users/${user.id}`)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/users/${user.id}`))} tabindex={0}>
+          <TableRow class="cursor-pointer hover:bg-muted/50" role="link" onclick={() => goto(`/users/${user.id}`)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/users/${user.id}`))} tabindex={0} aria-label="User {user.username}">
             <TableCell class="font-medium max-w-[160px] truncate" title={user.username}>{user.username}</TableCell>
             <TableCell class="max-w-[160px] truncate" title={user.name}>{user.name}</TableCell>
             <TableCell class="text-muted-foreground max-w-[200px] truncate" title={user.email}>{user.email}</TableCell>

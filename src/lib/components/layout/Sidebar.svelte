@@ -17,7 +17,6 @@
   import ScrollText from '@lucide/svelte/icons/scroll-text'
   import Server from '@lucide/svelte/icons/server'
   import MonitorDot from '@lucide/svelte/icons/monitor-dot'
-  import Bell from '@lucide/svelte/icons/bell'
   import Box from '@lucide/svelte/icons/box'
 
   let { collapsed = false }: { collapsed?: boolean } = $props()
@@ -31,7 +30,6 @@
     'layout-dashboard': LayoutDashboard, 'building-2': Building2,
     'users': Users, 'globe': Globe, 'hard-drive': HardDrive,
     'database': Database, 'scroll-text': ScrollText, 'monitor-dot': MonitorDot, 'server': Server,
-    'bell': Bell,
   }
 
   const accountFreeRoutes = new Set(['/', '/accounts', '/alerts'])
@@ -74,8 +72,10 @@
             : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
         )}
       >
-        {#if Icon}
-          <span class={cn('inline-flex shrink-0', isBell && alertStore.hasNewAlert && 'bell-ring')}>
+        {#if isBell}
+          <span class={cn('inline-flex shrink-0', collapsed ? 'text-base' : 'text-sm', alertStore.hasNewAlert && 'bell-ring')} aria-hidden="true">🔔</span>
+        {:else if Icon}
+          <span class="inline-flex shrink-0">
             <Icon class={cn(collapsed ? 'h-5 w-5' : 'h-4 w-4')} />
           </span>
         {/if}
@@ -107,8 +107,8 @@
     height: 18px;
     padding: 0 4px;
     border-radius: 9px;
-    background: hsl(var(--destructive));
-    color: hsl(var(--destructive-foreground));
+    background: var(--destructive);
+    color: var(--destructive-foreground);
     font-size: 0.65rem;
     font-weight: 600;
     line-height: 1;
@@ -125,20 +125,12 @@
   }
 
   .bell-ring {
-    animation: ring 0.6s ease-in-out 3;
-    transform-origin: 50% 4px;
+    animation: ring 0.4s ease-in-out 2;
   }
 
   @keyframes ring {
-    0% { transform: rotate(0); }
-    10% { transform: rotate(14deg); }
-    20% { transform: rotate(-13deg); }
-    30% { transform: rotate(12deg); }
-    40% { transform: rotate(-10deg); }
-    50% { transform: rotate(6deg); }
-    60% { transform: rotate(-4deg); }
-    70% { transform: rotate(2deg); }
-    80% { transform: rotate(-1deg); }
-    100% { transform: rotate(0); }
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(12deg); }
+    75% { transform: rotate(-12deg); }
   }
 </style>

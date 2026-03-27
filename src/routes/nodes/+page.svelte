@@ -15,6 +15,7 @@
   import { showErrorToast } from '$lib/core/utils/toast'
   import { formatRelative, nodeStatusVariant } from '$lib/core/utils/format'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
+  import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import Network from '@lucide/svelte/icons/network'
 
   const SERVICE_COLORS: Record<string, string> = {
@@ -133,47 +134,44 @@
 <div class="space-y-4">
   <h1 class="text-2xl font-bold tracking-tight">Nodes</h1>
 
-  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full text-base">
-    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-    <div class="relative flex flex-wrap items-center gap-3">
-      <FilterSelect class="text-base"
-        options={regionOptions}
-        value={selectedRegionId}
-        placeholder="All Regions"
-        onchange={onRegionChange}
-      />
-      <FilterSelect class="text-base"
-        options={SERVICE_TYPE_OPTIONS}
-        value={nodeStore.serviceType}
-        placeholder="All Types"
-        onchange={onTypeChange}
-      />
-      <FilterSelect class="text-base"
-        options={STATUS_OPTIONS}
-        value={nodeStore.status}
-        placeholder="All Statuses"
-        onchange={onStatusChange}
-      />
-      <FilterSelect class="text-base"
-        options={ACTIVITY_OPTIONS}
-        value={activityValue}
-        placeholder="All Activity"
-        onchange={(v) => { currentPage = 1; nodeStore.setInactiveHours(v ? Number(v) : undefined) }}
-      />
-      <FilterSelect class="text-base"
-        options={POLL_OPTIONS}
-        value={pollValue}
-        placeholder="Poll Off"
-        onchange={setPoll}
-      />
-      {#if selectedRegionId}
-        <Button variant="outline" size="sm" class="gap-1.5 font-normal text-muted-foreground text-base" href="/nodes/{selectedRegionId}">
-          <Network class="h-4 w-4" />
-          View Topology
-        </Button>
-      {/if}
-    </div>
-  </div>
+  <FilterPanel class="max-w-full text-base">
+    <FilterSelect class="text-base"
+      options={regionOptions}
+      value={selectedRegionId}
+      placeholder="All Regions"
+      onchange={onRegionChange}
+    />
+    <FilterSelect class="text-base"
+      options={SERVICE_TYPE_OPTIONS}
+      value={nodeStore.serviceType}
+      placeholder="All Types"
+      onchange={onTypeChange}
+    />
+    <FilterSelect class="text-base"
+      options={STATUS_OPTIONS}
+      value={nodeStore.status}
+      placeholder="All Statuses"
+      onchange={onStatusChange}
+    />
+    <FilterSelect class="text-base"
+      options={ACTIVITY_OPTIONS}
+      value={activityValue}
+      placeholder="All Activity"
+      onchange={(v) => { currentPage = 1; nodeStore.setInactiveHours(v ? Number(v) : undefined) }}
+    />
+    <FilterSelect class="text-base"
+      options={POLL_OPTIONS}
+      value={pollValue}
+      placeholder="Poll Off"
+      onchange={setPoll}
+    />
+    {#if selectedRegionId}
+      <Button variant="outline" size="sm" class="gap-1.5 font-normal text-muted-foreground text-base" href="/nodes/{selectedRegionId}">
+        <Network class="h-4 w-4" />
+        View Topology
+      </Button>
+    {/if}
+  </FilterPanel>
 
   {#if regionStore.loading || nodeStore.loading}
     <LoadingSpinner />
@@ -188,23 +186,26 @@
             <TableHead class="th-cyber">Region</TableHead>
           {/if}
           <TableHead class="th-cyber">Type</TableHead>
-          <TableHead class="th-cyber">Address</TableHead>
+          <TableHead class="th-cyber hidden md:table-cell">Address</TableHead>
           <TableHead class="th-cyber">Status</TableHead>
-          <TableHead class="th-cyber">Last Heartbeat</TableHead>
+          <TableHead class="th-cyber hidden lg:table-cell">Last Heartbeat</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {#each pagedNodes as node}
           <TableRow
             class="cursor-pointer hover:bg-muted/50"
+            role="link"
             onclick={() => goto(`/nodes/${node.regionId}/${node.nodeId}`)}
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/nodes/${node.regionId}/${node.nodeId}`))}
             tabindex={0}
+            aria-label="Node {node.nodeId}"
           >
             <TableCell class="font-mono text-sm">{node.nodeId}</TableCell>
             {#if !selectedRegionId}
               <TableCell>
                 <button
+                  type="button"
                   class="text-sm hover:underline"
                   onclick={(e: MouseEvent) => { e.stopPropagation(); goto(`/nodes/${node.regionId}`) }}
                   onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); goto(`/nodes/${node.regionId}`) } }}
@@ -216,9 +217,9 @@
             <TableCell>
               <Badge variant="outline" class="font-mono text-xs" style="color: {SERVICE_COLORS[node.serviceType] ?? 'inherit'}; border-color: {SERVICE_COLORS[node.serviceType] ?? 'var(--border)'};">{node.serviceType}</Badge>
             </TableCell>
-            <TableCell class="font-mono text-sm text-muted-foreground">{node.advertiseAddr}</TableCell>
+            <TableCell class="font-mono text-sm text-muted-foreground hidden md:table-cell">{node.advertiseAddr}</TableCell>
             <TableCell><Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge></TableCell>
-            <TableCell class="text-sm text-muted-foreground">
+            <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
               {node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '—'}
             </TableCell>
           </TableRow>

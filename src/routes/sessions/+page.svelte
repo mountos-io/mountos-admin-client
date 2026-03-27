@@ -11,6 +11,7 @@
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import { Input } from '$lib/components/ui/input'
+  import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
@@ -104,29 +105,26 @@
     </div>
 
     <!-- Filters -->
-    <div class="corner-brackets relative border border-border/30 rounded-sm p-4">
-      <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-      <div class="relative flex flex-wrap gap-3 items-center">
-        <div class="flex-1 min-w-48 max-w-sm">
-          <Input value={store.searchQuery} oninput={(e: Event) => store.setSearchQuery((e.target as HTMLInputElement).value)} placeholder="Search host, volume, path, account..." aria-label="Search sessions" />
-        </div>
-        <FilterSelect options={store.statusOptions} value={store.statusFilter} placeholder="Status" onchange={(v) => store.setStatusFilter(v)} />
-        <FilterSelect options={store.platformOptions} value={store.platformFilter} placeholder="Platform" onchange={(v) => store.setPlatformFilter(v)} />
-        <FilterSelect options={store.regionOptions} value={store.regionFilter} placeholder="Region" onchange={(v) => store.setRegionFilter(v)} />
-        <FilterSelect options={store.osOptions} value={store.osFilter} placeholder="OS" onchange={(v) => store.setOsFilter(v)} />
-        {#if hasFilters}
-          <Button variant="ghost" size="sm" onclick={() => store.clearFilters()}>Clear</Button>
-        {/if}
-        <div class="flex items-center gap-2 ml-auto">
-          <label class="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none">
-            <input type="checkbox" checked={store.showInactive} onchange={() => store.setShowInactive(!store.showInactive)} class="accent-primary" />
-            Inactive
-          </label>
-          <span class="text-sm text-muted-foreground">{store.filtered.length} result{store.filtered.length !== 1 ? 's' : ''}</span>
-          <FilterSelect options={SESSION_POLL_OPTIONS} value={pollValue} placeholder="Poll Off" onchange={setPoll} />
-        </div>
+    <FilterPanel>
+      <div class="flex-1 min-w-48 max-w-sm">
+        <Input value={store.searchQuery} oninput={(e: Event) => store.setSearchQuery((e.target as HTMLInputElement).value)} placeholder="Search host, volume, path, account..." aria-label="Search sessions" />
       </div>
-    </div>
+      <FilterSelect options={store.statusOptions} value={store.statusFilter} placeholder="Status" onchange={(v) => store.setStatusFilter(v)} />
+      <FilterSelect options={store.platformOptions} value={store.platformFilter} placeholder="Platform" onchange={(v) => store.setPlatformFilter(v)} />
+      <FilterSelect options={store.regionOptions} value={store.regionFilter} placeholder="Region" onchange={(v) => store.setRegionFilter(v)} />
+      <FilterSelect options={store.osOptions} value={store.osFilter} placeholder="OS" onchange={(v) => store.setOsFilter(v)} />
+      {#if hasFilters}
+        <Button variant="ghost" size="sm" onclick={() => store.clearFilters()}>Clear</Button>
+      {/if}
+      <div class="flex items-center gap-2 ml-auto">
+        <label class="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none">
+          <input type="checkbox" checked={store.showInactive} onchange={() => store.setShowInactive(!store.showInactive)} class="accent-primary" />
+          Inactive
+        </label>
+        <span class="text-sm text-muted-foreground">{store.filtered.length} result{store.filtered.length !== 1 ? 's' : ''}</span>
+        <FilterSelect options={SESSION_POLL_OPTIONS} value={pollValue} placeholder="Poll Off" onchange={setPoll} />
+      </div>
+    </FilterPanel>
 
     {#if store.loading && store.allSessions.length === 0}
       <div class="flex justify-center py-12" role="status" aria-label="Loading sessions"><LoadingSpinner /></div>
@@ -136,6 +134,7 @@
       <EmptyState title="No sessions" description={hasFilters ? 'No sessions match filters.' : 'No client sessions found for this account.'} />
     {:else}
       <Table>
+        <caption class="sr-only">Client sessions</caption>
         <TableHeader>
           <TableRow>
             <TableHead class="w-8"></TableHead>
@@ -152,7 +151,7 @@
           {#each store.displaySessions as session (session.id)}
             <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => store.toggleExpanded(session.id)}>
               <TableCell class="text-muted-foreground">
-                <button type="button" class="p-2 -m-1" aria-expanded={store.expanded.has(session.id)} aria-label="Toggle session details" onclick={(e: MouseEvent) => e.stopPropagation()} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); store.toggleExpanded(session.id) } }}>{#if store.expanded.has(session.id)}<ChevronDown class="h-4 w-4" />{:else}<ChevronRight class="h-4 w-4" />{/if}</button>
+                <button type="button" class="inline-flex items-center justify-center p-2 -m-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-expanded={store.expanded.has(session.id)} aria-label="Toggle session details" onclick={(e: MouseEvent) => e.stopPropagation()} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); store.toggleExpanded(session.id) } }}>{#if store.expanded.has(session.id)}<ChevronDown class="h-4 w-4" aria-hidden="true" />{:else}<ChevronRight class="h-4 w-4" aria-hidden="true" />{/if}</button>
               </TableCell>
               <TableCell>
                 <div>

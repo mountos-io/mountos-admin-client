@@ -33,14 +33,14 @@
     linear-gradient(135deg, currentColor 1px, transparent 1px) 0 0 / 5px 5px,
     linear-gradient(-45deg, currentColor 1px, transparent 1px) 100% 100% / 5px 5px;
   background-repeat: no-repeat;
-  color: oklch(0.4 0.002 200);
+  color: var(--muted-foreground);
   pointer-events: none;
   z-index: 2;
   transition: color 0.2s ease;
 }
 
 .dark [data-sonner-toaster] [data-sonner-toast]::before {
-  color: oklch(0.35 0.002 200);
+  color: var(--muted-foreground);
 }
 
 /* Hover: accent lines take type color */

@@ -91,11 +91,14 @@
   </div>
   <!-- Mobile sidebar overlay -->
   {#if mobileOpen}
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div class="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu" tabindex={-1}
       onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') { mobileOpen = false; sidebarToggleRef?.focus() } }}>
-      <button class="absolute inset-0 bg-foreground/50" aria-label="Close navigation menu" onclick={() => { mobileOpen = false; sidebarToggleRef?.focus() }}></button>
-      <div class="relative z-10 h-full w-60">
+      <button type="button" class="absolute inset-0 bg-foreground/50" aria-label="Close navigation menu" onclick={() => { mobileOpen = false; sidebarToggleRef?.focus() }}></button>
+      <div class="relative z-10 h-full w-60" onfocusout={(e: FocusEvent) => {
+        const related = e.relatedTarget as Node | null
+        const container = e.currentTarget as HTMLElement
+        if (related && !container.contains(related)) { mobileOpen = false; sidebarToggleRef?.focus() }
+      }}>
         <Sidebar collapsed={false} />
       </div>
     </div>
@@ -104,7 +107,7 @@
     <Header onOpenCommandPalette={() => commandOpen = true} onToggleSidebar={toggleSidebar} bind:sidebarToggleRef />
     <main id="main-content" class="relative flex-1 overflow-y-auto bg-background">
       <div class="bg-doodle pointer-events-none absolute inset-0 z-0" aria-hidden="true"></div>
-      <div class="relative z-[1] p-4 md:p-6">
+      <div class="relative z-[1] p-3 sm:p-4 md:p-6">
         {#if children}{@render children()}{/if}
       </div>
     </main>

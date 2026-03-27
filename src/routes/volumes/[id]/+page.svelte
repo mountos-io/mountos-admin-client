@@ -265,36 +265,14 @@
 
   let forkView = $state<'list' | 'timeline'>('list')
 
-  const graphPalette = [
-    'oklch(0.65 0.15 45)',   // warm brown (main)
-    'oklch(0.62 0.16 160)',  // teal
-    'oklch(0.58 0.16 250)',  // blue
-    'oklch(0.62 0.16 330)',  // magenta
-    'oklch(0.64 0.14 80)',   // gold
-    'oklch(0.58 0.16 200)',  // cyan
-    'oklch(0.62 0.12 110)',  // green
-    'oklch(0.58 0.14 290)',  // purple
-  ]
-
-  const graphPaletteDark = [
-    'oklch(0.78 0.12 45)',   // warm brown (main)
-    'oklch(0.75 0.13 160)',  // teal
-    'oklch(0.72 0.13 250)',  // blue
-    'oklch(0.75 0.13 330)',  // magenta
-    'oklch(0.77 0.11 80)',   // gold
-    'oklch(0.72 0.13 200)',  // cyan
-    'oklch(0.75 0.10 110)',  // green
-    'oklch(0.72 0.11 290)',  // purple
-  ]
-
-  const isDark = $derived(typeof document !== 'undefined' && document.documentElement.classList.contains('dark'))
+  const FORK_COLORS = 8
 
   function graphColor(index: number): string {
-    if (!isDark && index < graphPalette.length) return graphPalette[index]
-    if (isDark && index < graphPaletteDark.length) return graphPaletteDark[index]
+    if (index < FORK_COLORS) {
+      return `var(--fork-${index})`
+    }
     const hue = (index * 137.508) % 360
-    const lightness = isDark ? 0.72 + (index % 3) * 0.03 : 0.58 + (index % 3) * 0.04
-    return `oklch(${lightness} 0.15 ${hue.toFixed(1)})`
+    return `oklch(0.65 0.15 ${hue.toFixed(1)})`
   }
 
   interface BranchRow {

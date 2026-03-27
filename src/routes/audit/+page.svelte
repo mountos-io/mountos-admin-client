@@ -12,6 +12,9 @@
   import { formatRelative } from '$lib/core/utils/format'
   import { getSubjectColor } from '$lib/core/utils/subjects'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
+  import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
 
   const store = useAuditLogs()
   const accountStore = useAccounts()
@@ -52,15 +55,12 @@
 <div class="space-y-4">
   <h1 class="text-2xl font-bold tracking-tight">Audit Logs</h1>
 
-  <div class="corner-brackets relative border border-border/30 rounded-sm p-4 max-w-full">
-    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-    <div class="relative flex gap-3 items-end">
-      <div class="flex-1 max-w-sm">
-        <Input bind:value={subject} placeholder="Filter by subject..." aria-label="Filter by subject" onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && applyFilter()} />
-      </div>
-      <Button variant="primary" size="sm" onclick={applyFilter}>Filter</Button>
+  <FilterPanel class="max-w-full">
+    <div class="flex-1 max-w-sm">
+      <Input bind:value={subject} placeholder="Filter by subject..." aria-label="Filter by subject" onkeydown={(e: KeyboardEvent) => e.key === 'Enter' && applyFilter()} />
     </div>
-  </div>
+    <Button variant="primary" size="sm" onclick={applyFilter}>Filter</Button>
+  </FilterPanel>
 
   {#if store.loading && store.logs.length === 0}
     <LoadingSpinner />
@@ -82,7 +82,7 @@
         {#each store.logs as log}
           <TableRow class="cursor-pointer" onclick={() => toggleRow(log.id)} tabindex={0} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRow(log.id) } }}>
             <TableCell class="text-muted-foreground">
-              <button type="button" class="p-2" aria-expanded={expanded.has(log.id)} aria-label="Toggle log details">{expanded.has(log.id) ? '▾' : '▸'}</button>
+              <button type="button" class="inline-flex items-center justify-center p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-expanded={expanded.has(log.id)} aria-label="Toggle log details">{#if expanded.has(log.id)}<ChevronDown class="h-4 w-4" aria-hidden="true" />{:else}<ChevronRight class="h-4 w-4" aria-hidden="true" />{/if}</button>
             </TableCell>
             <TableCell class="font-medium">{log.title}</TableCell>
             <TableCell>
