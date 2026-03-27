@@ -88,6 +88,7 @@
     <EmptyState title="No regions" description={nameFilter ? 'No regions match the current filter.' : undefined} action={!nameFilter && auth.can('regions', 'create') ? { label: 'Create Region', href: '/regions/create' } : undefined} />
   {:else}
     <Table>
+      <caption class="sr-only">Regions</caption>
       <TableHeader>
         <TableRow>
           <TableHead class="th-cyber">Name</TableHead>

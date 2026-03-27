@@ -99,10 +99,14 @@
     }
   }
 
+  let fetchCtrl: AbortController | undefined
   $effect(() => {
     if (Number.isNaN(id)) { loading = false; return }
+    fetchCtrl?.abort()
+    fetchCtrl = new AbortController()
+    const ctrl = fetchCtrl
     loading = true
-    store.getAccount(id).then(a => { account = a }).catch(() => { account = null }).finally(() => { loading = false })
+    store.getAccount(id).then(a => { if (!ctrl.signal.aborted) account = a }).catch(() => { if (!ctrl.signal.aborted) account = null }).finally(() => { if (!ctrl.signal.aborted) loading = false })
   })
 
   $effect(() => {
@@ -184,7 +188,7 @@
                 <button
                   type="button"
                   onclick={startEdit}
-                  class="opacity-50 hover:opacity-100 hover:text-primary transition-all"
+                  class="opacity-60 hover:opacity-100 hover:text-primary transition-all focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                   title="Edit account" aria-label="Edit account"
                 >
                   <PencilIcon class="size-4" aria-hidden="true" />

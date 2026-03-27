@@ -108,42 +108,24 @@
     bucketVerified = false
   }
 
-  let prevStorageType = $state('')
-  $effect(() => {
-    if (storageType !== prevStorageType) {
-      prevStorageType = storageType
-      resetS3Fields()
-      blockType = ''
-      if (isBlock) providerType = 'mountOS'
-    }
-  })
+  function onStorageTypeChange(v: string) {
+    storageType = v
+    resetS3Fields()
+    blockType = ''
+    if (v === 'block') providerType = 'mountOS'
+  }
 
-  let prevBlockType = $state('')
-  $effect(() => {
-    if (blockType !== prevBlockType) {
-      prevBlockType = blockType
-      if (isBlock) {
-        providerType = isHybrid ? '' : 'mountOS'
-        endpoint = ''
-        region = ''
-        bucket = ''
-        base = ''
-        accessKey = ''
-        secretKey = ''
-        bucketVerified = false
-      }
-    }
-  })
+  function onBlockTypeChange(v: string) {
+    blockType = v
+    providerType = v === 'hybrid' ? '' : 'mountOS'
+    endpoint = ''; region = ''; bucket = ''; base = ''
+    accessKey = ''; secretKey = ''; bucketVerified = false
+  }
 
-  let prevProvider = $state('')
-  $effect(() => {
-    if (providerType !== prevProvider) {
-      prevProvider = providerType
-      endpoint = ''
-      region = ''
-      bucketVerified = false
-    }
-  })
+  function onProviderChange(v: string) {
+    providerType = v
+    endpoint = ''; region = ''; bucketVerified = false
+  }
 
   // auto-fill endpoint for known providers
   $effect(() => {
@@ -228,7 +210,7 @@
           <div class="space-y-2">
             <Label for="storageType">Storage Type</Label>
             <Select id="storageType" bind:value={storageType} placeholder="Select type..."
-              options={[{ value: 'object', label: 'Object' }, { value: 'block', label: 'Block' }]} />
+              options={[{ value: 'object', label: 'Object' }, { value: 'block', label: 'Block' }]} onchange={onStorageTypeChange} />
           </div>
 
           {#if storageType}
@@ -250,10 +232,10 @@
                   <p class="text-sm text-muted-foreground">Select a region to derive block endpoint.</p>
                 {/if}
               </div>
-              <div class="grid gap-4 md:grid-cols-2">
+              <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
                 <div class="space-y-2">
                   <Label for="blockType">Block Type</Label>
-                  <Select id="blockType" bind:value={blockType} placeholder="Select block type..." options={BLOCK_TYPES} />
+                  <Select id="blockType" bind:value={blockType} placeholder="Select block type..." options={BLOCK_TYPES} onchange={onBlockTypeChange} />
                 </div>
                 <div class="space-y-2">
                   <Label for="blockSize">Block Size</Label>
@@ -271,12 +253,12 @@
               {#if !isBlock}
                 <div class="space-y-2">
                   <Label for="providerType">Provider</Label>
-                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={PROVIDER_OPTIONS} />
+                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={PROVIDER_OPTIONS} onchange={onProviderChange} />
                 </div>
               {:else if isHybrid}
                 <div class="space-y-2">
                   <Label for="providerType">S3 Provider</Label>
-                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={PROVIDER_OPTIONS} />
+                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={PROVIDER_OPTIONS} onchange={onProviderChange} />
                 </div>
               {/if}
 
@@ -289,7 +271,7 @@
                     <Input id="endpoint" value={endpoint} readonly class="font-mono text-sm text-muted-foreground" />
                   {/if}
                 </div>
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
                   <div class="space-y-2">
                     <Label for="region">{s3RegionLabel}</Label>
                     <Input id="region" bind:value={region} placeholder={s3RegionPlaceholder} />
@@ -307,7 +289,7 @@
                 <Separator />
 
                 <p class="text-sm font-medium">Credentials</p>
-                <div class="grid gap-4 md:grid-cols-2">
+                <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
                   <div class="space-y-2">
                     <Label for="accessKey">Access Key</Label>
                     <Input id="accessKey" bind:value={accessKey} placeholder="Access key" />

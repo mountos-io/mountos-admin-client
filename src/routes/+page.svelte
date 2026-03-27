@@ -169,25 +169,25 @@
           {@const Icon = action.icon}
           {#if action.can}
             <a href={action.href}
-              class="flex flex-col items-center justify-center gap-3 w-36 h-32 md:w-48 md:h-40 rounded-sm border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+              class="flex flex-col items-center justify-center gap-3 w-full min-w-[120px] max-w-[10rem] h-32 sm:w-36 md:w-48 md:h-40 rounded-sm border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
               <div class="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-md bg-primary/10">
-                <Icon class="w-6 h-6 md:w-8 md:h-8 text-primary" />
+                <Icon class="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-primary" />
               </div>
               <span class="text-sm md:text-base font-medium flex items-center gap-1.5">
                 <PlusIcon class="w-4 h-4" />{action.label}
               </span>
             </a>
           {:else}
-            <div class="flex flex-col items-center justify-center gap-3 w-36 h-32 md:w-48 md:h-40 rounded-sm border border-border opacity-25 cursor-not-allowed"
+            <button type="button" disabled class="flex flex-col items-center justify-center gap-3 w-full min-w-[120px] max-w-[10rem] h-32 sm:w-36 md:w-48 md:h-40 rounded-sm border border-border opacity-25 cursor-not-allowed"
               title="Requires {action.label.toLowerCase()} create permission"
               aria-label="Create {action.label} (no permission)">
               <div class="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-md bg-primary/10">
-                <Icon class="w-6 h-6 md:w-8 md:h-8 text-primary" />
+                <Icon class="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-primary" />
               </div>
               <span class="text-sm md:text-base font-medium flex items-center gap-1.5">
                 <PlusIcon class="w-4 h-4" />{action.label}
               </span>
-            </div>
+            </button>
           {/if}
         {/each}
       </div>

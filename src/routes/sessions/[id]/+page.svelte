@@ -73,7 +73,10 @@
   })
 
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
-  function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
+  function getMetrics(s: ClientSession): Record<string, any> {
+    const m = s.metrics
+    return m && typeof m === 'object' ? m as Record<string, any> : {}
+  }
 
   interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number; durationNs?: number; buckets?: number[] }
   function getRpcLatency(m: Record<string, any>): [string, RpcMethodLatency][] {

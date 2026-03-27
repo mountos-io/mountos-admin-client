@@ -174,7 +174,7 @@
 
 <style>
   :global(.mask-breadcrumb) {
-    mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
-    -webkit-mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+    mask-image: linear-gradient(to right, black calc(100% - clamp(1rem, 5vw, 2rem)), transparent);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - clamp(1rem, 5vw, 2rem)), transparent);
   }
 </style>

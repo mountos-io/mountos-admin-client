@@ -71,6 +71,7 @@
     <EmptyState title="No users" description={activeSearch ? 'No users match your search.' : 'No users found for this account.'} action={!activeSearch && auth.can('users', 'create') ? { label: 'Add User', href: '/users/create' } : undefined} />
   {:else}
     <Table>
+      <caption class="sr-only">Users</caption>
       <TableHeader>
         <TableRow>
           <TableHead class="th-cyber">Username</TableHead>

@@ -113,16 +113,21 @@
     editQuota = String(bytesToGb(v.quotaLimit))
   }
 
+  let volFetchCtrl: AbortController | undefined
   $effect(() => {
     if (Number.isNaN(id)) { loading = false; return }
+    volFetchCtrl?.abort()
+    volFetchCtrl = new AbortController()
+    const ctrl = volFetchCtrl
     volSessions = []; sessionsTotal = 0; sessionsTotalPages = 0; sessionsPage = 1
     loading = true
     store.getVolume(id).then(v => {
+      if (ctrl.signal.aborted) return
       volume = v
       syncEditFields(v)
       fetchVolumeSessions()
       fetchForks()
-    }).catch(() => { volume = null }).finally(() => { loading = false })
+    }).catch(() => { if (!ctrl.signal.aborted) volume = null }).finally(() => { if (!ctrl.signal.aborted) loading = false })
   })
 
   onDestroy(() => { sessionsCtrl?.abort() })

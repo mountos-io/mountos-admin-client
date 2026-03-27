@@ -118,6 +118,7 @@
   })
 
   function onRegionChange(v: string) {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; pollValue = '' }
     selectedRegionId = v
     currentPage = 1
     nodeStore.clearFilters()
@@ -126,11 +127,13 @@
   }
 
   function onTypeChange(v: string) {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; pollValue = '' }
     currentPage = 1
     nodeStore.setServiceType(v)
   }
 
   function onStatusChange(v: string) {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; pollValue = '' }
     currentPage = 1
     nodeStore.setStatus(v)
   }
@@ -186,6 +189,7 @@
     <EmptyState title="No nodes" description="No nodes found matching the current filters." />
   {:else}
     <Table>
+      <caption class="sr-only">Service nodes</caption>
       <TableHeader>
         <TableRow>
           <TableHead class="th-cyber">Node ID</TableHead>

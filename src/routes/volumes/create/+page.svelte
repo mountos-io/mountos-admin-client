@@ -175,7 +175,7 @@
           <Separator />
 
           <p class="text-sm font-medium">Retention & Lifecycle</p>
-          <div class="grid gap-4 md:grid-cols-2">
+          <div class="grid gap-4 sm:grid-cols-2">
             <div class="space-y-2">
               <Label for="retentionPeriod">
                 <span class="inline-flex items-center gap-1">
@@ -183,7 +183,8 @@
                   <InfoTip text="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data." />
                 </span>
               </Label>
-              <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="30" min="0" max="366" />
+              <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="30" min="0" max="366" aria-describedby="retentionPeriod-hint" />
+              <p id="retentionPeriod-hint" class="sr-only">How long deleted items and old versions are retained before cleanup, in days</p>
             </div>
             <div class="space-y-2">
               <Label for="gracePeriod">
@@ -192,7 +193,8 @@
                   <InfoTip text="How long data stays before cleanup after deactivation" />
                 </span>
               </Label>
-              <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" max="91" />
+              <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" max="91" aria-describedby="gracePeriod-hint" />
+              <p id="gracePeriod-hint" class="sr-only">How long data stays before cleanup after deactivation, in days</p>
             </div>
           </div>
 

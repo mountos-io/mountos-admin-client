@@ -46,7 +46,7 @@
   <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
     <Command>
       <CommandInput placeholder="Search..." aria-label="Search options" aria-controls={listId} bind:value={searchQuery} />
-      <CommandList id={listId}>
+      <CommandList id={listId} aria-live="polite">
         <CommandEmpty>{emptyText}</CommandEmpty>
         {#each options as opt}
           <CommandItem value={opt.label} onSelect={() => { value = opt.value; open = false }}>

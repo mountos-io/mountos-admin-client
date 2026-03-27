@@ -98,9 +98,9 @@
         <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
         <Input class="pl-8 w-[200px] text-base" placeholder="Search by name..." value={search} oninput={onSearchInput} aria-label="Search storages" />
       </div>
-      <FilterSelect options={regionOptions} bind:value={regionFilter} placeholder="All Regions" />
-      <FilterSelect options={typeOptions} bind:value={typeFilter} placeholder="All Types" />
-      <FilterSelect options={providerOptions} bind:value={providerFilter} placeholder="All Providers" />
+      <FilterSelect options={regionOptions} bind:value={regionFilter} placeholder="All Regions" label="Filter by region" />
+      <FilterSelect options={typeOptions} bind:value={typeFilter} placeholder="All Types" label="Filter by type" />
+      <FilterSelect options={providerOptions} bind:value={providerFilter} placeholder="All Providers" label="Filter by provider" />
     </FilterPanel>
   {/if}
 
@@ -112,6 +112,7 @@
     <EmptyState title="No storages" description={hasFilter ? 'No storages match the current filters.' : undefined} action={!hasFilter && auth.can('storages', 'create') ? { label: 'Create Storage', href: '/storages/create' } : undefined} />
   {:else}
     <Table>
+      <caption class="sr-only">Storages</caption>
       <TableHeader>
         <TableRow>
           <TableHead class="th-cyber">Name</TableHead>

@@ -123,6 +123,7 @@
       <EmptyState title="No volumes" action={canCreate ? { label: 'Create Volume', href: '/volumes/create' } : undefined} />
     {:else}
       <Table>
+        <caption class="sr-only">Volumes</caption>
         <TableHeader>
           <TableRow>
             <TableHead class="th-cyber">Name</TableHead>

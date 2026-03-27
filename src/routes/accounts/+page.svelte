@@ -41,6 +41,7 @@
     <EmptyState title="No accounts" description="No accounts have been created yet." action={auth.can('accounts', 'create') ? { label: 'Create Account', href: '/accounts/create' } : undefined} />
   {:else}
     <Table>
+      <caption class="sr-only">Accounts</caption>
       <TableHeader>
         <TableRow>
           <TableHead class="th-cyber">Name</TableHead>

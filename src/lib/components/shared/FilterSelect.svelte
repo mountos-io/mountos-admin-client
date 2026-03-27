@@ -28,7 +28,7 @@
         aria-haspopup="listbox"
         aria-label={label ?? placeholder}
         class={cn(
-          "justify-between gap-1.5 min-w-24",
+          "justify-between gap-1.5 min-w-24 max-w-[12rem]",
           value ? "font-semibold" : "font-normal text-muted-foreground",
           className
         )}>

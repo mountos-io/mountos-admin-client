@@ -11,11 +11,12 @@
     id?: string
     disabled?: boolean
     class?: string
+    onchange?: (value: string) => void
   }
 
   let {
     options, value = $bindable(''), placeholder,
-    id, disabled = false, class: className,
+    id, disabled = false, class: className, onchange,
   }: Props = $props()
 
   let open = $state(false)
@@ -25,7 +26,7 @@
 <Popover bind:open>
   <PopoverTrigger {disabled}>
     {#snippet child({ props })}
-      <button {...props} {id} type="button"
+      <button {...props} {id} type="button" aria-label={placeholder || 'Select option'}
         class={cn(
           "border-input bg-background dark:bg-input/20 ring-offset-background flex h-9 w-full items-center justify-between rounded-sm border px-3 py-1 text-base outline-none transition-[border-color] md:text-sm",
           "focus-visible:border-foreground/40 focus-visible:ring-0",
@@ -47,7 +48,7 @@
           "focus-visible:bg-accent focus-visible:text-accent-foreground",
           opt.value === value && "bg-accent/50"
         )}
-        onclick={() => { value = opt.value; open = false }}
+        onclick={() => { value = opt.value; open = false; onchange?.(opt.value) }}
       >
         <Check class={cn("h-4 w-4 shrink-0", opt.value === value ? "opacity-100" : "opacity-0")} />
         <span class="truncate">{opt.label}</span>
