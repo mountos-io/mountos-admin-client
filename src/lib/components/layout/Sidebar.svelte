@@ -85,7 +85,7 @@
         {/if}
         {#if isBell && alertStore.recentCount > 0}
           <span class="alert-badge" class:collapsed-badge={collapsed}
-            role="status"
+            role="status" aria-atomic="true"
             aria-label="{alertStore.recentCount} recent {alertStore.recentCount === 1 ? 'alert' : 'alerts'}">
             {alertStore.recentCount > 99 ? '99+' : alertStore.recentCount}
           </span>
