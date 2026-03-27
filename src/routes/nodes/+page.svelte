@@ -14,6 +14,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { formatRelative, nodeStatusVariant } from '$lib/core/utils/format'
+  import { poolUtilColor } from '$lib/core/utils/metrics'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import Network from '@lucide/svelte/icons/network'
@@ -27,6 +28,12 @@
     blockserv:     'var(--pastel-storage)',
     s3gatewayserv: 'var(--pastel-license)',
     csiserv:       'var(--pastel-session)',
+  }
+
+  function loadColor(v: number): string {
+    if (v > 8) return 'var(--destructive)'
+    if (v > 4) return 'var(--warning)'
+    return 'var(--success)'
   }
 
   const regionStore = useRegions()
@@ -188,6 +195,8 @@
           <TableHead class="th-cyber">Type</TableHead>
           <TableHead class="th-cyber hidden md:table-cell">Address</TableHead>
           <TableHead class="th-cyber">Status</TableHead>
+          <TableHead class="th-cyber hidden md:table-cell">Memory</TableHead>
+          <TableHead class="th-cyber hidden md:table-cell">Load</TableHead>
           <TableHead class="th-cyber hidden lg:table-cell">Last Heartbeat</TableHead>
         </TableRow>
       </TableHeader>
@@ -219,6 +228,20 @@
             </TableCell>
             <TableCell class="font-mono text-sm text-muted-foreground hidden md:table-cell">{node.advertiseAddr}</TableCell>
             <TableCell><Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge></TableCell>
+            <TableCell class="font-mono text-sm hidden md:table-cell">
+              {#if node.memUsage != null}
+                <span style="color: {poolUtilColor(Math.round(node.memUsage * 100))}">{Math.round(node.memUsage * 100)}%</span>
+              {:else}
+                <span class="text-muted-foreground">—</span>
+              {/if}
+            </TableCell>
+            <TableCell class="font-mono text-sm hidden md:table-cell">
+              {#if node.loadAvg != null}
+                <span style="color: {loadColor(node.loadAvg)}">{node.loadAvg.toFixed(2)}</span>
+              {:else}
+                <span class="text-muted-foreground">—</span>
+              {/if}
+            </TableCell>
             <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
               {node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '—'}
             </TableCell>

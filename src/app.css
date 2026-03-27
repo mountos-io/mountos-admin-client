@@ -325,12 +325,12 @@
   .bg-doodle {
     background: url('/bg.avif') repeat;
     filter: invert(1);
-    opacity: 0.05;
+    opacity: 0.08;
     content-visibility: auto;
   }
   .dark .bg-doodle {
-    filter: brightness(0.2);
-    opacity: 0.08;
+    filter: brightness(0.15);
+    opacity: 0.1;
   }
 
   @media (prefers-reduced-motion: reduce) {

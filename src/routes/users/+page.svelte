@@ -10,7 +10,6 @@
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import { Button } from '$lib/components/ui/button'
   import { showErrorToast } from '$lib/core/utils/toast'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import PageHeader from '$lib/components/shared/PageHeader.svelte'

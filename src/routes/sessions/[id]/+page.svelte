@@ -15,6 +15,7 @@
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import { HISTOGRAM_BOUNDS } from '$lib/core/constants'
   import type { ClientSession } from '$lib/core/api/types'
   import { getPlatform } from '$lib/core/stores/sessions.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
@@ -74,8 +75,6 @@
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
   function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
 
-  const HIST_BOUNDS: number[] = [1,2,3,5,7,10,15,20,30,50,75,100,150,200,300,500,750,1000,1500,2000,3000,5000,7500,10000,15000,20000,30000,50000,75000,100000,150000,200000,300000,500000,750000,1000000,1500000,2000000,3000000,5000000,7500000,10000000]
-
   interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number; durationNs?: number; buckets?: number[] }
   function getRpcLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
     const rl = m.rpcLatency as Record<string, RpcMethodLatency> | undefined
@@ -84,8 +83,8 @@
   }
 
   function toBuckets(raw?: number[]): HistBucket[] {
-    if (!raw || raw.length !== HIST_BOUNDS.length) return []
-    return raw.map((count, i) => ({ le: formatUs(HIST_BOUNDS[i]), leUs: HIST_BOUNDS[i], count }))
+    if (!raw || raw.length !== HISTOGRAM_BOUNDS.length) return []
+    return raw.map((count, i) => ({ le: formatUs(HISTOGRAM_BOUNDS[i]), leUs: HISTOGRAM_BOUNDS[i], count }))
   }
 
   let rpcExpanded = $state<Set<string>>(new Set())
@@ -327,8 +326,9 @@
                     </tr>
                     {#if isOpen && bkts.length > 0}
                       {@const totalCount = bkts.reduce((s, b) => s + b.count, 0)}
+                      {@const bktColspan = rpcMetricMode === 'latency' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)}
                       <tr>
-                        <td colspan={rpcMetricMode === 'latency' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)} class="p-0">
+                        <td colspan={bktColspan} class="p-0">
                           <div class="py-2 px-4 space-y-1 border-l-2 border-border/50 ml-4">
                             {#each bkts as bkt, bi}
                               {@const bktPct = totalCount > 0 ? (bkt.count / totalCount) * 100 : 0}
