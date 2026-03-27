@@ -39,7 +39,7 @@
   $effect(() => {
     if (!auth.loading && !auth.isUserRole && features.alerts) {
       alertStore.startPolling()
-      return () => alertStore.stopPolling()
+      return () => alertStore.reset()
     }
   })
 

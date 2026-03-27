@@ -84,7 +84,9 @@
           <span class="truncate">{item.label}</span>
         {/if}
         {#if isBell && alertStore.recentCount > 0}
-          <span class="alert-badge" class:collapsed-badge={collapsed}>
+          <span class="alert-badge" class:collapsed-badge={collapsed}
+            role="status"
+            aria-label="{alertStore.recentCount} recent {alertStore.recentCount === 1 ? 'alert' : 'alerts'}">
             {alertStore.recentCount > 99 ? '99+' : alertStore.recentCount}
           </span>
         {/if}
@@ -124,7 +126,7 @@
   }
 
   :global(.bell-ring) {
-    animation: ring 0.6s ease-in-out infinite;
+    animation: ring 0.6s ease-in-out 3;
     transform-origin: 50% 4px;
   }
 

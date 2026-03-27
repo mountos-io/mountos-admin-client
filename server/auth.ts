@@ -10,7 +10,7 @@ const AUD_REFRESH = 'mountos/dashboard/refresh'
 const SYSTEM_ACCOUNT_ID = 0
 const SYSTEM_EMAIL_DOMAIN = 'system.local'
 
-const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'clientSessions', 'discover', 'cache', 'dashboard', 'license'] as const
+const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'clientSessions', 'alerts', 'discover', 'cache', 'dashboard', 'license'] as const
 const allCaps = (v: number) => Object.fromEntries(RESOURCES.map(r => [r, v]))
 
 const defaults: DashboardAuthConfig = {

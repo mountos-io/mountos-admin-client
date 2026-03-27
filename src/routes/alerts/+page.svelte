@@ -17,10 +17,12 @@
   import AlertTriangle from '@lucide/svelte/icons/triangle-alert'
   import Info from '@lucide/svelte/icons/info'
   import CheckCircle from '@lucide/svelte/icons/check-circle'
+  import Loader2 from '@lucide/svelte/icons/loader-2'
 
   const store = useAlerts()
   const auth = useAuth()
   let redirected = false
+  let resolvingId = $state<string | null>(null)
 
   $effect(() => {
     if (auth.loading) return
@@ -60,30 +62,33 @@
     return Info
   }
 
-  let sevFilterStr = $state('')
+  const sevFilterStr = $derived(store.severityFilter !== undefined ? String(store.severityFilter) : '')
   function onSevChange(v: string) {
-    sevFilterStr = v
     store.setSeverityFilter(v === '' ? undefined : Number(v))
   }
 
   async function handleResolve(alertId: string) {
+    if (resolvingId) return
+    resolvingId = alertId
     try {
       await store.resolveAlert(alertId)
       showSuccessToast('Alert resolved')
     } catch {
       showErrorToast('Failed to resolve alert')
+    } finally {
+      resolvingId = null
     }
   }
 </script>
 
 <svelte:head><title>Alerts — mountOS Admin</title></svelte:head>
 
-<div class="flex flex-1 flex-col gap-4">
+<div class="space-y-4">
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <h1 class="text-lg font-semibold">Alerts</h1>
+      <h1 class="text-2xl font-bold tracking-tight">Alerts</h1>
       {#if store.activeCount > 0}
-        <Badge variant="destructive">{store.activeCount} active</Badge>
+        <Badge variant="destructive" aria-live="polite">{store.activeCount} active</Badge>
       {/if}
     </div>
     <div class="flex items-center gap-2">
@@ -97,38 +102,45 @@
     </div>
   </div>
 
-  <div class="flex flex-wrap items-center gap-2">
-    <FilterSelect
-      options={severityOptions}
-      value={sevFilterStr}
-      placeholder="Severity"
-      onchange={onSevChange}
-    />
-    <FilterSelect
-      options={categoryOptions}
-      value={store.categoryFilter}
-      placeholder="Category"
-      onchange={(v) => store.setCategoryFilter(v)}
-    />
-    <FilterSelect
-      options={timeOptions}
-      value={store.sinceFilter}
-      placeholder="Time range"
-      onchange={(v) => store.setSinceFilter(v)}
-    />
-    {#if store.severityFilter !== undefined || store.categoryFilter || store.sinceFilter !== '30m'}
-      <Button variant="ghost" size="sm" onclick={() => { sevFilterStr = ''; store.clearFilters(); store.fetchAlerts() }}>
-        Clear filters
-      </Button>
-    {/if}
+  <div class="corner-brackets relative border border-border/30 rounded-sm p-4">
+    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+    <div class="relative flex flex-wrap items-center gap-2">
+      <FilterSelect
+        options={severityOptions}
+        value={sevFilterStr}
+        placeholder="Severity"
+        label="Filter by severity"
+        onchange={onSevChange}
+      />
+      <FilterSelect
+        options={categoryOptions}
+        value={store.categoryFilter}
+        placeholder="Category"
+        label="Filter by category"
+        onchange={(v) => store.setCategoryFilter(v)}
+      />
+      <FilterSelect
+        options={timeOptions}
+        value={store.sinceFilter}
+        placeholder="Time range"
+        label="Filter by time range"
+        onchange={(v) => store.setSinceFilter(v)}
+      />
+      {#if store.severityFilter !== undefined || store.categoryFilter || store.sinceFilter !== '30m'}
+        <Button variant="ghost" size="sm" onclick={() => store.clearFilters()}>Clear filters</Button>
+      {/if}
+    </div>
   </div>
 
   {#if store.loading && store.alerts.length === 0}
-    <div class="flex justify-center py-16"><LoadingSpinner /></div>
+    <div class="flex justify-center py-12" role="status" aria-label="Loading alerts"><LoadingSpinner /></div>
   {:else if store.error}
     <Card cornerPlus>
-      <CardContent class="py-8">
-        <p class="text-center text-destructive">{store.error}</p>
+      <CardContent class="py-8 space-y-3">
+        <p class="text-center text-destructive" role="alert">{store.error}</p>
+        <div class="flex justify-center">
+          <Button variant="outline" size="sm" onclick={() => store.fetchAlerts()}>Retry</Button>
+        </div>
       </CardContent>
     </Card>
   {:else if store.alerts.length === 0}
@@ -136,6 +148,7 @@
   {:else}
     <Card cornerPlus>
       <Table>
+        <caption class="sr-only">Service alerts</caption>
         <TableHeader>
           <TableRow>
             <TableHead class="w-28">Severity</TableHead>
@@ -179,8 +192,13 @@
               </TableCell>
               <TableCell>
                 {#if !alert.resolvedAt}
-                  <Button variant="ghost" size="sm" onclick={() => handleResolve(alert.alertId)} class="h-7 gap-1 text-xs">
-                    <CheckCircle class="h-3.5 w-3.5" />
+                  {@const isResolving = resolvingId === alert.alertId}
+                  <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 gap-1 text-xs">
+                    {#if isResolving}
+                      <Loader2 class="h-3.5 w-3.5 animate-spin" />
+                    {:else}
+                      <CheckCircle class="h-3.5 w-3.5" />
+                    {/if}
                     Resolve
                   </Button>
                 {:else}

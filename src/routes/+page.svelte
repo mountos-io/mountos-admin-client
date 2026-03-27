@@ -207,28 +207,19 @@
             </div>
           </CardHeader>
           <CardContent>
+            {@const severityItems = [
+              { count: alertStore.criticalCount, label: 'Critical', dotClass: 'dot-destructive' },
+              { count: alertStore.warningCount, label: 'Warning', dotClass: 'dot-warning' },
+              { count: alertStore.infoCount, label: 'Info', dotClass: 'dot-primary' },
+            ]}
             <div class="flex gap-4">
-              {#if alertStore.criticalCount > 0}
+              {#each severityItems.filter(s => s.count > 0) as sev}
                 <div class="flex items-center gap-2">
-                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500"></span>
-                  <span class="text-sm font-medium">{alertStore.criticalCount}</span>
-                  <span class="text-sm text-muted-foreground">Critical</span>
+                  <span class="severity-dot {sev.dotClass}" aria-hidden="true"></span>
+                  <span class="text-sm font-medium">{sev.count}</span>
+                  <span class="text-sm text-muted-foreground">{sev.label}</span>
                 </div>
-              {/if}
-              {#if alertStore.warningCount > 0}
-                <div class="flex items-center gap-2">
-                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-amber-500"></span>
-                  <span class="text-sm font-medium">{alertStore.warningCount}</span>
-                  <span class="text-sm text-muted-foreground">Warning</span>
-                </div>
-              {/if}
-              {#if alertStore.infoCount > 0}
-                <div class="flex items-center gap-2">
-                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-blue-500"></span>
-                  <span class="text-sm font-medium">{alertStore.infoCount}</span>
-                  <span class="text-sm text-muted-foreground">Info</span>
-                </div>
-              {/if}
+              {/each}
             </div>
           </CardContent>
         </Card>
@@ -320,4 +311,15 @@
       transparent 100%
     );
   }
+
+  .severity-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .dot-destructive { background: hsl(var(--destructive)); }
+  .dot-warning { background: hsl(var(--warning)); }
+  .dot-primary { background: hsl(var(--primary)); }
 </style>

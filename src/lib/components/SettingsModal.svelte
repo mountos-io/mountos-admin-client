@@ -261,6 +261,8 @@
                   <Button
                     variant={prefs.alertSound ? 'primary' : 'outline'}
                     size="sm"
+                    role="switch"
+                    aria-checked={prefs.alertSound}
                     onclick={() => prefs.alertSound = !prefs.alertSound}
                   >
                     {prefs.alertSound ? 'On' : 'Off'}

@@ -6,6 +6,7 @@ import { usePreferences } from '$lib/stores/preferences.svelte'
 
 const POLL_INTERVAL = 60_000
 const DISPLAY_PAGE_SIZE = 20
+const DEFAULT_SINCE = '30m'
 
 export const TIME_RANGES = [
   { value: '30m', label: '30 min', ms: 30 * 60_000 },
@@ -21,8 +22,9 @@ export const TIME_RANGES = [
 ] as const
 
 export const SEVERITY_LABELS: Record<number, string> = { 0: 'Info', 1: 'Warning', 2: 'Critical' }
-export const SEVERITY_COLORS: Record<number, string> = { 0: 'blue', 1: 'amber', 2: 'red' }
 export const CATEGORIES = ['vault', 'db', 'license', 'config', 'quota'] as const
+
+const prefs = usePreferences()
 
 let activeCount = $state(0)
 let recentCount = $state(0)
@@ -43,7 +45,7 @@ let fetchCtrl: AbortController | null = null
 
 let severityFilter = $state<number | undefined>(undefined)
 let categoryFilter = $state('')
-let sinceFilter = $state('30m')
+let sinceFilter = $state(DEFAULT_SINCE)
 let activeFilter = $state(true)
 let page = $state(1)
 
@@ -56,30 +58,43 @@ function sinceToISO(value: string): string | undefined {
 async function fetchCount(signal?: AbortSignal) {
   try {
     const res = await api.alerts.count(signal)
-    activeCount = res.active
-    infoCount = res.infoCount
-    warningCount = res.warningCount
-    criticalCount = res.criticalCount
+    if (activeCount !== res.active) activeCount = res.active
+    if (infoCount !== res.infoCount) infoCount = res.infoCount
+    if (warningCount !== res.warningCount) warningCount = res.warningCount
+    if (criticalCount !== res.criticalCount) criticalCount = res.criticalCount
 
     if (res.recent > lastKnownRecentCount && lastKnownRecentCount > 0) {
       hasNewAlert = true
       const diff = res.recent - lastKnownRecentCount
       showWarningToast(`${diff} new alert${diff > 1 ? 's' : ''} detected`)
-      const prefs = usePreferences()
       if (prefs.alertSound) playNotificationBeep()
     }
-    recentCount = res.recent
+    if (recentCount !== res.recent) recentCount = res.recent
     lastKnownRecentCount = res.recent
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
   }
 }
 
+function onVisibilityChange() {
+  if (document.hidden) {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+  } else if (pollCtrl && !pollTimer) {
+    fetchCount(pollCtrl.signal)
+    pollTimer = setInterval(() => fetchCount(pollCtrl!.signal), POLL_INTERVAL)
+  }
+}
+
 function startPolling() {
   if (pollTimer) return
+  pollCtrl?.abort()
+  lastKnownRecentCount = 0
   pollCtrl = new AbortController()
   fetchCount(pollCtrl.signal)
   pollTimer = setInterval(() => fetchCount(pollCtrl!.signal), POLL_INTERVAL)
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', onVisibilityChange)
+  }
 }
 
 function stopPolling() {
@@ -88,6 +103,9 @@ function stopPolling() {
   pollCtrl = null
   fetchCtrl?.abort()
   fetchCtrl = null
+  if (typeof document !== 'undefined') {
+    document.removeEventListener('visibilitychange', onVisibilityChange)
+  }
 }
 
 async function fetchAlerts() {
@@ -120,20 +138,20 @@ async function fetchAlerts() {
 
 async function resolveAlert(alertId: string) {
   await api.alerts.resolve(alertId)
-  await fetchAlerts()
-  fetchCount()
+  await Promise.all([fetchAlerts(), fetchCount(pollCtrl?.signal)])
 }
 
 function markSeen() {
   hasNewAlert = false
 }
 
-function resetFilters() {
+function clearFilters() {
   severityFilter = undefined
   categoryFilter = ''
-  sinceFilter = '30m'
+  sinceFilter = DEFAULT_SINCE
   activeFilter = true
   page = 1
+  fetchAlerts()
 }
 
 function resetPage() { page = 1 }
@@ -152,7 +170,11 @@ function reset() {
   totalPages = 0
   hasNewAlert = false
   lastKnownRecentCount = 0
-  resetFilters()
+  severityFilter = undefined
+  categoryFilter = ''
+  sinceFilter = DEFAULT_SINCE
+  activeFilter = true
+  page = 1
 }
 
 export function useAlerts() {
@@ -187,7 +209,7 @@ export function useAlerts() {
     fetchCount,
     resolveAlert,
     markSeen,
-    clearFilters: resetFilters,
+    clearFilters,
     reset,
   }
 }

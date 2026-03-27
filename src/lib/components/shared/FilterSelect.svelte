@@ -7,13 +7,14 @@
 
   let {
     options, value = $bindable(''), placeholder = 'Select...',
-    onchange, class: className,
+    onchange, class: className, label,
   }: {
     options: readonly { value: string; label: string }[]
     value?: string
     placeholder?: string
     onchange?: (value: string) => void
     class?: string
+    label?: string
   } = $props()
 
   let open = $state(false)
@@ -25,6 +26,7 @@
     {#snippet child({ props })}
       <Button {...props} variant="outline" size="sm"
         aria-haspopup="listbox"
+        aria-label={label ?? placeholder}
         class={cn(
           "justify-between gap-1.5 min-w-24",
           value ? "font-semibold" : "font-normal text-muted-foreground",
@@ -36,7 +38,7 @@
     {/snippet}
   </PopoverTrigger>
   <PopoverContent class="w-[--bits-popover-anchor-width] min-w-36 p-1" align="start">
-    <div role="listbox" aria-label={placeholder}>
+    <div role="listbox" aria-label={label ?? placeholder}>
       {#each options as opt}
         <button
           type="button"

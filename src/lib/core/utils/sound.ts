@@ -1,9 +1,9 @@
 let ctx: AudioContext | null = null
 
-export function playNotificationBeep() {
+export async function playNotificationBeep() {
   if (typeof window === 'undefined') return
   ctx ??= new AudioContext()
-  if (ctx.state === 'suspended') ctx.resume()
+  if (ctx.state === 'suspended') await ctx.resume()
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
   osc.connect(gain)
