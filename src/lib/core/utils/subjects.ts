@@ -24,7 +24,7 @@ export const subjectMeta: Record<string, SubjectMeta> = {
   role:           { color: 'var(--pastel-role)',          icon: ShieldIcon },
   region:         { color: 'var(--pastel-region)',        icon: GlobeIcon },
   mount:          { color: 'var(--pastel-mount)',         icon: HardDriveIcon },
-  key:            { color: 'var(--pastel-key)',           icon: KeyIcon },
+  'volume.key':   { color: 'var(--pastel-volume-key)',    icon: KeyIcon },
   session:        { color: 'var(--pastel-session)',       icon: MonitorIcon },
   node:           { color: 'var(--pastel-node)',          icon: ServerIcon },
   license:        { color: 'var(--pastel-license)',       icon: ScrollIcon },

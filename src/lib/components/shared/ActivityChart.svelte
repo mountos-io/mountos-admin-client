@@ -115,7 +115,7 @@
     let left = rect.left + rect.width / 2
     let top = rect.top - 14
     let transform = 'translate(-50%, -100%)'
-    const pw = 384, ph = 300, pad = 16
+    const pw = 448, ph = 360, pad = 16
     if (left - pw / 2 < pad) left = pad + pw / 2
     else if (left + pw / 2 > vw - pad) left = vw - pad - pw / 2
     if (top - ph < pad) { top = rect.bottom + 14; transform = 'translate(-50%, 0)' }
@@ -190,18 +190,18 @@
   <!-- Hover popup -->
   {#if hoveredLog}
     {@const m = meta(hoveredLog.subject)}
-    <div class="fixed z-50 w-96 rounded-sm border border-border bg-background shadow-lg p-4 space-y-3"
+    <div class="fixed z-50 w-[28rem] rounded-sm border border-border bg-background shadow-lg p-4 space-y-2.5"
       style="left: {popupPosition.left}; top: {popupPosition.top}; transform: {popupPosition.transform};">
-      <div class="flex items-center gap-2">
-        <h4 class="text-[1rem] font-medium truncate flex-1">{hoveredLog.title}</h4>
+      <h4 class="text-[1rem] font-medium leading-snug break-words">{hoveredLog.title}</h4>
+      <div class="flex items-center flex-wrap gap-2">
         {#if hoveredLog.subject}
-          <span class="rounded-sm border px-2 py-0.5 text-[1rem] font-mono uppercase tracking-wider"
+          <span class="rounded-sm border px-2 py-0.5 text-[1rem] font-mono uppercase tracking-wider whitespace-nowrap"
             style="border-color: {m.color}; color: {m.color};">{hoveredLog.subject}</span>
         {/if}
         {#if !hoveredLog.success}
-          <span class="rounded-sm border border-destructive text-destructive px-2 py-0.5 text-[1rem] font-mono uppercase">fail</span>
+          <span class="rounded-sm border border-destructive text-destructive px-2 py-0.5 text-[1rem] font-mono uppercase whitespace-nowrap">fail</span>
         {/if}
-        <span class="rounded-sm border px-2 py-0.5 text-[1rem] font-mono uppercase tracking-wider flex items-center gap-1.5
+        <span class="rounded-sm border px-2 py-0.5 text-[1rem] font-mono uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap
           {copiedId === hoveredLog.id ? 'border-primary text-primary bg-primary/10' : 'border-muted-foreground/30 text-muted-foreground'}">
           {#if copiedId === hoveredLog.id}
             <CheckIcon class="w-4 h-4" />Copied
@@ -211,17 +211,17 @@
         </span>
       </div>
       {#if hoveredLog.description}
-        <p class="text-[1rem] text-muted-foreground">{hoveredLog.description}</p>
+        <p class="text-[1rem] text-muted-foreground leading-snug">{hoveredLog.description}</p>
       {/if}
-      <div class="flex items-center gap-3 text-[1rem] text-muted-foreground font-mono">
-        <span>{hoveredLog.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-        <span>{fmtTime(hoveredLog.timeMinutes)}</span>
+      <div class="flex items-center flex-wrap gap-x-3 gap-y-1 text-[1rem] text-muted-foreground font-mono">
+        <span class="whitespace-nowrap">{hoveredLog.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+        <span class="whitespace-nowrap">{fmtTime(hoveredLog.timeMinutes)}</span>
         {#if hoveredLog.createdBy}
-          <span>&middot; {hoveredLog.createdBy}</span>
+          <span class="break-all">&middot; {hoveredLog.createdBy}</span>
         {/if}
       </div>
       {#if hoveredLog.data}
-        <pre class="overflow-x-auto rounded-sm border border-border bg-muted/30 p-2 text-[1rem] font-mono leading-relaxed max-h-44">{JSON.stringify(hoveredLog.data, null, 2)}</pre>
+        <pre class="overflow-x-auto rounded-sm border border-border bg-muted/30 p-2 text-[1rem] font-mono leading-relaxed max-h-52">{JSON.stringify(hoveredLog.data, null, 2)}</pre>
       {/if}
     </div>
   {/if}

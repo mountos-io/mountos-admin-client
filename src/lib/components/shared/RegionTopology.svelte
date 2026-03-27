@@ -245,7 +245,7 @@
                     <Database class="h-3.5 w-3.5" />
                   </span>
                 {/if}
-                <span class="tier-infra-icon" style="color: var(--pastel-key);" title="Regional Vault Access">
+                <span class="tier-infra-icon" style="color: var(--pastel-volume-key);" title="Regional Vault Access">
                   <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
                     <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" />
                     <circle cx="12" cy="12" r="3" />

@@ -28,6 +28,7 @@
     formatNs,
     estimateCV,
     fmtPercentile,
+    interpolatePercentile,
     latencyVariant,
     latencyColor,
     betaVariant,
@@ -155,6 +156,52 @@
     dbMaxOpen > 0 ? Math.round((dbOpen / dbMaxOpen) * 100) : 0,
   );
 
+  // MetaEngine Arena (mmap'd, not GC-managed)
+  // region_size_bytes = total mmap allocation (static), region_used_bytes = bump allocator pos (frozen after init)
+  // Actual live usage: slot_occupied / slot_capacity (occupancy_pct)
+  const arenaSection = $derived(sections.find(s => s.name === 'MetaEngine Arena' && s.kind === 'scalar'));
+  const arenaShards = $derived(arenaSection ? numVal(arenaSection, 'shards') : 0);
+  const slotCapacity = $derived(arenaSection ? numVal(arenaSection, 'slot_capacity') : 0);
+  const slotOccupied = $derived(arenaSection ? numVal(arenaSection, 'slot_occupied') : 0);
+  const occupancyPct = $derived(slotCapacity > 0 ? Math.round((slotOccupied / slotCapacity) * 100) : 0);
+  const regionSize = $derived(arenaSection ? numVal(arenaSection, 'region_size_bytes') : 0);
+  const evictCount = $derived(arenaSection ? numVal(arenaSection, 'evict_count') : 0);
+
+  // MetaEngine Name Pool
+  const poolSection = $derived(sections.find(s => s.name === 'MetaEngine Name Pool' && s.kind === 'scalar'));
+  const namepoolUsed = $derived(poolSection ? numVal(poolSection, 'namepool_used_bytes') : 0);
+  const namepoolCap = $derived(poolSection ? numVal(poolSection, 'namepool_cap_bytes') : 0);
+
+  // MetaEngine Cache
+  const cacheSection = $derived(sections.find(s => s.name === 'MetaEngine Cache' && s.kind === 'scalar'));
+  const lookupHits = $derived(cacheSection ? numVal(cacheSection, 'lookup_hits') : 0);
+  const lookupMisses = $derived(cacheSection ? numVal(cacheSection, 'lookup_misses') : 0);
+  const statHits = $derived(cacheSection ? numVal(cacheSection, 'stat_hits') : 0);
+  const statMisses = $derived(cacheSection ? numVal(cacheSection, 'stat_misses') : 0);
+  const cacheHitRatio = $derived(cacheSection ? numVal(cacheSection, 'hit_ratio') : 0);
+  const readdirCount = $derived(cacheSection ? numVal(cacheSection, 'readdir_count') : 0);
+  const upsertCount = $derived(cacheSection ? numVal(cacheSection, 'upsert_count') : 0);
+  const removeCount = $derived(cacheSection ? numVal(cacheSection, 'remove_count') : 0);
+
+  const hasArena = $derived(arenaSection != null && slotCapacity > 0);
+  const totalProcess = $derived(memSys + regionSize);
+  const cacheTotal = $derived(lookupHits + lookupMisses + statHits + statMisses);
+  const hitColor = $derived(cacheTotal === 0 ? 'var(--muted-foreground)' : cacheHitRatio > 0.9 ? 'var(--success)' : cacheHitRatio > 0.7 ? 'var(--warning)' : 'var(--destructive)');
+
+  function loadColor(load: number, cores: number): string {
+    const ratio = cores > 0 ? load / cores : 0;
+    return ratio > 1.0 ? 'var(--destructive)' : ratio > 0.7 ? 'var(--warning)' : 'var(--success)';
+  }
+
+  function fmtNum(n: number): string { return n.toLocaleString() }
+  function fmtRatio(n: number): string { return `${(n * 100).toFixed(1)}%` }
+
+  // Sections rendered inline in the new Process/System cards
+  const inlineSections = new Set([
+    'Overview', 'Runtime', 'DB Pool', 'System',
+    'MetaEngine Arena', 'MetaEngine Name Pool', 'MetaEngine Cache',
+  ]);
+
   // Dynamic tabs: overview + one per histogram section
   const histogramSections = $derived(
     sections.filter(s => s.kind === 'histogram' && !overviewSections.has(s.name))
@@ -192,7 +239,7 @@
         <div class="gauge-cell bg-card px-4 py-3 corner-plus">
           <div class="gauge-lbl">Heap Alloc</div>
           <div class="gauge-val">{formatBytes(memAlloc)}</div>
-          <div class="gauge-sub">of {formatBytes(memSys)} sys</div>
+          <div class="gauge-sub">of {formatBytes(memSys)} sys{#if hasArena}{' '}+ {formatBytes(regionSize)} arena{/if}</div>
         </div>
         <div class="gauge-cell bg-card px-4 py-3 corner-plus">
           <div class="gauge-lbl">GC Cycles</div>
@@ -207,66 +254,105 @@
     </div>
     {@const sysSection = sections.find(s => s.name === 'System' && s.kind === 'scalar' && s.scalars.length > 0)}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <!-- Process Card -->
       <Card cornerBrackets={false}>
         <CardHeader>
           <div class="flex items-center justify-between">
             <CardTitle class="text-base font-mono">Process</CardTitle>
-            {#if dbDialect}
-              <Badge variant="outline" class="font-mono">{dbDialect}</Badge>
-            {/if}
+            <div class="flex items-center gap-2">
+              {#if hasArena}
+                <Badge variant="outline" class="font-mono">{formatBytes(totalProcess)} total</Badge>
+              {/if}
+              {#if dbDialect}
+                <Badge variant="outline" class="font-mono">{dbDialect}</Badge>
+              {/if}
+            </div>
           </div>
         </CardHeader>
         <CardContent class="pt-0 space-y-4">
-          <!-- Process Memory -->
-          <div class="space-y-2">
-            <div class="flex items-center justify-between text-sm font-mono">
-              <span class="text-muted-foreground">Heap</span>
-              <span class="tabular-nums" style="color: {poolUtilColor(memAllocPct)}">{memAllocPct}%</span>
-            </div>
-            {#each [{ label: "Alloc", value: memAlloc, color: "var(--success)" }, { label: "Heap", value: memHeap, color: "var(--primary)" }, { label: "Sys", value: memSys, color: "var(--chart-3)" }] as row}
-              <div class="flex items-center gap-2 text-xs font-mono">
-                <span class="text-muted-foreground w-8">{row.label}</span>
-                <div class="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+          <!-- Ring gauges -->
+          <div class="flex items-start gap-3 justify-around">
+            {@render ringGauge(memAllocPct, 'Go Heap', poolUtilColor(memAllocPct), formatBytes(memAlloc), 'var(--chart-3)')}
+            {#if hasArena}
+              {@render ringGauge(occupancyPct, 'Arena', poolUtilColor(occupancyPct), formatBytes(regionSize), 'var(--pastel-volume)')}
+            {/if}
+            {#if dbMaxOpen > 0}
+              {@render ringGauge(poolUtilPct, 'DB Pool', poolUtilColor(poolUtilPct), `${dbOpen}/${dbMaxOpen}`, 'var(--muted)')}
+            {/if}
+          </div>
+          <!-- Go memory breakdown -->
+          <div class="space-y-1.5">
+            <div class="text-sm font-mono text-muted-foreground tracking-wider uppercase">Go Runtime</div>
+            {#each [
+              { label: 'Alloc', value: memAlloc, ratio: memAlloc / memSys, color: 'var(--success)' },
+              { label: 'Heap', value: memHeap, ratio: memHeap / memSys, color: 'var(--primary)' },
+              { label: 'Sys', value: memSys, ratio: 1, color: 'var(--chart-3)' },
+            ] as row}
+              <div class="flex items-center gap-2 text-sm font-mono">
+                <span class="text-muted-foreground w-10 shrink-0">{row.label}</span>
+                <div class="flex-1 h-1 rounded-full bg-muted overflow-hidden">
                   <div class="h-full rounded-full transition-transform origin-left duration-700"
-                    style="background: {row.color}; transform: scaleX({row.value / memSys})"
-                  ></div>
+                    style="background: {row.color}; transform: scaleX({row.ratio})"></div>
                 </div>
-                <span class="tabular-nums w-14 text-right">{formatBytes(row.value)}</span>
+                <span class="tabular-nums w-24 text-right shrink-0">{formatBytes(row.value)}</span>
               </div>
             {/each}
           </div>
-          <!-- DB Pool -->
-          {#if dbMaxOpen > 0}
-            <div class="space-y-2">
-              <div class="flex items-center justify-between text-sm font-mono">
-                <span class="text-muted-foreground">DB Pool</span>
-                <span class="tabular-nums" style="color: {poolUtilColor(poolUtilPct)}">{dbOpen}/{dbMaxOpen}</span>
+          <!-- Arena breakdown -->
+          {#if hasArena}
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-mono text-muted-foreground tracking-wider uppercase">
+                  Arena <span class="normal-case tracking-normal">({arenaShards} shards, {fmtNum(slotCapacity)} slots)</span>
+                </div>
+                {#if evictCount > 0}
+                  <span class="text-sm font-mono text-warning">{fmtNum(evictCount)} evictions</span>
+                {/if}
               </div>
-              <div class="h-2 rounded-full bg-muted overflow-hidden">
-                <div class="h-full rounded-full transition-transform origin-left duration-700"
-                  style="background: {poolUtilColor(poolUtilPct)}; transform: scaleX({poolUtilPct / 100})"
-                ></div>
+              <div class="flex items-center gap-2 text-sm font-mono">
+                <span class="text-muted-foreground w-10 shrink-0">Slots</span>
+                <div class="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+                  <div class="h-full rounded-full transition-transform origin-left duration-700"
+                    style="background: var(--pastel-volume); transform: scaleX({slotOccupied / slotCapacity})"></div>
+                </div>
+                <span class="tabular-nums w-24 text-right shrink-0">{fmtNum(slotOccupied)}</span>
               </div>
-              <div class="flex flex-wrap gap-x-4 text-xs font-mono">
-                <span class="flex items-center gap-1">
-                  <span class="inline-block w-2 h-2 rounded-sm" style="background: var(--destructive)"></span>
-                  Active <span class="tabular-nums font-medium">{dbInUse}</span>
-                </span>
-                <span class="flex items-center gap-1">
-                  <span class="inline-block w-2 h-2 rounded-sm" style="background: var(--primary)"></span>
-                  Idle <span class="tabular-nums font-medium">{dbIdle}</span>
-                </span>
-                <span class="flex items-center gap-1">
-                  <span class="inline-block w-2 h-2 rounded-sm bg-muted border" style="opacity: 0.4"></span>
-                  Free <span class="tabular-nums font-medium">{dbMaxOpen - dbOpen}</span>
-                </span>
-              </div>
-              {#if dbWaitCount > 0}
-                <div class="text-xs text-warning flex items-center gap-1 font-mono">
-                  <span class="inline-block w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
-                  {dbWaitCount} waiting
+              {#if namepoolCap > 0}
+                <div class="flex items-center gap-2 text-sm font-mono">
+                  <span class="text-muted-foreground w-10 shrink-0">Pool</span>
+                  <div class="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+                    <div class="h-full rounded-full transition-transform origin-left duration-700"
+                      style="background: var(--pastel-volume); opacity: 0.6; transform: scaleX({namepoolUsed / namepoolCap})"></div>
+                  </div>
+                  <span class="tabular-nums w-24 text-right shrink-0">{formatBytes(namepoolUsed)}</span>
                 </div>
               {/if}
+            </div>
+          {/if}
+          <!-- DB Pool breakdown -->
+          {#if dbMaxOpen > 0}
+            <div class="space-y-1.5">
+              <div class="text-sm font-mono text-muted-foreground tracking-wider uppercase">DB Connections</div>
+              <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm font-mono text-muted-foreground">
+                <span class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-sm" style="background: var(--destructive)"></span>
+                  Active {dbInUse}
+                </span>
+                <span class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-sm" style="background: var(--primary)"></span>
+                  Idle {dbIdle}
+                </span>
+                <span class="flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-sm bg-muted border" style="opacity: 0.4"></span>
+                  Free {dbMaxOpen - dbOpen}
+                </span>
+                {#if dbWaitCount > 0}
+                  <span class="text-warning flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
+                    {dbWaitCount} waiting
+                  </span>
+                {/if}
+              </div>
             </div>
           {/if}
         </CardContent>
@@ -275,8 +361,8 @@
         {@render systemCard(sysSection)}
       {/if}
     </div>
-    <!-- Extra scalar sections (TCP Connections, Raft, MetaEngine, Semaphore, etc.) -->
-    {@const extraSections = sections.filter(s => s.kind === 'scalar' && !['Overview', 'Runtime', 'DB Pool', 'System'].includes(s.name) && s.scalars.length > 0)}
+    <!-- Extra scalar sections (TCP Connections, Raft, Semaphore, etc.) -->
+    {@const extraSections = sections.filter(s => s.kind === 'scalar' && !inlineSections.has(s.name) && s.scalars.length > 0)}
     {#if extraSections.length > 0}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {#each extraSections as sec}
@@ -507,63 +593,104 @@
         <span class="font-mono text-xs text-muted-foreground">{osName}/{arch} &middot; {kernel} &middot; {cores} cores</span>
       </div>
     </CardHeader>
-    <CardContent class="pt-0">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-4">
-        <!-- System Memory -->
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-sm font-mono">
-            <span class="text-muted-foreground">System Memory</span>
-            <span class="tabular-nums font-medium" style="color: {memColor}">{memUsedPct}%</span>
-          </div>
-          <div class="h-2 rounded-full bg-muted overflow-hidden">
-            <div class="h-full rounded-full transition-transform origin-left duration-700"
-              style="background: {memColor}; transform: scaleX({memUsedPct / 100})"
-            ></div>
-          </div>
-          <div class="flex justify-between text-xs font-mono text-muted-foreground">
-            <span>{formatBytes(sysMemUsed)} used</span>
-            <span>{formatBytes(sysMemAvail)} avail / {formatBytes(sysMemTotal)}</span>
-          </div>
+    <CardContent class="pt-0 space-y-4">
+      <div class="flex items-start gap-6">
+        <div class="shrink-0">
+          {@render ringGauge(memUsedPct, 'Memory', memColor, formatBytes(sysMemUsed), 'var(--muted)')}
         </div>
-        <!-- Load Average -->
-        <div class="space-y-2">
-          <div class="flex items-center justify-between text-sm font-mono">
-            <span class="text-muted-foreground">Load Average</span>
-            <span class="text-xs text-muted-foreground tabular-nums">/ {cores} cores</span>
+        <div class="flex-1 space-y-4 min-w-0">
+          <!-- Memory detail -->
+          <div class="space-y-1">
+            <div class="flex justify-between text-sm font-mono text-muted-foreground">
+              <span>{formatBytes(sysMemUsed)} used</span>
+              <span>{formatBytes(sysMemAvail)} avail / {formatBytes(sysMemTotal)}</span>
+            </div>
+            <div class="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div class="h-full rounded-full transition-all duration-700"
+                style="width: {memUsedPct}%; background: {memColor}"></div>
+            </div>
           </div>
-          <div class="flex items-center gap-3 font-mono text-sm">
-            {@render loadPill('1m', load1, cores)}
-            {@render loadPill('5m', load5, cores)}
-            {@render loadPill('15m', load15, cores)}
-          </div>
-          <div class="flex gap-1.5 h-1.5">
-            {@render loadSegment(load1, cores, '1m')}
-            {@render loadSegment(load5, cores, '5m')}
-            {@render loadSegment(load15, cores, '15m')}
+          <!-- Load Average -->
+          <div class="space-y-1.5">
+            <span class="text-sm font-mono text-muted-foreground">Load Average</span>
+            <div class="grid grid-cols-3 gap-2">
+              {#each [{ label: '1m', val: load1 }, { label: '5m', val: load5 }, { label: '15m', val: load15 }] as l}
+                {@const ratio = l.val / cores}
+                {@const color = loadColor(l.val, cores)}
+                <div class="relative bg-muted rounded-sm p-2 text-center overflow-hidden">
+                  <div class="absolute inset-0 transition-opacity duration-700"
+                    style="background: {color}; opacity: {Math.min(ratio * 0.15, 0.3)}"></div>
+                  <div class="relative font-mono">
+                    <div class="text-sm text-muted-foreground">{l.label}</div>
+                    <div class="text-sm tabular-nums font-medium" style="color: {color}">{l.val.toFixed(2)}</div>
+                  </div>
+                </div>
+              {/each}
+            </div>
           </div>
         </div>
       </div>
+      <!-- Cache Stats -->
+      {#if cacheSection}
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-mono text-muted-foreground tracking-wider uppercase">MetaEngine Cache</span>
+            <span class="text-sm font-mono tabular-nums font-medium" style="color: {hitColor}">{fmtRatio(cacheHitRatio)} hit</span>
+          </div>
+          <div class="h-1.5 rounded-full bg-muted overflow-hidden">
+            <div class="h-full rounded-full transition-all duration-700"
+              style="width: {cacheHitRatio * 100}%; background: {hitColor}"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm font-mono">
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Lookup</span>
+              <span class="tabular-nums">{fmtNum(lookupHits)} <span class="text-muted-foreground">/</span> {fmtNum(lookupHits + lookupMisses)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Stat</span>
+              <span class="tabular-nums">{fmtNum(statHits)} <span class="text-muted-foreground">/</span> {fmtNum(statHits + statMisses)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Readdir</span>
+              <span class="tabular-nums">{fmtNum(readdirCount)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Upsert</span>
+              <span class="tabular-nums">{fmtNum(upsertCount)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Remove</span>
+              <span class="tabular-nums">{fmtNum(removeCount)}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Evict</span>
+              <span class="tabular-nums text-warning">{fmtNum(evictCount)}</span>
+            </div>
+          </div>
+        </div>
+      {/if}
     </CardContent>
   </Card>
 {/snippet}
 
-{#snippet loadPill(label: string, load: number, cores: number)}
-  {@const ratio = cores > 0 ? load / cores : 0}
-  {@const color = ratio > 1.0 ? 'var(--destructive)' : ratio > 0.7 ? 'var(--warning)' : 'var(--success)'}
-  <span class="flex items-center gap-1">
-    <span class="text-xs text-muted-foreground">{label}</span>
-    <span class="tabular-nums font-medium" style="color: {color}">{load.toFixed(2)}</span>
-  </span>
-{/snippet}
-
-{#snippet loadSegment(load: number, cores: number, _label: string)}
-  {@const ratio = cores > 0 ? load / cores : 0}
-  {@const pct = Math.min(ratio * 100, 100)}
-  {@const color = ratio > 1.0 ? 'var(--destructive)' : ratio > 0.7 ? 'var(--warning)' : 'var(--success)'}
-  <div class="flex-1 rounded-full bg-muted overflow-hidden">
-    <div class="h-full rounded-full transition-transform origin-left duration-700"
-      style="background: {color}; transform: scaleX({pct / 100})"
-    ></div>
+{#snippet ringGauge(pct: number, label: string, color: string, display: string, trackColor: string)}
+  {@const r = 32}
+  {@const circ = 2 * Math.PI * r}
+  {@const offset = circ * (1 - pct / 100)}
+  <div class="flex flex-col items-center">
+    <div class="relative w-[80px] h-[80px]">
+      <svg width="80" height="80" viewBox="0 0 80 80" class="rotate-[-90deg]">
+        <circle cx="40" cy="40" r={r} fill="none" stroke={trackColor} stroke-width="6" />
+        <circle cx="40" cy="40" r={r} fill="none" stroke={color} stroke-width="6"
+          stroke-dasharray={circ} stroke-dashoffset={offset}
+          stroke-linecap="round" class="transition-all duration-700" />
+      </svg>
+      <div class="absolute inset-0 flex items-center justify-center">
+        <span class="text-sm font-mono tabular-nums font-semibold" style="color: {color}">{pct}%</span>
+      </div>
+    </div>
+    <div class="text-sm font-mono text-muted-foreground">{label}</div>
+    <div class="text-sm font-mono tabular-nums">{display}</div>
   </div>
 {/snippet}
 
@@ -666,15 +793,18 @@
                 >
               </TableCell>
             {:else}
-              <TableCell class="font-mono tabular-nums text-sm text-right"
-                >{fmtPercentile(group.buckets, 50)}</TableCell
-              >
-              <TableCell class="font-mono tabular-nums text-sm text-right"
-                >{fmtPercentile(group.buckets, 95)}</TableCell
-              >
-              <TableCell class="font-mono tabular-nums text-sm text-right"
-                >{fmtPercentile(group.buckets, 99)}</TableCell
-              >
+              {@const p50 = interpolatePercentile(group.buckets, 50)}
+              {@const p95 = interpolatePercentile(group.buckets, 95)}
+              {@const p99 = interpolatePercentile(group.buckets, 99)}
+              <TableCell class="font-mono tabular-nums text-sm text-right">
+                <span style="color: {latencyColor(p50)}">{formatUs(p50)}</span>
+              </TableCell>
+              <TableCell class="font-mono tabular-nums text-sm text-right">
+                <span style="color: {latencyColor(p95)}">{formatUs(p95)}</span>
+              </TableCell>
+              <TableCell class="font-mono tabular-nums text-sm text-right">
+                <span style="color: {latencyColor(p99)}">{formatUs(p99)}</span>
+              </TableCell>
             {/if}
           </TableRow>
           {#if isOpen && group.buckets.length > 0}
@@ -891,10 +1021,13 @@
         >
       {/if}
       {#if metricMode === "percentiles" && group.buckets.length > 0}
+        {@const hp50 = interpolatePercentile(group.buckets, 50)}
+        {@const hp95 = interpolatePercentile(group.buckets, 95)}
+        {@const hp99 = interpolatePercentile(group.buckets, 99)}
         <span class="text-border">|</span>
-        <span>p50 {fmtPercentile(group.buckets, 50)}</span>
-        <span>p95 {fmtPercentile(group.buckets, 95)}</span>
-        <span>p99 {fmtPercentile(group.buckets, 99)}</span>
+        <span>p50 <span style="color: {latencyColor(hp50)}">{formatUs(hp50)}</span></span>
+        <span>p95 <span style="color: {latencyColor(hp95)}">{formatUs(hp95)}</span></span>
+        <span>p99 <span style="color: {latencyColor(hp99)}">{formatUs(hp99)}</span></span>
       {/if}
     </div>
 
