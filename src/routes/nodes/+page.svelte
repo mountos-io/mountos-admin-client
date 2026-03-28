@@ -31,8 +31,8 @@
   }
 
   function loadColor(v: number): string {
-    if (v > 8) return 'var(--destructive)'
-    if (v > 4) return 'var(--warning)'
+    if (v > 125) return 'var(--destructive)'
+    if (v > 100) return 'var(--warning)'
     return 'var(--success)'
   }
 
@@ -240,8 +240,8 @@
               {/if}
             </TableCell>
             <TableCell class="font-mono text-sm hidden md:table-cell">
-              {#if node.loadAvg != null}
-                <span style="color: {loadColor(node.loadAvg)}">{node.loadAvg.toFixed(2)}</span>
+              {#if node.sysLoad != null}
+                <span style="color: {loadColor(node.sysLoad)}">{node.sysLoad}%</span>
               {:else}
                 <span class="text-muted-foreground">—</span>
               {/if}
