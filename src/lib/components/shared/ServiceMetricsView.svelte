@@ -190,7 +190,7 @@
 
   function loadColor(load: number, cores: number): string {
     const ratio = cores > 0 ? load / cores : 0;
-    return ratio > 1.0 ? 'var(--destructive)' : ratio > 0.7 ? 'var(--warning)' : 'var(--success)';
+    return ratio > 1.25 ? 'var(--destructive)' : ratio > 1.0 ? 'var(--warning)' : 'var(--success)';
   }
 
   function fmtNum(n: number): string { return n.toLocaleString() }
@@ -616,13 +616,14 @@
             <div class="grid grid-cols-3 gap-2">
               {#each [{ label: '1m', val: load1 }, { label: '5m', val: load5 }, { label: '15m', val: load15 }] as l}
                 {@const ratio = l.val / cores}
+                {@const pct = Math.round(ratio * 100)}
                 {@const color = loadColor(l.val, cores)}
                 <div class="relative bg-muted rounded-sm p-2 text-center overflow-hidden">
                   <div class="absolute inset-0 transition-opacity duration-700"
                     style="background: {color}; opacity: {Math.min(ratio * 0.15, 0.3)}"></div>
                   <div class="relative font-mono">
                     <div class="text-sm text-muted-foreground">{l.label}</div>
-                    <div class="text-sm tabular-nums font-medium" style="color: {color}">{l.val.toFixed(2)}</div>
+                    <div class="text-sm tabular-nums font-medium" style="color: {color}">{l.val.toFixed(2)} <span class="text-xs opacity-70">({pct}%)</span></div>
                   </div>
                 </div>
               {/each}

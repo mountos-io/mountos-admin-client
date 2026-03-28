@@ -46,7 +46,7 @@ let fetchCtrl: AbortController | null = null
 let severityFilter = $state<number | undefined>(undefined)
 let categoryFilter = $state('')
 let sinceFilter = $state(DEFAULT_SINCE)
-let activeFilter = $state(true)
+let activeFilter = $state(false)
 let page = $state(1)
 
 function sinceToISO(value: string): string | undefined {
@@ -149,7 +149,7 @@ function clearFilters() {
   severityFilter = undefined
   categoryFilter = ''
   sinceFilter = DEFAULT_SINCE
-  activeFilter = true
+  activeFilter = false
   page = 1
   fetchAlerts()
 }
@@ -173,7 +173,7 @@ function reset() {
   severityFilter = undefined
   categoryFilter = ''
   sinceFilter = DEFAULT_SINCE
-  activeFilter = true
+  activeFilter = false
   page = 1
 }
 

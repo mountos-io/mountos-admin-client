@@ -18,6 +18,7 @@
   import Server from '@lucide/svelte/icons/server'
   import MonitorDot from '@lucide/svelte/icons/monitor-dot'
   import Box from '@lucide/svelte/icons/box'
+  import Bell from '@lucide/svelte/icons/bell'
 
   let { collapsed = false }: { collapsed?: boolean } = $props()
 
@@ -30,6 +31,7 @@
     'layout-dashboard': LayoutDashboard, 'building-2': Building2,
     'users': Users, 'globe': Globe, 'hard-drive': HardDrive,
     'database': Database, 'scroll-text': ScrollText, 'monitor-dot': MonitorDot, 'server': Server,
+    'bell': Bell,
   }
 
   const accountFreeRoutes = new Set(['/', '/accounts', '/alerts'])
@@ -72,10 +74,8 @@
             : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
         )}
       >
-        {#if isBell}
-          <span class={cn('inline-flex shrink-0', collapsed ? 'text-base' : 'text-sm', alertStore.hasNewAlert && 'bell-ring')} aria-hidden="true">🔔</span>
-        {:else if Icon}
-          <span class="inline-flex shrink-0">
+        {#if Icon}
+          <span class={cn('inline-flex shrink-0', alertStore.hasNewAlert && isBell && 'bell-ring')}>
             <Icon class={cn(collapsed ? 'h-5 w-5' : 'h-4 w-4')} />
           </span>
         {/if}
@@ -125,7 +125,7 @@
   }
 
   .bell-ring {
-    animation: ring 0.4s ease-in-out 2;
+    animation: ring 0.4s ease-in-out 30;
   }
 
   @keyframes ring {

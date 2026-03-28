@@ -13,6 +13,7 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
   nodes: 'serviceNodes',
   discover: 'discover',
   cache: 'cache',
+  alerts: 'alerts',
   dashboard: 'dashboard',
   license: 'license',
 }

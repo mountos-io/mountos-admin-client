@@ -25,6 +25,7 @@
   let redirected = false
   let resolvingId = $state<string | null>(null)
 
+
   $effect(() => {
     if (auth.loading) return
     if (!auth.can('alerts', 'read')) {
@@ -85,22 +86,11 @@
 <svelte:head><title>Alerts — mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
-  <div class="flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <h1 class="text-2xl font-bold tracking-tight">Alerts</h1>
-      {#if store.activeCount > 0}
-        <Badge variant="destructive" aria-live="polite">{store.activeCount} active</Badge>
-      {/if}
-    </div>
-    <div class="flex items-center gap-2">
-      <Button
-        variant={store.activeFilter ? 'primary' : 'outline'}
-        size="sm"
-        onclick={() => store.setActiveFilter(!store.activeFilter)}
-      >
-        {store.activeFilter ? 'Active Only' : 'All'}
-      </Button>
-    </div>
+  <div class="flex items-center gap-3">
+    <h1 class="text-2xl font-bold tracking-tight">Alerts</h1>
+    {#if store.activeCount > 0}
+      <Badge variant="destructive" aria-live="polite">{store.activeCount} active</Badge>
+    {/if}
   </div>
 
   <FilterPanel>
@@ -128,10 +118,24 @@
     {#if store.severityFilter !== undefined || store.categoryFilter || store.sinceFilter !== '30m'}
       <Button variant="ghost" size="sm" onclick={() => store.clearFilters()}>Clear filters</Button>
     {/if}
+    <div class="ml-auto flex items-center rounded-md border border-border/50 p-0.5" role="tablist" aria-label="Alert status">
+      <button
+        role="tab"
+        aria-selected={store.activeFilter}
+        class="px-3 py-1 text-sm font-medium rounded transition-colors {store.activeFilter ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+        onclick={() => store.setActiveFilter(true)}
+      >Active</button>
+      <button
+        role="tab"
+        aria-selected={!store.activeFilter}
+        class="px-3 py-1 text-sm font-medium rounded transition-colors {!store.activeFilter ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+        onclick={() => store.setActiveFilter(false)}
+      >All</button>
+    </div>
   </FilterPanel>
 
   {#if store.loading && store.alerts.length === 0}
-    <Card cornerPlus>
+    <Card cornerPlus class="px-4">
       <Table>
         <caption class="sr-only">Loading alerts</caption>
         <TableHeader>
@@ -139,6 +143,8 @@
             <TableHead class="w-28">Severity</TableHead>
             <TableHead class="w-24">Category</TableHead>
             <TableHead>Title</TableHead>
+            <TableHead class="hidden md:table-cell">Account</TableHead>
+            <TableHead class="hidden md:table-cell">Region</TableHead>
             <TableHead class="hidden lg:table-cell">Source</TableHead>
             <TableHead class="hidden xl:table-cell">Node</TableHead>
             <TableHead class="w-32">Time</TableHead>
@@ -151,6 +157,8 @@
               <TableCell><Skeleton class="h-5 w-16" /></TableCell>
               <TableCell><Skeleton class="h-4 w-14" /></TableCell>
               <TableCell><Skeleton class="h-4 w-48" /></TableCell>
+              <TableCell class="hidden md:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
+              <TableCell class="hidden md:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
               <TableCell class="hidden lg:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
               <TableCell class="hidden xl:table-cell"><Skeleton class="h-4 w-24" /></TableCell>
               <TableCell><Skeleton class="h-4 w-20" /></TableCell>
@@ -172,7 +180,7 @@
   {:else if store.alerts.length === 0}
     <EmptyState title="No alerts" description="No alerts match your current filters" />
   {:else}
-    <Card cornerPlus>
+    <Card cornerPlus class="px-4">
       <Table>
         <caption class="sr-only">Service alerts</caption>
         <TableHeader>
@@ -180,6 +188,8 @@
             <TableHead class="w-28">Severity</TableHead>
             <TableHead class="w-24">Category</TableHead>
             <TableHead>Title</TableHead>
+            <TableHead class="hidden md:table-cell">Account</TableHead>
+            <TableHead class="hidden md:table-cell">Region</TableHead>
             <TableHead class="hidden lg:table-cell">Source</TableHead>
             <TableHead class="hidden xl:table-cell">Node</TableHead>
             <TableHead class="w-32">Time</TableHead>
@@ -207,11 +217,30 @@
                   {/if}
                 </div>
               </TableCell>
+              <TableCell class="hidden md:table-cell">
+                {#if alert.account}
+                  <span class="text-sm">{alert.account.name}</span>
+                {:else}
+                  <span class="text-xs text-muted-foreground">(not set)</span>
+                {/if}
+              </TableCell>
+              <TableCell class="hidden md:table-cell">
+                {#if alert.region}
+                  <span class="text-sm">{alert.region.name}</span>
+                {:else}
+                  <span class="text-xs text-muted-foreground">(not set)</span>
+                {/if}
+              </TableCell>
               <TableCell class="hidden lg:table-cell">
-                <span class="text-sm text-muted-foreground">{alert.source}</span>
+                <Badge variant="outline" class="text-xs font-mono">{alert.source}</Badge>
               </TableCell>
               <TableCell class="hidden xl:table-cell">
-                <span class="text-sm text-muted-foreground font-mono">{alert.nodeId || '—'}</span>
+                {#if alert.nodeId && alert.region}
+                  <a href="/regions/{alert.region.id}/{alert.nodeId}" class="text-sm font-mono text-primary hover:underline">{alert.nodeId}</a>
+                {:else}
+                  <span class="text-sm text-muted-foreground font-mono">{alert.nodeId || ''}</span>
+                  {#if !alert.nodeId}<span class="text-xs text-muted-foreground">(not set)</span>{/if}
+                {/if}
               </TableCell>
               <TableCell>
                 <span class="text-sm text-muted-foreground whitespace-nowrap">{formatRelative(alert.eventTime)}</span>
