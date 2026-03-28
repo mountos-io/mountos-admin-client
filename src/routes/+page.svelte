@@ -194,51 +194,56 @@
 
       <div class="flex-1"></div>
 
-      <!-- Active Alerts -->
-      {#if features.alerts && !auth.isUserRole && alertStore.activeCount > 0}
-        <Card cornerPlus>
-          <CardHeader>
-            <div class="flex items-center justify-between">
-              <CardTitle class="flex items-center gap-2">
-                <ShieldAlertIcon class="h-4 w-4 text-destructive" />
-                Active Alerts
-              </CardTitle>
-              <a href="/alerts" class="text-sm text-primary hover:underline">View All &rarr;</a>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {@const severityItems = [
-              { count: alertStore.criticalCount, label: 'Critical', dotClass: 'dot-destructive' },
-              { count: alertStore.warningCount, label: 'Warning', dotClass: 'dot-warning' },
-              { count: alertStore.infoCount, label: 'Info', dotClass: 'dot-primary' },
-            ]}
-            <div class="flex gap-4">
-              {#each severityItems.filter(s => s.count > 0) as sev}
-                <div class="flex items-center gap-2">
-                  <span class="severity-dot {sev.dotClass}" aria-hidden="true"></span>
-                  <span class="text-sm font-medium">{sev.count}</span>
-                  <span class="text-sm text-muted-foreground">{sev.label}</span>
+      <!-- Active Alerts & Sessions Summary -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {#if features.alerts && !auth.isUserRole}
+          <Card cornerPlus>
+            <CardHeader>
+              <div class="flex items-center justify-between">
+                <CardTitle class="flex items-center gap-2">
+                  <ShieldAlertIcon class="h-4 w-4 {alertStore.activeCount > 0 ? 'text-destructive' : 'text-muted-foreground'}" />
+                  Active Alerts
+                </CardTitle>
+                <a href="/alerts" class="text-sm text-primary hover:underline">View All &rarr;</a>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {#if alertStore.activeCount > 0}
+                {@const severityItems = [
+                  { count: alertStore.criticalCount, label: 'Critical', dotClass: 'dot-destructive' },
+                  { count: alertStore.warningCount, label: 'Warning', dotClass: 'dot-warning' },
+                  { count: alertStore.infoCount, label: 'Info', dotClass: 'dot-primary' },
+                ]}
+                <div class="flex gap-4">
+                  {#each severityItems.filter(s => s.count > 0) as sev}
+                    <div class="flex items-center gap-2">
+                      <span class="severity-dot {sev.dotClass}" aria-hidden="true"></span>
+                      <span class="text-sm font-medium">{sev.count}</span>
+                      <span class="text-sm text-muted-foreground">{sev.label}</span>
+                    </div>
+                  {/each}
                 </div>
-              {/each}
-            </div>
-          </CardContent>
-        </Card>
-      {/if}
+              {:else}
+                <p class="text-sm text-muted-foreground">No active alerts</p>
+              {/if}
+            </CardContent>
+          </Card>
+        {/if}
 
-      <!-- Sessions Summary -->
-      {#if canReadSessions}
-        <Card cornerPlus>
-          <CardHeader>
-            <div class="flex items-center justify-between">
-              <CardTitle>Sessions Summary</CardTitle>
-              <a href="/sessions" class="text-sm text-primary hover:underline">View All &rarr;</a>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <SessionSummaryStrip summary={sessionStore.summary} loading={sessionStore.loading} />
-          </CardContent>
-        </Card>
-      {/if}
+        {#if canReadSessions}
+          <Card cornerPlus>
+            <CardHeader>
+              <div class="flex items-center justify-between">
+                <CardTitle>Sessions Summary</CardTitle>
+                <a href="/sessions" class="text-sm text-primary hover:underline">View All &rarr;</a>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <SessionSummaryStrip summary={sessionStore.summary} loading={sessionStore.loading} />
+            </CardContent>
+          </Card>
+        {/if}
+      </div>
 
       <!-- Recent Activity -->
       {#if canReadAudit}

@@ -115,7 +115,7 @@
       label="Filter by time range"
       onchange={(v) => store.setSinceFilter(v)}
     />
-    {#if store.severityFilter !== undefined || store.categoryFilter || store.sinceFilter !== '30m'}
+    {#if store.severityFilter !== undefined || store.categoryFilter || store.sinceFilter !== '3d'}
       <Button variant="ghost" size="sm" onclick={() => store.clearFilters()}>Clear filters</Button>
     {/if}
     <div class="ml-auto flex items-center rounded-md border border-border/50 p-0.5" role="tablist" aria-label="Alert status">
@@ -207,48 +207,48 @@
                 </Badge>
               </TableCell>
               <TableCell>
-                <span class="capitalize text-sm">{alert.category}</span>
+                <span class="capitalize">{alert.category}</span>
               </TableCell>
               <TableCell>
                 <div class="min-w-0">
-                  <p class="font-medium text-sm truncate">{alert.title}</p>
+                  <p class="font-medium truncate">{alert.title}</p>
                   {#if alert.description}
-                    <p class="text-xs text-muted-foreground truncate mt-0.5">{alert.description}</p>
+                    <p class="text-muted-foreground truncate mt-0.5">{alert.description}</p>
                   {/if}
                 </div>
               </TableCell>
               <TableCell class="hidden md:table-cell">
                 {#if alert.account}
-                  <span class="text-sm">{alert.account.name}</span>
+                  <span>{alert.account.name}</span>
                 {:else}
-                  <span class="text-xs text-muted-foreground">(not set)</span>
+                  <span class="text-muted-foreground">(not set)</span>
                 {/if}
               </TableCell>
               <TableCell class="hidden md:table-cell">
                 {#if alert.region}
-                  <span class="text-sm">{alert.region.name}</span>
+                  <a href="/regions/{alert.region.id}" class="text-primary hover:underline">{alert.region.name}</a>
                 {:else}
-                  <span class="text-xs text-muted-foreground">(not set)</span>
+                  <span class="text-muted-foreground">(not set)</span>
                 {/if}
               </TableCell>
               <TableCell class="hidden lg:table-cell">
-                <Badge variant="outline" class="text-xs font-mono">{alert.source}</Badge>
+                <Badge variant="outline" class="font-mono">{alert.source}</Badge>
               </TableCell>
               <TableCell class="hidden xl:table-cell">
                 {#if alert.nodeId && alert.region}
-                  <a href="/regions/{alert.region.id}/{alert.nodeId}" class="text-sm font-mono text-primary hover:underline">{alert.nodeId}</a>
+                  <a href="/regions/{alert.region.id}/{alert.nodeId}" class="font-mono text-primary hover:underline">{alert.nodeId}</a>
                 {:else}
-                  <span class="text-sm text-muted-foreground font-mono">{alert.nodeId || ''}</span>
-                  {#if !alert.nodeId}<span class="text-xs text-muted-foreground">(not set)</span>{/if}
+                  <span class="text-muted-foreground font-mono">{alert.nodeId || ''}</span>
+                  {#if !alert.nodeId}<span class="text-muted-foreground">(not set)</span>{/if}
                 {/if}
               </TableCell>
               <TableCell>
-                <span class="text-sm text-muted-foreground whitespace-nowrap">{formatRelative(alert.eventTime)}</span>
+                <span class="text-muted-foreground whitespace-nowrap">{formatRelative(alert.eventTime)}</span>
               </TableCell>
               <TableCell>
                 {#if !alert.resolvedAt}
                   {@const isResolving = resolvingId === alert.alertId}
-                  <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 min-h-[44px] sm:min-h-0 gap-1 text-xs">
+                  <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 min-h-[44px] sm:min-h-0 gap-1">
                     {#if isResolving}
                       <Loader2 class="h-3.5 w-3.5 animate-spin" />
                     {:else}
@@ -257,7 +257,7 @@
                     Resolve
                   </Button>
                 {:else}
-                  <Badge variant="outline" class="text-xs">Resolved</Badge>
+                  <Badge variant="outline">Resolved</Badge>
                 {/if}
               </TableCell>
             </TableRow>

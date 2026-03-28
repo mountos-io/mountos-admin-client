@@ -6,7 +6,7 @@ import { usePreferences } from '$lib/stores/preferences.svelte'
 
 const POLL_INTERVAL = 60_000
 const DISPLAY_PAGE_SIZE = 20
-const DEFAULT_SINCE = '30m'
+const DEFAULT_SINCE = '3d'
 
 export const TIME_RANGES = [
   { value: '30m', label: '30 min', ms: 30 * 60_000 },

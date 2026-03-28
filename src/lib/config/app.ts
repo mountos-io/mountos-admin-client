@@ -15,7 +15,7 @@ const defaults: AppConfig = {
   faviconUrl: '/favicon.png',
   proxyBaseUrl: '/api/v1',
   loginUrl: '/login',
-  logoutUrl: '/logout',
+  logoutUrl: '/login',
 }
 
 export const appConfig: AppConfig = { ...defaults, ...vendorAppConfig }

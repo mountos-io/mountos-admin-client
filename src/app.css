@@ -196,18 +196,18 @@
 }
 
 @theme inline {
-  --text-xs: 0.8125rem;
-  --text-xs--line-height: calc(1.25 / 0.8125);
-  --text-sm: 1rem;
-  --text-sm--line-height: calc(1.5 / 1);
-  --text-base: 1.25rem;
-  --text-base--line-height: calc(1.75 / 1.25);
-  --text-lg: 1.5rem;
-  --text-lg--line-height: calc(2 / 1.5);
-  --text-xl: 1.875rem;
-  --text-xl--line-height: calc(2.25 / 1.875);
-  --text-2xl: 2.25rem;
-  --text-2xl--line-height: calc(2.5 / 2.25);
+  --text-xs: 1rem;
+  --text-xs--line-height: calc(1.5 / 1);
+  --text-sm: 1.0625rem;
+  --text-sm--line-height: calc(1.5 / 1.0625);
+  --text-base: 1.125rem;
+  --text-base--line-height: calc(1.75 / 1.125);
+  --text-lg: 1.25rem;
+  --text-lg--line-height: calc(1.75 / 1.25);
+  --text-xl: 1.5rem;
+  --text-xl--line-height: calc(2 / 1.5);
+  --text-2xl: 1.875rem;
+  --text-2xl--line-height: calc(2.25 / 1.875);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
