@@ -156,6 +156,9 @@ app.get('/api/me', async (c) => {
   if (bearer) {
     try {
       const user = await dashboardAuth.verifySessionToken(bearer)
+      if (await dashboardAuth.isUserRevoked(user.username)) {
+        return c.json({ status: 'failure', message: 'session revoked' }, 401)
+      }
       return c.json(await enrichUserResponse(user))
     } catch {
       return c.json({ status: 'failure', message: 'invalid session token' }, 401)
@@ -167,6 +170,10 @@ app.get('/api/me', async (c) => {
   if (sessionCookie) {
     try {
       const user = await dashboardAuth.verifySessionToken(sessionCookie)
+      if (await dashboardAuth.isUserRevoked(user.username)) {
+        clearTokenCookies(c)
+        return c.json({ status: 'failure', message: 'session revoked' }, 401)
+      }
       const refreshCookie = getCookie(c, COOKIE_REFRESH)
       return c.json(await enrichUserResponse(user, { token: sessionCookie, refreshToken: refreshCookie }))
     } catch { /* session expired, fall through to refresh */ }
@@ -176,6 +183,10 @@ app.get('/api/me', async (c) => {
   if (refreshCookie) {
     try {
       const user = await dashboardAuth.verifyRefreshToken(refreshCookie)
+      if (await dashboardAuth.isUserRevoked(user.username)) {
+        clearTokenCookies(c)
+        return c.json({ status: 'failure', message: 'session revoked' }, 401)
+      }
       const [token, refreshToken] = await Promise.all([
         dashboardAuth.signSessionToken(user),
         dashboardAuth.signRefreshToken(user),
@@ -194,6 +205,9 @@ app.post('/api/auth/refresh', async (c) => {
   try {
     const { refreshToken } = await c.req.json<{ refreshToken: string }>()
     const user = await dashboardAuth.verifyRefreshToken(refreshToken)
+    if (await dashboardAuth.isUserRevoked(user.username)) {
+      return c.json({ status: 'failure', message: 'session revoked' }, 401)
+    }
     const capabilities = dashboardAuth.resolveCapabilities(user.role)
     const [token, newRefreshToken] = await Promise.all([
       dashboardAuth.signSessionToken(user),
@@ -276,6 +290,19 @@ app.patch('/api/webauthn/credentials/:id', async (c) => {
 })
 
 app.use('/api/*', stepUpMiddleware)
+
+app.post('/api/auth/revoke-user', async (c) => {
+  const caller = c.get('mountosUser')
+  if (caller.role !== 'superadmin') {
+    return c.json({ status: 'failure', message: 'forbidden' }, 403)
+  }
+  const { username } = await c.req.json<{ username: string }>()
+  if (!username) {
+    return c.json({ status: 'failure', message: 'username required' }, 400)
+  }
+  const revokedCount = await dashboardAuth.revokeUserSessions(username)
+  return c.json({ status: 'success', revokedRefreshTokens: revokedCount })
+})
 
 app.delete('/api/webauthn/credentials/:id', async (c) => {
   const user = c.get('mountosUser')

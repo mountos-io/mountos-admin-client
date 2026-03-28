@@ -8,6 +8,9 @@ export const auth: MiddlewareHandler = async (c, next) => {
 
   try {
     const user = await dashboardAuth.verifySessionToken(bearer)
+    if (await dashboardAuth.isUserRevoked(user.username)) {
+      return c.json({ status: 'failure', message: 'session revoked' }, 401)
+    }
     c.set('mountosUser', user)
     await next()
   } catch {

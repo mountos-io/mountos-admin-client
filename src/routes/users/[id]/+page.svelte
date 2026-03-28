@@ -175,6 +175,14 @@
               {#if user.isActive}
                 <Button variant="destructive" size="sm" onclick={() => dialog.confirm('Deactivate', `Permanently deactivate "${user!.username}"?`, () => act(() => store.deactivateUser(id)), 'destructive')}>Deactivate</Button>
               {/if}
+              {#if auth.user?.role === 'superadmin' && user.username}
+                <Button variant="outline" size="sm" onclick={() => dialog.confirm(
+                  'Revoke Admin Sessions',
+                  `Revoke all admin dashboard sessions for "${user!.username}"? They will be signed out immediately.`,
+                  async () => { await store.revokeAdminSessions(user!.username!); showSuccessToast('Admin sessions revoked') },
+                  'destructive',
+                )}>Revoke Sessions</Button>
+              {/if}
             </CardFooter>
           {/if}
         {/if}

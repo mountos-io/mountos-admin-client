@@ -159,7 +159,13 @@ class DashboardAuth {
       .setExpirationTime(`${this.config.refreshTTL}s`)
       .setJti(jti)
       .sign(this.sessionKey)
-    await this.redis.set(`mountos:refresh:${jti}`, user.id, 'EX', this.config.refreshTTL)
+    const pipeline = this.redis.pipeline()
+      .set(`mountos:refresh:${jti}`, user.id, 'EX', this.config.refreshTTL)
+    if (user.username) {
+      const setKey = `mountos:user-refresh:${user.username}`
+      pipeline.sadd(setKey, jti).expire(setKey, this.config.refreshTTL)
+    }
+    await pipeline.exec()
     return token
   }
 
@@ -177,6 +183,7 @@ class DashboardAuth {
     if (!payload.jti || !await this.redis.del(`mountos:refresh:${payload.jti}`)) {
       throw new Error('refresh token already consumed')
     }
+    if (payload.username) await this.redis.srem(`mountos:user-refresh:${payload.username}`, payload.jti)
     return adminUserFromPayload(payload)
   }
 
@@ -215,11 +222,32 @@ class DashboardAuth {
 
   async revokeRefreshToken(token: string) {
     try {
-      const { jti } = jose.decodeJwt(token)
-      if (jti) await this.redis.del(`mountos:refresh:${jti}`)
+      const { jti, username } = jose.decodeJwt(token) as jose.JWTPayload & { username?: string }
+      if (jti) {
+        await this.redis.del(`mountos:refresh:${jti}`)
+        if (username) await this.redis.srem(`mountos:user-refresh:${username}`, jti)
+      }
     } catch (e) {
       console.warn('Failed to revoke refresh token:', e)
     }
+  }
+
+  async revokeUserSessions(username: string): Promise<number> {
+    const setKey = `mountos:user-refresh:${username}`
+    const jtis = await this.redis.smembers(setKey)
+
+    const pipeline = this.redis.pipeline()
+    for (const jti of jtis) pipeline.del(`mountos:refresh:${jti}`)
+    pipeline.del(setKey)
+    pipeline.set(`mountos:revoked:${username}`, '1', 'EX', this.config.sessionTTL)
+    await pipeline.exec()
+
+    return jtis.length
+  }
+
+  async isUserRevoked(username: string | undefined): Promise<boolean> {
+    if (!username) return false
+    return await this.redis.exists(`mountos:revoked:${username}`) === 1
   }
 }
 
