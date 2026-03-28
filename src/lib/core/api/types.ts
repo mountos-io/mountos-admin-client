@@ -42,6 +42,7 @@ export type {
   SessionSummary,
   StandardResponse,
   LicenseDetails,
+  LicenseTerms,
   LicenseStatus,
   LicenseType,
   ServiceAlert,

@@ -12,7 +12,7 @@ import type {
   RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, Fork, AuditLog, 
   AuditLogListOptions, RegionAuditLogListOptions, ServiceNode, ClientSession, 
   ClientSessionListOptions, SessionSummary, DiscoverMetaResponse, DashboardStats, 
-  LicenseDetails, ServiceAlert, AlertListOptions, AlertCountResponse,
+  LicenseDetails, LicenseTerms, ServiceAlert, AlertListOptions, AlertCountResponse,
 } from '@mountos-app/admin-sdk'
 
 function queryString(params: Record<string, string | number | boolean | undefined>): string {
@@ -465,6 +465,10 @@ class LicenseResource {
 
   get(signal?: AbortSignal): Promise<LicenseDetails> {
     return this.client.request('GET', '/license', undefined, signal)
+  }
+
+  terms(signal?: AbortSignal): Promise<LicenseTerms> {
+    return this.client.request('GET', '/license/terms', undefined, signal)
   }
 }
 

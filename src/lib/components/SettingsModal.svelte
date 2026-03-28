@@ -349,6 +349,20 @@
                   <dd>{licenseStore.formatLimit(lic.maxStorageBytes, 'bytes')}</dd>
                 </div>
               </dl>
+              <details class="group mt-2" ontoggle={(e: Event) => { if ((e.target as HTMLDetailsElement).open) licenseStore.fetchTerms() }}>
+                <summary class="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground select-none py-2">
+                  License Terms
+                </summary>
+                <div class="mt-2 max-h-64 overflow-y-auto rounded border bg-muted/50 p-3">
+                  {#if licenseStore.terms}
+                    <pre class="whitespace-pre-wrap text-xs text-muted-foreground font-mono leading-relaxed">{licenseStore.terms}</pre>
+                  {:else if licenseStore.termsLoading}
+                    <p class="text-xs text-muted-foreground">Loading terms...</p>
+                  {:else}
+                    <p class="text-xs text-muted-foreground">License terms not available.</p>
+                  {/if}
+                </div>
+              </details>
             </div>
           {:else if licenseStore.loading}
             <p class="text-sm text-muted-foreground">Loading license...</p>
