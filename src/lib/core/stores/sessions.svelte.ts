@@ -28,7 +28,7 @@ let error = $state<string | null>(null)
 let capped = $state(false)
 let cappedTotal = $state(0)
 let fetchedForAccountId = $state<number | null>(null)
-let fetchedIsActive = $state<'true' | 'false' | 'all'>('true')
+let fetchedIsActive = $state<'true' | 'false' | 'all'>('all')
 let fetchCtrl: AbortController | null = null
 
 // Filter state
@@ -38,7 +38,7 @@ let regionFilter = $state('')
 let osFilter = $state('')
 let volumeIdFilter = $state<number | undefined>(undefined)
 let searchQuery = $state('')
-let showInactive = $state(false)
+let showInactive = $state(true)
 let displayPage = $state(1)
 let expanded = $state<Set<number>>(new Set())
 
@@ -165,11 +165,11 @@ function reset() {
   capped = false
   cappedTotal = 0
   fetchedForAccountId = null
-  fetchedIsActive = 'true'
+  fetchedIsActive = 'all'
   fetchCtrl?.abort()
   fetchCtrl = null
   resetFilters()
-  showInactive = false
+  showInactive = true
   expanded = new Set()
 }
 
