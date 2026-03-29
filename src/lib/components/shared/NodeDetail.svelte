@@ -2,23 +2,31 @@
   import { goto } from '$app/navigation'
   import { onDestroy } from 'svelte'
   import { useNodes } from '$lib/core/stores/nodes.svelte'
+  import { useRegionAlerts } from '$lib/core/stores/regionAlerts.svelte'
+  import { SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
+  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import ServiceMetricsView from '$lib/components/shared/ServiceMetricsView.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { formatRelative, nodeStatusVariant, formatDate } from '$lib/core/utils/format'
   import type { ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
+  import ShieldAlert from '@lucide/svelte/icons/shield-alert'
+  import AlertTriangle from '@lucide/svelte/icons/triangle-alert'
+  import Info from '@lucide/svelte/icons/info'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
 
   let { regionId, nodeId, basePath }: { regionId: number; nodeId: string; basePath: string } = $props()
 
   const nodeStore = useNodes()
+  const alertStore = $derived(useRegionAlerts(regionId, nodeId))
   const auth = useAuth()
+  const canReadAlerts = $derived(auth.can('alerts', 'read'))
 
   const node = $derived<ServiceNode | undefined>(nodeStore.nodes.find(n => n.nodeId === nodeId))
 
@@ -56,6 +64,25 @@
       nodeStore.fetchStats(regionId, nodeId)
     }
   })
+
+  $effect(() => {
+    if (canReadAlerts && regionId && nodeId) {
+      alertStore.fetchAlerts()
+    }
+    return () => alertStore.reset()
+  })
+
+  function severityBadgeVariant(severity: number): 'destructive' | 'warning' | 'default' {
+    if (severity === 2) return 'destructive'
+    if (severity === 1) return 'warning'
+    return 'default'
+  }
+
+  function severityIcon(severity: number) {
+    if (severity === 2) return ShieldAlert
+    if (severity === 1) return AlertTriangle
+    return Info
+  }
 
   onDestroy(() => nodeStore.resetStats())
 </script>
@@ -161,6 +188,79 @@
       <CardHeader><CardTitle class="text-base">Metrics</CardTitle></CardHeader>
       <CardContent class="pt-0">
         <p class="text-sm text-muted-foreground">Detailed metrics coming soon. Stats endpoint not yet available for {serviceTypeLabel}.</p>
+      </CardContent>
+    </Card>
+  {/if}
+
+  {#if canReadAlerts}
+    <Card>
+      <CardHeader>
+        <div class="flex items-center justify-between">
+          <CardTitle class="text-base">Recent Alerts</CardTitle>
+          {#if alertStore.activeCount > 0}
+            <Badge variant="destructive">{alertStore.activeCount} active</Badge>
+          {/if}
+        </div>
+      </CardHeader>
+      <CardContent class="pt-0">
+        {#if alertStore.loading && alertStore.alerts.length === 0}
+          <div class="flex items-center justify-center py-8" aria-busy="true">
+            <LoadingSpinner />
+          </div>
+        {:else if alertStore.error}
+          <p class="text-sm text-destructive">{alertStore.error}</p>
+        {:else if alertStore.alerts.length === 0}
+          <p class="text-sm text-muted-foreground">No recent alerts for this node.</p>
+        {:else}
+          <Table>
+            <caption class="sr-only">Node alerts</caption>
+            <TableHeader>
+              <TableRow>
+                <TableHead class="w-28">Severity</TableHead>
+                <TableHead class="w-24">Category</TableHead>
+                <TableHead>Title</TableHead>
+                <TableHead class="w-32">Time</TableHead>
+                <TableHead class="w-20">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {#each alertStore.alerts.slice(0, 10) as alert (alert.alertId)}
+                {@const SevIcon = severityIcon(alert.severity)}
+                <TableRow>
+                  <TableCell>
+                    <Badge variant={severityBadgeVariant(alert.severity)} class="gap-1">
+                      <SevIcon class="h-3 w-3" />
+                      {SEVERITY_LABELS[alert.severity] ?? 'Unknown'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span class="capitalize">{alert.category}</span>
+                  </TableCell>
+                  <TableCell>
+                    <p class="font-medium truncate">{alert.title}</p>
+                  </TableCell>
+                  <TableCell>
+                    <span class="text-muted-foreground whitespace-nowrap">{formatRelative(alert.eventTime)}</span>
+                  </TableCell>
+                  <TableCell>
+                    {#if alert.resolvedAt}
+                      <Badge variant="outline">Resolved</Badge>
+                    {:else}
+                      <Badge variant="destructive">Active</Badge>
+                    {/if}
+                  </TableCell>
+                </TableRow>
+              {/each}
+            </TableBody>
+          </Table>
+          {#if alertStore.totalAlerts > 10}
+            <div class="flex justify-center pt-3">
+              <Button variant="ghost" size="sm" onclick={() => goto(`/regions/${regionId}/alerts`)}>
+                View all {alertStore.totalAlerts} alerts
+              </Button>
+            </div>
+          {/if}
+        {/if}
       </CardContent>
     </Card>
   {/if}

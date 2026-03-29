@@ -19,7 +19,7 @@ redis.call('ZREMRANGEBYSCORE', key, 0, now - window_ms)
 local count = redis.call('ZCARD', key)
 if count >= limit then return {0, count, limit} end
 redis.call('ZADD', key, now, uid)
-redis.call('EXPIRE', key, math.ceil(window_ms / 1000))
+redis.call('EXPIRE', key, math.ceil(window_ms / 1000) + 1)
 return {1, count + 1, limit}`
 
 let reqCounter = 0

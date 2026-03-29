@@ -51,6 +51,11 @@ export interface RateLimitRule {
   window: number
 }
 
+export interface ThrottleConfig {
+  limit: number   // max requests per window per token
+  window: number  // seconds
+}
+
 export interface ContentSecurityPolicy {
   defaultSrc: string[]
   scriptSrc: string[]

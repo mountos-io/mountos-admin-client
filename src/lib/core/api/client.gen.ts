@@ -12,7 +12,8 @@ import type {
   RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, Fork, AuditLog, 
   AuditLogListOptions, RegionAuditLogListOptions, ServiceNode, ClientSession, 
   ClientSessionListOptions, SessionSummary, DiscoverMetaResponse, DashboardStats, 
-  LicenseDetails, LicenseTerms, ServiceAlert, AlertListOptions, AlertCountResponse,
+  LicenseDetails, LicenseTerms, ServiceAlert, AlertListOptions, AlertCountResponse, 
+  RegionAlert, RegionAlertListOptions,
 } from '@mountos-app/admin-sdk'
 
 function queryString(params: Record<string, string | number | boolean | undefined>): string {
@@ -53,6 +54,7 @@ export class AdminClient {
   private _dashboard?: DashboardResource
   private _license?: LicenseResource
   private _alerts?: AlertsResource
+  private _regionAlerts?: RegionAlertsResource
   private _cache?: CacheResource
 
   constructor(config: ClientConfig = {}) {
@@ -117,6 +119,10 @@ export class AdminClient {
 
   get alerts(): AlertsResource {
     return (this._alerts ??= new AlertsResource(this))
+  }
+
+  get regionAlerts(): RegionAlertsResource {
+    return (this._regionAlerts ??= new RegionAlertsResource(this))
   }
 
   get cache(): CacheResource {
@@ -485,6 +491,22 @@ class AlertsResource {
 
   resolve(alertId: string): Promise<void> {
     return this.client.request('POST', `/alerts/${encodeURIComponent(alertId)}/resolve`)
+  }
+}
+
+class RegionAlertsResource {
+  constructor(private client: AdminClient) {}
+
+  list(regionId: number, opts?: RegionAlertListOptions, signal?: AbortSignal): Promise<PaginatedResponse<RegionAlert>> {
+    return this.client.request('GET', `/regions/${regionId}/alerts/list` + queryString({ active: opts?.active, severity: opts?.severity, category: opts?.category, nodeId: opts?.nodeId, since: opts?.since, page: opts?.page, limit: opts?.limit }), undefined, signal)
+  }
+
+  count(regionId: number, signal?: AbortSignal): Promise<AlertCountResponse> {
+    return this.client.request('GET', `/regions/${regionId}/alerts/count`, undefined, signal)
+  }
+
+  resolve(regionId: number, alertId: string): Promise<void> {
+    return this.client.request('POST', `/regions/${regionId}/alerts/${encodeURIComponent(alertId)}/resolve`)
   }
 }
 

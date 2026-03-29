@@ -6,7 +6,7 @@ import { csrf } from 'hono/csrf'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import type { Context } from 'hono'
 import { bootstrap } from '../src/vendor/server/bootstrap'
-import { vendorCsrfConfig, vendorCspConfig, vendorStepUpRules, vendorWebAuthnConfig, vendorRateLimitRules } from '../src/vendor/server/config'
+import { vendorCsrfConfig, vendorCspConfig, vendorStepUpRules, vendorWebAuthnConfig, vendorRateLimitRules, vendorThrottleConfig } from '../src/vendor/server/config'
 import { vendorAuthzMiddleware } from '../src/vendor/server/middleware'
 import type { CsrfConfig, ContentSecurityPolicy, WebAuthnConfig } from './types'
 import { dashboardAuth } from './auth'
@@ -16,6 +16,7 @@ import { proxy } from './proxy'
 import { WebAuthnManager } from './webauthn'
 import { createStepUpMiddleware } from './stepup'
 import { createRateLimiter } from './ratelimit'
+import { createThrottle } from './throttle'
 import { registry, metricsMiddleware, authFailuresTotal, webauthnOpsTotal } from './metrics'
 
 await bootstrap()
@@ -101,6 +102,7 @@ app.use('/api/*', async (c, next) => {
 
 const rateLimiter = createRateLimiter(dashboardAuth.redisClient, {
   rules: [
+    { prefix: '/api/me', limit: 100, window: 1 },
     { prefix: '/api/auth/exchange', limit: 30, window: 60 },
     { prefix: '/api/auth/refresh', limit: 20, window: 60 },
     { prefix: '/api/webauthn', limit: 15, window: 60 },
@@ -229,6 +231,7 @@ app.post('/api/auth/logout', async (c) => {
 })
 
 app.use('/api/*', auth)
+app.use('/api/*', createThrottle(vendorThrottleConfig))
 app.use('/api/v1/*', authz)
 
 // WebAuthn ceremony endpoints (before step-up — chicken-and-egg)

@@ -48,6 +48,8 @@ export type {
   ServiceAlert,
   AlertListOptions,
   AlertCountResponse,
+  RegionAlert,
+  RegionAlertListOptions,
 } from '@mountos-app/admin-sdk'
 
 export { ApiError } from './errors.js'

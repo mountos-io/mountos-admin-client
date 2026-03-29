@@ -34,6 +34,12 @@ export const rateLimitHitsTotal = new Counter({
   registers: [registry],
 })
 
+export const throttleHitsTotal = new Counter({
+  name: 'mountos_admin_throttle_hits_total',
+  help: 'Total token-level throttle rejections',
+  registers: [registry],
+})
+
 export const webauthnOpsTotal = new Counter({
   name: 'mountos_admin_webauthn_ops_total',
   help: 'Total WebAuthn operations',

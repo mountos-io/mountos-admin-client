@@ -24,6 +24,7 @@
   import Cloud from '@lucide/svelte/icons/cloud'
   import Container from '@lucide/svelte/icons/container'
   import ServerOff from '@lucide/svelte/icons/server-off'
+  import Bell from '@lucide/svelte/icons/bell'
 
   let { regionId, basePath }: { regionId: number; basePath: string } = $props()
 
@@ -76,6 +77,7 @@
   const isHubRegion = $derived(nodeStore.nodesByType.has('hub'))
   const hasRegionalDB = $derived(nodeStore.nodesByType.has('dataserv') || nodeStore.nodesByType.has('gcserv'))
   const canReadAudit = $derived(auth.can('auditLogs', 'read'))
+  const canReadAlerts = $derived(auth.can('alerts', 'read'))
 
   const tierData = $derived.by(() => {
     const byType = nodeStore.nodesByType
@@ -170,6 +172,12 @@
       <Badge variant={region.isActive ? 'success' : 'secondary'}>
         {region.isActive ? 'Active' : 'Inactive'}
       </Badge>
+    {/if}
+    {#if canReadAlerts}
+      <Button variant="ghost" size="sm" class="ml-auto gap-1.5" onclick={() => goto(`${basePath}/${regionId}/alerts`)}>
+        <Bell class="h-4 w-4" />
+        Alerts
+      </Button>
     {/if}
   </div>
 
