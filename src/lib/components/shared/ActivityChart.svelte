@@ -131,6 +131,7 @@
 <div class="relative w-full">
   <!-- Chart -->
   <div class="relative border border-border rounded-sm bg-background overflow-hidden" style="padding: 1.5rem 1.5rem 3rem 4rem; height: min(400px, 50vh); contain: layout;">
+    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
     <!-- Y-axis labels -->
     <div class="absolute left-2 top-6 bottom-10 w-14 flex flex-col justify-between text-[1rem] font-mono text-muted-foreground">
       {#each timeLabels as { label }}

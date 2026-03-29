@@ -215,6 +215,12 @@ export function latencyColor(us: number): string {
   if (us < 100000) return 'var(--warning)'
   return 'var(--destructive)'
 }
+export function pingRttColor(ms: number): string {
+  if (ms < 30) return 'var(--success)'
+  if (ms < 150) return 'var(--primary)'
+  if (ms < 500) return 'var(--warning)'
+  return 'var(--destructive)'
+}
 export function betaVariant(cv: number): 'success' | 'outline' | 'warning' | 'destructive' {
   if (cv <= 0) return 'outline'
   if (cv < 0.5) return 'success'

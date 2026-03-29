@@ -24,6 +24,7 @@
   import ExternalLink from '@lucide/svelte/icons/external-link'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import { pingRttColor } from '$lib/core/utils/metrics'
 
   const store = useSessions()
   const accountStore = useAccounts()
@@ -222,7 +223,7 @@
                           </div>
                           <div class="metric-group">
                             <p class="detail-label">Network</p>
-                            <div class="metric-row"><span>Ping RTT</span><span>{m.pingRttMs ? `${m.pingRttMs} ms` : '—'}</span></div>
+                            <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '—'}</span></div>
                             <div class="metric-row {(m.connFailures ?? 0) ? 'text-destructive' : ''}"><span>Conn Failures</span><span>{formatNum(m.connFailures ?? 0)}</span></div>
                             <div class="metric-row"><span>TCP Conns</span><span>{formatNum(m.tcpActiveConns ?? 0)}</span></div>
                             <div class="metric-row"><span>RPC</span><span>{formatNum(m.rpcCount ?? 0)}</span></div>

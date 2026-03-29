@@ -11,7 +11,7 @@
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
-  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, betaVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
+  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, betaVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { showErrorToast } from '$lib/core/utils/toast'
@@ -222,7 +222,7 @@
             </div>
             <div class="metric-group">
               <p class="detail-label">Network</p>
-              <div class="metric-row"><span>Ping RTT</span><span>{m.pingRttMs ? `${m.pingRttMs} ms` : '—'}</span></div>
+              <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '—'}</span></div>
               <div class="metric-row {(m.connFailures ?? 0) ? 'text-destructive' : ''}"><span>Conn Failures</span><span>{formatNum(m.connFailures ?? 0)}</span></div>
               <div class="metric-row {(m.connDropped ?? 0) ? 'text-destructive' : ''}"><span>Conn Dropped</span><span>{formatNum(m.connDropped ?? 0)}</span></div>
               <div class="metric-row"><span>TCP Conns</span><span>{formatNum(m.tcpActiveConns ?? 0)}</span></div>
