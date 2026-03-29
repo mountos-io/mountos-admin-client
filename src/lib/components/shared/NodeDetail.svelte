@@ -64,10 +64,11 @@
   })
 
   $effect(() => {
+    const store = alertStore
     if (canReadAlerts && regionId && nodeId) {
-      alertStore.fetchAlerts()
+      store.fetchAlerts()
     }
-    return () => alertStore.reset()
+    return () => store.reset()
   })
 
   onDestroy(() => nodeStore.resetStats())
@@ -219,13 +220,13 @@
                       {SEVERITY_LABELS[alert.severity] ?? 'Unknown'}
                     </Badge>
                   </TableCell>
-                  <TableCell>
+                  <TableCell class="hidden sm:table-cell">
                     <span class="capitalize">{alert.category}</span>
                   </TableCell>
                   <TableCell>
-                    <p class="font-medium truncate">{alert.title}</p>
+                    <p class="font-medium truncate" title={alert.title}>{alert.title}</p>
                   </TableCell>
-                  <TableCell>
+                  <TableCell class="hidden md:table-cell">
                     <span class="text-muted-foreground whitespace-nowrap">{formatRelative(alert.eventTime)}</span>
                   </TableCell>
                   <TableCell>

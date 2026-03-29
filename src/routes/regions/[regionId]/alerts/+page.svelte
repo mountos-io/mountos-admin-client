@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
   import { page } from '$app/stores'
-  import { onDestroy, untrack } from 'svelte'
+  import { untrack } from 'svelte'
   import { useRegionAlerts } from '$lib/core/stores/regionAlerts.svelte'
   import { SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
   import { severityBadgeVariant, severityIcon, severityOptions, categoryOptions, timeOptions, handleTabKeydown } from '$lib/core/utils/alert'
@@ -28,18 +28,18 @@
   let resolvingId = $state<string | null>(null)
 
   $effect(() => {
+    const s = store
     if (auth.loading) return
     if (!auth.can('alerts', 'read')) {
       if (!redirected) { redirected = true; showErrorToast('Access denied'); goto('/', { replaceState: true }) }
       return
     }
     untrack(() => {
-      store.fetchAlerts()
-      store.startPolling()
+      s.fetchAlerts()
+      s.startPolling()
     })
+    return () => s.reset()
   })
-
-  onDestroy(() => store.reset())
 
   const sevFilterStr = $derived(store.severityFilter !== undefined ? String(store.severityFilter) : '')
   function onSevChange(v: string) {
@@ -211,7 +211,7 @@
               <TableCell>
                 {#if !alert.resolvedAt}
                   {@const isResolving = resolvingId === alert.alertId}
-                  <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 min-h-[44px] sm:min-h-0 gap-1">
+                  <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 min-h-[44px] gap-1">
                     {#if isResolving}
                       <Loader2 class="h-3.5 w-3.5 animate-spin" />
                     {:else}

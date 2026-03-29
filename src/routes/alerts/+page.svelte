@@ -224,7 +224,7 @@
               <TableCell>
                 {#if !alert.resolvedAt}
                   {@const isResolving = resolvingId === alert.alertId}
-                  <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 min-h-[44px] sm:min-h-0 gap-1">
+                  <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 min-h-[44px] gap-1">
                     {#if isResolving}
                       <Loader2 class="h-3.5 w-3.5 animate-spin" />
                     {:else}
