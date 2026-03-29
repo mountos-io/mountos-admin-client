@@ -3,7 +3,8 @@
   import { page } from '$app/stores'
   import { onDestroy, untrack } from 'svelte'
   import { useRegionAlerts } from '$lib/core/stores/regionAlerts.svelte'
-  import { TIME_RANGES, SEVERITY_LABELS, CATEGORIES } from '$lib/core/stores/alerts.svelte'
+  import { SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
+  import { severityBadgeVariant, severityIcon, severityOptions, categoryOptions, timeOptions, handleTabKeydown } from '$lib/core/utils/alert'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Card, CardContent } from '$lib/components/ui/card'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
@@ -16,9 +17,6 @@
   import { Skeleton } from '$lib/components/ui/skeleton'
   import { formatRelative } from '$lib/core/utils/format'
   import { showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert'
-  import AlertTriangle from '@lucide/svelte/icons/triangle-alert'
-  import Info from '@lucide/svelte/icons/info'
   import CheckCircle from '@lucide/svelte/icons/check-circle'
   import Loader2 from '@lucide/svelte/icons/loader-2'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
@@ -43,32 +41,6 @@
 
   onDestroy(() => store.reset())
 
-  const severityOptions: readonly { value: string; label: string }[] = [
-    { value: '', label: 'All Severities' },
-    { value: '2', label: 'Critical' },
-    { value: '1', label: 'Warning' },
-    { value: '0', label: 'Info' },
-  ]
-
-  const categoryOptions: readonly { value: string; label: string }[] = [
-    { value: '', label: 'All Categories' },
-    ...CATEGORIES.map(c => ({ value: c, label: c.charAt(0).toUpperCase() + c.slice(1) })),
-  ]
-
-  const timeOptions: readonly { value: string; label: string }[] = TIME_RANGES.map(r => ({ value: r.value, label: r.label }))
-
-  function severityBadgeVariant(severity: number): 'destructive' | 'warning' | 'default' {
-    if (severity === 2) return 'destructive'
-    if (severity === 1) return 'warning'
-    return 'default'
-  }
-
-  function severityIcon(severity: number) {
-    if (severity === 2) return ShieldAlert
-    if (severity === 1) return AlertTriangle
-    return Info
-  }
-
   const sevFilterStr = $derived(store.severityFilter !== undefined ? String(store.severityFilter) : '')
   function onSevChange(v: string) {
     store.setSeverityFilter(v === '' ? undefined : Number(v))
@@ -92,7 +64,7 @@
 
 <div class="space-y-4">
   <div class="flex items-center gap-3">
-    <Button variant="ghost" size="sm" onclick={() => goto(`/regions/${regionId}`)}>
+    <Button variant="ghost" size="sm" onclick={() => goto(`/regions/${regionId}`)} aria-label="Back to region">
       <ArrowLeft class="h-4 w-4" />
     </Button>
     <h1 class="text-2xl font-bold tracking-tight">Region Alerts</h1>
@@ -130,14 +102,18 @@
       <button
         role="tab"
         aria-selected={store.activeFilter}
+        tabindex={store.activeFilter ? 0 : -1}
         class="px-3 py-1 text-sm font-medium rounded transition-colors {store.activeFilter ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
         onclick={() => store.setActiveFilter(true)}
+        onkeydown={handleTabKeydown}
       >Active</button>
       <button
         role="tab"
         aria-selected={!store.activeFilter}
+        tabindex={!store.activeFilter ? 0 : -1}
         class="px-3 py-1 text-sm font-medium rounded transition-colors {!store.activeFilter ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
         onclick={() => store.setActiveFilter(false)}
+        onkeydown={handleTabKeydown}
       >All</button>
     </div>
   </FilterPanel>
@@ -213,9 +189,9 @@
               </TableCell>
               <TableCell>
                 <div class="min-w-0">
-                  <p class="font-medium truncate">{alert.title}</p>
+                  <p class="font-medium truncate" title={alert.title}>{alert.title}</p>
                   {#if alert.description}
-                    <p class="text-muted-foreground truncate mt-0.5">{alert.description}</p>
+                    <p class="text-muted-foreground truncate mt-0.5" title={alert.description}>{alert.description}</p>
                   {/if}
                 </div>
               </TableCell>

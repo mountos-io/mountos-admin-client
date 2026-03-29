@@ -4,6 +4,7 @@
   import { useNodes } from '$lib/core/stores/nodes.svelte'
   import { useRegionAlerts } from '$lib/core/stores/regionAlerts.svelte'
   import { SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
+  import { severityBadgeVariant, severityIcon } from '$lib/core/utils/alert'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
@@ -16,9 +17,6 @@
   import { formatRelative, nodeStatusVariant, formatDate } from '$lib/core/utils/format'
   import type { ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert'
-  import AlertTriangle from '@lucide/svelte/icons/triangle-alert'
-  import Info from '@lucide/svelte/icons/info'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
 
   let { regionId, nodeId, basePath }: { regionId: number; nodeId: string; basePath: string } = $props()
@@ -71,18 +69,6 @@
     }
     return () => alertStore.reset()
   })
-
-  function severityBadgeVariant(severity: number): 'destructive' | 'warning' | 'default' {
-    if (severity === 2) return 'destructive'
-    if (severity === 1) return 'warning'
-    return 'default'
-  }
-
-  function severityIcon(severity: number) {
-    if (severity === 2) return ShieldAlert
-    if (severity === 1) return AlertTriangle
-    return Info
-  }
 
   onDestroy(() => nodeStore.resetStats())
 </script>
@@ -217,9 +203,9 @@
             <TableHeader>
               <TableRow>
                 <TableHead class="w-28">Severity</TableHead>
-                <TableHead class="w-24">Category</TableHead>
+                <TableHead class="hidden sm:table-cell w-24">Category</TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead class="w-32">Time</TableHead>
+                <TableHead class="hidden md:table-cell w-32">Time</TableHead>
                 <TableHead class="w-20">Status</TableHead>
               </TableRow>
             </TableHeader>
