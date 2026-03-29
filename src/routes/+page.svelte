@@ -158,11 +158,11 @@
 
       <!-- Quick Actions -->
       {@const quickActions = [
-        { label: 'Account', icon: BuildingIcon, href: '/accounts/create', can: auth.can('accounts', 'create') },
-        { label: 'User', icon: UsersIcon, href: '/users/create', can: !!accountId && auth.can('users', 'create') },
-        { label: 'Volume', icon: DatabaseIcon, href: '/volumes/create', can: !!accountId && auth.can('volumes', 'create') },
-        { label: 'Storage', icon: HardDriveIcon, href: '/storages/create', can: !!accountId && auth.can('storages', 'create') },
-        { label: 'Region', icon: GlobeIcon, href: '/regions/create', can: auth.can('regions', 'create') },
+        { label: 'Account', icon: BuildingIcon, href: '/accounts/create', can: auth.can('accounts', 'create'), clip: 'cyberpunk-rskewed' },
+        { label: 'User', icon: UsersIcon, href: '/users/create', can: !!accountId && auth.can('users', 'create'), clip: 'cyberpunk-rskewed' },
+        { label: 'Volume', icon: DatabaseIcon, href: '/volumes/create', can: !!accountId && auth.can('volumes', 'create'), clip: '' },
+        { label: 'Storage', icon: HardDriveIcon, href: '/storages/create', can: !!accountId && auth.can('storages', 'create'), clip: 'cyberpunk-skewed' },
+        { label: 'Region', icon: GlobeIcon, href: '/regions/create', can: auth.can('regions', 'create'), clip: 'cyberpunk-skewed' },
       ]}
       <div class="flex flex-wrap justify-center gap-4">
         {#each quickActions as action}
@@ -170,7 +170,7 @@
           {#if action.can}
             <a href={action.href}
               class="flex flex-col items-center justify-center gap-3 w-full min-w-[120px] max-w-[10rem] h-32 sm:w-36 md:w-48 md:h-40 rounded-sm border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
-              <div class="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-md bg-primary/10">
+              <div class="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 {action.clip} bg-primary/10">
                 <Icon class="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-primary" />
               </div>
               <span class="text-sm md:text-base font-medium flex items-center gap-1.5">
@@ -181,7 +181,7 @@
             <button type="button" disabled class="flex flex-col items-center justify-center gap-3 w-full min-w-[120px] max-w-[10rem] h-32 sm:w-36 md:w-48 md:h-40 rounded-sm border border-border opacity-25 cursor-not-allowed"
               title="Requires {action.label.toLowerCase()} create permission"
               aria-label="Create {action.label} (no permission)">
-              <div class="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 rounded-md bg-primary/10">
+              <div class="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 {action.clip} bg-primary/10">
                 <Icon class="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-primary" />
               </div>
               <span class="text-sm md:text-base font-medium flex items-center gap-1.5">

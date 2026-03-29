@@ -375,6 +375,82 @@
     color: var(--bracket-hover-dark);
   }
 
+  /* Reverse skewed corners (top-right + bottom-left) */
+  .cyberpunk-rskewed {
+    position: relative;
+    clip-path: polygon(
+      0 0,
+      calc(100% - 20px) 0,
+      100% 20px,
+      100% 100%,
+      20px 100%,
+      0 calc(100% - 20px)
+    );
+  }
+
+  .cyberpunk-rskewed::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(225deg, currentColor 2px, transparent 2px) 100% 0 / 28px 28px,
+      linear-gradient(45deg, currentColor 2px, transparent 2px) 0 100% / 28px 28px;
+    background-repeat: no-repeat;
+    color: var(--bracket-color);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .dark .cyberpunk-rskewed::before {
+    color: var(--bracket-color-dark);
+  }
+
+  .cyberpunk-rskewed:hover::before {
+    color: var(--bracket-hover);
+  }
+
+  .dark .cyberpunk-rskewed:hover::before {
+    color: var(--bracket-hover-dark);
+  }
+
+  /* Left-skewed corners (top-left + bottom-left) */
+  .cyberpunk-lskewed {
+    position: relative;
+    clip-path: polygon(
+      0 20px,
+      20px 0,
+      100% 0,
+      100% 100%,
+      20px 100%,
+      0 calc(100% - 20px)
+    );
+  }
+
+  .cyberpunk-lskewed::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(135deg, currentColor 2px, transparent 2px) 0 0 / 28px 28px,
+      linear-gradient(45deg, currentColor 2px, transparent 2px) 0 100% / 28px 28px;
+    background-repeat: no-repeat;
+    color: var(--bracket-color);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .dark .cyberpunk-lskewed::before {
+    color: var(--bracket-color-dark);
+  }
+
+  .cyberpunk-lskewed:hover::before {
+    color: var(--bracket-hover);
+  }
+
+  .dark .cyberpunk-lskewed:hover::before {
+    color: var(--bracket-hover-dark);
+  }
+
   /* Large variant with more pronounced skew */
   .cyberpunk-skewed-lg {
     position: relative;
