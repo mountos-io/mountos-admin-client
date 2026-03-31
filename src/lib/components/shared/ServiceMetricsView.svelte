@@ -613,21 +613,27 @@
           <!-- Load Average -->
           <div class="space-y-1.5">
             <span class="text-sm font-mono text-muted-foreground">Load Average</span>
-            <div class="grid grid-cols-3 gap-2">
-              {#each [{ label: '1m', val: load1 }, { label: '5m', val: load5 }, { label: '15m', val: load15 }] as l}
-                {@const ratio = l.val / cores}
-                {@const pct = Math.round(ratio * 100)}
-                {@const color = loadColor(l.val, cores)}
-                <div class="relative bg-muted rounded-sm p-2 text-center overflow-hidden">
-                  <div class="absolute inset-0 transition-opacity duration-700"
-                    style="background: {color}; opacity: {Math.min(ratio * 0.15, 0.3)}"></div>
-                  <div class="relative font-mono">
-                    <div class="text-sm text-muted-foreground">{l.label}</div>
-                    <div class="text-sm tabular-nums font-medium" style="color: {color}">{l.val.toFixed(2)} <span class="text-xs opacity-70">({pct}%)</span></div>
+            {#if osName === 'windows'}
+              <div class="bg-muted rounded-sm p-2 text-center">
+                <span class="text-sm font-mono text-muted-foreground">Not available for this operating system</span>
+              </div>
+            {:else}
+              <div class="grid grid-cols-3 gap-2">
+                {#each [{ label: '1m', val: load1 }, { label: '5m', val: load5 }, { label: '15m', val: load15 }] as l}
+                  {@const ratio = l.val / cores}
+                  {@const pct = Math.round(ratio * 100)}
+                  {@const color = loadColor(l.val, cores)}
+                  <div class="relative bg-muted rounded-sm p-2 text-center overflow-hidden">
+                    <div class="absolute inset-0 transition-opacity duration-700"
+                      style="background: {color}; opacity: {Math.min(ratio * 0.15, 0.3)}"></div>
+                    <div class="relative font-mono">
+                      <div class="text-sm text-muted-foreground">{l.label}</div>
+                      <div class="text-sm tabular-nums font-medium" style="color: {color}">{l.val.toFixed(2)} <span class="text-xs opacity-70">({pct}%)</span></div>
+                    </div>
                   </div>
-                </div>
-              {/each}
-            </div>
+                {/each}
+              </div>
+            {/if}
           </div>
         </div>
       </div>
