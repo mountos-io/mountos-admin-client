@@ -62,6 +62,43 @@
   let editing = $state(false)
   let deactivateOpen = $state(false)
 
+  let deleteForkTarget = $state<ForkNode | null>(null)
+  let deleteForkForce = $state(false)
+  let deleteForkOpen = $state(false)
+  let deleteForkLoading = $state(false)
+
+  function confirmDeleteFork(node: ForkNode) {
+    deleteForkTarget = node
+    deleteForkForce = node.children.length > 0
+    deleteForkOpen = true
+  }
+
+  async function handleDeleteFork() {
+    if (!deleteForkTarget) return
+    deleteForkLoading = true
+    try {
+      await store.deleteFork(id, deleteForkTarget.name, deleteForkForce)
+      showSuccessToast(`Fork "${deleteForkTarget.name}" marked for deletion`)
+      deleteForkOpen = false
+      deleteForkTarget = null
+      await fetchForks()
+    } catch (err) {
+      handleApiError(err, 'Failed to delete fork')
+    } finally {
+      deleteForkLoading = false
+    }
+  }
+
+  async function handleRestoreFork(node: ForkNode) {
+    try {
+      await store.restoreFork(id, node.name)
+      showSuccessToast(`Fork "${node.name}" restored`)
+      await fetchForks()
+    } catch (err) {
+      handleApiError(err, 'Failed to restore fork')
+    }
+  }
+
   async function handleDeactivate(req: DeactivateVolumeRequest) {
     await store.deactivateVolume(id, req)
     await reload()
@@ -236,7 +273,7 @@
     if (!volume) return
     forksLoading = true
     try {
-      forks = await store.listForks(id)
+      forks = await store.listAllForks(id)
     } catch { forks = [] }
     finally { forksLoading = false }
   }
@@ -518,6 +555,7 @@
       <CardHeader>
         <div class="flex items-center justify-between">
           <CardTitle>Forks ({forks.length > 1 ? forks.length - 1 : 0})</CardTitle>
+          <div class="flex items-center gap-2">
           {#if forks.length > 1}
             <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit hidden md:block">
               <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
@@ -533,6 +571,8 @@
               </div>
             </div>
           {/if}
+          <!-- TODO: Create fork button — pending createFork API in admin-sdk -->
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -549,6 +589,11 @@
               <div class="flex-1 min-w-0 py-0.5">
                 <div class="flex items-center gap-2 flex-wrap">
                   <Badge variant={node.fid === 0 ? 'default' : 'outline'}>{node.name}</Badge>
+                  {#if node.status === 'pending_deletion'}
+                    <Badge variant="warning" class="text-[10px]">Pending Deletion — Restorable</Badge>
+                  {:else if node.status === 'cleanup_in_progress'}
+                    <Badge variant="destructive" class="text-[10px]">Deleting — No Recovery</Badge>
+                  {/if}
                   {#if node.fid !== 0 && node.snapshotTs}
                     <span class="text-xs text-muted-foreground whitespace-nowrap">
                       snapshot of <span class="font-medium">{node.parentName}</span> @ <span class="font-mono">{formatTimestamp(node.snapshotTs)}</span>
@@ -566,9 +611,29 @@
                     {#if node.createdBy}
                       <span>by {node.createdBy}</span>
                     {/if}
+                    {#if node.inactiveAt}
+                      <span class="text-yellow-600 dark:text-yellow-400">
+                        deleted <span class="font-mono">{formatRelative(node.inactiveAt / 1000)}</span>
+                      </span>
+                    {/if}
                   </div>
                 {/if}
               </div>
+              {#if node.fid !== 0 && canEdit}
+                <div class="flex items-center gap-1 shrink-0">
+                  {#if node.status === 'active'}
+                    <Button variant="ghost" size="sm" class="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                      onclick={() => confirmDeleteFork(node)}>
+                      Delete
+                    </Button>
+                  {:else if node.status === 'pending_deletion'}
+                    <Button variant="ghost" size="sm" class="h-6 px-2 text-xs text-green-600 hover:text-green-700"
+                      onclick={() => handleRestoreFork(node)}>
+                      Restore
+                    </Button>
+                  {/if}
+                </div>
+              {/if}
             </div>
             {#if node.children.length > 0}
               <div class="{depth > 0 && !isLast ? 'ml-5 border-l border-muted-foreground/20 pl-0' : depth > 0 ? 'ml-5' : ''}" role="group">
@@ -778,6 +843,37 @@
 {#if volume}
   <DeactivateVolumeDialog bind:open={deactivateOpen} volumeName={volume.name} onConfirm={handleDeactivate} />
 {/if}
+
+<Dialog.Root bind:open={deleteForkOpen}>
+  <Dialog.Content class="sm:max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>Delete Fork</Dialog.Title>
+      <Dialog.Description>
+        {#if deleteForkTarget}
+          {#if deleteForkForce}
+            <div class="flex items-center gap-2 mt-2 p-2 rounded-md bg-destructive/10 text-destructive text-sm">
+              <ShieldAlert class="h-4 w-4 shrink-0" />
+              <span>This will also delete {deleteForkTarget.children.length} child fork{deleteForkTarget.children.length !== 1 ? 's' : ''} (force delete).</span>
+            </div>
+          {/if}
+          <p class="mt-2 text-sm">
+            Fork <span class="font-semibold">{deleteForkTarget.name}</span> will be marked for deletion.
+            Data cleanup starts after the grace period. You can restore during this window.
+          </p>
+        {/if}
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => deleteForkOpen = false}>Cancel</Button>
+      <Button variant="destructive" disabled={deleteForkLoading} onclick={handleDeleteFork}>
+        {#if deleteForkLoading}
+          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+        {/if}
+        {deleteForkForce ? 'Force Delete' : 'Delete'}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 <Dialog.Root bind:open={credentialsOpen}>
   <Dialog.Content class="cyberpunk-skewed sm:max-w-lg p-0 gap-0 border-none"

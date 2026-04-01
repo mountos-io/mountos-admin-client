@@ -71,6 +71,18 @@ async function listForks(volumeId: number) {
   return api.volumes.listForks(volumeId)
 }
 
+async function listAllForks(volumeId: number) {
+  return api.volumes.listAllForks(volumeId)
+}
+
+async function deleteFork(volumeId: number, forkName: string, force: boolean = false) {
+  return api.volumes.deleteFork(volumeId, forkName, { force })
+}
+
+async function restoreFork(volumeId: number, forkName: string) {
+  return api.volumes.restoreFork(volumeId, forkName)
+}
+
 export function useVolumes() {
   return {
     get volumes() { return volumes },
@@ -89,5 +101,8 @@ export function useVolumes() {
     revokeApiKeysByUser,
     updateQuota,
     listForks,
+    listAllForks,
+    deleteFork,
+    restoreFork,
   }
 }

@@ -9,7 +9,7 @@ import type {
   Storage, StorageListOptions, EditStorageRequest, TestStorageBucketRequest, 
   CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest, 
   DeactivateVolumeRequest, GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, 
-  RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, Fork, AuditLog, 
+  RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, Fork, DeleteVolumeForkRequest, AuditLog,
   AuditLogListOptions, RegionAuditLogListOptions, ServiceNode, ClientSession, 
   ClientSessionListOptions, SessionSummary, DiscoverMetaResponse, DashboardStats, 
   LicenseDetails, LicenseTerms, ServiceAlert, AlertListOptions, AlertCountResponse, 
@@ -386,6 +386,18 @@ class VolumesResource {
 
   listForks(volumeId: number, signal?: AbortSignal): Promise<Fork[]> {
     return this.client.request('GET', `/volumes/${volumeId}/forks`, undefined, signal)
+  }
+
+  listAllForks(volumeId: number, signal?: AbortSignal): Promise<Fork[]> {
+    return this.client.request('GET', `/volumes/${volumeId}/forks?include_inactive=true`, undefined, signal)
+  }
+
+  deleteFork(volumeId: number, forkName: string, req: DeleteVolumeForkRequest): Promise<{ inactivatedFids: number[] }> {
+    return this.client.request('POST', `/volumes/${volumeId}/forks/${forkName}/delete`, req)
+  }
+
+  restoreFork(volumeId: number, forkName: string): Promise<Fork> {
+    return this.client.request('POST', `/volumes/${volumeId}/forks/${forkName}/restore`)
   }
 }
 

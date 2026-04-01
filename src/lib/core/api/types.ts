@@ -48,6 +48,7 @@ export type {
   ServiceAlert,
   AlertListOptions,
   AlertCountResponse,
+  DeleteVolumeForkRequest,
   RegionAlert,
   RegionAlertListOptions,
 } from '@mountos-app/admin-sdk'
