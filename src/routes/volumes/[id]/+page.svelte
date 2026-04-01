@@ -613,16 +613,16 @@
                     </span>
                   {/if}
                   {#if node.fid !== 0 && node.snapshotTs}
-                    <span class="text-xs text-muted-foreground whitespace-nowrap">
+                    <span class="text-sm text-muted-foreground whitespace-nowrap">
                       snapshot of <span class="font-medium">{node.parentName}</span> @ <span class="font-mono">{formatTimestamp(node.snapshotTs)}</span>
                     </span>
                   {/if}
                   {#if node.childrenCount > 0}
-                    <Badge variant="secondary" class="text-[11px] px-1.5 py-0">{node.childrenCount}</Badge>
+                    <Badge variant="secondary" class="text-sm px-1.5 py-0">{node.childrenCount}</Badge>
                   {/if}
                 </div>
                 {#if node.fid !== 0}
-                  <div class="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                  <div class="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
                     {#if node.createdAt}
                       <span>created <span class="font-mono">{formatRelative(node.createdAt / 1000)}</span></span>
                     {/if}
@@ -690,7 +690,9 @@
                 {#if br.fid !== 0}
                   {@const bx = gTimeX(br.branchNorm)}
                   <path d={gBranchPath(br.parentRow, br.row, bx)}
-                    fill="none" stroke={br.color} stroke-width="3" stroke-linecap="round" />
+                    fill="none" stroke={br.color} stroke-width="3" stroke-linecap="round"
+                    opacity={br.status !== 'active' ? 0.35 : 1}
+                    stroke-dasharray={br.status !== 'active' ? '6 4' : 'none'} />
                   <circle cx={bx} cy={gRowY(br.parentRow)} r="4"
                     fill={g.rows[br.parentRow].color} stroke="var(--background)" stroke-width="2" />
                   <circle cx={bx} cy={y} r={G_DOT}
@@ -699,7 +701,7 @@
                   <text x={bx} y={above ? y - G_DOT - 6 : y + G_DOT + 16}
                     text-anchor="middle" dominant-baseline="auto"
                     fill={br.color} opacity="0.7"
-                    class="font-mono" style="font-size: 13px">{formatShortDate(br.snapshotTs)}</text>
+                    class="font-mono text-sm">{formatShortDate(br.snapshotTs)}</text>
                 {:else}
                   <circle cx={startX} cy={y} r={G_DOT + 1}
                     fill={br.color} stroke="var(--background)" stroke-width="2" />
