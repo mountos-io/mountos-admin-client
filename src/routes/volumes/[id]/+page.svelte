@@ -89,13 +89,28 @@
     }
   }
 
-  async function handleRestoreFork(node: ForkNode) {
+  let restoreForkTarget = $state<ForkNode | null>(null)
+  let restoreForkOpen = $state(false)
+  let restoreForkLoading = $state(false)
+
+  function confirmRestoreFork(node: ForkNode) {
+    restoreForkTarget = node
+    restoreForkOpen = true
+  }
+
+  async function handleRestoreFork() {
+    if (!restoreForkTarget) return
+    restoreForkLoading = true
     try {
-      await store.restoreFork(id, node.name)
-      showSuccessToast(`Fork "${node.name}" restored`)
+      await store.restoreFork(id, restoreForkTarget.name)
+      showSuccessToast(`Fork "${restoreForkTarget.name}" restored`)
+      restoreForkOpen = false
+      restoreForkTarget = null
       await fetchForks()
     } catch (err) {
       handleApiError(err, 'Failed to restore fork')
+    } finally {
+      restoreForkLoading = false
     }
   }
 
@@ -320,7 +335,7 @@
   interface BranchRow {
     fid: number; name: string; row: number; parentRow: number
     branchNorm: number; snapshotTs: number; createdAt: number
-    createdBy?: string; color: string
+    createdBy?: string; color: string; status: string
   }
 
   function computeGraph(items: Fork[]) {
@@ -339,7 +354,7 @@
     function walkRoot(node: ForkNode) {
       occupied.add(0)
       rows.push({ fid: node.fid, name: node.name, row: 0, parentRow: 0, branchNorm: 0,
-        snapshotTs: node.snapshotTs, createdAt: node.createdAt, createdBy: node.createdBy, color: graphColor(0) })
+        snapshotTs: node.snapshotTs, createdAt: node.createdAt, createdBy: node.createdBy, color: graphColor(0), status: node.status })
       for (let i = 0; i < node.children.length; i++) {
         walkChild(node.children[i], 0, i % 2 === 0 ? -1 : 1)
       }
@@ -350,7 +365,7 @@
       const row = claimRow(parentRow + direction, direction)
       const ci = rows.length
       rows.push({ fid: node.fid, name: node.name, row, parentRow, branchNorm: 0,
-        snapshotTs: node.snapshotTs, createdAt: node.createdAt, createdBy: node.createdBy, color: graphColor(ci) })
+        snapshotTs: node.snapshotTs, createdAt: node.createdAt, createdBy: node.createdBy, color: graphColor(ci), status: node.status })
       for (let i = 0; i < node.children.length; i++) {
         walkChild(node.children[i], row, i % 2 === 0 ? direction : -direction)
       }
@@ -582,7 +597,7 @@
           <p class="text-sm text-muted-foreground">No forks</p>
         {:else if forkView === 'list'}
           {#snippet forkNode(node: ForkNode, depth: number, isLast: boolean)}
-            <div class="flex items-start gap-2 {depth > 0 ? 'ml-5' : ''}" role="treeitem" aria-selected="false" aria-expanded={node.children.length > 0 ? true : undefined}>
+            <div class="flex items-start gap-2 {depth > 0 ? 'ml-5' : ''} {node.status !== 'active' ? 'opacity-60' : ''}" role="treeitem" aria-selected="false" aria-expanded={node.children.length > 0 ? true : undefined}>
               {#if depth > 0}
                 <span class="shrink-0 text-muted-foreground/40 font-mono text-sm select-none" aria-hidden="true">{isLast ? '└─' : '├─'}</span>
               {/if}
@@ -590,9 +605,12 @@
                 <div class="flex items-center gap-2 flex-wrap">
                   <Badge variant={node.fid === 0 ? 'default' : 'outline'}>{node.name}</Badge>
                   {#if node.status === 'pending_deletion'}
-                    <Badge variant="warning" class="text-[10px]">Pending Deletion — Restorable</Badge>
+                    <Badge variant="warning" class="text-sm">Pending Deletion — Restorable</Badge>
                   {:else if node.status === 'cleanup_in_progress'}
-                    <Badge variant="destructive" class="text-[10px]">Deleting — No Recovery</Badge>
+                    <span class="inline-flex items-center gap-1">
+                      <Badge variant="destructive" class="text-sm">Deleting — No Recovery</Badge>
+                      <InfoTip text="Data cleanup is in progress. This fork cannot be restored." />
+                    </span>
                   {/if}
                   {#if node.fid !== 0 && node.snapshotTs}
                     <span class="text-xs text-muted-foreground whitespace-nowrap">
@@ -600,7 +618,7 @@
                     </span>
                   {/if}
                   {#if node.childrenCount > 0}
-                    <Badge variant="secondary" class="text-[10px] px-1.5 py-0">{node.childrenCount}</Badge>
+                    <Badge variant="secondary" class="text-[11px] px-1.5 py-0">{node.childrenCount}</Badge>
                   {/if}
                 </div>
                 {#if node.fid !== 0}
@@ -612,7 +630,7 @@
                       <span>by {node.createdBy}</span>
                     {/if}
                     {#if node.inactiveAt}
-                      <span class="text-yellow-600 dark:text-yellow-400">
+                      <span class="text-warning">
                         deleted <span class="font-mono">{formatRelative(node.inactiveAt / 1000)}</span>
                       </span>
                     {/if}
@@ -622,13 +640,15 @@
               {#if node.fid !== 0 && canEdit}
                 <div class="flex items-center gap-1 shrink-0">
                   {#if node.status === 'active'}
-                    <Button variant="ghost" size="sm" class="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                    <Button variant="ghost" size="sm" class="h-8 min-w-[44px] px-3 text-xs text-destructive hover:text-destructive"
+                      aria-label="Delete fork {node.name}"
                       onclick={() => confirmDeleteFork(node)}>
                       Delete
                     </Button>
                   {:else if node.status === 'pending_deletion'}
-                    <Button variant="ghost" size="sm" class="h-6 px-2 text-xs text-green-600 hover:text-green-700"
-                      onclick={() => handleRestoreFork(node)}>
+                    <Button variant="ghost" size="sm" class="h-8 min-w-[44px] px-3 text-xs text-success hover:text-success"
+                      aria-label="Restore fork {node.name}"
+                      onclick={() => confirmRestoreFork(node)}>
                       Restore
                     </Button>
                   {/if}
@@ -659,8 +679,14 @@
                 {@const y = gRowY(br.row)}
                 {@const startX = br.fid === 0 ? G_LEFT + G_LABEL : gTimeX(br.branchNorm)}
                 <line x1={startX} y1={y} x2={gNowX} y2={y}
-                  stroke={br.color} stroke-width="3" stroke-linecap="round" />
-                <polygon points="{gNowX + 8},{y} {gNowX},{y - 4} {gNowX},{y + 4}" fill={br.color} />
+                  stroke={br.color} stroke-width="3" stroke-linecap="round"
+                  opacity={br.status !== 'active' ? 0.35 : 1}
+                  stroke-dasharray={br.status !== 'active' ? '6 4' : 'none'} />
+                {#if br.status === 'active'}
+                  <polygon points="{gNowX + 8},{y} {gNowX},{y - 4} {gNowX},{y + 4}" fill={br.color} />
+                {:else}
+                  <circle cx={gNowX} cy={y} r="3" fill={br.color} opacity="0.5" />
+                {/if}
                 {#if br.fid !== 0}
                   {@const bx = gTimeX(br.branchNorm)}
                   <path d={gBranchPath(br.parentRow, br.row, bx)}
@@ -853,7 +879,7 @@
           {#if deleteForkForce}
             <div class="flex items-center gap-2 mt-2 p-2 rounded-md bg-destructive/10 text-destructive text-sm">
               <ShieldAlert class="h-4 w-4 shrink-0" />
-              <span>This will also delete {deleteForkTarget.children.length} child fork{deleteForkTarget.children.length !== 1 ? 's' : ''} (force delete).</span>
+              <span>Force delete: also removes {deleteForkTarget.children.length} child fork{deleteForkTarget.children.length !== 1 ? 's' : ''}: <strong>{deleteForkTarget.children.map(c => c.name).join(', ')}</strong></span>
             </div>
           {/if}
           <p class="mt-2 text-sm">
@@ -870,6 +896,30 @@
           <Loader2 class="mr-2 h-4 w-4 animate-spin" />
         {/if}
         {deleteForkForce ? 'Force Delete' : 'Delete'}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={restoreForkOpen}>
+  <Dialog.Content class="sm:max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>Restore Fork</Dialog.Title>
+      <Dialog.Description>
+        {#if restoreForkTarget}
+          <p class="mt-2 text-sm">
+            Restore fork <span class="font-semibold">{restoreForkTarget.name}</span>? This will make it active again and allow client connections.
+          </p>
+        {/if}
+      </Dialog.Description>
+    </Dialog.Header>
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => restoreForkOpen = false}>Cancel</Button>
+      <Button variant="default" disabled={restoreForkLoading} onclick={handleRestoreFork}>
+        {#if restoreForkLoading}
+          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+        {/if}
+        Restore
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
