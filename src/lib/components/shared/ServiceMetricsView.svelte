@@ -1238,6 +1238,8 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-size: 0.6rem;
+    display: inline-flex;
+    align-items: center;
   }
 
   .toggle-btn:focus-visible {
@@ -1247,6 +1249,16 @@
   .toggle-active {
     color: var(--foreground);
     background: var(--_toggle-active-bg);
+  }
+
+  /* Touch targets — coarse pointer devices (touch screens, tablets) */
+  @media (pointer: coarse) {
+    .tab-btn {
+      min-height: 2.75rem;
+    }
+    .toggle-btn {
+      min-height: 2.75rem;
+    }
   }
 
   /* Reduced motion */
