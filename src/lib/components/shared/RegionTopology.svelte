@@ -172,7 +172,7 @@
 </script>
 
 <div class="space-y-6">
-  <div class="flex items-center gap-3">
+  <div class="flex flex-wrap items-center gap-3">
     <Button variant="ghost" size="sm" onclick={() => goto(basePath)}>
       <ArrowLeft class="h-4 w-4" />
     </Button>
@@ -185,7 +185,7 @@
     <div class="ml-auto flex items-center gap-2">
       {#if isSuperAdmin}
         <span class="flex items-center gap-1.5">
-          <Button variant="outline" size="sm" class="gap-1.5" disabled={resyncInFlight}
+          <Button variant="outline" size="sm" class="gap-1.5" disabled={resyncInFlight} aria-busy={resyncInFlight}
             onclick={() => dialog.confirm(
               'Vault Resync',
               'This will invalidate all vault caches across every service node and reload secrets from vault. Use sparingly.',

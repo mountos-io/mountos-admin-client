@@ -392,11 +392,11 @@ class VolumesResource {
     return this.client.request('GET', `/volumes/${volumeId}/forks?include_inactive=true`, undefined, signal)
   }
 
-  deleteFork(volumeId: number, forkName: number, req: DeleteVolumeForkRequest): Promise<{ inactivatedFids: number[] }> {
+  deleteFork(volumeId: number, forkName: string, req: DeleteVolumeForkRequest): Promise<{ inactivatedFids: number[] }> {
     return this.client.request('POST', `/volumes/${volumeId}/forks/${forkName}/delete`, req)
   }
 
-  restoreFork(volumeId: number, forkName: number, signal?: AbortSignal): Promise<Fork> {
+  restoreFork(volumeId: number, forkName: string, signal?: AbortSignal): Promise<Fork> {
     return this.client.request('GET', `/volumes/${volumeId}/forks/${forkName}/restore`, undefined, signal)
   }
 }
