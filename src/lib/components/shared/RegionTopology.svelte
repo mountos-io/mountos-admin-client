@@ -11,7 +11,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
-  import { showErrorToast } from '$lib/core/utils/toast'
+  import { showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import { formatRelative } from '$lib/core/utils/format'
   import type { Region, ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
@@ -25,6 +25,11 @@
   import Container from '@lucide/svelte/icons/container'
   import ServerOff from '@lucide/svelte/icons/server-off'
   import Bell from '@lucide/svelte/icons/bell'
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw'
+  import InfoTip from '$lib/components/shared/InfoTip.svelte'
+  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
+  import { api } from '$lib/core/stores/client.svelte'
+  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
 
   let { regionId, basePath }: { regionId: number; basePath: string } = $props()
 
@@ -32,6 +37,10 @@
   const regionStore = useRegions()
   const regionAudit = useRegionAuditLogs()
   const auth = useAuth()
+
+  const dialog = useConfirmDialog()
+  const isSuperAdmin = $derived(auth.user?.role === 'superadmin')
+  let resyncInFlight = $state(false)
 
   let region = $state<Region | null>(null)
   let hoveredNode = $state<{ node: ServiceNode; x: number; y: number } | null>(null)
@@ -173,12 +182,32 @@
         {region.isActive ? 'Active' : 'Inactive'}
       </Badge>
     {/if}
-    {#if canReadAlerts}
-      <Button variant="ghost" size="sm" class="ml-auto gap-1.5" onclick={() => goto(`${basePath}/${regionId}/alerts`)}>
-        <Bell class="h-4 w-4" />
-        Alerts
-      </Button>
-    {/if}
+    <div class="ml-auto flex items-center gap-2">
+      {#if isSuperAdmin}
+        <span class="flex items-center gap-1.5">
+          <Button variant="outline" size="sm" class="gap-1.5" disabled={resyncInFlight}
+            onclick={() => dialog.confirm(
+              'Vault Resync',
+              'This will invalidate all vault caches across every service node and reload secrets from vault. Use sparingly.',
+              async () => {
+                resyncInFlight = true
+                try { await api.vault.resync(); showSuccessToast('Vault resync initiated') }
+                finally { resyncInFlight = false }
+              },
+            )}>
+            <RefreshCw class="h-3.5 w-3.5 {resyncInFlight ? 'animate-spin' : ''}" />
+            Vault Resync
+          </Button>
+          <InfoTip text="When vault secrets change (master keys, service verifier keys), resync forces all services to drop cached values and fetch fresh copies. Use only when needed — services auto-refresh periodically." />
+        </span>
+      {/if}
+      {#if canReadAlerts}
+        <Button variant="ghost" size="sm" class="gap-1.5" onclick={() => goto(`${basePath}/${regionId}/alerts`)}>
+          <Bell class="h-4 w-4" />
+          Alerts
+        </Button>
+      {/if}
+    </div>
   </div>
 
   <div class="corner-brackets relative border border-border/30 rounded-sm p-5 w-fit max-w-full">
@@ -449,6 +478,8 @@
     </div>
   </div>
 {/if}
+
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} variant={dialog.variant} onConfirm={dialog.action} />
 
 <style>
   .audit-content-scroll {

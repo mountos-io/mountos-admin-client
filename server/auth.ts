@@ -10,7 +10,7 @@ const AUD_REFRESH = 'mountos/dashboard/refresh'
 const SYSTEM_ACCOUNT_ID = 0
 const SYSTEM_EMAIL_DOMAIN = 'system.local'
 
-const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'clientSessions', 'alerts', 'discover', 'cache', 'dashboard', 'license'] as const
+const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'clientSessions', 'alerts', 'discover', 'vault', 'dashboard', 'license'] as const
 const allCaps = (v: number) => Object.fromEntries(RESOURCES.map(r => [r, v]))
 
 const defaults: DashboardAuthConfig = {
@@ -18,8 +18,8 @@ const defaults: DashboardAuthConfig = {
   refreshTTL: 7 * 24 * 60 * 60, // 7d
   roles: {
     superadmin: allCaps(15), // CRUD
-    l1admin: allCaps(14),    // CRU, no delete
-    l2admin: allCaps(4),     // read-only
+    l1admin: { ...allCaps(14), vault: 0 },    // CRU, no delete; vault: superadmin-only
+    l2admin: { ...allCaps(4), vault: 0 },     // read-only; vault: superadmin-only
     user: { volumes: 4, auditLogs: 4, dashboard: 4 }, // R-only volumes + audit + dashboard
   },
 }

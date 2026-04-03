@@ -12,7 +12,7 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
   'client-sessions': 'clientSessions',
   nodes: 'serviceNodes',
   discover: 'discover',
-  cache: 'cache',
+  vault: 'vault',
   alerts: 'alerts',
   dashboard: 'dashboard',
   license: 'license',

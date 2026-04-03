@@ -9,11 +9,11 @@ import type {
   Storage, StorageListOptions, EditStorageRequest, TestStorageBucketRequest, 
   CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest, 
   DeactivateVolumeRequest, GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, 
-  RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, Fork, DeleteVolumeForkRequest, AuditLog,
-  AuditLogListOptions, RegionAuditLogListOptions, ServiceNode, ClientSession, 
-  ClientSessionListOptions, SessionSummary, DiscoverMetaResponse, DashboardStats, 
-  LicenseDetails, LicenseTerms, ServiceAlert, AlertListOptions, AlertCountResponse, 
-  RegionAlert, RegionAlertListOptions,
+  RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, Fork, 
+  DeleteVolumeForkRequest, AuditLog, AuditLogListOptions, RegionAuditLogListOptions, 
+  ServiceNode, ClientSession, ClientSessionListOptions, SessionSummary, 
+  DiscoverMetaResponse, DashboardStats, LicenseDetails, LicenseTerms, ServiceAlert, 
+  AlertListOptions, AlertCountResponse, RegionAlert, RegionAlertListOptions,
 } from '@mountos-app/admin-sdk'
 
 function queryString(params: Record<string, string | number | boolean | undefined>): string {
@@ -55,7 +55,7 @@ export class AdminClient {
   private _license?: LicenseResource
   private _alerts?: AlertsResource
   private _regionAlerts?: RegionAlertsResource
-  private _cache?: CacheResource
+  private _vault?: VaultResource
 
   constructor(config: ClientConfig = {}) {
     this.baseUrl = (config.baseUrl ?? '/api/v1').replace(/\/+$/, '')
@@ -125,8 +125,8 @@ export class AdminClient {
     return (this._regionAlerts ??= new RegionAlertsResource(this))
   }
 
-  get cache(): CacheResource {
-    return (this._cache ??= new CacheResource(this))
+  get vault(): VaultResource {
+    return (this._vault ??= new VaultResource(this))
   }
 
   async request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
@@ -392,12 +392,12 @@ class VolumesResource {
     return this.client.request('GET', `/volumes/${volumeId}/forks?include_inactive=true`, undefined, signal)
   }
 
-  deleteFork(volumeId: number, forkName: string, req: DeleteVolumeForkRequest): Promise<{ inactivatedFids: number[] }> {
+  deleteFork(volumeId: number, forkName: number, req: DeleteVolumeForkRequest): Promise<{ inactivatedFids: number[] }> {
     return this.client.request('POST', `/volumes/${volumeId}/forks/${forkName}/delete`, req)
   }
 
-  restoreFork(volumeId: number, forkName: string): Promise<Fork> {
-    return this.client.request('POST', `/volumes/${volumeId}/forks/${forkName}/restore`)
+  restoreFork(volumeId: number, forkName: number, signal?: AbortSignal): Promise<Fork> {
+    return this.client.request('GET', `/volumes/${volumeId}/forks/${forkName}/restore`, undefined, signal)
   }
 }
 
@@ -522,10 +522,10 @@ class RegionAlertsResource {
   }
 }
 
-class CacheResource {
+class VaultResource {
   constructor(private client: AdminClient) {}
 
-  refresh(): Promise<void> {
-    return this.client.request('POST', '/cache/refresh')
+  resync(): Promise<void> {
+    return this.client.request('POST', '/vault/resync')
   }
 }
