@@ -45,7 +45,13 @@
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
   import ArrowDown from "@lucide/svelte/icons/arrow-down";
 
-  let { raw }: { raw: string } = $props();
+  import type { Snippet } from 'svelte';
+
+  let { raw, alertsTab, alertsCount = 0 }: {
+    raw: string;
+    alertsTab?: Snippet;
+    alertsCount?: number;
+  } = $props();
 
   let expanded = $state<Set<string>>(new Set());
   function toggleExpand(key: string) {
@@ -207,12 +213,14 @@
     sections.filter(s => s.kind === 'histogram' && !overviewSections.has(s.name))
   )
   const tabs = $derived([
-    { id: 'overview', label: 'Overview', count: 0 },
+    { id: 'overview', label: 'Overview', count: 0, uiId: 'overview' },
     ...histogramSections.map(s => ({
       id: s.name,
       label: s.name,
       count: s.groups.length,
+      uiId: s.name.toLowerCase().replace(/\s+/g, '-'),
     })),
+    ...(alertsTab ? [{ id: 'alerts', label: 'Alerts', count: alertsCount, uiId: 'alerts' }] : []),
   ])
 </script>
 
@@ -222,6 +230,9 @@
 
   <!-- Tab Panels -->
   {#if activeTab === "overview"}
+    {@const extraSections = sections.filter(s => s.kind === 'scalar' && !inlineSections.has(s.name) && s.scalars.length > 0)}
+    {@const sysSection = sections.find(s => s.name === 'System' && s.kind === 'scalar' && s.scalars.length > 0)}
+    <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
     <!-- Runtime Gauges — instrument panel -->
     <div class="">
       <div
@@ -252,7 +263,6 @@
         </div>
       </div>
     </div>
-    {@const sysSection = sections.find(s => s.name === 'System' && s.kind === 'scalar' && s.scalars.length > 0)}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <!-- Process Card -->
       <Card cornerBrackets={false}>
@@ -289,7 +299,7 @@
               { label: 'Sys', value: memSys, ratio: 1, color: 'var(--chart-3)' },
             ] as row}
               <div class="flex items-center gap-2 text-sm font-mono">
-                <span class="text-muted-foreground w-10 shrink-0">{row.label}</span>
+                <span class="text-muted-foreground w-12 shrink-0">{row.label}</span>
                 <div class="flex-1 h-1 rounded-full bg-muted overflow-hidden">
                   <div class="h-full rounded-full transition-transform origin-left duration-700"
                     style="background: {row.color}; transform: scaleX({row.ratio})"></div>
@@ -310,7 +320,7 @@
                 {/if}
               </div>
               <div class="flex items-center gap-2 text-sm font-mono">
-                <span class="text-muted-foreground w-10 shrink-0">Slots</span>
+                <span class="text-muted-foreground w-12 shrink-0">Slots</span>
                 <div class="flex-1 h-1 rounded-full bg-muted overflow-hidden">
                   <div class="h-full rounded-full transition-transform origin-left duration-700"
                     style="background: var(--pastel-volume); transform: scaleX({slotOccupied / slotCapacity})"></div>
@@ -319,7 +329,7 @@
               </div>
               {#if namepoolCap > 0}
                 <div class="flex items-center gap-2 text-sm font-mono">
-                  <span class="text-muted-foreground w-10 shrink-0">Pool</span>
+                  <span class="text-muted-foreground w-12 shrink-0">Pool</span>
                   <div class="flex-1 h-1 rounded-full bg-muted overflow-hidden">
                     <div class="h-full rounded-full transition-transform origin-left duration-700"
                       style="background: var(--pastel-volume); opacity: 0.6; transform: scaleX({namepoolUsed / namepoolCap})"></div>
@@ -362,7 +372,6 @@
       {/if}
     </div>
     <!-- Extra scalar sections (TCP Connections, Raft, Semaphore, etc.) -->
-    {@const extraSections = sections.filter(s => s.kind === 'scalar' && !inlineSections.has(s.name) && s.scalars.length > 0)}
     {#if extraSections.length > 0}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {#each extraSections as sec}
@@ -370,23 +379,33 @@
         {/each}
       </div>
     {/if}
-  {:else}
+    </div>
+  {:else if activeTab !== 'alerts'}
     {@const section = histogramSections.find(s => s.name === activeTab)}
-    {#if section && section.groups.length > 0}
-      {@const maxUs = Math.max(1, ...section.groups.map(g => g.maxUs))}
-      {@const totalHits = section.groups.reduce((s, g) => s + g.total, 0)}
-      {@const totalDuration = section.groups.reduce((s, g) => s + g.durationSec, 0)}
-      {@const bands = latencyBands(section.groups)}
-      {@const isHttp = section.name === 'HTTP Methods'}
-      {@const isDb = section.name === 'DB Queries'}
-      {#if isDb}
-        {@render dbTab(section, maxUs, totalHits, totalDuration, bands)}
+    {@const activeTabObj = tabs.find(t => t.id === activeTab)}
+    <div role="tabpanel" id="panel-{activeTabObj?.uiId}" aria-labelledby="tab-{activeTabObj?.uiId}">
+      {#if section && section.groups.length > 0}
+        {@const maxUs = Math.max(1, ...section.groups.map(g => g.maxUs))}
+        {@const totalHits = section.groups.reduce((s, g) => s + g.total, 0)}
+        {@const totalDuration = section.groups.reduce((s, g) => s + g.durationSec, 0)}
+        {@const bands = latencyBands(section.groups)}
+        {@const isHttp = section.name === 'HTTP Methods'}
+        {@const isDb = section.name === 'DB Queries'}
+        {#if isDb}
+          {@render dbTab(section, maxUs, totalHits, totalDuration, bands)}
+        {:else}
+          {@render profileTab(section, maxUs, isHttp, totalHits, totalDuration, bands, section.name)}
+        {/if}
       {:else}
-        {@render profileTab(section, maxUs, isHttp, totalHits, totalDuration, bands, section.name)}
+        <Card cornerBrackets={false}><CardContent class="py-8 text-center text-sm text-muted-foreground">No data recorded</CardContent></Card>
       {/if}
-    {:else}
-      <Card cornerBrackets={false}><CardContent class="py-8 text-center text-sm text-muted-foreground">No data recorded</CardContent></Card>
-    {/if}
+    </div>
+  {/if}
+
+  {#if activeTab === 'alerts' && alertsTab}
+    <div role="tabpanel" id="panel-alerts" aria-labelledby="tab-alerts">
+      {@render alertsTab()}
+    </div>
   {/if}
 </div>
 
@@ -394,7 +413,7 @@
 
 {#snippet tabBar()}
   <div
-    class="tab-bar relative flex items-center gap-0.5 pb-3 pt-1"
+    class="tab-bar relative flex items-center gap-0.5 pb-3 pt-1 overflow-x-auto"
     role="tablist"
     aria-label="Metrics"
   >
@@ -402,7 +421,9 @@
       {@const c = t.count}
       <button
         role="tab"
+        id="tab-{t.uiId}"
         aria-selected={activeTab === t.id}
+        aria-controls="panel-{t.uiId}"
         class="tab-btn flex items-center gap-1.5 px-4 py-2 font-mono transition-colors
           {activeTab === t.id ? 'font-medium' : 'text-muted-foreground'}"
         onclick={() => (activeTab = t.id)}
@@ -419,35 +440,39 @@
 {#snippet toggleBar(groups: HistogramGroup[], sectionKey: string)}
   {@const allOpen = isAllExpanded(groups, sectionKey)}
   <div class="flex items-center gap-2">
-    <div class="toggle-group flex items-center font-mono overflow-hidden">
+    <div class="toggle-group flex items-center font-mono overflow-hidden" role="group" aria-label="Layout">
       <button
         class="toggle-btn px-2.5 py-1 transition-colors {layout === 'histogram'
           ? 'toggle-active'
           : 'text-muted-foreground'}"
+        aria-pressed={layout === 'histogram'}
         onclick={() => (layout = "histogram")}>Histogram</button
       >
-      <span class="text-border/40 select-none">&vert;</span>
+      <span class="text-border/40 select-none" aria-hidden="true">&vert;</span>
       <button
         class="toggle-btn px-2.5 py-1 transition-colors {layout === 'table'
           ? 'toggle-active'
           : 'text-muted-foreground'}"
+        aria-pressed={layout === 'table'}
         onclick={() => (layout = "table")}>Table</button
       >
     </div>
-    <div class="toggle-group flex items-center font-mono overflow-hidden">
+    <div class="toggle-group flex items-center font-mono overflow-hidden" role="group" aria-label="Metric mode">
       <button
         class="toggle-btn px-2.5 py-1 transition-colors {metricMode ===
         'latency'
           ? 'toggle-active'
           : 'text-muted-foreground'}"
+        aria-pressed={metricMode === 'latency'}
         onclick={() => (metricMode = "latency")}>Latency</button
       >
-      <span class="text-border/40 select-none">&vert;</span>
+      <span class="text-border/40 select-none" aria-hidden="true">&vert;</span>
       <button
         class="toggle-btn px-2.5 py-1 transition-colors {metricMode ===
         'percentiles'
           ? 'toggle-active'
           : 'text-muted-foreground'}"
+        aria-pressed={metricMode === 'percentiles'}
         onclick={() => (metricMode = "percentiles")}>Percentiles</button
       >
     </div>
@@ -455,13 +480,14 @@
       class="toggle-btn toggle-group flex items-center gap-1 px-2 py-1 font-mono transition-colors {allOpen
         ? 'toggle-active'
         : 'text-muted-foreground'}"
+      aria-pressed={allOpen}
+      aria-label="{allOpen ? 'Collapse' : 'Expand'} all buckets"
       onclick={() => expandAll(groups, sectionKey)}
-      title="{allOpen ? 'Collapse' : 'Expand'} all buckets"
     >
       {#if allOpen}
-        <ChevronsDownUp class="h-3 w-3" />
+        <ChevronsDownUp class="h-3 w-3" aria-hidden={true} />
       {:else}
-        <ChevronsUpDown class="h-3 w-3" />
+        <ChevronsUpDown class="h-3 w-3" aria-hidden={true} />
       {/if}
     </button>
   </div>
@@ -606,8 +632,8 @@
               <span>{formatBytes(sysMemAvail)} avail / {formatBytes(sysMemTotal)}</span>
             </div>
             <div class="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div class="h-full rounded-full transition-all duration-700"
-                style="width: {memUsedPct}%; background: {memColor}"></div>
+              <div class="h-full rounded-full origin-left [transition:transform_700ms_ease,background-color_700ms_ease]"
+                style="background: {memColor}; transform: scaleX({memUsedPct / 100})"></div>
             </div>
           </div>
           <!-- Load Average -->
@@ -618,7 +644,7 @@
                 <span class="text-sm font-mono text-muted-foreground">Not available for this operating system</span>
               </div>
             {:else}
-              <div class="grid grid-cols-3 gap-2">
+              <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
                 {#each [{ label: '1m', val: load1 }, { label: '5m', val: load5 }, { label: '15m', val: load15 }] as l}
                   {@const ratio = l.val / cores}
                   {@const pct = Math.round(ratio * 100)}
@@ -645,8 +671,8 @@
             <span class="text-sm font-mono tabular-nums font-medium" style="color: {hitColor}">{fmtRatio(cacheHitRatio)} hit</span>
           </div>
           <div class="h-1.5 rounded-full bg-muted overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-700"
-              style="width: {cacheHitRatio * 100}%; background: {hitColor}"></div>
+            <div class="h-full rounded-full origin-left [transition:transform_700ms_ease,background-color_700ms_ease]"
+              style="background: {hitColor}; transform: scaleX({cacheHitRatio})"></div>
           </div>
           <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm font-mono">
             <div class="flex justify-between">
@@ -685,12 +711,12 @@
   {@const circ = 2 * Math.PI * r}
   {@const offset = circ * (1 - pct / 100)}
   <div class="flex flex-col items-center">
-    <div class="relative w-[80px] h-[80px]">
-      <svg width="80" height="80" viewBox="0 0 80 80" class="rotate-[-90deg]">
+    <div class="relative w-16 h-16 sm:w-20 sm:h-20">
+      <svg viewBox="0 0 80 80" class="w-full h-full rotate-[-90deg]">
         <circle cx="40" cy="40" r={r} fill="none" stroke={trackColor} stroke-width="6" />
         <circle cx="40" cy="40" r={r} fill="none" stroke={color} stroke-width="6"
           stroke-dasharray={circ} stroke-dashoffset={offset}
-          stroke-linecap="round" class="transition-all duration-700" />
+          stroke-linecap="round" class="[transition:stroke-dashoffset_700ms_ease]" />
       </svg>
       <div class="absolute inset-0 flex items-center justify-center">
         <span class="text-sm font-mono tabular-nums font-semibold" style="color: {color}">{pct}%</span>
@@ -879,6 +905,7 @@
 {#snippet sortableHead(col: SortCol, label: string)}
   <TableHead
     class="th-cyber cursor-pointer select-none"
+    aria-sort={sortCol === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
     onclick={() => toggleSort(col)}
   >
     <div class="flex items-center gap-1 {col !== 'label' ? 'justify-end' : ''}">
@@ -933,11 +960,13 @@
   <div class="border-b border-border/40 last:border-b-0 py-3 first:pt-0">
     <button
       class="w-full flex items-center justify-between gap-3 text-left group"
+      aria-expanded={group.buckets.length > 0 ? isOpen : undefined}
       onclick={() => group.buckets.length > 0 && toggleExpand(key)}
     >
       <div class="flex items-center gap-2 min-w-0">
         {#if group.buckets.length > 0}
           <ChevronRight
+            aria-hidden={true}
             class="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-200 {isOpen
               ? 'rotate-90'
               : ''}"
@@ -1080,6 +1109,34 @@
 {/snippet}
 
 <style>
+  /* ── Component-level design tokens ── */
+  .tab-bar {
+    --_tab-bracket: oklch(0.4 0.002 200 / 0.5);
+    --_tab-line: oklch(0.4 0.08 200);
+    --_tab-line-hover: oklch(0.45 0.08 200);
+    --_tab-line-active: oklch(0.65 0.18 45);
+  }
+  :global(.dark) .tab-bar {
+    --_tab-bracket: oklch(0.35 0.002 200 / 0.5);
+    --_tab-line: oklch(0.5 0.08 200);
+    --_tab-line-hover: oklch(0.55 0.08 200);
+    --_tab-line-active: oklch(0.78 0.13 92);
+  }
+  .toggle-group {
+    --_toggle-bg: oklch(0.4 0.002 200 / 0.06);
+    --_toggle-active-bg: oklch(0.45 0.08 200 / 0.12);
+  }
+  :global(.dark) .toggle-group {
+    --_toggle-bg: oklch(0.35 0.002 200 / 0.12);
+    --_toggle-active-bg: oklch(0.5 0.08 200 / 0.15);
+  }
+
+  /* Tab bar — overflow scroll fade */
+  .tab-bar {
+    mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
+  }
+
   /* Tab bar — scan-line border + corner brackets */
   .tab-bar::before {
     content: "";
@@ -1095,7 +1152,7 @@
       linear-gradient(to top, currentColor 12px, transparent 12px) 100% 100% /
         1.5px 12px;
     background-repeat: no-repeat;
-    color: oklch(0.4 0.002 200 / 0.5);
+    color: var(--_tab-bracket);
     pointer-events: none;
   }
 
@@ -1109,22 +1166,8 @@
     background: linear-gradient(
       90deg,
       transparent,
-      oklch(0.4 0.08 200) 15%,
-      oklch(0.4 0.08 200) 85%,
-      transparent
-    );
-  }
-
-  :global(.dark) .tab-bar::before {
-    color: oklch(0.35 0.002 200 / 0.5);
-  }
-
-  :global(.dark) .tab-bar::after {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      oklch(0.5 0.08 200) 15%,
-      oklch(0.5 0.08 200) 85%,
+      var(--_tab-line) 15%,
+      var(--_tab-line) 85%,
       transparent
     );
   }
@@ -1152,19 +1195,20 @@
     left: 10%;
     width: 80%;
     height: 1.5px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      oklch(0.45 0.08 200),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, var(--_tab-line-hover), transparent);
     transform: scaleX(0);
     transform-origin: center;
     transition: transform 0.35s ease;
   }
 
-  .tab-btn:hover::after {
+  .tab-btn:hover::after,
+  .tab-btn:focus-visible::after {
     transform: scaleX(1);
+  }
+
+  .tab-btn:focus-visible {
+    outline: 1.5px solid var(--_tab-line-active);
+    outline-offset: 2px;
   }
 
   .tab-btn[aria-selected="true"] {
@@ -1174,34 +1218,7 @@
 
   .tab-btn[aria-selected="true"]::after {
     transform: scaleX(1);
-    background: linear-gradient(
-      90deg,
-      transparent,
-      oklch(0.65 0.18 45),
-      transparent
-    );
-  }
-
-  :global(.dark) .tab-btn::after {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      oklch(0.55 0.08 200),
-      transparent
-    );
-  }
-
-  :global(.dark) .tab-btn[aria-selected="true"] {
-    background: var(--accent);
-  }
-
-  :global(.dark) .tab-btn[aria-selected="true"]::after {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      oklch(0.78 0.13 92),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, var(--_tab-line-active), transparent);
   }
 
   /* Toggle groups — skewed micro-cuts */
@@ -1214,7 +1231,7 @@
       calc(100% - 3px) 100%,
       0 100%
     );
-    background: oklch(0.4 0.002 200 / 0.06);
+    background: var(--_toggle-bg);
   }
 
   .toggle-btn {
@@ -1223,17 +1240,21 @@
     font-size: 0.6rem;
   }
 
+  .toggle-btn:focus-visible {
+    box-shadow: inset 0 0 0 1.5px var(--_tab-line-active, oklch(0.65 0.18 45));
+  }
+
   .toggle-active {
     color: var(--foreground);
-    background: oklch(0.45 0.08 200 / 0.12);
+    background: var(--_toggle-active-bg);
   }
 
-  :global(.dark) .toggle-group {
-    background: oklch(0.35 0.002 200 / 0.12);
-  }
-
-  :global(.dark) .toggle-active {
-    background: oklch(0.5 0.08 200 / 0.15);
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
   }
 
   .gauge-cell {

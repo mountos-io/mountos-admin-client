@@ -169,85 +169,89 @@
       </CardContent>
     </Card>
   {:else if nodeStore.statsRaw}
-    <ServiceMetricsView raw={nodeStore.statsRaw} />
+    {#if canReadAlerts}
+      <ServiceMetricsView raw={nodeStore.statsRaw} alertsCount={alertStore.activeCount || alertStore.alerts.length}>
+        {#snippet alertsTab()}
+          <Card>
+            <CardHeader>
+              <div class="flex items-center justify-between">
+                <CardTitle class="text-base">Alerts</CardTitle>
+                {#if alertStore.activeCount > 0}
+                  <Badge variant="destructive">{alertStore.activeCount} active</Badge>
+                {/if}
+              </div>
+            </CardHeader>
+            <CardContent class="pt-0">
+              {#if alertStore.loading && alertStore.alerts.length === 0}
+                <div class="flex items-center justify-center py-8" aria-busy="true">
+                  <LoadingSpinner />
+                </div>
+              {:else if alertStore.error}
+                <p class="text-sm text-destructive">{alertStore.error}</p>
+              {:else if alertStore.alerts.length === 0}
+                <p class="text-sm text-muted-foreground">No alerts for this node.</p>
+              {:else}
+                <Table>
+                  <caption class="sr-only">Node alerts</caption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead class="w-28">Severity</TableHead>
+                      <TableHead class="hidden sm:table-cell w-24">Category</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead class="hidden md:table-cell w-32">Time</TableHead>
+                      <TableHead class="w-20">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {#each alertStore.alerts as alert (alert.alertId)}
+                      {@const SevIcon = severityIcon(alert.severity)}
+                      <TableRow>
+                        <TableCell>
+                          <Badge variant={severityBadgeVariant(alert.severity)} class="gap-1">
+                            <SevIcon class="h-3 w-3" />
+                            {SEVERITY_LABELS[alert.severity] ?? 'Unknown'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell class="hidden sm:table-cell">
+                          <span class="capitalize">{alert.category}</span>
+                        </TableCell>
+                        <TableCell>
+                          <p class="font-medium truncate" title={alert.title}>{alert.title}</p>
+                        </TableCell>
+                        <TableCell class="hidden md:table-cell">
+                          <span class="text-muted-foreground whitespace-nowrap">{formatRelative(alert.eventTime)}</span>
+                        </TableCell>
+                        <TableCell>
+                          {#if alert.resolvedAt}
+                            <Badge variant="outline">Resolved</Badge>
+                          {:else}
+                            <Badge variant="destructive">Active</Badge>
+                          {/if}
+                        </TableCell>
+                      </TableRow>
+                    {/each}
+                  </TableBody>
+                </Table>
+                {#if alertStore.totalAlerts > alertStore.alerts.length}
+                  <div class="flex justify-end pt-3">
+                    <Button variant="ghost" size="sm" onclick={() => goto(`/regions/${regionId}/alerts`)}>
+                      View all {alertStore.totalAlerts} region alerts
+                    </Button>
+                  </div>
+                {/if}
+              {/if}
+            </CardContent>
+          </Card>
+        {/snippet}
+      </ServiceMetricsView>
+    {:else}
+      <ServiceMetricsView raw={nodeStore.statsRaw} />
+    {/if}
   {:else if node}
     <Card>
       <CardHeader><CardTitle class="text-base">Metrics</CardTitle></CardHeader>
       <CardContent class="pt-0">
         <p class="text-sm text-muted-foreground">Detailed metrics coming soon. Stats endpoint not yet available for {serviceTypeLabel}.</p>
-      </CardContent>
-    </Card>
-  {/if}
-
-  {#if canReadAlerts}
-    <Card>
-      <CardHeader>
-        <div class="flex items-center justify-between">
-          <CardTitle class="text-base">Recent Alerts</CardTitle>
-          {#if alertStore.activeCount > 0}
-            <Badge variant="destructive">{alertStore.activeCount} active</Badge>
-          {/if}
-        </div>
-      </CardHeader>
-      <CardContent class="pt-0">
-        {#if alertStore.loading && alertStore.alerts.length === 0}
-          <div class="flex items-center justify-center py-8" aria-busy="true">
-            <LoadingSpinner />
-          </div>
-        {:else if alertStore.error}
-          <p class="text-sm text-destructive">{alertStore.error}</p>
-        {:else if alertStore.alerts.length === 0}
-          <p class="text-sm text-muted-foreground">No recent alerts for this node.</p>
-        {:else}
-          <Table>
-            <caption class="sr-only">Node alerts</caption>
-            <TableHeader>
-              <TableRow>
-                <TableHead class="w-28">Severity</TableHead>
-                <TableHead class="hidden sm:table-cell w-24">Category</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead class="hidden md:table-cell w-32">Time</TableHead>
-                <TableHead class="w-20">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each alertStore.alerts.slice(0, 10) as alert (alert.alertId)}
-                {@const SevIcon = severityIcon(alert.severity)}
-                <TableRow>
-                  <TableCell>
-                    <Badge variant={severityBadgeVariant(alert.severity)} class="gap-1">
-                      <SevIcon class="h-3 w-3" />
-                      {SEVERITY_LABELS[alert.severity] ?? 'Unknown'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell class="hidden sm:table-cell">
-                    <span class="capitalize">{alert.category}</span>
-                  </TableCell>
-                  <TableCell>
-                    <p class="font-medium truncate" title={alert.title}>{alert.title}</p>
-                  </TableCell>
-                  <TableCell class="hidden md:table-cell">
-                    <span class="text-muted-foreground whitespace-nowrap">{formatRelative(alert.eventTime)}</span>
-                  </TableCell>
-                  <TableCell>
-                    {#if alert.resolvedAt}
-                      <Badge variant="outline">Resolved</Badge>
-                    {:else}
-                      <Badge variant="destructive">Active</Badge>
-                    {/if}
-                  </TableCell>
-                </TableRow>
-              {/each}
-            </TableBody>
-          </Table>
-          {#if alertStore.totalAlerts > 10}
-            <div class="flex justify-center pt-3">
-              <Button variant="ghost" size="sm" onclick={() => goto(`/regions/${regionId}/alerts`)}>
-                View all {alertStore.totalAlerts} alerts
-              </Button>
-            </div>
-          {/if}
-        {/if}
       </CardContent>
     </Card>
   {/if}
