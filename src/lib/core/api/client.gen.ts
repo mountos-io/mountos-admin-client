@@ -422,6 +422,7 @@ class RegionAuditLogsResource {
       cursor: opts?.cursor,
       limit: opts?.limit,
       subject: opts?.subject,
+      node: opts?.node,
     })}`, undefined, signal)
   }
 }

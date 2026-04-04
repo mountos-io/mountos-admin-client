@@ -47,10 +47,11 @@
 
   import type { Snippet } from 'svelte';
 
-  let { raw, alertsTab, alertsCount = 0 }: {
+  let { raw, alertsTab, alertsCount = 0, activityTab }: {
     raw: string;
     alertsTab?: Snippet;
     alertsCount?: number;
+    activityTab?: Snippet;
   } = $props();
 
   let expanded = $state<Set<string>>(new Set());
@@ -221,6 +222,7 @@
       uiId: s.name.toLowerCase().replace(/\s+/g, '-'),
     })),
     ...(alertsTab ? [{ id: 'alerts', label: 'Alerts', count: alertsCount, uiId: 'alerts' }] : []),
+    ...(activityTab ? [{ id: 'activity', label: 'Activity Log', count: 0, uiId: 'activity' }] : []),
   ])
 </script>
 
@@ -405,6 +407,12 @@
   {#if activeTab === 'alerts' && alertsTab}
     <div role="tabpanel" id="panel-alerts" aria-labelledby="tab-alerts">
       {@render alertsTab()}
+    </div>
+  {/if}
+
+  {#if activeTab === 'activity' && activityTab}
+    <div role="tabpanel" id="panel-activity" aria-labelledby="tab-activity">
+      {@render activityTab()}
     </div>
   {/if}
 </div>

@@ -8,7 +8,7 @@ let nextCursor = $state<number | null>(null)
 let hasMore = $derived(nextCursor !== null)
 let fetchCtrl: AbortController | null = null
 
-async function fetchLogs(regionId: number, opts?: { subject?: string; limit?: number; reset?: boolean }) {
+async function fetchLogs(regionId: number, opts?: { subject?: string; node?: string; limit?: number; reset?: boolean }) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
@@ -16,6 +16,7 @@ async function fetchLogs(regionId: number, opts?: { subject?: string; limit?: nu
     const cursor = opts?.reset ? undefined : nextCursor ?? undefined
     const res = await api.regionAuditLogs.list(regionId, {
       subject: opts?.subject,
+      node: opts?.node,
       cursor,
       limit: opts?.limit ?? 20,
     }, ctrl.signal)

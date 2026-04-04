@@ -29,7 +29,7 @@
 <button
   type="button"
   bind:this={el}
-  class="inline-flex cursor-help bg-transparent border-none p-0 min-w-[44px] min-h-[44px] items-center justify-center"
+  class="inline-flex cursor-help bg-transparent border-none px-1 py-2.5 items-center justify-center"
   aria-label="More info"
   aria-describedby={show ? tipId : undefined}
   onpointerenter={open}
