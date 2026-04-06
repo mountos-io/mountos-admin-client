@@ -709,13 +709,13 @@
               {#if node.fid !== 0 && canEdit && auth.can('volumes', 'delete')}
                 <div class="flex items-center gap-1 shrink-0">
                   {#if node.status === 'active'}
-                    <Button variant="ghost" size="sm" class="h-8 min-w-[44px] px-3 text-xs text-destructive hover:text-destructive"
+                    <Button variant="ghost" size="sm" class="h-9 min-h-[44px] min-w-[44px] px-3 text-xs text-destructive hover:text-destructive"
                       aria-label="Delete fork {node.name}"
                       onclick={() => confirmDeleteFork(node)}>
                       Delete
                     </Button>
                   {:else if node.status === 'pending_deletion'}
-                    <Button variant="ghost" size="sm" class="h-8 min-w-[44px] px-3 text-xs text-success hover:text-success"
+                    <Button variant="ghost" size="sm" class="h-9 min-h-[44px] min-w-[44px] px-3 text-xs text-success hover:text-success"
                       aria-label="Restore fork {node.name}"
                       onclick={() => confirmRestoreFork(node)}>
                       Restore

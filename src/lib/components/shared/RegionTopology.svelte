@@ -261,7 +261,7 @@
       aria-selected={activeTab === 'overview'}
       aria-controls="panel-overview"
       tabindex={activeTab === 'overview' ? 0 : -1}
-      class="tab-btn px-4 py-2 text-sm font-medium rounded transition-colors {activeTab === 'overview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+      class="tab-btn px-4 py-2 min-h-[44px] text-sm font-medium rounded transition-colors {activeTab === 'overview' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
       onclick={() => activeTab = 'overview'}
       onkeydown={handleTabKeydown}
     >Overview</button>
@@ -271,7 +271,7 @@
       aria-selected={activeTab === 'activity'}
       aria-controls="panel-activity"
       tabindex={activeTab === 'activity' ? 0 : -1}
-      class="tab-btn px-4 py-2 text-sm font-medium rounded transition-colors {activeTab === 'activity' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+      class="tab-btn px-4 py-2 min-h-[44px] text-sm font-medium rounded transition-colors {activeTab === 'activity' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
       onclick={() => activeTab = 'activity'}
       onkeydown={handleTabKeydown}
     >Activity Logs</button>
@@ -282,7 +282,7 @@
         aria-selected={activeTab === 'alerts'}
         aria-controls="panel-alerts"
         tabindex={activeTab === 'alerts' ? 0 : -1}
-        class="tab-btn px-4 py-2 text-sm font-medium rounded transition-colors inline-flex items-center gap-1.5 {activeTab === 'alerts' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+        class="tab-btn px-4 py-2 min-h-[44px] text-sm font-medium rounded transition-colors inline-flex items-center gap-1.5 {activeTab === 'alerts' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
         onclick={() => activeTab = 'alerts'}
         onkeydown={handleTabKeydown}
       >
