@@ -1,6 +1,7 @@
 import type {
   Volume, CreateVolumeRequest, EditVolumeRequest,
   DeactivateVolumeRequest, GenerateVolumeAPIKeysRequest, UpdateVolumeQuotaRequest,
+  CreateVolumeForkRequest,
 } from '$lib/core/api/types'
 import { api } from './client.svelte'
 
@@ -75,6 +76,10 @@ async function listAllForks(volumeId: number) {
   return api.volumes.listAllForks(volumeId)
 }
 
+async function createFork(volumeId: number, req: CreateVolumeForkRequest) {
+  return api.volumes.createFork(volumeId, req)
+}
+
 async function deleteFork(volumeId: number, forkName: string, force: boolean = false) {
   return api.volumes.deleteFork(volumeId, forkName, { force })
 }
@@ -102,6 +107,7 @@ export function useVolumes() {
     updateQuota,
     listForks,
     listAllForks,
+    createFork,
     deleteFork,
     restoreFork,
   }

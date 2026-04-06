@@ -3,8 +3,9 @@
   import RegionTopology from '$lib/components/shared/RegionTopology.svelte'
 
   const regionId = $derived(Number($page.params.regionId))
+  const tab = $derived($page.url.searchParams.get('tab') as 'overview' | 'activity' | 'alerts' | null)
 </script>
 
 <svelte:head><title>Region Nodes — mountOS Admin</title></svelte:head>
 
-<RegionTopology {regionId} basePath="/nodes" />
+<RegionTopology {regionId} basePath="/nodes" initialTab={tab ?? undefined} />

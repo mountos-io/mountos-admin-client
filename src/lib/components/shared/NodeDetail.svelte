@@ -249,7 +249,7 @@
             </Table>
             {#if alertStore.totalAlerts > alertStore.alerts.length}
               <div class="flex justify-end pt-3">
-                <Button variant="ghost" size="sm" onclick={() => goto(`/regions/${regionId}/alerts`)}>
+                <Button variant="ghost" size="sm" onclick={() => goto(`/regions/${regionId}?tab=alerts`)}>
                   View all {alertStore.totalAlerts} region alerts
                 </Button>
               </div>

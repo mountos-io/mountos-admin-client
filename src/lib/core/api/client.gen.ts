@@ -9,8 +9,8 @@ import type {
   Storage, StorageListOptions, EditStorageRequest, TestStorageBucketRequest, 
   CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest, 
   DeactivateVolumeRequest, GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, 
-  RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, Fork, 
-  DeleteVolumeForkRequest, AuditLog, AuditLogListOptions, RegionAuditLogListOptions, 
+  RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, CreateVolumeForkRequest, 
+  Fork, DeleteVolumeForkRequest, AuditLog, AuditLogListOptions, RegionAuditLogListOptions, 
   ServiceNode, ClientSession, ClientSessionListOptions, SessionSummary, 
   DiscoverMetaResponse, DashboardStats, LicenseDetails, LicenseTerms, ServiceAlert, 
   AlertListOptions, AlertCountResponse, RegionAlert, RegionAlertListOptions,
@@ -380,8 +380,12 @@ class VolumesResource {
     return this.client.request('PUT', `/volumes/${volumeId}/quota`, req)
   }
 
-  stats(volumeId: number): Promise<{ volumeId: string; liveVolume: number; totalVolume: number; pendingVolume: number }> {
+  stats(volumeId: number): Promise<{ volumeId: string; liveVolume: number; totalVolume: number; pendingVolume: number; liveInactiveVolume: number; restrictByLiveVolume: boolean }> {
     return this.client.request('GET', `/volumes/${volumeId}/stats`)
+  }
+
+  createFork(volumeId: number, req: CreateVolumeForkRequest): Promise<Fork> {
+    return this.client.request('POST', `/volumes/${volumeId}/forks/create`, req)
   }
 
   listForks(volumeId: number, signal?: AbortSignal): Promise<Fork[]> {

@@ -333,12 +333,24 @@
     opacity: 0.1;
   }
 
+  .led-ping {
+    animation: led-pulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes led-pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--led); }
+    50% { opacity: 0.6; box-shadow: 0 0 3px var(--led); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
+    }
+    .led-ping {
+      animation: none !important;
     }
   }
 }

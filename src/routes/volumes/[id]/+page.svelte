@@ -23,7 +23,7 @@
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import { api } from '$lib/core/stores/client.svelte'
-  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork } from '$lib/core/api/types'
+  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest } from '$lib/core/api/types'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
@@ -33,7 +33,10 @@
   import Loader2 from '@lucide/svelte/icons/loader-2'
   import * as Dialog from '$lib/components/ui/dialog'
   import Copy from '@lucide/svelte/icons/copy'
+  import Plus from '@lucide/svelte/icons/plus'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert'
+  import { Select } from '$lib/components/ui/select'
+  import { Checkbox } from '$lib/components/ui/checkbox'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
 
   const store = useVolumes()
@@ -114,6 +117,34 @@
     }
   }
 
+  let createForkOpen = $state(false)
+  let createForkName = $state('')
+  let createForkParent = $state('')
+  let createForkLoading = $state(false)
+
+  function openCreateFork() {
+    createForkName = ''
+    createForkParent = 'main'
+    createForkOpen = true
+  }
+
+  async function handleCreateFork() {
+    if (!createForkName.trim()) return
+    createForkLoading = true
+    try {
+      const req: CreateVolumeForkRequest = { name: createForkName.trim() }
+      if (createForkParent && createForkParent !== 'main') req.parentName = createForkParent
+      await store.createFork(id, req)
+      showSuccessToast(`Fork "${createForkName.trim()}" created`)
+      createForkOpen = false
+      await fetchForks()
+    } catch (err) {
+      handleApiError(err, 'Failed to create fork')
+    } finally {
+      createForkLoading = false
+    }
+  }
+
   async function handleDeactivate(req: DeactivateVolumeRequest) {
     await store.deactivateVolume(id, req)
     await reload()
@@ -147,6 +178,7 @@
   let editRetention = $state('')
   let editGrace = $state('')
   let editQuota = $state('')
+  let editRestrictByLive = $state(false)
   let editSaving = $state(false)
 
   const editDirty = $derived(
@@ -154,7 +186,8 @@
       editDesc !== (volume.description ?? '') ||
       editRetention !== String(volume.retentionPeriod) ||
       editGrace !== String(volume.gracePeriod) ||
-      editQuota !== String(bytesToGb(volume.quotaLimit))
+      editQuota !== String(bytesToGb(volume.quotaLimit)) ||
+      editRestrictByLive !== volume.restrictByLiveVolume
     )
   )
 
@@ -163,6 +196,7 @@
     editRetention = String(v.retentionPeriod)
     editGrace = String(v.gracePeriod)
     editQuota = String(bytesToGb(v.quotaLimit))
+    editRestrictByLive = v.restrictByLiveVolume
   }
 
   let volFetchCtrl: AbortController | undefined
@@ -182,7 +216,7 @@
     }).catch(() => { if (!ctrl.signal.aborted) volume = null }).finally(() => { if (!ctrl.signal.aborted) loading = false })
   })
 
-  onDestroy(() => { sessionsCtrl?.abort() })
+  onDestroy(() => { volFetchCtrl?.abort(); sessionsCtrl?.abort() })
 
   async function reload() {
     const v = await store.getVolume(id)
@@ -204,6 +238,7 @@
         description: editDesc.trim() || undefined,
         retentionPeriod: editRetention ? Number(editRetention) : undefined,
         gracePeriod: editGrace ? Number(editGrace) : undefined,
+        restrictByLiveVolume: editRestrictByLive,
       })
       if (quotaChanged) {
         const gb = Number(editQuota)
@@ -284,6 +319,10 @@
   let forks = $state<Fork[]>([])
   let forksLoading = $state(false)
 
+  const forkParentOptions = $derived(
+    forks.filter(f => f.status === 'active').map(f => ({ value: f.name, label: f.name }))
+  )
+
   async function fetchForks() {
     if (!volume) return
     forksLoading = true
@@ -335,7 +374,7 @@
   interface BranchRow {
     fid: number; name: string; row: number; parentRow: number
     branchNorm: number; snapshotTs: number; createdAt: number
-    createdBy?: string; color: string; status: string
+    createdBy?: string; color: string; status: string; size: number
   }
 
   function computeGraph(items: Fork[]) {
@@ -354,7 +393,7 @@
     function walkRoot(node: ForkNode) {
       occupied.add(0)
       rows.push({ fid: node.fid, name: node.name, row: 0, parentRow: 0, branchNorm: 0,
-        snapshotTs: node.snapshotTs, createdAt: node.createdAt, createdBy: node.createdBy, color: graphColor(0), status: node.status })
+        snapshotTs: node.snapshotTs, createdAt: node.createdAt, createdBy: node.createdBy, color: graphColor(0), status: node.status, size: node.size })
       for (let i = 0; i < node.children.length; i++) {
         walkChild(node.children[i], 0, i % 2 === 0 ? -1 : 1)
       }
@@ -365,7 +404,7 @@
       const row = claimRow(parentRow + direction, direction)
       const ci = rows.length
       rows.push({ fid: node.fid, name: node.name, row, parentRow, branchNorm: 0,
-        snapshotTs: node.snapshotTs, createdAt: node.createdAt, createdBy: node.createdBy, color: graphColor(ci), status: node.status })
+        snapshotTs: node.snapshotTs, createdAt: node.createdAt, createdBy: node.createdBy, color: graphColor(ci), status: node.status, size: node.size })
       for (let i = 0; i < node.children.length; i++) {
         walkChild(node.children[i], row, i % 2 === 0 ? direction : -direction)
       }
@@ -379,7 +418,9 @@
 
     const minRow = Math.min(...rows.map(r => r.row))
     for (const r of rows) { r.row -= minRow; r.parentRow -= minRow }
-    return { rows, totalRows: Math.max(...rows.map(r => r.row)) + 1 }
+    const rowColorMap = new Map<number, string>()
+    for (const r of rows) rowColorMap.set(r.row, r.color)
+    return { rows, totalRows: Math.max(...rows.map(r => r.row)) + 1, rowColorMap }
   }
 
   const G_ROW = 52, G_TOP = 20, G_LEFT = 24, G_LABEL = 160, G_TIMELINE = 480, G_RIGHT = 200, G_DOT = 5, G_CR = 12
@@ -505,9 +546,23 @@
               <Label for="edit-quota" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota Limit (GB)</Label>
               <Input id="edit-quota" type="number" bind:value={editQuota} placeholder="0 = unlimited" min="0" step="0.01" />
             </div>
+            {#if auth.can('volumes', 'update')}
+              <div class="flex items-center gap-2">
+                <Checkbox id="edit-restrict-live" bind:checked={editRestrictByLive} />
+                <Label for="edit-restrict-live" class="text-sm inline-flex items-center gap-1">
+                  Restrict quota by live volume
+                  <InfoTip text="When enabled, quota enforcement uses live volume instead of total volume" />
+                </Label>
+              </div>
+            {/if}
           {:else}
             <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota</span>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                Quota
+                {#if volume.restrictByLiveVolume}
+                  <Badge variant="outline" class="text-sm px-1.5 py-0 font-normal normal-case tracking-normal">live-restricted</Badge>
+                {/if}
+              </span>
               <p class="mt-1 text-sm">{formatQuota(volume.totalVolume, volume.quotaLimit)}</p>
               {#if volume.quotaLimit > 0}
                 {@const pct = quotaPercent(volume.totalVolume, volume.quotaLimit)}
@@ -525,6 +580,13 @@
                   <InfoTip text={"Sum of all files across forks for this volume.\n\nCan exceed total volume due to hard links, sparse files, etc.\nOnly live (non-deleted, current version) files are tracked."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveVolume)}</p>
+              </div>
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Inactive
+                  <InfoTip text={"Live volume from inactive (deleted) forks.\n\nThis data is pending cleanup and not accessible to clients."} />
+                </span>
+                <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveInactiveVolume)}</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
@@ -569,7 +631,7 @@
     <Card cornerBrackets>
       <CardHeader>
         <div class="flex items-center justify-between">
-          <CardTitle>Forks ({forks.length > 1 ? forks.length - 1 : 0})</CardTitle>
+          <CardTitle>Forks ({forks.length})</CardTitle>
           <div class="flex items-center gap-2">
           {#if forks.length > 1}
             <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit hidden md:block">
@@ -586,14 +648,18 @@
               </div>
             </div>
           {/if}
-          <!-- TODO: Create fork button — pending createFork API in admin-sdk -->
+          {#if canEdit}
+            <Button variant="outline" size="sm" class="h-9 min-h-[44px] gap-1.5 text-xs" onclick={openCreateFork}>
+              <Plus class="h-3.5 w-3.5" /> Create Fork
+            </Button>
+          {/if}
           </div>
         </div>
       </CardHeader>
       <CardContent>
         {#if forksLoading}
           <LoadingSpinner />
-        {:else if forks.length <= 1}
+        {:else if forks.length === 0}
           <p class="text-sm text-muted-foreground">No forks</p>
         {:else if forkView === 'list'}
           {#snippet forkNode(node: ForkNode, depth: number, isLast: boolean)}
@@ -617,6 +683,9 @@
                       snapshot of <span class="font-medium">{node.parentName}</span> @ <span class="font-mono">{formatTimestamp(node.snapshotTs)}</span>
                     </span>
                   {/if}
+                  {#if node.size > 0}
+                    <Badge variant="outline" class="text-sm px-1.5 py-0 font-mono">{formatBytes(node.size)}</Badge>
+                  {/if}
                   {#if node.childrenCount > 0}
                     <Badge variant="secondary" class="text-sm px-1.5 py-0">{node.childrenCount}</Badge>
                   {/if}
@@ -637,7 +706,7 @@
                   </div>
                 {/if}
               </div>
-              {#if node.fid !== 0 && canEdit}
+              {#if node.fid !== 0 && canEdit && auth.can('volumes', 'delete')}
                 <div class="flex items-center gap-1 shrink-0">
                   {#if node.status === 'active'}
                     <Button variant="ghost" size="sm" class="h-8 min-w-[44px] px-3 text-xs text-destructive hover:text-destructive"
@@ -656,7 +725,7 @@
               {/if}
             </div>
             {#if node.children.length > 0}
-              <div class="{depth > 0 && !isLast ? 'ml-5 border-l border-muted-foreground/20 pl-0' : depth > 0 ? 'ml-5' : ''}" role="group">
+              <div class="{depth > 0 && !isLast ? 'ml-5 border-l border-muted-foreground/20 pl-0' : depth > 0 ? 'ml-5' : ''}" role="group" aria-label="{node.name} children">
                 {#each node.children as child, i}
                   {@render forkNode(child, depth + 1, i === node.children.length - 1)}
                 {/each}
@@ -694,7 +763,7 @@
                     opacity={br.status !== 'active' ? 0.35 : 1}
                     stroke-dasharray={br.status !== 'active' ? '6 4' : 'none'} />
                   <circle cx={bx} cy={gRowY(br.parentRow)} r="4"
-                    fill={g.rows[br.parentRow].color} stroke="var(--background)" stroke-width="2" />
+                    fill={g.rowColorMap.get(br.parentRow) ?? 'var(--muted-foreground)'} stroke="var(--background)" stroke-width="2" />
                   <circle cx={bx} cy={y} r={G_DOT}
                     fill={br.color} stroke="var(--background)" stroke-width="2" />
                   {@const above = br.row < br.parentRow}
@@ -713,7 +782,11 @@
                 {#if br.fid !== 0}
                   <text x={gNowX + 14} y={y}
                     dominant-baseline="central"
-                    class="font-mono" style="font-size: 13px" fill="currentColor" opacity="0.55">{formatRelative(br.createdAt / 1000)}{br.createdBy ? ` · ${br.createdBy}` : ''}</text>
+                    class="font-mono" style="font-size: 13px" fill="currentColor" opacity="0.55">{formatRelative(br.createdAt / 1000)}{br.createdBy ? ` · ${br.createdBy}` : ''}{br.size > 0 ? ` · ${formatBytes(br.size)}` : ''}</text>
+                {:else if br.size > 0}
+                  <text x={gNowX + 14} y={y}
+                    dominant-baseline="central"
+                    class="font-mono" style="font-size: 13px" fill="currentColor" opacity="0.55">{formatBytes(br.size)}</text>
                 {/if}
               {/each}
             </svg>
@@ -922,6 +995,37 @@
           <Loader2 class="mr-2 h-4 w-4 animate-spin" />
         {/if}
         Restore
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={createForkOpen}>
+  <Dialog.Content class="sm:max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>Create Fork</Dialog.Title>
+      <Dialog.Description>
+        <p class="mt-2 text-sm">Create a new fork from an existing one. The new fork will snapshot the parent at the current point in time.</p>
+      </Dialog.Description>
+    </Dialog.Header>
+    <div class="space-y-4 py-2">
+      <div class="space-y-1.5">
+        <Label for="create-fork-name" class="text-sm font-semibold">Name</Label>
+        <Input id="create-fork-name" bind:value={createForkName} placeholder="Fork name" />
+      </div>
+      <div class="space-y-1.5">
+        <Label for="create-fork-parent" class="text-sm font-semibold">Parent Fork</Label>
+        <Select id="create-fork-parent" bind:value={createForkParent}
+          options={forkParentOptions} placeholder="Select parent fork" />
+      </div>
+    </div>
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => createForkOpen = false}>Cancel</Button>
+      <Button variant="default" disabled={createForkLoading || !createForkName.trim()} onclick={handleCreateFork}>
+        {#if createForkLoading}
+          <Loader2 class="mr-2 h-4 w-4 animate-spin" />
+        {/if}
+        Create
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
