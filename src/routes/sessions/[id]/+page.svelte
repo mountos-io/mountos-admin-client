@@ -78,6 +78,11 @@
     return m && typeof m === 'object' ? m as Record<string, any> : {}
   }
 
+  function getMetaProp(s: ClientSession, key: string): unknown {
+    const m = s.metadata
+    return m != null && typeof m === 'object' ? (m as Record<string, unknown>)[key] : undefined
+  }
+
   interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number; durationNs?: number; buckets?: number[] }
   function getRpcLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
     const rl = m.rpcLatency as Record<string, RpcMethodLatency> | undefined
@@ -180,6 +185,10 @@
             <div><p class="detail-label">App Version</p><p class="text-sm font-mono">{session.appVersion}</p></div>
           {/if}
           <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
+          {@const pid = getMetaProp(session, 'processId')}
+          {#if pid != null}
+            <div><p class="detail-label">Process ID</p><p class="text-sm font-mono">{Number(pid) || '—'}</p></div>
+          {/if}
         </div>
       </div>
     </div>

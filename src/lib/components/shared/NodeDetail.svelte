@@ -83,6 +83,13 @@
   })
 
   onDestroy(() => nodeStore.resetStats())
+
+  const nodeProcessId = $derived(node?.metadata?.['processId'] ?? null)
+  const nodeFilteredMeta = $derived.by(() => {
+    if (!node?.metadata) return null
+    const entries = Object.entries(node.metadata).filter(([k]) => k !== 'processId')
+    return entries.length > 0 ? Object.fromEntries(entries) : null
+  })
 </script>
 
 <div class="space-y-5">
@@ -153,10 +160,16 @@
               <Badge variant={node.isActive ? 'success' : 'secondary'}>{node.isActive ? 'Yes' : 'No'}</Badge>
             </dd>
           </div>
-          {#if node.metadata && Object.keys(node.metadata).length > 0}
+          {#if nodeProcessId != null}
+            <div>
+              <dt class="text-muted-foreground text-sm">Process ID</dt>
+              <dd class="font-mono text-sm mt-0.5">{Number(nodeProcessId) || '—'}</dd>
+            </div>
+          {/if}
+          {#if nodeFilteredMeta}
             <div class="col-span-full">
               <dt class="text-muted-foreground text-sm">Metadata</dt>
-              <dd class="font-mono text-sm mt-0.5 whitespace-pre-wrap">{JSON.stringify(node.metadata, null, 2)}</dd>
+              <dd class="font-mono text-sm mt-0.5 whitespace-pre-wrap">{JSON.stringify(nodeFilteredMeta, null, 2)}</dd>
             </div>
           {/if}
         </dl>
