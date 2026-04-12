@@ -859,7 +859,7 @@
                 class="p-0"
               >
                 <div
-                  class="py-2 px-4 space-y-1 border-l-2 border-border/50 ml-4"
+                  class="py-2 px-4 space-y-1 ml-6"
                 >
                   {#each group.buckets as bkt, bi}
                     {@const bktPct =
@@ -1076,7 +1076,7 @@
     </div>
 
     {#if isOpen && group.buckets.length > 0}
-      <div class="mt-3 ml-5.5 space-y-1 border-l-2 border-border/50 pl-3">
+      <div class="mt-3 ml-8 space-y-1">
         {#each group.buckets as bkt, bi}
           {@const bktPct =
             bucketTotal > 0 ? (bkt.count / bucketTotal) * 100 : 0}

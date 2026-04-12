@@ -119,7 +119,7 @@
     {/if}
     {#if !session || session.isActive}
       <div class="flex items-center gap-2 ml-auto">
-        <Button variant="ghost" size="sm" onclick={() => fetchSession()} aria-label="Refresh" title="Refresh">
+        <Button variant="ghost" size="icon" onclick={() => fetchSession()} aria-label="Refresh" title="Refresh">
           <RefreshCw class="h-4 w-4" />
         </Button>
         <FilterSelect options={POLL_OPTIONS} value={pollValue} placeholder="Poll Off" onchange={setPoll} />
@@ -133,6 +133,7 @@
     <Card><CardContent class="py-8"><p class="text-center text-destructive" role="alert">{error}</p></CardContent></Card>
   {:else if session}
     {@const m = getMetrics(session)}
+    {@const pid = getMetaProp(session, 'processId')}
 
     {#if error}
       <div class="rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive" role="alert">Refresh failed: {error}</div>
@@ -185,7 +186,6 @@
             <div><p class="detail-label">App Version</p><p class="text-sm font-mono">{session.appVersion}</p></div>
           {/if}
           <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
-          {@const pid = getMetaProp(session, 'processId')}
           {#if pid != null}
             <div><p class="detail-label">Process ID</p><p class="text-sm font-mono">{Number(pid) || '—'}</p></div>
           {/if}
@@ -221,6 +221,18 @@
               <div class="metric-row"><span>Miss Bytes</span><span>{formatBytes(m.cacheMissBytes ?? 0)}</span></div>
               <div class="metric-row"><span>Size</span><span>{formatBytes(m.cacheSize ?? 0)}</span></div>
             </div>
+            {#if m.metaArenaCapacityBytes != null}
+              <div class="metric-group">
+                <p class="detail-label">Meta Cache</p>
+                <div class="metric-row"><span>Capacity</span><span>{formatBytes(m.metaArenaCapacityBytes ?? 0)}</span></div>
+                <div class="metric-row"><span>Used</span><span>{formatBytes(m.metaArenaUsedBytes ?? 0)} ({(m.metaArenaUsedPct ?? 0).toFixed(1)}%)</span></div>
+                <div class="metric-row"><span>Hits</span><span>{formatNum(m.metaArenaHits ?? 0)}</span></div>
+                <div class="metric-row"><span>Misses</span><span>{formatNum(m.metaArenaMisses ?? 0)}</span></div>
+                <div class="metric-row"><span>Evictions</span><span>{formatNum(m.metaArenaEvictions ?? 0)}</span></div>
+                <div class="metric-row"><span>Delta Fetches</span><span>{formatNum(m.metaDeltaFetches ?? 0)}</span></div>
+                <div class="metric-row"><span>Full Fetches</span><span>{formatNum(m.metaFullFetches ?? 0)}</span></div>
+              </div>
+            {/if}
             <div class="metric-group">
               <p class="detail-label">S3</p>
               <div class="metric-row"><span>GET Count</span><span>{formatNum(m.s3GetCount ?? 0)}</span></div>
@@ -274,9 +286,9 @@
                 {#if bands.over100ms}<Badge variant="destructive" class="font-mono text-xs">&gt;100ms: {bands.over100ms}</Badge>{/if}
                 {#if hasBuckets}
                   <div class="rpc-toggle-group flex items-center font-mono overflow-hidden ml-2">
-                    <button class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'latency'} onclick={() => rpcMetricMode = 'latency'}>Latency</button>
+                    <button class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'latency'} aria-pressed={rpcMetricMode === 'latency'} onclick={() => rpcMetricMode = 'latency'}>Latency</button>
                     <span class="text-border/40">|</span>
-                    <button class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'percentiles'} onclick={() => rpcMetricMode = 'percentiles'}>Percentiles</button>
+                    <button class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'percentiles'} aria-pressed={rpcMetricMode === 'percentiles'} onclick={() => rpcMetricMode = 'percentiles'}>Percentiles</button>
                   </div>
                 {/if}
               </div>
@@ -341,7 +353,7 @@
                       {@const bktColspan = rpcMetricMode === 'latency' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)}
                       <tr>
                         <td colspan={bktColspan} class="p-0">
-                          <div class="py-2 px-4 space-y-1 border-l-2 border-border/50 ml-4">
+                          <div class="py-2 px-4 space-y-1 ml-6">
                             {#each bkts as bkt, bi}
                               {@const bktPct = totalCount > 0 ? (bkt.count / totalCount) * 100 : 0}
                               {#if bkt.count > 0}
@@ -400,6 +412,10 @@
   .rpc-toggle-active {
     color: var(--foreground);
     background: oklch(0.45 0.08 200 / 0.12);
+  }
+  .rpc-toggle-btn:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: -1px;
   }
   :global(.dark) .rpc-toggle-group { background: oklch(0.35 0.002 200 / 0.12); }
   :global(.dark) .rpc-toggle-active { background: oklch(0.5 0.08 200 / 0.15); }

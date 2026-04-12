@@ -84,9 +84,9 @@
 <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-sm focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground">
   Skip to main content
 </a>
-<div class="flex h-screen">
+<div class="app-shell h-screen" class:sidebar-collapsed={prefs.sidebarCollapsed}>
   <!-- Desktop sidebar -->
-  <div class="hidden md:block">
+  <div class="hidden md:block overflow-hidden">
     <Sidebar collapsed={prefs.sidebarCollapsed} />
   </div>
   <!-- Mobile sidebar overlay -->
@@ -103,7 +103,7 @@
       </div>
     </div>
   {/if}
-  <div class="flex flex-1 flex-col overflow-hidden">
+  <div class="flex flex-1 flex-col overflow-hidden min-w-0">
     <Header onOpenCommandPalette={() => commandOpen = true} onToggleSidebar={toggleSidebar} bind:sidebarToggleRef />
     <main id="main-content" class="relative flex-1 overflow-y-auto bg-background">
       <div class="bg-doodle pointer-events-none absolute inset-0 z-0" aria-hidden="true"></div>
@@ -117,3 +117,20 @@
 <CommandPalette bind:open={commandOpen} />
 <SettingsModal />
 <StepUpModal />
+
+<style>
+  .app-shell {
+    display: flex;
+  }
+
+  @media (min-width: 768px) {
+    .app-shell {
+      display: grid;
+      grid-template-columns: 15rem 1fr;
+      transition: grid-template-columns 200ms ease-in-out;
+    }
+    .app-shell.sidebar-collapsed {
+      grid-template-columns: 3.5rem 1fr;
+    }
+  }
+</style>

@@ -120,24 +120,18 @@
               <div class="space-y-4">
                 <h4 class="text-sm font-medium">Skin</h4>
                 <div class="flex flex-wrap gap-2">
-                  <button
-                    class="skin-swatch {!prefs.skin ? 'ring-2 ring-primary' : ''}"
-                    style="--sw-bg: #FAF7EE; --sw-fg: #af5f44;"
-                    onclick={() => prefs.skin = ''}
-                    title="mountOS"
-                  >
-                    <span class="sw-dot"></span>
-                    <span class="sw-label">mountOS</span>
-                  </button>
                   {#each skins as preset}
+                    {@const active = preset.name === 'mountOS Light' ? !prefs.skin || prefs.skin === 'mountOS Light' : prefs.skin === preset.name}
                     <button
-                      class="skin-swatch {prefs.skin === preset.name ? 'ring-2 ring-primary' : ''}"
+                      class="skin-swatch {active ? 'ring-2 ring-primary' : ''}"
                       style="--sw-bg: {preset.colors.background}; --sw-fg: {preset.colors.primary};"
-                      onclick={() => prefs.skin = preset.name}
-                      title={preset.name}
+                      onclick={() => prefs.skin = preset.name === 'mountOS Light' ? '' : preset.name}
+                      aria-label={preset.name === 'mountOS Light' ? 'mountOS (default)' : preset.name}
+                      aria-pressed={active}
+                      title={preset.name === 'mountOS Light' ? 'mountOS' : preset.name}
                     >
                       <span class="sw-dot"></span>
-                      <span class="sw-label">{preset.name.replace(/ Light$/, '')}</span>
+                      <span class="sw-label">{preset.name === 'mountOS Light' ? 'mountOS' : preset.name.replace(/ Light$/, '')}</span>
                     </button>
                   {/each}
                 </div>
@@ -153,7 +147,9 @@
                       class="skin-swatch {active ? 'ring-2 ring-primary' : ''}"
                       style="--sw-bg: {preset.colors.background}; --sw-fg: {preset.colors.primary};"
                       onclick={() => prefs.skin = preset.name === 'mountOS Dark' ? '' : preset.name}
-                      title={preset.name}
+                      aria-label={preset.name === 'mountOS Dark' ? 'mountOS (default)' : preset.name}
+                      aria-pressed={active}
+                      title={preset.name === 'mountOS Dark' ? 'mountOS' : preset.name}
                     >
                       <span class="sw-dot"></span>
                       <span class="sw-label">{preset.name === 'mountOS Dark' ? 'mountOS' : preset.name.replace(/ Dark$/, '')}</span>
@@ -396,6 +392,11 @@
 
   .skin-swatch:hover {
     transform: scale(1.05);
+  }
+
+  .skin-swatch:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 
   .sw-dot {

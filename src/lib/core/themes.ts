@@ -22,6 +22,23 @@ export interface ThemePreset {
 
 export const themePresets: ThemePreset[] = [
   {
+    name: "mountOS Light",
+    family: "",
+    mode: "light",
+    colors: {
+      background: "#FAF7EE",
+      cardBg: "#F5F1E4",
+      textPrimary: "#1A1612",
+      textSecondary: "#6B5F52",
+      primary: "#af5f44",
+      accentBlue: "#3B82C4",
+      accentGreen: "#3B8C5C",
+      dangerRed: "#B03020",
+      warningYellow: "#9A6C20",
+      border: "#DDD8CC",
+    },
+  },
+  {
     name: "mountOS Dark",
     family: "",
     mode: "dark",

@@ -49,8 +49,7 @@
 
 <aside
   class={cn(
-    'flex h-full flex-col border-r bg-sidebar transition-[width] duration-200 ease-in-out will-change-[width]',
-    collapsed ? 'w-14' : 'w-60'
+    'flex h-full w-full flex-col border-r bg-sidebar',
   )}
 >
   <div class={cn('p-4', collapsed && 'px-2')}>
