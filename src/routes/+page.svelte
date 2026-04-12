@@ -324,7 +324,7 @@
     border-radius: 50%;
   }
 
-  .dot-destructive { background: hsl(var(--destructive)); }
-  .dot-warning { background: hsl(var(--warning)); }
-  .dot-primary { background: hsl(var(--primary)); }
+  .dot-destructive { background: var(--destructive); }
+  .dot-warning { background: var(--warning); }
+  .dot-primary { background: var(--primary); }
 </style>

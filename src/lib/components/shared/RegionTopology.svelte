@@ -526,7 +526,7 @@
                 {:else if regionAudit.error}
                   <div class="flex items-center justify-center gap-2 py-16 text-sm text-destructive">
                     <span>Failed to load audit logs</span>
-                    <Button variant="ghost" size="sm" class="h-7 px-2 text-xs"
+                    <Button variant="ghost" size="sm" class="h-7 px-2 min-h-[44px] sm:min-h-0 text-xs"
                       onclick={() => regionAudit.fetchLogs(regionId, { limit: 200, reset: true })}>Retry</Button>
                   </div>
                 {:else if regionAudit.logs.length === 0}
