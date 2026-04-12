@@ -220,11 +220,13 @@
   <div class="flex flex-wrap items-center gap-2">
     {#each raftGroups as group}
       <button
-        class="raft-pill flex items-center gap-2 rounded-sm border px-3 py-1.5 text-sm transition-all cursor-pointer"
+        type="button"
+        class="raft-pill flex items-center gap-2 rounded-sm border px-3 py-1.5 text-sm transition-[background-color,border-color,outline-color,opacity] cursor-pointer"
         style:border-color={selectedRaft === group.name ? group.color : undefined}
         style:background={selectedRaft === group.name ? group.bgColor : undefined}
         style:outline={selectedRaft === group.name ? `2px solid ${group.color}` : 'none'}
         style:outline-offset="1px"
+        aria-pressed={selectedRaft === group.name}
         onclick={() => toggleRaft(group.name)}
         onmouseenter={() => hoverRaft = group.name}
         onmouseleave={() => hoverRaft = null}
@@ -239,7 +241,7 @@
       </button>
     {/each}
     {#if selectedRaft}
-      <button class="text-sm text-muted-foreground underline cursor-pointer" onclick={() => selectedRaft = null}>clear</button>
+      <button type="button" class="text-sm text-muted-foreground underline cursor-pointer" onclick={() => selectedRaft = null}>clear</button>
     {/if}
   </div>
 
@@ -274,7 +276,7 @@
           <CardContent class="pt-0">
             {#each rack.nodes as node, ni}
               <div role="listitem"
-                class="node-slot flex items-center gap-2.5 px-3 py-2.5 transition-all duration-200"
+                class="node-slot flex items-center gap-2.5 px-3 py-2.5 transition-[opacity,box-shadow] duration-200"
                 class:node-slot-last={ni === rack.nodes.length - 1}
                 style:border-left="4px solid {node.raftGroup ? RAFT_STYLES[node.raftGroup].color : 'var(--border)'}"
                 style:opacity={nodeOpacity(node)}
@@ -332,7 +334,7 @@
                   ? RAFT_STYLES[node.raftGroup].bgColor
                   : !node ? 'repeating-linear-gradient(45deg,transparent,transparent 4px,var(--border) 4px,var(--border) 5px)' : 'transparent'}
                 <TableCell
-                  class="transition-all duration-200"
+                  class="transition-[background-color,opacity] duration-200"
                   style="background: {cellBg}; opacity: {nodeOpacity(node)}"
                   onmouseenter={() => { if (node) enterNode(node) }}
                   onmouseleave={leaveNode}
@@ -449,7 +451,7 @@
             onpointermove={(e: PointerEvent) => { if (svgTip) svgTip = { node, x: e.clientX, y: e.clientY } }}
             onpointerleave={() => { leaveNode(); svgTip = null }}
             onclick={() => { if (node.raftGroup) toggleRaft(node.raftGroup) }}
-            onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' && node.raftGroup) toggleRaft(node.raftGroup) }}
+            onkeydown={(e: KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && node.raftGroup) { e.preventDefault(); toggleRaft(node.raftGroup) } }}
           >
             <!-- Outer RAFT ring -->
             {#if rstyle}
@@ -516,7 +518,7 @@
           <div class="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {#each statelessNodes as node}
               <div role="listitem"
-                class="node-slot-card rounded-sm border p-3 transition-all duration-200"
+                class="node-slot-card rounded-sm border p-3 transition-[opacity] duration-200"
                 style:opacity={activeFilter !== null ? 0.2 : 1}
                 onmouseenter={() => enterNode(node)}
                 onmouseleave={leaveNode}

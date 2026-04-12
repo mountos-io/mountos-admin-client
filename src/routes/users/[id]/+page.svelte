@@ -147,7 +147,7 @@
                 <button
                   type="button"
                   onclick={startEdit}
-                  class="opacity-60 hover:opacity-100 hover:text-primary transition-all focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+                  class="opacity-60 hover:opacity-100 hover:text-primary transition-[color,opacity] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                   title="Edit user"
                   aria-label="Edit user"
                 >

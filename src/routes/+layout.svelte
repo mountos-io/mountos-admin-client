@@ -122,7 +122,7 @@
     <div class="text-center">
       <h1 class="text-2xl font-bold text-destructive">{exchangeError}</h1>
       <p class="mt-2 text-muted-foreground">Please try again or contact your administrator.</p>
-      <button class="mt-4 rounded-md bg-primary px-4 py-2 text-primary-foreground" onclick={() => goto('/login')}>
+      <button type="button" class="mt-4 rounded-md bg-primary px-4 py-2 text-primary-foreground" onclick={() => goto('/login')}>
         Back to login
       </button>
     </div>
@@ -138,7 +138,7 @@
     <div class="text-center">
       <h1 class="text-2xl font-bold">Sign in required</h1>
       <p class="mt-2 text-muted-foreground">Please sign in to continue.</p>
-      <button class="mt-4 rounded-md bg-primary px-4 py-2 text-primary-foreground" onclick={() => auth.signIn()}>
+      <button type="button" class="mt-4 rounded-md bg-primary px-4 py-2 text-primary-foreground" onclick={() => auth.signIn()}>
         Sign in
       </button>
     </div>

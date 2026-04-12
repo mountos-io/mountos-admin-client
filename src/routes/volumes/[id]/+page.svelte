@@ -467,7 +467,7 @@
               <button
                 type="button"
                 onclick={() => (editing = true)}
-                class="opacity-50 hover:opacity-100 hover:text-primary transition-all"
+                class="opacity-50 hover:opacity-100 hover:text-primary transition-[color,opacity]"
                 title="Edit volume" aria-label="Edit volume"
               >
                 <PencilIcon class="size-4" aria-hidden="true" />

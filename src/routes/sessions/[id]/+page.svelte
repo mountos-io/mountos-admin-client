@@ -286,9 +286,9 @@
                 {#if bands.over100ms}<Badge variant="destructive" class="font-mono text-xs">&gt;100ms: {bands.over100ms}</Badge>{/if}
                 {#if hasBuckets}
                   <div class="rpc-toggle-group flex items-center font-mono overflow-hidden ml-2">
-                    <button class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'latency'} aria-pressed={rpcMetricMode === 'latency'} onclick={() => rpcMetricMode = 'latency'}>Latency</button>
+                    <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'latency'} aria-pressed={rpcMetricMode === 'latency'} onclick={() => rpcMetricMode = 'latency'}>Latency</button>
                     <span class="text-border/40">|</span>
-                    <button class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'percentiles'} aria-pressed={rpcMetricMode === 'percentiles'} onclick={() => rpcMetricMode = 'percentiles'}>Percentiles</button>
+                    <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'percentiles'} aria-pressed={rpcMetricMode === 'percentiles'} onclick={() => rpcMetricMode = 'percentiles'}>Percentiles</button>
                   </div>
                 {/if}
               </div>

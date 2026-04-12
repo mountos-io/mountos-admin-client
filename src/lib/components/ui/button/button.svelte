@@ -4,10 +4,10 @@
   import { type VariantProps, tv } from "tailwind-variants";
 
   export const buttonVariants = tv({
-    base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium outline-none transition-all focus-visible:ring-[2px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+    base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium outline-none transition-[color,background-color,border-color,box-shadow,transform,opacity] focus-visible:ring-[2px] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
     variants: {
       variant: {
-        default: "bg-transparent text-foreground border border-border hover:bg-accent hover:border-foreground/40 active:bg-primary/10 active:border-primary/30 active:scale-[0.98] transition-all duration-150",
+        default: "bg-transparent text-foreground border border-border hover:bg-accent hover:border-foreground/40 active:bg-primary/10 active:border-primary/30 active:scale-[0.98] transition-[color,background-color,border-color,transform,opacity] duration-150",
         primary: "bg-primary text-primary-foreground border border-primary hover:bg-primary/90 active:bg-primary/80 active:scale-[0.98] shadow-none",
         destructive: "bg-transparent border border-destructive text-destructive hover:bg-destructive/10 active:bg-destructive/20 active:scale-[0.98]",
         outline: "bg-transparent border border-border hover:bg-accent hover:text-accent-foreground active:bg-primary/10 active:border-primary/30 active:scale-[0.98]",
