@@ -155,7 +155,7 @@
         {@const Icon = m.icon}
         <div class="absolute"
           style="left: {log.x}%; top: {log.y}%; opacity: 0.15;">
-          <div class="flex items-center justify-center w-7 h-7 rounded-full shadow-sm text-white"
+          <div class="flex items-center justify-center w-7 h-7 rounded-full shadow-sm text-white/90"
             style="background: {m.color}; transform: translate(-50%, -50%);">
             <Icon class="w-3.5 h-3.5" />
           </div>
@@ -165,14 +165,15 @@
       {#each plottedLogs.filter(l => isActive(l.subject)) as log}
         {@const m = meta(log.subject)}
         {@const Icon = m.icon}
-        <div class="absolute cursor-pointer will-change-transform"
+        <div class="absolute cursor-pointer will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-full"
           style="left: {log.x}%; top: {log.y}%;"
           onmouseenter={(e) => handleEnter(log, e)}
           onmouseleave={() => hoveredLog = null}
           onclick={() => handleCopy(log)}
           onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), handleCopy(log))}
-          role="button" tabindex="0">
-          <div class="flex items-center justify-center w-7 h-7 rounded-full shadow-sm text-white transition-transform hover:scale-[1.8]"
+          role="button" tabindex="0"
+          aria-label="{log.title}{log.subject ? ` — ${log.subject}` : ''}, {log.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} {fmtTime(log.timeMinutes)}">
+          <div class="flex items-center justify-center w-7 h-7 rounded-full shadow-sm text-white/90 transition-transform hover:scale-[1.8]"
             style="background: {m.color}; transform: translate(-50%, -50%);">
             <Icon class="w-3.5 h-3.5" />
           </div>
@@ -245,7 +246,7 @@
             aria-pressed={on}
             title={s}
           >
-            <span class="inline-flex items-center justify-center w-5 h-5 text-white" style="background: {m.color}; border-radius: 4px; border: 2px solid {m.color};">
+            <span class="inline-flex items-center justify-center w-5 h-5 text-white/90" style="background: {m.color}; border-radius: 4px; border: 2px solid {m.color};">
               <Icon class="w-3 h-3" />
             </span>
             <span class="legend-label">{s}</span>

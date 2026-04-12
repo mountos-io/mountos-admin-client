@@ -256,15 +256,15 @@
                 <div class="relative flex items-center gap-1.5">
                   {#each [7, 15, 30] as d}
                     <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
-                      class="h-7 w-10 text-xs font-mono justify-center"
+                      class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                       onclick={() => activityDays = d}>{d}d</Button>
                   {/each}
                   <span class="filter-divider"></span>
                   <Button variant={activityView === 'feed' ? 'primary' : 'ghost'} size="sm"
-                    class="h-7 px-3 text-xs font-mono justify-center"
+                    class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                     onclick={() => activityView = 'feed'}>Feed</Button>
                   <Button variant={activityView === 'chart' ? 'primary' : 'ghost'} size="sm"
-                    class="h-7 px-3 text-xs font-mono justify-center"
+                    class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                     onclick={() => activityView = 'chart'}>Chart</Button>
                 </div>
               </div>

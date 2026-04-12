@@ -53,8 +53,8 @@
   const isSuperAdmin = $derived(auth.user?.role === 'superadmin')
   let resyncInFlight = $state(false)
 
-  // eslint-disable-next-line svelte/valid-compile -- intentionally capturing initial value
-  let activeTab = $state<'overview' | 'activity' | 'alerts'>(initialTab ?? 'overview')
+  let activeTab = $state<'overview' | 'activity' | 'alerts'>(untrack(() => initialTab) ?? 'overview')
+  $effect(() => { if (initialTab) activeTab = initialTab })
   let topoView = $state<'graphical' | 'list'>('graphical')
 
   let region = $state<Region | null>(null)
@@ -504,13 +504,13 @@
                   <div class="relative flex items-center gap-1.5">
                     {#each [7, 15, 30] as d}
                       <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
-                        class="h-7 w-10 text-xs font-mono justify-center"
+                        class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                         onclick={() => activityDays = d}>{d}d</Button>
                     {/each}
                     <span class="filter-divider"></span>
                     {#each ['feed', 'chart'] as v}
                       <Button variant={auditView === v ? 'primary' : 'ghost'} size="sm"
-                        class="h-7 px-3 text-xs font-mono capitalize justify-center"
+                        class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono capitalize justify-center"
                         onclick={() => auditView = v as 'chart' | 'feed'}>{v}</Button>
                     {/each}
                   </div>

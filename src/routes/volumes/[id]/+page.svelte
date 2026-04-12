@@ -638,11 +638,11 @@
               <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
               <div class="relative flex items-center gap-1.5" role="group" aria-label="Fork view">
                 <Button variant={forkView === 'list' ? 'primary' : 'ghost'} size="sm"
-                  class="h-7 px-3 text-xs font-mono justify-center"
+                  class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                   aria-pressed={forkView === 'list'}
                   onclick={() => forkView = 'list'}>List</Button>
                 <Button variant={forkView === 'timeline' ? 'primary' : 'ghost'} size="sm"
-                  class="h-7 px-3 text-xs font-mono justify-center"
+                  class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                   aria-pressed={forkView === 'timeline'}
                   onclick={() => forkView = 'timeline'}>Timeline</Button>
               </div>

@@ -134,7 +134,6 @@
     color: var(--primary);
     position: relative;
     padding: 0.375rem 0.75rem;
-    border-left: 2px solid var(--primary);
     background: color-mix(in oklch, var(--card) 94%, var(--primary));
     clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%);
   }
