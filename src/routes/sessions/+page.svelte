@@ -150,9 +150,16 @@
         </TableHeader>
         <TableBody>
           {#each store.displaySessions as session (session.id)}
-            <TableRow class="cursor-pointer hover:bg-muted/50" onclick={() => store.toggleExpanded(session.id)}>
+            <TableRow
+              class="cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+              role="button"
+              tabindex={0}
+              aria-expanded={store.expanded.has(session.id)}
+              aria-label="Session {session.hostname || session.ipAddr}"
+              onclick={() => store.toggleExpanded(session.id)}
+              onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); store.toggleExpanded(session.id) } }}>
               <TableCell class="text-muted-foreground">
-                <button type="button" class="inline-flex items-center justify-center p-2 -m-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-expanded={store.expanded.has(session.id)} aria-label="Toggle session details" onclick={(e: MouseEvent) => e.stopPropagation()} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); store.toggleExpanded(session.id) } }}>{#if store.expanded.has(session.id)}<ChevronDown class="h-4 w-4" aria-hidden="true" />{:else}<ChevronRight class="h-4 w-4" aria-hidden="true" />{/if}</button>
+                <button type="button" tabindex={-1} class="inline-flex items-center justify-center p-2 -m-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-label="Toggle session details" onclick={(e: MouseEvent) => e.stopPropagation()}>{#if store.expanded.has(session.id)}<ChevronDown class="h-4 w-4" aria-hidden="true" />{:else}<ChevronRight class="h-4 w-4" aria-hidden="true" />{/if}</button>
               </TableCell>
               <TableCell>
                 <div>

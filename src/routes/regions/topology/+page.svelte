@@ -278,12 +278,15 @@
               <div role="listitem"
                 class="node-slot flex items-center gap-2.5 px-3 py-2.5 transition-[opacity,box-shadow] duration-200"
                 class:node-slot-last={ni === rack.nodes.length - 1}
-                style:border-left="4px solid {node.raftGroup ? RAFT_STYLES[node.raftGroup].color : 'var(--border)'}"
                 style:opacity={nodeOpacity(node)}
                 style:box-shadow={nodeGlow(node)}
                 onmouseenter={() => enterNode(node)}
                 onmouseleave={leaveNode}
               >
+                <!-- Raft group indicator dot -->
+                <span class="h-2.5 w-2.5 rounded-sm shrink-0"
+                  class:opacity-25={!node.raftGroup}
+                  style:background={node.raftGroup ? RAFT_STYLES[node.raftGroup].color : 'var(--color-border)'}></span>
                 <!-- Status LED -->
                 <span class="relative flex h-2.5 w-2.5 shrink-0">
                   <span class="absolute inset-0 rounded-full" style:background={STATUS_COLORS[node.status]}></span>
@@ -648,6 +651,12 @@
 
   .node-slot-card:hover {
     background: oklch(0.5 0 0 / 0.03);
+  }
+
+  .topo-node:focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 3px;
+    border-radius: 2px;
   }
 
   /* Topo SVG container with animated gradient border */
