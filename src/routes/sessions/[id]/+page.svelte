@@ -229,8 +229,8 @@
                 <div class="metric-row"><span>Hits</span><span>{formatNum(m.metaArenaHits ?? 0)}</span></div>
                 <div class="metric-row"><span>Misses</span><span>{formatNum(m.metaArenaMisses ?? 0)}</span></div>
                 <div class="metric-row"><span>Evictions</span><span>{formatNum(m.metaArenaEvictions ?? 0)}</span></div>
-                <div class="metric-row"><span>Delta Fetches</span><span>{formatNum(m.metaDeltaFetches ?? 0)}</span></div>
-                <div class="metric-row"><span>Full Fetches</span><span>{formatNum(m.metaFullFetches ?? 0)}</span></div>
+                <div class="metric-row"><span>Delta List</span><span>{formatNum(m.metaDeltaFetches ?? 0)}</span></div>
+                <div class="metric-row"><span>Full List</span><span>{formatNum(m.metaFullFetches ?? 0)}</span></div>
               </div>
             {/if}
             <div class="metric-group">
