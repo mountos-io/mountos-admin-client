@@ -1,3 +1,7 @@
+<script lang="ts" module>
+  let _counter = 0
+</script>
+
 <script lang="ts">
   import Lightbulb from '@lucide/svelte/icons/lightbulb'
 
@@ -6,7 +10,7 @@
   let show = $state(false)
   let pos = $state({ left: '0px', top: '0px', transform: 'translate(-50%, -100%)' })
   let el: HTMLButtonElement | undefined = $state()
-  const tipId = `infotip-${Math.random().toString(36).slice(2, 9)}`
+  const tipId = `infotip-${++_counter}`
 
   function open(e: PointerEvent | FocusEvent) {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -24,12 +28,38 @@
   }
 
   function close() { show = false }
+
+  // Dismiss on Escape, scroll, or resize — WCAG 1.4.13 (Content on Hover or Focus).
+  $effect(() => {
+    if (!show) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }
+    const onScrollOrResize = () => close()
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('scroll', onScrollOrResize, true)
+    window.addEventListener('resize', onScrollOrResize)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('scroll', onScrollOrResize, true)
+      window.removeEventListener('resize', onScrollOrResize)
+    }
+  })
+
+  // Portal the tooltip to document.body so `position: fixed` resolves to the
+  // viewport even when an ancestor has a transform (e.g. Dialog content).
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node)
+    return {
+      destroy() {
+        if (node.parentNode) node.parentNode.removeChild(node)
+      },
+    }
+  }
 </script>
 
 <button
   type="button"
   bind:this={el}
-  class="inline-flex cursor-help bg-transparent border-none px-1 py-2.5 items-center justify-center"
+  class="inline-flex cursor-help bg-transparent border-none px-1 py-2.5 pointer-coarse:p-2 pointer-coarse:-m-2 items-center justify-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring rounded-sm"
   aria-label="More info"
   aria-describedby={show ? tipId : undefined}
   onpointerenter={open}
@@ -43,6 +73,7 @@
 
 {#if show}
   <div
+    use:portal
     id={tipId}
     role="tooltip"
     class="fixed z-50 pointer-events-none rounded-sm border border-border bg-card shadow-lg px-3 py-2"

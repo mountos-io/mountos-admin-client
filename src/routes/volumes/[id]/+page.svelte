@@ -147,19 +147,37 @@
   // fork snapshot_ts)). Mirrors dataserv handleForksCreate + gcserv
   // getEffectiveRetentionThreshold exactly. No separate volume.createdAt floor
   // needed: any existing fork's snapshot_ts is already >= volume.createdAt.
-  const createForkAsOfMin = $derived.by(() => {
-    if (!volume) return ''
+  // GC floor in ms: mirrors dataserv's gcThreshold = min(now - retention,
+  // min over all forks of snapshot_ts). Keyed only on volume.retentionPeriod
+  // and forks — doesn't re-run when createForkParent toggles.
+  const gcFloorMs = $derived.by(() => {
+    if (!volume) return 0
     const days = volume.retentionPeriod > 0 ? volume.retentionPeriod : DEFAULT_RETENTION_DAYS
-    let gcThresholdMs = Date.now() - days * 86400_000
+    let floor = Date.now() - days * 86400_000
     for (const f of forks) {
-      if (f.status !== 'active') continue
       const snapMs = Math.floor(f.snapshotTs / 1000)
-      if (snapMs < gcThresholdMs) gcThresholdMs = snapMs
+      if (snapMs < floor) floor = snapMs
     }
-    return ceilDatetimeLocal(new Date(gcThresholdMs))
+    return floor
   })
 
-  const createForkAsOfMax = $derived(toDatetimeLocal(new Date()))
+  // Parent-snapshot floor: only tightens the bound when a non-main parent is
+  // chosen. Mirrors dataserv's parent-snapshot guard.
+  const parentFloorMs = $derived.by(() => {
+    if (!createForkParent || createForkParent === 'main') return 0
+    const parent = forks.find(f => f.name === createForkParent)
+    return parent ? Math.floor(parent.snapshotTs / 1000) : 0
+  })
+
+  const createForkAsOfMin = $derived.by(() => {
+    if (!volume) return ''
+    return ceilDatetimeLocal(new Date(Math.max(gcFloorMs, parentFloorMs)))
+  })
+
+  // Upper bound is minute-floor(now): the current in-progress minute is
+  // disallowed, matching the server's minuteNow check. If now is exactly on a
+  // minute boundary the just-ended minute is reachable.
+  const createForkAsOfMax = $derived(toDatetimeLocal(new Date(Math.floor(Date.now() / 60_000) * 60_000)))
 
   function openCreateFork() {
     createForkName = ''
@@ -1068,7 +1086,7 @@
           <Checkbox id="create-fork-asof" bind:checked={createForkAsOfEnabled} />
           <Label for="create-fork-asof" class="text-sm inline-flex items-center gap-1">
             Snapshot at past time
-            <InfoTip text="Off: snapshot the parent now.\nOn: snapshot at the chosen UTC timestamp. Must be within the volume's retention window — older data may have been garbage collected." />
+            <InfoTip text={"Off: snapshot the parent now.\nOn: snapshot at the chosen UTC timestamp. Reachable back to (now − retention), extended further if an existing fork's snapshot pins older data."} />
           </Label>
         </div>
         {#if createForkAsOfEnabled}
