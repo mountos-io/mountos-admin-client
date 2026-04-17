@@ -37,6 +37,7 @@
   import ShieldAlert from '@lucide/svelte/icons/shield-alert'
   import { Select } from '$lib/components/ui/select'
   import { Checkbox } from '$lib/components/ui/checkbox'
+  import DateTimePicker from '$lib/components/shared/DateTimePicker.svelte'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
 
   const store = useVolumes()
@@ -121,19 +122,63 @@
   let createForkName = $state('')
   let createForkParent = $state('')
   let createForkLoading = $state(false)
+  let createForkAsOfEnabled = $state(false)
+  let createForkAsOfLocal = $state('')
+
+  function toDatetimeLocal(d: Date): string {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  }
+
+  // Round up to the next whole minute so the value is strictly within the
+  // server's bound (server compares at microsecond precision against the
+  // exact volume creation / retention timestamps).
+  function ceilDatetimeLocal(d: Date): string {
+    const ms = d.getTime()
+    const rounded = ms % 60_000 === 0 ? ms : (Math.floor(ms / 60_000) + 1) * 60_000
+    return toDatetimeLocal(new Date(rounded))
+  }
+
+  // Mirror of gcserv DefaultDataRetentionDays — fallback when the volume
+  // has no plan-level retention set, so the picker bound matches the server.
+  const DEFAULT_RETENTION_DAYS = 30
+
+  // Effective lower bound = gcThreshold = min(now - retention, min(existing
+  // fork snapshot_ts)). Mirrors dataserv handleForksCreate + gcserv
+  // getEffectiveRetentionThreshold exactly. No separate volume.createdAt floor
+  // needed: any existing fork's snapshot_ts is already >= volume.createdAt.
+  const createForkAsOfMin = $derived.by(() => {
+    if (!volume) return ''
+    const days = volume.retentionPeriod > 0 ? volume.retentionPeriod : DEFAULT_RETENTION_DAYS
+    let gcThresholdMs = Date.now() - days * 86400_000
+    for (const f of forks) {
+      if (f.status !== 'active') continue
+      const snapMs = Math.floor(f.snapshotTs / 1000)
+      if (snapMs < gcThresholdMs) gcThresholdMs = snapMs
+    }
+    return ceilDatetimeLocal(new Date(gcThresholdMs))
+  })
+
+  const createForkAsOfMax = $derived(toDatetimeLocal(new Date()))
 
   function openCreateFork() {
     createForkName = ''
     createForkParent = 'main'
+    createForkAsOfEnabled = false
+    createForkAsOfLocal = toDatetimeLocal(new Date())
     createForkOpen = true
   }
 
   async function handleCreateFork() {
     if (!createForkName.trim()) return
+    if (createForkAsOfEnabled && !createForkAsOfLocal) return
     createForkLoading = true
     try {
       const req: CreateVolumeForkRequest = { name: createForkName.trim() }
       if (createForkParent && createForkParent !== 'main') req.parentName = createForkParent
+      if (createForkAsOfEnabled) {
+        req.asOf = new Date(createForkAsOfLocal).getTime() * 1000
+      }
       await store.createFork(id, req)
       showSuccessToast(`Fork "${createForkName.trim()}" created`)
       createForkOpen = false
@@ -1005,7 +1050,7 @@
     <Dialog.Header>
       <Dialog.Title>Create Fork</Dialog.Title>
       <Dialog.Description>
-        <p class="mt-2 text-sm">Create a new fork from an existing one. The new fork will snapshot the parent at the current point in time.</p>
+        <p class="mt-2 text-sm">Snapshot the parent fork at the current moment, or rewind to a past point within the volume's retention window.</p>
       </Dialog.Description>
     </Dialog.Header>
     <div class="space-y-4 py-2">
@@ -1018,10 +1063,31 @@
         <Select id="create-fork-parent" bind:value={createForkParent}
           options={forkParentOptions} placeholder="Select parent fork" />
       </div>
+      <div class="space-y-1.5">
+        <div class="flex items-center gap-2">
+          <Checkbox id="create-fork-asof" bind:checked={createForkAsOfEnabled} />
+          <Label for="create-fork-asof" class="text-sm inline-flex items-center gap-1">
+            Snapshot at past time
+            <InfoTip text="Off: snapshot the parent now.\nOn: snapshot at the chosen UTC timestamp. Must be within the volume's retention window — older data may have been garbage collected." />
+          </Label>
+        </div>
+        {#if createForkAsOfEnabled}
+          <DateTimePicker
+            id="create-fork-asof-input"
+            bind:value={createForkAsOfLocal}
+            min={createForkAsOfMin}
+            max={createForkAsOfMax}
+          />
+        {/if}
+      </div>
     </div>
     <Dialog.Footer>
       <Button variant="outline" onclick={() => createForkOpen = false}>Cancel</Button>
-      <Button variant="default" disabled={createForkLoading || !createForkName.trim()} onclick={handleCreateFork}>
+      <Button
+        variant="default"
+        disabled={createForkLoading || !createForkName.trim() || (createForkAsOfEnabled && !createForkAsOfLocal)}
+        onclick={handleCreateFork}
+      >
         {#if createForkLoading}
           <Loader2 class="mr-2 h-4 w-4 animate-spin" />
         {/if}
