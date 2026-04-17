@@ -65,37 +65,76 @@
     { keys: '⌘ ⇧ G', description: 'Toggle grayscale' },
     { keys: '⌘ 1-9', description: 'Switch account by index' },
   ]
+
+  let tablistEl: HTMLElement | null = $state(null)
+
+  function handleTablistKey(e: KeyboardEvent) {
+    const navKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End']
+    if (!navKeys.includes(e.key)) return
+    e.preventDefault()
+    const tabs = allTabs
+    const current = tabs.findIndex(t => t.id === modal.tab)
+    let next = current
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (current - 1 + tabs.length) % tabs.length
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (current + 1) % tabs.length
+    else if (e.key === 'Home') next = 0
+    else if (e.key === 'End') next = tabs.length - 1
+    modal.tab = tabs[next].id
+    queueMicrotask(() => {
+      const buttons = tablistEl?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+      buttons?.[next]?.focus()
+    })
+  }
 </script>
 
 <Dialog.Dialog bind:open={modal.open}>
-  <Dialog.DialogContent class="p-0 gap-0" style="max-width: {maxWidth}">
+  <Dialog.DialogContent class="p-0 gap-0 max-h-[calc(100vh-4rem)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden" style="max-width: {maxWidth}">
     <Dialog.DialogHeader class="px-6 pt-6 pb-4 border-b">
       <Dialog.DialogTitle>Settings</Dialog.DialogTitle>
       <Dialog.DialogDescription class="sr-only">Application settings</Dialog.DialogDescription>
     </Dialog.DialogHeader>
-    <div class="flex flex-col sm:flex-row" style="min-height: {minHeight}">
-      <div class="flex sm:w-44 shrink-0 border-b sm:border-b-0 sm:border-r overflow-x-auto sm:overflow-x-visible sm:flex-col p-1.5 sm:p-2 gap-0.5" role="tablist" aria-label="Settings">
+    <div class="flex flex-col sm:flex-row min-w-0 min-h-0" style="min-height: min({minHeight}, 100%)">
+      <div
+        bind:this={tablistEl}
+        class="flex sm:w-44 shrink-0 border-b sm:border-b-0 sm:border-r overflow-x-auto sm:overflow-x-visible sm:flex-col p-1.5 sm:p-2 gap-0.5"
+        role="tablist"
+        tabindex={-1}
+        aria-label="Settings"
+        aria-orientation="vertical"
+        onkeydown={handleTablistKey}
+      >
         {#each allTabs as t}
           {@const Icon = t.icon}
+          {@const active = modal.tab === t.id}
           <button
             role="tab"
-            aria-selected={modal.tab === t.id}
+            id="settings-tab-{t.id}"
+            aria-selected={active}
+            aria-controls="settings-panel-{t.id}"
+            tabindex={active ? 0 : -1}
+            title={t.label}
             class={cn(
-              'flex items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors whitespace-nowrap',
+              'flex items-center gap-2 rounded-sm px-3 py-2 min-h-11 sm:min-h-0 text-sm transition-colors whitespace-nowrap',
               'sm:w-full',
-              modal.tab === t.id
+              active
                 ? 'bg-accent text-accent-foreground font-medium'
                 : 'text-muted-foreground hover:bg-accent/50'
             )}
             onclick={() => modal.tab = t.id}
           >
-            <Icon class="h-4 w-4 shrink-0 sm:aria-hidden" aria-hidden="true" />
+            <Icon class="h-4 w-4 shrink-0" aria-hidden="true" />
             <span class="sr-only sm:not-sr-only">{t.label}</span>
           </button>
         {/each}
       </div>
 
-      <div class="flex-1 p-4 sm:p-6 overflow-y-auto">
+      <div
+        role="tabpanel"
+        id="settings-panel-{modal.tab}"
+        aria-labelledby="settings-tab-{modal.tab}"
+        tabindex="0"
+        class="flex-1 min-w-0 min-h-0 p-4 sm:p-6 overflow-y-auto focus:outline-none"
+      >
         {#if modal.tab === 'appearance'}
           <div class="space-y-6">
             <div class="space-y-4">
@@ -178,6 +217,8 @@
                 <Button
                   variant={prefs.grayscale ? 'primary' : 'outline'}
                   size="sm"
+                  role="switch"
+                  aria-checked={prefs.grayscale}
                   onclick={() => prefs.grayscale = !prefs.grayscale}
                 >
                   {prefs.grayscale ? 'On' : 'Off'}
@@ -290,9 +331,9 @@
                 <Badge variant={licenseStore.badgeVariant ?? 'default'}>{licenseStore.statusLabel(lic.status)}</Badge>
               </div>
               <dl class="grid gap-3 text-sm">
-                <div class="flex justify-between">
-                  <dt class="text-muted-foreground">Licensee</dt>
-                  <dd class="font-medium text-right">{lic.licensee}</dd>
+                <div class="flex justify-between gap-3 min-w-0">
+                  <dt class="text-muted-foreground shrink-0">Licensee</dt>
+                  <dd class="font-medium text-right truncate min-w-0" title={lic.licensee}>{lic.licensee}</dd>
                 </div>
                 <div class="flex justify-between">
                   <dt class="text-muted-foreground">Type</dt>
@@ -351,7 +392,7 @@
                 </summary>
                 <div class="mt-2 max-h-64 overflow-y-auto rounded border bg-muted/50 p-3">
                   {#if licenseStore.terms}
-                    <pre class="whitespace-pre-wrap text-xs text-muted-foreground font-mono leading-relaxed">{licenseStore.terms}</pre>
+                    <pre class="whitespace-pre-wrap break-words text-xs text-muted-foreground font-mono leading-relaxed">{licenseStore.terms}</pre>
                   {:else if licenseStore.termsLoading}
                     <p class="text-xs text-muted-foreground">Loading terms...</p>
                   {:else}
