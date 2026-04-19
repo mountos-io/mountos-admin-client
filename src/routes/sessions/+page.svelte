@@ -61,14 +61,14 @@
     if (secs > 0) pollTimer = setInterval(() => store.refetch(), secs * 1000)
   }
 
-  onDestroy(() => { if (pollTimer) clearInterval(pollTimer) })
+  onDestroy(() => { if (pollTimer) clearInterval(pollTimer); store.reset() })
 
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
   function mountModeVariant(m: string) { return m === 'readonly' ? 'outline' as const : 'default' as const }
   function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
   function clearVolumeFilter() { goto('/sessions') }
 
-  const hasFilters = $derived(store.statusFilter || store.platformFilter || store.regionFilter || store.osFilter || store.searchQuery)
+  const hasFilters = $derived(store.statusFilter || store.platformFilter || store.regionFilter || store.osFilter || store.searchQuery || store.volumeIdFilter)
 </script>
 
 <svelte:head><title>Sessions — mountOS Admin</title></svelte:head>
@@ -82,9 +82,6 @@
         <button type="button" class="ml-1 p-2 -m-1 hover:text-destructive" onclick={clearVolumeFilter} aria-label="Clear volume filter">&times;</button>
       </Badge>
     {/if}
-    {#if store.capped}
-      <Badge variant="warning" class="text-sm">Showing {formatNum(store.summary.total)} of {formatNum(store.cappedTotal)}</Badge>
-    {/if}
   </div>
 
   {#if !account}
@@ -93,12 +90,13 @@
     <!-- Summary Stats -->
     <div class="flex flex-wrap gap-3 items-center">
       <SessionSummaryStrip summary={store.summary} loading={store.loading} />
-      <span class="stat-divider" aria-hidden="true"></span>
+      {#if store.summary.byPlatform.length > 0 || store.summary.byOs.length > 1}
+        <span class="stat-divider" aria-hidden="true"></span>
+      {/if}
       {#each store.summary.byPlatform as [platform, count]}
         <span class="count-tag" style="--tc: var(--primary)"><span class="count-pill" style="background: var(--primary); color: var(--primary-foreground)">{count}</span> {formatPlatform(platform)}</span>
       {/each}
       {#if store.summary.byOs.length > 1}
-        <span class="stat-divider" aria-hidden="true"></span>
         {#each store.summary.byOs as [os, count]}
           <span class="count-tag" style="--tc: var(--foreground)"><span class="count-pill" style="background: var(--foreground); color: var(--background)">{count}</span> {formatOs(os)}</span>
         {/each}
@@ -112,7 +110,7 @@
       </div>
       <FilterSelect options={store.statusOptions} value={store.statusFilter} placeholder="Status" onchange={(v) => store.setStatusFilter(v)} />
       <FilterSelect options={store.platformOptions} value={store.platformFilter} placeholder="Platform" onchange={(v) => store.setPlatformFilter(v)} />
-      <FilterSelect options={store.regionOptions} value={store.regionFilter} placeholder="Region" onchange={(v) => store.setRegionFilter(v)} />
+      <FilterSelect options={store.regionOptions} value={store.regionFilter} placeholder="Region" onchange={(v) => store.setRegionFilter(v, store.regionOptions.find(o => o.value === v)?.label)} />
       <FilterSelect options={store.osOptions} value={store.osFilter} placeholder="OS" onchange={(v) => store.setOsFilter(v)} />
       {#if hasFilters}
         <Button variant="ghost" size="sm" onclick={() => store.clearFilters()}>Clear</Button>
@@ -122,7 +120,9 @@
           <input type="checkbox" checked={store.showInactive} onchange={() => store.setShowInactive(!store.showInactive)} class="accent-primary" />
           Inactive
         </label>
-        <span class="text-sm text-muted-foreground">{store.filtered.length} result{store.filtered.length !== 1 ? 's' : ''}</span>
+        <span class="text-sm text-muted-foreground">
+          {#if store.loading && store.summary.total === 0}—{:else}{store.summary.total} result{store.summary.total !== 1 ? 's' : ''}{/if}
+        </span>
         <FilterSelect options={SESSION_POLL_OPTIONS} value={pollValue} placeholder="Poll Off" onchange={setPoll} />
       </div>
     </FilterPanel>

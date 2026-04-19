@@ -74,6 +74,8 @@ const CLIENT_TYPE_NAMES: Record<string, string> = {
   'fuse': 'FUSE (Linux)',
   'macfuse': 'macFUSE',
   'winfsp': 'WinFSP',
+  'mountosio': 'mountOSIO (Windows)',
+  'cloudfilter': 'CloudFilter (Windows)',
   'fskit': 'FSKit (macOS)',
   'nfs': 'NFS (macOS)',
   'cfapi': 'CloudFilter (Windows)',
@@ -165,7 +167,8 @@ export function parsePrometheusText(text: string): Map<string, PrometheusMetric[
 
 const PLATFORM_LABELS: Record<string, string> = {
   macfuse: 'macFUSE', nfs: 'NFS', fuse: 'FUSE', fskit: 'FSKit',
-  winfsp: 'WinFSP', 'fuse+iouring': 'FUSE io_uring', 'csi-driver': 'CSI Driver',
+  winfsp: 'WinFSP', mountosio: 'mountOSIO', cloudfilter: 'CloudFilter',
+  'fuse+iouring': 'FUSE io_uring', 'csi-driver': 'CSI Driver',
   cfapi: 'CloudFilter', fp: 'File Provider',
 }
 
