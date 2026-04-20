@@ -354,17 +354,26 @@
                 </div>
                 <div class="flex justify-between">
                   <dt class="text-muted-foreground">Expires</dt>
-                  <dd class:text-destructive={lic.status === 'expired'} class:text-warning={lic.status === 'expiring' || lic.status === 'grace'}>
+                  <dd class:text-destructive={lic.status === 'expired' || lic.status === 'expired_access'} class:text-warning={lic.status === 'expiring' || lic.status === 'grace'}>
                     {formatDate(lic.expiresAt)}
                     {#if lic.daysRemaining > 0}({lic.daysRemaining}d remaining){:else if lic.daysRemaining < 0}({Math.abs(lic.daysRemaining)}d ago){/if}
                   </dd>
                 </div>
-                {#if lic.status === 'grace' || lic.status === 'expired'}
+                {#if lic.status === 'grace' || lic.status === 'expired_access' || lic.status === 'expired'}
                   <div class="flex justify-between">
                     <dt class="text-muted-foreground">Grace ends</dt>
                     <dd class:text-destructive={lic.graceDaysLeft <= 0}>
                       {formatDate(lic.graceEndsAt)}
                       {#if lic.graceDaysLeft > 0}({lic.graceDaysLeft}d left){/if}
+                    </dd>
+                  </div>
+                {/if}
+                {#if lic.status === 'expired_access' || lic.status === 'expired'}
+                  <div class="flex justify-between">
+                    <dt class="text-muted-foreground">Expired access ends</dt>
+                    <dd class:text-destructive={lic.expiredAccessDaysLeft <= 0}>
+                      {formatDate(lic.expiredAccessEndsAt)}
+                      {#if lic.expiredAccessDaysLeft > 0}({lic.expiredAccessDaysLeft}d left){/if}
                     </dd>
                   </div>
                 {/if}
@@ -380,6 +389,14 @@
                 <div class="flex justify-between">
                   <dt class="text-muted-foreground">Max Users</dt>
                   <dd>{licenseStore.formatLimit(lic.maxUsers)}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Max Accounts</dt>
+                  <dd>{licenseStore.formatLimit(lic.maxAccounts)}</dd>
+                </div>
+                <div class="flex justify-between">
+                  <dt class="text-muted-foreground">Max Regions</dt>
+                  <dd>{licenseStore.formatLimit(lic.maxRegions)}</dd>
                 </div>
                 <div class="flex justify-between">
                   <dt class="text-muted-foreground">Max Storage</dt>

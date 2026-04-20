@@ -14,7 +14,7 @@ const needsAttention = $derived<boolean>(
 
 const badgeVariant = $derived.by<'success' | 'warning' | 'destructive' | undefined>(() => {
   if (!license) return undefined
-  if (license.status === 'expired') return 'destructive'
+  if (license.status === 'expired' || license.status === 'expired_access') return 'destructive'
   if (license.status === 'grace' || license.status === 'expiring') return 'warning'
   if (license.status === 'valid') return 'success'
   return undefined
@@ -40,6 +40,7 @@ function statusLabel(status: LicenseStatus): string {
     case 'valid': return 'Valid'
     case 'expiring': return 'Expiring Soon'
     case 'grace': return 'Grace Period'
+    case 'expired_access': return 'Expired Access'
     case 'expired': return 'Expired'
   }
 }

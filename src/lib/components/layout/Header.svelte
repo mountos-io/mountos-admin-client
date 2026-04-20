@@ -136,9 +136,9 @@
         title="License: {licenseStore.statusLabel(lic.status)}"
         aria-label="License {licenseStore.statusLabel(lic.status)}"
       >
-        <ShieldAlert class="size-3.5 {lic.status === 'expired' ? 'text-destructive' : 'text-warning'}" aria-hidden="true" />
+        <ShieldAlert class="size-3.5 {lic.status === 'expired' || lic.status === 'expired_access' ? 'text-destructive' : 'text-warning'}" aria-hidden="true" />
         <Badge variant={licenseStore.badgeVariant}>
-          {#if lic.status === 'expired'}Expired{:else if lic.status === 'grace'}Grace{:else}{lic.daysRemaining}d left{/if}
+          {#if lic.status === 'expired'}Expired{:else if lic.status === 'expired_access'}Read-only{:else if lic.status === 'grace'}Grace{:else}{lic.daysRemaining}d left{/if}
         </Badge>
         {#if lic.licenseType === 'trial'}
           <span class="hidden sm:inline text-muted-foreground">Trial</span>
