@@ -131,15 +131,17 @@
       {@const lic = licenseStore.license}
       <button
         type="button"
-        class="flex items-center gap-1.5 rounded-sm px-2 py-1 text-sm font-medium transition-colors hover:bg-accent/50"
+        class="flex items-center gap-1.5 rounded-sm px-2 min-h-[44px] text-sm font-medium transition-colors hover:bg-accent/50"
         onclick={() => settingsModal.show('license')}
         title="License: {licenseStore.statusLabel(lic.status)}"
-        aria-label="License {licenseStore.statusLabel(lic.status)}"
+        aria-label="License: {licenseStore.statusLabel(lic.status)}{lic.status === 'expiring' && lic.daysRemaining > 0 ? `, ${lic.daysRemaining} days remaining` : lic.status === 'grace' && lic.graceDaysLeft > 0 ? `, ${lic.graceDaysLeft} days left in grace period` : ''}"
       >
         <ShieldAlert class="size-3.5 {lic.status === 'expired' || lic.status === 'expired_access' ? 'text-destructive' : 'text-warning'}" aria-hidden="true" />
-        <Badge variant={licenseStore.badgeVariant}>
-          {#if lic.status === 'expired'}Expired{:else if lic.status === 'expired_access'}Read-only{:else if lic.status === 'grace'}Grace{:else}{lic.daysRemaining}d left{/if}
-        </Badge>
+        <span aria-hidden="true">
+          <Badge variant={licenseStore.badgeVariant}>
+            {#if lic.status === 'expired'}Expired{:else if lic.status === 'expired_access'}Read-only{:else if lic.status === 'grace'}Grace{:else if lic.daysRemaining > 0}{lic.daysRemaining}d left{:else}Today{/if}
+          </Badge>
+        </span>
         {#if lic.licenseType === 'trial'}
           <span class="hidden sm:inline text-muted-foreground">Trial</span>
         {/if}
@@ -147,7 +149,7 @@
     {:else if !auth.isUserRole && licenseStore.license?.licenseType === 'trial'}
       <button
         type="button"
-        class="flex items-center gap-1.5 rounded-sm px-2 py-1 text-sm transition-colors hover:bg-accent/50"
+        class="flex items-center gap-1.5 rounded-sm px-2 min-h-[44px] text-sm transition-colors hover:bg-accent/50"
         onclick={() => settingsModal.show('license')}
         title="Trial license" aria-label="Trial license"
       >

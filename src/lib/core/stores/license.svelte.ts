@@ -48,7 +48,7 @@ function statusLabel(status: LicenseStatus): string {
 function formatLimit(value: number, unit?: string): string {
   if (value <= 0) return 'Unlimited'
   if (unit === 'bytes') {
-    const units = ['B', 'KB', 'MB', 'GB', 'TB']
+    const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
     let i = 0
     let v = value
     while (v >= 1024 && i < units.length - 1) { v /= 1024; i++ }

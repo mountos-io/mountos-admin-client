@@ -326,7 +326,7 @@
           {#if licenseStore.license}
             {@const lic = licenseStore.license}
             <div class="space-y-5">
-              <div class="flex items-center justify-between">
+              <div class="flex items-center justify-between" aria-live="polite" aria-atomic="true">
                 <h4 class="text-sm font-medium">License</h4>
                 <Badge variant={licenseStore.badgeVariant ?? 'default'}>{licenseStore.statusLabel(lic.status)}</Badge>
               </div>
@@ -347,7 +347,7 @@
                   <dt class="text-muted-foreground shrink-0">ID</dt>
                   <dd class="font-mono text-sm text-muted-foreground truncate min-w-0">{lic.licenseId}</dd>
                 </div>
-                <hr class="border-border" />
+                <hr class="border-border" aria-hidden="true" />
                 <div class="flex justify-between">
                   <dt class="text-muted-foreground">Issued</dt>
                   <dd>{formatDate(lic.issuedAt)}</dd>
@@ -356,28 +356,28 @@
                   <dt class="text-muted-foreground">Expires</dt>
                   <dd class:text-destructive={lic.status === 'expired' || lic.status === 'expired_access'} class:text-warning={lic.status === 'expiring' || lic.status === 'grace'}>
                     {formatDate(lic.expiresAt)}
-                    {#if lic.daysRemaining > 0}({lic.daysRemaining}d remaining){:else if lic.daysRemaining < 0}({Math.abs(lic.daysRemaining)}d ago){/if}
+                    {#if lic.daysRemaining > 0}<span aria-label="{lic.daysRemaining} days remaining">({lic.daysRemaining}d remaining)</span>{:else if lic.daysRemaining === 0}<span aria-label="expires today">(today)</span>{:else}<span aria-label="{Math.abs(lic.daysRemaining)} days ago">({Math.abs(lic.daysRemaining)}d ago)</span>{/if}
                   </dd>
                 </div>
                 {#if lic.status === 'grace' || lic.status === 'expired_access' || lic.status === 'expired'}
                   <div class="flex justify-between">
-                    <dt class="text-muted-foreground">Grace ends</dt>
+                    <dt class="text-muted-foreground">{lic.status === 'grace' ? 'Grace ends' : 'Grace ended'}</dt>
                     <dd class:text-destructive={lic.graceDaysLeft <= 0}>
                       {formatDate(lic.graceEndsAt)}
-                      {#if lic.graceDaysLeft > 0}({lic.graceDaysLeft}d left){/if}
+                      {#if lic.graceDaysLeft > 0}<span aria-label="{lic.graceDaysLeft} days left">({lic.graceDaysLeft}d left)</span>{/if}
                     </dd>
                   </div>
                 {/if}
                 {#if lic.status === 'expired_access' || lic.status === 'expired'}
                   <div class="flex justify-between">
-                    <dt class="text-muted-foreground">Expired access ends</dt>
+                    <dt class="text-muted-foreground">{lic.status === 'expired_access' ? 'Expired access ends' : 'Expired access ended'}</dt>
                     <dd class:text-destructive={lic.expiredAccessDaysLeft <= 0}>
                       {formatDate(lic.expiredAccessEndsAt)}
-                      {#if lic.expiredAccessDaysLeft > 0}({lic.expiredAccessDaysLeft}d left){/if}
+                      {#if lic.expiredAccessDaysLeft > 0}<span aria-label="{lic.expiredAccessDaysLeft} days left">({lic.expiredAccessDaysLeft}d left)</span>{/if}
                     </dd>
                   </div>
                 {/if}
-                <hr class="border-border" />
+                <hr class="border-border" aria-hidden="true" />
                 <div class="flex justify-between">
                   <dt class="text-muted-foreground">Max Nodes</dt>
                   <dd>{licenseStore.formatLimit(lic.maxNodes)}</dd>
