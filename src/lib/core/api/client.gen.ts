@@ -455,14 +455,14 @@ class ClientSessionsResource {
   constructor(private client: AdminClient) {}
 
   list(opts?: ClientSessionListOptions, signal?: AbortSignal): Promise<PaginatedResponse<ClientSession>> {
-    return this.client.request('GET', `/client-sessions/list${queryString({ accountId: opts?.accountId, regionId: opts?.regionId, volumeId: opts?.volumeId, userId: opts?.userId, clientType: opts?.clientType, status: opts?.status, isActive: opts?.isActive, page: opts?.page, limit: opts?.limit })}`, undefined, signal)
+    return this.client.request('GET', `/client-sessions/list${queryString({ accountId: opts?.accountId, regionId: opts?.regionId, volumeId: opts?.volumeId, userId: opts?.userId, clientType: opts?.clientType, status: opts?.status, isActive: opts?.isActive, osName: opts?.osName, platform: opts?.platform, search: opts?.search, page: opts?.page, limit: opts?.limit })}`, undefined, signal)
   }
 
   get(sessionId: number, signal?: AbortSignal): Promise<ClientSession> {
     return this.client.request('GET', `/client-sessions/${sessionId}`, undefined, signal)
   }
 
-  summary(accountId?: number, volumeId?: number, signal?: AbortSignal): Promise<SessionSummary[]> {
+  summary(accountId: number, volumeId: number, signal?: AbortSignal): Promise<SessionSummary> {
     return this.client.request('GET', `/client-sessions/summary${queryString({ accountId: accountId, volumeId: volumeId })}`, undefined, signal)
   }
 }
