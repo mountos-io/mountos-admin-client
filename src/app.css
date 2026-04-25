@@ -329,8 +329,8 @@
     content-visibility: auto;
   }
   .dark .bg-doodle {
-    filter: brightness(0.15);
-    opacity: 0.1;
+    filter: brightness(0.3);
+    opacity: 0.3;
   }
 
   .led-ping {
