@@ -44,10 +44,14 @@
   const canReadSessions = $derived(features.clientSessions && auth.can('clientSessions', 'read'))
   const canReadNodes = $derived(auth.can('serviceNodes', 'read'))
   const canReadAudit = $derived(auth.can('auditLogs', 'read'))
-  let activityDays = $state(7)
+  const activityDayOptions = [7, 15, 30] as const
+  let activityDays = $state<7 | 15 | 30 | 'auto'>('auto')
   let activityView = $state<'feed' | 'chart'>('chart')
-  const activityCutoff = $derived(Date.now() - activityDays * 86400000)
-  const filteredActivity = $derived(auditStore.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= activityCutoff))
+  const filteredActivity = $derived.by(() => {
+    if (activityDays === 'auto') return auditStore.logs
+    const cutoff = Date.now() - activityDays * 86400000
+    return auditStore.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= cutoff)
+  })
 
   $effect(() => {
     if (accountId) {
@@ -254,7 +258,10 @@
               <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
                 <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
                 <div class="relative flex items-center gap-1.5">
-                  {#each [7, 15, 30] as d}
+                  <Button variant={activityDays === 'auto' ? 'primary' : 'ghost'} size="sm"
+                    class="h-7 w-12 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                    onclick={() => activityDays = 'auto'}>Auto</Button>
+                  {#each activityDayOptions as d}
                     <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
                       class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                       onclick={() => activityDays = d}>{d}d</Button>
