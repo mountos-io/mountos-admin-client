@@ -227,11 +227,11 @@
         {/if}
       </Card>
 
-      {#if account.vendorInfo}
+      {#if account.providerInfo}
         <Card>
-          <CardHeader><CardTitle>Vendor Info</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Provider Info</CardTitle></CardHeader>
           <CardContent>
-            <pre class="rounded-md bg-muted p-3 text-sm">{JSON.stringify(account.vendorInfo, null, 2)}</pre>
+            <pre class="rounded-md bg-muted p-3 text-sm">{JSON.stringify(account.providerInfo, null, 2)}</pre>
           </CardContent>
         </Card>
       {/if}

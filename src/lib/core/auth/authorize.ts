@@ -1,5 +1,5 @@
 import type { Capabilities, UserInfo } from './adapter'
-import { vendorAuthorize } from '$vendor/config/auth'
+import { providerAuthorize } from '$provider/config/auth'
 import { canCreate, canRead, canUpdate, canDelete } from './capabilities'
 
 export type Action = 'create' | 'read' | 'update' | 'delete'
@@ -7,7 +7,7 @@ export type Action = 'create' | 'read' | 'update' | 'delete'
 export function authorize(
   caps: Capabilities, resource: string, action: Action, user: UserInfo | null
 ): boolean {
-  const v = vendorAuthorize?.(resource, action, caps, user)
+  const v = providerAuthorize?.(resource, action, caps, user)
   if (v != null) return v
   switch (action) {
     case 'create': return canCreate(caps, resource)

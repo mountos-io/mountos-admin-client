@@ -1,5 +1,5 @@
 <script lang="ts">
-  import LoginPage from '$vendor/pages/login.svelte'
+  import LoginPage from '$provider/pages/login.svelte'
 </script>
 
 <LoginPage />

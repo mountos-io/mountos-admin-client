@@ -1,4 +1,4 @@
-import { vendorAppConfig } from "$vendor/config/app";
+import { providerAppConfig } from "$provider/config/app";
 
 export interface AppConfig {
   appName: string;
@@ -18,4 +18,4 @@ const defaults: AppConfig = {
   logoutUrl: "/login",
 };
 
-export const appConfig: AppConfig = { ...defaults, ...vendorAppConfig };
+export const appConfig: AppConfig = { ...defaults, ...providerAppConfig };

@@ -16,9 +16,9 @@ function matches(rules: StepUpRule[], method: string, path: string): boolean {
 
 export function createStepUpMiddleware(
   manager: WebAuthnManager,
-  vendorRules: StepUpRule[] = [],
+  providerRules: StepUpRule[] = [],
 ): MiddlewareHandler {
-  const rules = [...DEFAULTS, ...vendorRules]
+  const rules = [...DEFAULTS, ...providerRules]
   return async (c, next) => {
     if (!matches(rules, c.req.method, c.req.path)) return next()
 

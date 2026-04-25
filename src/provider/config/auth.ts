@@ -5,5 +5,5 @@ export type AuthorizeCheck = (
   resource: string, action: Action, caps: Capabilities, user: UserInfo | null
 ) => boolean | null | undefined
 
-export const vendorAuthAdapter: AuthAdapter | undefined = undefined
-export const vendorAuthorize: AuthorizeCheck | undefined = undefined
+export const providerAuthAdapter: AuthAdapter | undefined = undefined
+export const providerAuthorize: AuthorizeCheck | undefined = undefined

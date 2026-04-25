@@ -1,7 +1,7 @@
 import type { Component } from 'svelte'
 import type { Capabilities } from '$lib/core/auth/adapter'
 import type { FeatureFlags } from './features'
-import { vendorNavItems, vendorNavFilter } from '$vendor/config/navigation'
+import { providerNavItems, providerNavFilter } from '$provider/config/navigation'
 
 export interface NavItem {
   label: string
@@ -26,5 +26,5 @@ const defaults: NavItem[] = [
   { label: 'Alerts', href: '/alerts', icon: 'bell', feature: 'alerts' },
 ]
 
-export const navigation: NavItem[] = [...defaults, ...(vendorNavItems ?? [])]
-export const navFilter: NavFilter | null = vendorNavFilter ?? null
+export const navigation: NavItem[] = [...defaults, ...(providerNavItems ?? [])]
+export const navFilter: NavFilter | null = providerNavFilter ?? null

@@ -1,4 +1,4 @@
-import { vendorFeatures } from '$vendor/config/features'
+import { providerFeatures } from '$provider/config/features'
 
 export interface FeatureFlags {
   accounts: boolean
@@ -34,4 +34,4 @@ const defaults: FeatureFlags = {
   alerts: true,
 }
 
-export const features: FeatureFlags = { ...defaults, ...vendorFeatures }
+export const features: FeatureFlags = { ...defaults, ...providerFeatures }

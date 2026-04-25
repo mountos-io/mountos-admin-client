@@ -27,7 +27,7 @@ dev-all: ## Run dev server with proxy
 gen: ## Generate browser client from SDK
 	$(TS_EXEC) gen/browser-client.ts
 
-generate-test-token: ## Generate test vendor JWT for local dev
+generate-test-token: ## Generate test provider JWT for local dev
 	$(TS_EXEC) gen/test-token.ts
 
 OPEN_CMD_Darwin := open

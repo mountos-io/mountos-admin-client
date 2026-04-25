@@ -5,8 +5,8 @@ import { rateLimitHitsTotal } from './metrics'
 
 export interface RateLimitConfig {
   rules: RateLimitRule[]
-  /** Vendor rules take priority over defaults for the same prefix */
-  vendorRules?: RateLimitRule[]
+  /** Provider rules take priority over defaults for the same prefix */
+  providerRules?: RateLimitRule[]
 }
 
 const LUA_SLIDE = `
@@ -45,7 +45,7 @@ function matchRule(rules: RateLimitRule[], path: string): RateLimitRule | undefi
 }
 
 export function createRateLimiter(redis: Redis, config: RateLimitConfig): MiddlewareHandler {
-  const rules = [...(config.vendorRules ?? []), ...config.rules]
+  const rules = [...(config.providerRules ?? []), ...config.rules]
 
   return async (c, next) => {
     const rule = matchRule(rules, c.req.path)

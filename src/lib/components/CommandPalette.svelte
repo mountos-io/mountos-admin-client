@@ -6,7 +6,7 @@
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
-  import { vendorSettingsTabs } from '$vendor/config/settings'
+  import { providerSettingsTabs } from '$provider/config/settings'
   import * as Command from '$lib/components/ui/command'
   import type { Component } from 'svelte'
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
@@ -96,10 +96,10 @@
       </Command.CommandItem>
     </Command.CommandGroup>
 
-    {#if vendorSettingsTabs.length > 0}
+    {#if providerSettingsTabs.length > 0}
       <Command.CommandSeparator />
       <Command.CommandGroup heading="Settings">
-        {#each vendorSettingsTabs as vt}
+        {#each providerSettingsTabs as vt}
           {@const VIcon = vt.icon}
           <Command.CommandItem value="Settings: {vt.label}" onSelect={() => run(() => settingsModal.show(vt.id))}>
             {#if VIcon}<VIcon class="mr-2 h-4 w-4" />{/if}

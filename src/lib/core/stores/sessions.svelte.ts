@@ -149,9 +149,7 @@ function cancelSearchDebounce() {
 
 async function fetchSummary(accountId: number) {
   try {
-    const opts: { accountId: number; volumeId?: number } = { accountId }
-    if (volumeIdFilter !== undefined) opts.volumeId = volumeIdFilter
-    globalSummary = await api.clientSessions.summary(opts)
+    globalSummary = await api.clientSessions.summary(accountId, volumeIdFilter as number)
   } catch {
     // Summary is best-effort; leave previous value in place on failure.
   }

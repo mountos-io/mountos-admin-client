@@ -1,8 +1,8 @@
 import * as jose from 'jose'
 
-const raw = process.env.VENDOR2DASHBOARD_SIGNING_KEY
+const raw = process.env.PROVIDER2DASHBOARD_SIGNING_KEY
 if (!raw) {
-  console.error('VENDOR2DASHBOARD_SIGNING_KEY env var is required')
+  console.error('PROVIDER2DASHBOARD_SIGNING_KEY env var is required')
   process.exit(1)
 }
 

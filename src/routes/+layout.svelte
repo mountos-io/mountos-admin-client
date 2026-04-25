@@ -22,14 +22,14 @@
   let progress = $state(0)
   let bootDone = false
 
-  async function exchangeToken(vendorToken: string) {
+  async function exchangeToken(providerToken: string) {
     exchanging = true
     progress = 20
     try {
       const res = await fetch('/api/auth/exchange', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: vendorToken }),
+        body: JSON.stringify({ token: providerToken }),
         credentials: 'same-origin',
       })
       progress = 60
@@ -87,9 +87,9 @@
     const isLoginPage = $page.url.pathname === '/login'
     if (isLoginPage || exchanging) return
 
-    const vendorToken = $page.url.searchParams.get('token')
-    if (vendorToken) {
-      exchangeToken(vendorToken)
+    const providerToken = $page.url.searchParams.get('token')
+    if (providerToken) {
+      exchangeToken(providerToken)
       return
     }
 

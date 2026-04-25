@@ -2,7 +2,7 @@ import * as jose from 'jose'
 import Redis from 'ioredis'
 import { MountOSAdmin, MountOSError } from '@mountos-app/admin-sdk'
 import type { AdminUser, Capabilities, DashboardAuthConfig } from './types'
-import { vendorAuthConfig } from '../src/vendor/server/config'
+import { providerAuthConfig } from '../src/provider/server/config'
 
 const AUD_DASHBOARD = 'mountos/dashboard'
 const AUD_SESSION = 'mountos/dashboard/session'
@@ -89,13 +89,13 @@ function userRoleClaims(user: AdminUser): Record<string, unknown> {
 class DashboardAuth {
   private sessionKey!: jose.KeyLike
   private sessionPub!: jose.KeyLike
-  private vendorPub!: jose.KeyLike
+  private providerPub!: jose.KeyLike
   private redis!: Redis
   private sdk!: MountOSAdmin
   private config: DashboardAuthConfig
 
   constructor() {
-    this.config = { ...defaults, ...vendorAuthConfig }
+    this.config = { ...defaults, ...providerAuthConfig }
   }
 
   get sessionTTL() { return this.config.sessionTTL }
@@ -103,7 +103,7 @@ class DashboardAuth {
   get redisClient() { return this.redis }
 
   async init() {
-    this.vendorPub = await importEd25519PublicKey('VENDOR2DASHBOARD_VERIFICATION_KEY', process.env.VENDOR2DASHBOARD_VERIFICATION_KEY!)
+    this.providerPub = await importEd25519PublicKey('PROVIDER2DASHBOARD_VERIFICATION_KEY', process.env.PROVIDER2DASHBOARD_VERIFICATION_KEY!)
     this.sessionKey = await importEd25519PrivateKey('DASHBOARD_SIGNING_KEY', process.env.DASHBOARD_SIGNING_KEY!)
     this.sessionPub = await importEd25519PublicKey('DASHBOARD_VERIFICATION_KEY', process.env.DASHBOARD_VERIFICATION_KEY!)
     this.redis = new Redis(process.env.REDIS_URL!)
@@ -115,8 +115,8 @@ class DashboardAuth {
     console.log('Auth: keys loaded, Redis connected')
   }
 
-  async validateVendorToken(token: string): Promise<AdminUser> {
-    const { payload } = await jose.jwtVerify(token, this.vendorPub, {
+  async validateProviderToken(token: string): Promise<AdminUser> {
+    const { payload } = await jose.jwtVerify(token, this.providerPub, {
       audience: AUD_DASHBOARD,
       clockTolerance: 60,
       maxTokenAge: '120s',

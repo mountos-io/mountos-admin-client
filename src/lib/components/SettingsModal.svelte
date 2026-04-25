@@ -3,7 +3,7 @@
   import { presetsForMode, type SkinMode } from '$lib/core/themes'
   import { useSettingsModal, type SettingsTab } from '$lib/stores/settings-modal.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { vendorSettingsTabs, vendorSettingsModalSize } from '$vendor/config/settings'
+  import { providerSettingsTabs, providerSettingsModalSize } from '$provider/config/settings'
   import * as Dialog from '$lib/components/ui/dialog'
   import { Button } from '$lib/components/ui/button'
   import { cn } from '$lib/utils'
@@ -25,8 +25,8 @@
   const auth = useAuth()
   const licenseStore = useLicense()
 
-  const maxWidth = vendorSettingsModalSize?.maxWidth ?? '800px'
-  const minHeight = vendorSettingsModalSize?.minHeight ?? '480px'
+  const maxWidth = providerSettingsModalSize?.maxWidth ?? '800px'
+  const minHeight = providerSettingsModalSize?.minHeight ?? '480px'
 
   const builtinTabs = $derived<{ id: SettingsTab; label: string; icon: typeof Sun }[]>([
     { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -37,10 +37,10 @@
 
   const allTabs = $derived([
     ...builtinTabs,
-    ...vendorSettingsTabs.map(vt => ({ id: vt.id as SettingsTab, label: vt.label, icon: vt.icon })),
+    ...providerSettingsTabs.map(vt => ({ id: vt.id as SettingsTab, label: vt.label, icon: vt.icon })),
   ])
 
-  const activeVendorTab = $derived(vendorSettingsTabs.find(vt => vt.id === modal.tab))
+  const activeProviderTab = $derived(providerSettingsTabs.find(vt => vt.id === modal.tab))
 
   const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
     { value: 'light', label: 'Light', icon: Sun },
@@ -426,9 +426,9 @@
             <p class="text-sm text-muted-foreground">No license information available.</p>
           {/if}
 
-        {:else if activeVendorTab}
-          {@const VendorComponent = activeVendorTab.component}
-          <VendorComponent />
+        {:else if activeProviderTab}
+          {@const ProviderComponent = activeProviderTab.component}
+          <ProviderComponent />
         {/if}
       </div>
     </div>

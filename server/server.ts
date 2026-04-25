@@ -5,9 +5,9 @@ import { secureHeaders } from 'hono/secure-headers'
 import { csrf } from 'hono/csrf'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import type { Context } from 'hono'
-import { bootstrap } from '../src/vendor/server/bootstrap'
-import { vendorCsrfConfig, vendorCspConfig, vendorStepUpRules, vendorWebAuthnConfig, vendorRateLimitRules, vendorThrottleConfig } from '../src/vendor/server/config'
-import { vendorAuthzMiddleware } from '../src/vendor/server/middleware'
+import { bootstrap } from '../src/provider/server/bootstrap'
+import { providerCsrfConfig, providerCspConfig, providerStepUpRules, providerWebAuthnConfig, providerRateLimitRules, providerThrottleConfig } from '../src/provider/server/config'
+import { providerAuthzMiddleware } from '../src/provider/server/middleware'
 import type { CsrfConfig, ContentSecurityPolicy, WebAuthnConfig } from './types'
 import { dashboardAuth } from './auth'
 import { auth } from './middleware'
@@ -21,7 +21,7 @@ import { registry, metricsMiddleware, authFailuresTotal, webauthnOpsTotal } from
 
 await bootstrap()
 
-const required = ['VENDOR2DASHBOARD_VERIFICATION_KEY', 'DASHBOARD_SIGNING_KEY', 'DASHBOARD_VERIFICATION_KEY', 'MOUNTOS_APPSERV_URL', 'MOUNTOS_SDK_SIGNING_KEY', 'REDIS_URL']
+const required = ['PROVIDER2DASHBOARD_VERIFICATION_KEY', 'DASHBOARD_SIGNING_KEY', 'DASHBOARD_VERIFICATION_KEY', 'MOUNTOS_APPSERV_URL', 'MOUNTOS_SDK_SIGNING_KEY', 'REDIS_URL']
 const missing = required.filter((k) => !process.env[k])
 if (missing.length) {
   console.error(`Missing required env: ${missing.join(', ')}`)
@@ -38,10 +38,10 @@ const webauthnConfig: WebAuthnConfig = {
   origin: process.env.WEBAUTHN_ORIGIN
     ? process.env.WEBAUTHN_ORIGIN.replace(/\/+$/, '')
     : hasLocalCerts ? `https://${rpId}:5173` : 'http://localhost:5173',
-  ...vendorWebAuthnConfig,
+  ...providerWebAuthnConfig,
 }
 const webauthnManager = new WebAuthnManager(dashboardAuth.redisClient, webauthnConfig)
-const stepUpMiddleware = createStepUpMiddleware(webauthnManager, vendorStepUpRules)
+const stepUpMiddleware = createStepUpMiddleware(webauthnManager, providerStepUpRules)
 
 const COOKIE_SESSION = 'mountos_session'
 const COOKIE_REFRESH = 'mountos_refresh'
@@ -83,10 +83,10 @@ const cspDefaults: ContentSecurityPolicy = {
   baseUri: ["'self'"],
   formAction: ["'self'"],
 }
-const cspConfig = { ...cspDefaults, ...vendorCspConfig }
+const cspConfig = { ...cspDefaults, ...providerCspConfig }
 
 const csrfDefaults: CsrfConfig = { whitelist: [] }
-const csrfConfig = { ...csrfDefaults, ...vendorCsrfConfig }
+const csrfConfig = { ...csrfDefaults, ...providerCsrfConfig }
 
 const app = new Hono()
 
@@ -107,7 +107,7 @@ const rateLimiter = createRateLimiter(dashboardAuth.redisClient, {
     { prefix: '/api/auth/refresh', limit: 20, window: 60 },
     { prefix: '/api/webauthn', limit: 15, window: 60 },
   ],
-  vendorRules: vendorRateLimitRules,
+  providerRules: providerRateLimitRules,
 })
 app.use('/api/*', rateLimiter)
 
@@ -118,11 +118,11 @@ app.get('/metrics', async (c) => {
   return c.text(metrics, 200, { 'Content-Type': registry.contentType })
 })
 
-// Vendor token exchange — token in body, not URL
+// Provider token exchange — token in body, not URL
 app.post('/api/auth/exchange', async (c) => {
   try {
-    const { token: vendorToken } = await c.req.json<{ token: string }>()
-    const user = await dashboardAuth.validateVendorToken(vendorToken)
+    const { token: providerToken } = await c.req.json<{ token: string }>()
+    const user = await dashboardAuth.validateProviderToken(providerToken)
     const capabilities = dashboardAuth.resolveCapabilities(user.role)
     const [token, refreshToken] = await Promise.all([
       dashboardAuth.signSessionToken(user),
@@ -131,8 +131,8 @@ app.post('/api/auth/exchange', async (c) => {
     setTokenCookies(c, token, refreshToken)
     return c.json(await enrichUserResponse(user, { token, refreshToken }))
   } catch {
-    authFailuresTotal.inc({ type: 'vendor_exchange' })
-    return c.json({ status: 'failure', message: 'invalid vendor token' }, 401)
+    authFailuresTotal.inc({ type: 'provider_exchange' })
+    return c.json({ status: 'failure', message: 'invalid provider token' }, 401)
   }
 })
 
@@ -231,7 +231,7 @@ app.post('/api/auth/logout', async (c) => {
 })
 
 app.use('/api/*', auth)
-app.use('/api/*', createThrottle(vendorThrottleConfig))
+app.use('/api/*', createThrottle(providerThrottleConfig))
 app.use('/api/v1/*', authz)
 
 // WebAuthn ceremony endpoints (before step-up — chicken-and-egg)
@@ -312,7 +312,7 @@ app.delete('/api/webauthn/credentials/:id', async (c) => {
   const ok = await webauthnManager.deleteCredential(user.id, c.req.param('id'))
   return ok ? c.json({ status: 'ok' }) : c.json({ status: 'not_found' }, 404)
 })
-if (vendorAuthzMiddleware) app.use('/api/*', vendorAuthzMiddleware)
+if (providerAuthzMiddleware) app.use('/api/*', providerAuthzMiddleware)
 app.route('/', proxy)
 
 app.use('/*', serveStatic({ root: './build' }))
