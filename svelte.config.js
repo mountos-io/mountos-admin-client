@@ -10,7 +10,7 @@ const config = {
     }),
     alias: {
       '$components': 'src/lib/components',
-      '$vendor': 'src/vendor',
+      '$provider': 'src/provider',
     },
   },
 };
