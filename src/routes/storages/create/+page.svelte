@@ -18,7 +18,7 @@
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import {
-    PROVIDER_OPTIONS, generateEndpoint, isCustomEndpoint, getProvider,
+    PROVIDER_OPTIONS, generateEndpoint, isCustomEndpoint, getProvider, isAzureProvider,
   } from '$lib/core/utils/object-storage-providers'
   import { HUB_REGION_NAME } from '$lib/core/constants'
 
@@ -134,8 +134,27 @@
     }
   })
 
+  // Azure: storage-account name doubles as the auth identity, so mirror the
+  // "Storage Account" field into accessKey to spare the user typing it twice.
+  $effect(() => {
+    if (needsS3 && getProvider(providerType)?.regionDrivesAccessKey) {
+      accessKey = region
+    }
+  })
+
   const s3RegionLabel = $derived(getProvider(providerType)?.regionLabel ?? 'Region')
   const s3RegionPlaceholder = $derived(getProvider(providerType)?.regionPlaceholder ?? 'us-east-1')
+  const bucketLabel = $derived(getProvider(providerType)?.bucketLabel ?? 'Bucket')
+  const bucketPlaceholder = $derived(getProvider(providerType)?.bucketPlaceholder ?? 'my-bucket')
+  const accessKeyLabel = $derived(getProvider(providerType)?.accessKeyLabel ?? 'Access Key')
+  const accessKeyPlaceholder = $derived(getProvider(providerType)?.accessKeyPlaceholder ?? 'Access key')
+  const secretKeyLabel = $derived(getProvider(providerType)?.secretKeyLabel ?? 'Secret Key')
+  const secretKeyPlaceholder = $derived(getProvider(providerType)?.secretKeyPlaceholder ?? 'Secret key')
+  const accessKeyReadonly = $derived(!!getProvider(providerType)?.regionDrivesAccessKey)
+
+  // Azure is now a valid backing store for both object and hybrid storage
+  // (blockserv's BlobClientCache dispatches on provider_type).
+  const providerOptionsForContext = $derived(PROVIDER_OPTIONS)
 
   const s3Ready = $derived(
     !!(endpoint.trim() && bucket.trim() && accessKey.trim() && secretKey.trim())
@@ -252,13 +271,13 @@
             {#if needsS3}
               {#if !isBlock}
                 <div class="space-y-2">
-                  <Label for="providerType">Provider</Label>
-                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={PROVIDER_OPTIONS} onchange={onProviderChange} />
+                  <Label for="providerType">Object Storage Provider</Label>
+                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={providerOptionsForContext} onchange={onProviderChange} />
                 </div>
               {:else if isHybrid}
                 <div class="space-y-2">
-                  <Label for="providerType">S3 Provider</Label>
-                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={PROVIDER_OPTIONS} onchange={onProviderChange} />
+                  <Label for="providerType">Backing Storage Provider</Label>
+                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={providerOptionsForContext} onchange={onProviderChange} />
                 </div>
               {/if}
 
@@ -277,8 +296,8 @@
                     <Input id="region" bind:value={region} placeholder={s3RegionPlaceholder} />
                   </div>
                   <div class="space-y-2">
-                    <Label for="bucket">Bucket</Label>
-                    <Input id="bucket" bind:value={bucket} placeholder="my-bucket" />
+                    <Label for="bucket">{bucketLabel}</Label>
+                    <Input id="bucket" bind:value={bucket} placeholder={bucketPlaceholder} />
                   </div>
                 </div>
                 <div class="space-y-2">
@@ -289,16 +308,25 @@
                 <Separator />
 
                 <p class="text-sm font-medium">Credentials</p>
-                <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
+                {#if accessKeyReadonly}
+                  <!-- Azure: storage account name above already drives accessKey;
+                       no second input needed. Just collect the account key. -->
                   <div class="space-y-2">
-                    <Label for="accessKey">Access Key</Label>
-                    <Input id="accessKey" bind:value={accessKey} placeholder="Access key" />
+                    <Label for="secretKey">{secretKeyLabel}</Label>
+                    <SecretInput id="secretKey" bind:value={secretKey} placeholder={secretKeyPlaceholder} />
                   </div>
-                  <div class="space-y-2">
-                    <Label for="secretKey">Secret Key</Label>
-                    <SecretInput id="secretKey" bind:value={secretKey} placeholder="Secret key" />
+                {:else}
+                  <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
+                    <div class="space-y-2">
+                      <Label for="accessKey">{accessKeyLabel}</Label>
+                      <Input id="accessKey" bind:value={accessKey} placeholder={accessKeyPlaceholder} />
+                    </div>
+                    <div class="space-y-2">
+                      <Label for="secretKey">{secretKeyLabel}</Label>
+                      <SecretInput id="secretKey" bind:value={secretKey} placeholder={secretKeyPlaceholder} />
+                    </div>
                   </div>
-                </div>
+                {/if}
 
                 <BucketTester
                   {endpoint}

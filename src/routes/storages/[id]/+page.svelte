@@ -22,6 +22,7 @@
   import Loader2 from '@lucide/svelte/icons/loader-2'
   import DatabaseIcon from '@lucide/svelte/icons/database'
   import type { Storage, EditStorageRequest } from '$lib/core/api/types'
+  import { getProvider } from '$lib/core/utils/object-storage-providers'
 
   const store = useStorages()
   const auth = useAuth()
@@ -42,6 +43,11 @@
   let editName = $state('')
   let editAccessKey = $state('')
   let editSecretKey = $state('')
+
+  const editAccessKeyLabel = $derived(getProvider(storage?.providerType ?? '')?.accessKeyLabel ?? 'Access Key')
+  const editSecretKeyLabel = $derived(getProvider(storage?.providerType ?? '')?.secretKeyLabel ?? 'Secret Key')
+  const editBucketLabel = $derived(getProvider(storage?.providerType ?? '')?.bucketLabel ?? 'Bucket')
+  const editRegionLabel = $derived(getProvider(storage?.providerType ?? '')?.regionLabel ?? 'Region')
   let editSubmitting = $state(false)
   let credTestPassed = $state(false)
 
@@ -136,12 +142,12 @@
             <p class="text-xs text-muted-foreground">Leave blank to keep current credentials.</p>
             <div class="grid gap-4 md:grid-cols-2">
               <div class="space-y-2">
-                <Label for="edit-accessKey">Access Key</Label>
-                <Input id="edit-accessKey" bind:value={editAccessKey} placeholder="New access key" autocomplete="off" />
+                <Label for="edit-accessKey">{editAccessKeyLabel}</Label>
+                <Input id="edit-accessKey" bind:value={editAccessKey} placeholder={`New ${editAccessKeyLabel.toLowerCase()}`} autocomplete="off" />
               </div>
               <div class="space-y-2">
-                <Label for="edit-secretKey">Secret Key</Label>
-                <SecretInput id="edit-secretKey" bind:value={editSecretKey} placeholder="New secret key" autocomplete="off" />
+                <Label for="edit-secretKey">{editSecretKeyLabel}</Label>
+                <SecretInput id="edit-secretKey" bind:value={editSecretKey} placeholder={`New ${editSecretKeyLabel.toLowerCase()}`} autocomplete="off" />
               </div>
             </div>
 
@@ -210,13 +216,13 @@
             </div>
             {#if storage.bucket}
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Bucket</span>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">{editBucketLabel}</span>
                 <p class="mt-1 text-sm font-mono">{storage.bucket}</p>
               </div>
             {/if}
             {#if storage.region}
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Region</span>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">{editRegionLabel}</span>
                 <p class="mt-1 text-sm font-mono">{storage.region}</p>
               </div>
             {/if}

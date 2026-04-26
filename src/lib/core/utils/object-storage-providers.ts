@@ -4,6 +4,21 @@ export interface ObjectStorageProvider {
   endpointPattern: string
   regionLabel: string
   regionPlaceholder: string
+  // Per-provider field-label overrides. Azure uses different terminology
+  // (container vs bucket, account name vs access key, account key vs secret key)
+  // — the form picks these up to keep the UI accurate without renaming the
+  // underlying storage payload fields.
+  bucketLabel?: string
+  bucketPlaceholder?: string
+  accessKeyLabel?: string
+  accessKeyPlaceholder?: string
+  secretKeyLabel?: string
+  secretKeyPlaceholder?: string
+  // When true, the form treats the `region` input as the value to substitute
+  // into the endpoint pattern AND mirrors it into the `accessKey` field
+  // (Azure's storage account name is both the URL host prefix AND the auth
+  // identity, so users would otherwise have to type it twice).
+  regionDrivesAccessKey?: boolean
 }
 
 export const PROVIDERS: ObjectStorageProvider[] = [
@@ -70,6 +85,20 @@ export const PROVIDERS: ObjectStorageProvider[] = [
     regionLabel: 'Region',
     regionPlaceholder: 'Enter region',
   },
+  {
+    id: 'azure',
+    name: 'Azure Blob Storage',
+    endpointPattern: 'https://{region}.blob.core.windows.net',
+    regionLabel: 'Storage Account',
+    regionPlaceholder: 'mystorageaccount',
+    bucketLabel: 'Container',
+    bucketPlaceholder: 'my-container',
+    accessKeyLabel: 'Storage Account Name',
+    accessKeyPlaceholder: 'auto-filled from Storage Account',
+    secretKeyLabel: 'Account Key',
+    secretKeyPlaceholder: 'base64-encoded account key',
+    regionDrivesAccessKey: true,
+  },
 ]
 
 export const PROVIDER_OPTIONS = PROVIDERS.map(p => ({ value: p.id, label: p.name }))
@@ -86,4 +115,8 @@ export function generateEndpoint(providerId: string, region: string): string {
 
 export function isCustomEndpoint(providerId: string): boolean {
   return providerId === 's3compatible'
+}
+
+export function isAzureProvider(providerId: string): boolean {
+  return providerId === 'azure'
 }
