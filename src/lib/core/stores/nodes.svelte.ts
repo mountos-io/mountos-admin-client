@@ -1,5 +1,6 @@
 import type { ServiceNode } from '$lib/core/api/types'
 import { parsePrometheusText, type PrometheusMetric } from '$lib/core/utils/format'
+import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
 import { api } from './client.svelte'
 
 let nodes = $state<ServiceNode[]>([])
@@ -16,7 +17,7 @@ let statsLoading = $state(false)
 let statsError = $state('')
 let statsLastUpdated = $state<Date | null>(null)
 let pollInterval = $state(0)
-let pollTimer: ReturnType<typeof setInterval> | null = null
+let poll: ActivePoll | null = null
 let statsFetchCtrl: AbortController | null = null
 
 const nodesByType = $derived.by(() => {
@@ -96,12 +97,13 @@ function startPolling(regionId: number, nodeId: string, interval: number) {
   stopPolling()
   pollInterval = interval
   if (interval <= 0) return
-  fetchStats(regionId, nodeId)
-  pollTimer = setInterval(() => fetchStats(regionId, nodeId), interval * 1000)
+  poll = createActivePoll(() => fetchStats(regionId, nodeId), interval * 1000)
+  poll.start()
 }
 
 function stopPolling() {
-  if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+  poll?.stop()
+  poll = null
   statsFetchCtrl?.abort()
   pollInterval = 0
 }

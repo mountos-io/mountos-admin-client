@@ -65,7 +65,7 @@
   let activityDays = $state(7)
 
   // Alerts tab state
-  const alertStore = $derived(useRegionAlerts(regionId))
+  const alertStore = useRegionAlerts(() => regionId)
   let resolvingId = $state<string | null>(null)
 
   const COLLAPSE_THRESHOLD = 8
@@ -247,7 +247,7 @@
             <RefreshCw class="h-3.5 w-3.5 {resyncInFlight ? 'animate-spin' : ''}" />
             Vault Resync
           </Button>
-          <InfoTip text="When vault secrets change (master keys, service verifier keys), resync forces all services to drop cached values and fetch fresh copies. Use only when needed — services auto-refresh periodically." />
+          <InfoTip text="When vault secrets change (master keys, service verifier keys), resync forces all services to drop cached values and fetch fresh copies. Use only when needed; services auto-refresh periodically." />
         </span>
       {/if}
     </div>
@@ -335,7 +335,7 @@
                   <span class="legend-count">{entry.count}</span>
                 </button>
               {:else}
-                <span class="legend-chip legend-inert" title="{entry.label} — no nodes">
+                <span class="legend-chip legend-inert" title="{entry.label}; no nodes">
                   <span class="legend-dot" style="background: oklch(0.5 0 0 / 0.3);"></span>
                   <span class="legend-label">{entry.label}</span>
                 </span>
@@ -920,7 +920,8 @@
   }
 
   .tooltip-card {
-    backdrop-filter: blur(8px);
+    background: var(--popover);
+    border: 1px solid var(--border);
     max-width: 280px;
   }
 

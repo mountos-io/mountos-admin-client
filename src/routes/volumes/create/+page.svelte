@@ -105,7 +105,7 @@
   }
 </script>
 
-<svelte:head><title>Create Volume — mountOS Admin</title></svelte:head>
+<svelte:head><title>Create Volume · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-2xl space-y-6">
   {#if !accountId}
@@ -119,7 +119,7 @@
       </CardHeader>
       <CardContent>
         {#if createResult.encryptionKey}
-          <p class="text-sm text-muted-foreground mb-3">Save the encryption key below — it will not be shown again.</p>
+          <p class="text-sm text-muted-foreground mb-3">Save the encryption key below; it will not be shown again.</p>
           <div class="rounded-sm border p-3 space-y-2 bg-muted/50">
             <span class="text-sm text-muted-foreground">Encryption Key</span>
             <p class="font-mono text-sm break-all">{createResult.encryptionKey}</p>

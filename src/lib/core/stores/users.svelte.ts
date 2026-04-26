@@ -59,7 +59,7 @@ async function searchUsers(accountId: number, search: string, signal?: AbortSign
 
 const stepUp = createStepUpHandler()
 
-// Raw fetch — targets auth-layer endpoint, not the /api/v1/* proxy
+// Raw fetch; targets auth-layer endpoint, not the /api/v1/* proxy
 async function revokeAdminSessions(username: string) {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

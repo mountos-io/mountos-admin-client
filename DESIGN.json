@@ -1,0 +1,299 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-26T00:00:00Z",
+  "title": "Design System: mountOS Admin Client",
+  "extensions": {
+    "colorMeta": {
+      "primary-rust": {
+        "role": "primary",
+        "displayName": "Rust Amber (Light Primary)",
+        "canonical": "oklch(0.54 0.14 39)",
+        "tonalRamp": [
+          "oklch(0.20 0.06 39)",
+          "oklch(0.28 0.08 39)",
+          "oklch(0.36 0.10 39)",
+          "oklch(0.44 0.12 39)",
+          "oklch(0.54 0.14 39)",
+          "oklch(0.66 0.13 39)",
+          "oklch(0.78 0.11 39)",
+          "oklch(0.92 0.06 39)"
+        ]
+      },
+      "primary-gold": {
+        "role": "primary",
+        "displayName": "Console Gold (Dark Primary)",
+        "canonical": "oklch(0.78 0.13 92)",
+        "tonalRamp": [
+          "oklch(0.20 0.06 92)",
+          "oklch(0.30 0.08 92)",
+          "oklch(0.40 0.10 92)",
+          "oklch(0.52 0.12 92)",
+          "oklch(0.65 0.13 92)",
+          "oklch(0.78 0.13 92)",
+          "oklch(0.88 0.10 92)",
+          "oklch(0.95 0.05 92)"
+        ]
+      },
+      "background-light": {
+        "role": "neutral",
+        "displayName": "Warm Cream",
+        "canonical": "oklch(0.95 0.02 94.63)",
+        "tonalRamp": [
+          "oklch(0.20 0.01 94.63)",
+          "oklch(0.30 0.01 94.63)",
+          "oklch(0.42 0.015 94.63)",
+          "oklch(0.55 0.02 94.63)",
+          "oklch(0.68 0.02 94.63)",
+          "oklch(0.80 0.02 94.63)",
+          "oklch(0.90 0.02 94.63)",
+          "oklch(0.95 0.02 94.63)"
+        ]
+      },
+      "background-dark": {
+        "role": "neutral",
+        "displayName": "Deep Teal-Black",
+        "canonical": "oklch(0.07 0.005 200)",
+        "tonalRamp": [
+          "oklch(0.07 0.005 200)",
+          "oklch(0.12 0.006 200)",
+          "oklch(0.18 0.007 200)",
+          "oklch(0.28 0.008 200)",
+          "oklch(0.42 0.008 200)",
+          "oklch(0.58 0.008 200)",
+          "oklch(0.75 0.006 200)",
+          "oklch(0.90 0.005 200)"
+        ]
+      },
+      "destructive-light": {
+        "role": "tertiary",
+        "displayName": "Alarm Red-Orange",
+        "canonical": "oklch(0.54 0.24 24.42)",
+        "tonalRamp": [
+          "oklch(0.20 0.10 24)",
+          "oklch(0.30 0.14 24)",
+          "oklch(0.40 0.18 24)",
+          "oklch(0.54 0.24 24)",
+          "oklch(0.66 0.22 24)",
+          "oklch(0.76 0.18 24)",
+          "oklch(0.86 0.12 24)",
+          "oklch(0.94 0.06 24)"
+        ]
+      },
+      "warning-light": {
+        "role": "tertiary",
+        "displayName": "Amber Caution",
+        "canonical": "oklch(0.45 0.16 55)",
+        "tonalRamp": [
+          "oklch(0.20 0.06 55)",
+          "oklch(0.30 0.10 55)",
+          "oklch(0.45 0.16 55)",
+          "oklch(0.58 0.16 55)",
+          "oklch(0.70 0.14 55)",
+          "oklch(0.80 0.12 55)",
+          "oklch(0.88 0.08 55)",
+          "oklch(0.95 0.04 55)"
+        ]
+      },
+      "success-light": {
+        "role": "tertiary",
+        "displayName": "Healthy Green",
+        "canonical": "oklch(0.49 0.17 155)",
+        "tonalRamp": [
+          "oklch(0.20 0.06 155)",
+          "oklch(0.30 0.10 155)",
+          "oklch(0.40 0.14 155)",
+          "oklch(0.49 0.17 155)",
+          "oklch(0.62 0.16 155)",
+          "oklch(0.74 0.13 155)",
+          "oklch(0.86 0.08 155)",
+          "oklch(0.95 0.04 155)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Page titles. One per route." },
+      "headline": { "displayName": "Headline", "purpose": "Card and section heads." },
+      "title": { "displayName": "Title", "purpose": "Subsection labels inside a card." },
+      "body": { "displayName": "Body", "purpose": "Default reading text. Cap line length at 65–75ch where prose appears." },
+      "body-sm": { "displayName": "Body Small", "purpose": "Table cells, dense lists, secondary text." },
+      "label": { "displayName": "Label", "purpose": "Button text, form labels." },
+      "mono": { "displayName": "Mono Microlabel", "purpose": "Table column headers and technical metadata only. Forbidden in body, button labels, headings." }
+    },
+    "shadows": [
+      {
+        "name": "cyber-inset-rest",
+        "value": "inset 0 1px 0 oklch(from var(--accent-glow) l c h / 0.2)",
+        "purpose": "Resting top-edge ambient glow on .card-cyber surfaces."
+      },
+      {
+        "name": "cyber-hover-halo",
+        "value": "inset 0 1px 0 oklch(from var(--accent-glow) l c h / 0.5), 0 0 24px oklch(from var(--accent-glow) l c h / 0.07)",
+        "purpose": "Hover-only halo on .card-cyber. Brightens inset edge and adds a soft outer bloom."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-standard",
+        "value": "cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Default easing on color, background, border, and opacity transitions for buttons and interactive elements."
+      },
+      {
+        "name": "duration-button",
+        "value": "200ms",
+        "purpose": "Color/background/border transitions on buttons and role=button."
+      },
+      {
+        "name": "duration-active-press",
+        "value": "150ms",
+        "purpose": "Active-state scale and color transitions on default/outline/secondary buttons."
+      },
+      {
+        "name": "led-pulse",
+        "value": "2.5s ease-in-out infinite",
+        "purpose": "Live-status LED indicator (.led-ping). Suppressed under prefers-reduced-motion."
+      },
+      {
+        "name": "scan-line-underline",
+        "value": "transform 0.4s ease",
+        "purpose": "Scan-line underline reveal on .th-cyber column headers."
+      }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" },
+      { "name": "2xl", "value": "1536px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid primary action. Rust amber in light, console gold in dark.",
+      "html": "<button class=\"ds-btn-primary\">Apply</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; background: oklch(0.54 0.14 39); color: oklch(0.96 0.025 94.63); border: 1px solid oklch(0.54 0.14 39); border-radius: 2px; font: 500 16px/1.5 ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.01em; cursor: pointer; transition: background-color 200ms cubic-bezier(0.4,0,0.2,1), transform 150ms cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: oklch(0.54 0.14 39 / 0.9); } .ds-btn-primary:active { background: oklch(0.54 0.14 39 / 0.8); transform: scale(0.98); } .ds-btn-primary:focus-visible { outline: 2px solid oklch(0.61 0.14 39); outline-offset: 2px; }"
+    },
+    {
+      "name": "Default (Outlined) Button",
+      "kind": "button",
+      "refersTo": "button-default",
+      "description": "Quiet outlined affordance. Most actions are this.",
+      "html": "<button class=\"ds-btn-default\">Cancel</button>",
+      "css": ".ds-btn-default { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; background: transparent; color: oklch(0.12 0 0); border: 1px solid oklch(0.88 0 0); border-radius: 2px; font: 500 16px/1.5 ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.01em; cursor: pointer; transition: color 150ms, background-color 150ms, border-color 150ms, transform 150ms; } .ds-btn-default:hover { background: oklch(0.92 0.06 80); border-color: oklch(0.12 0 0 / 0.4); } .ds-btn-default:active { background: oklch(0.54 0.14 39 / 0.10); border-color: oklch(0.54 0.14 39 / 0.30); transform: scale(0.98); }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "button-destructive",
+      "description": "Outline-only. Solid red is reserved; outline is the only destructive variant.",
+      "html": "<button class=\"ds-btn-destructive\">Delete region</button>",
+      "css": ".ds-btn-destructive { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; background: transparent; color: oklch(0.54 0.24 24.42); border: 1px solid oklch(0.54 0.24 24.42); border-radius: 2px; font: 500 16px/1.5 ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.01em; cursor: pointer; transition: background-color 150ms, transform 150ms; } .ds-btn-destructive:hover { background: oklch(0.54 0.24 24.42 / 0.10); } .ds-btn-destructive:active { background: oklch(0.54 0.24 24.42 / 0.20); transform: scale(0.98); }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "No border, no background until hover. Used in toolbars and table-row actions.",
+      "html": "<button class=\"ds-btn-ghost\">Filter</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; background: transparent; color: oklch(0.12 0 0); border: 1px solid transparent; border-radius: 2px; font: 500 16px/1.5 ui-sans-serif, system-ui, sans-serif; cursor: pointer; transition: background-color 150ms, transform 150ms; } .ds-btn-ghost:hover { background: oklch(0.92 0.06 80); } .ds-btn-ghost:active { background: oklch(0.54 0.14 39 / 0.10); transform: scale(0.98); }"
+    },
+    {
+      "name": "Card (Cyber)",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Primary content surface with the inset top-edge glow. One step lighter than background, hairline border, sharp corners.",
+      "html": "<div class=\"ds-card-cyber\"><div class=\"ds-card-head\">REGION ALERTS</div><div class=\"ds-card-body\">3 active, 7 in last 24h</div></div>",
+      "css": ".ds-card-cyber { background: oklch(0.96 0.025 94.63); color: oklch(0.12 0 0); border: 1px solid oklch(0.88 0 0); border-radius: 4px; padding: 16px; box-shadow: inset 0 1px 0 oklch(0.61 0.14 39 / 0.2); transition: box-shadow 0.3s ease; } .ds-card-cyber:hover { box-shadow: inset 0 1px 0 oklch(0.61 0.14 39 / 0.5), 0 0 24px oklch(0.61 0.14 39 / 0.07); } .ds-card-head { font: 400 0.7rem/1.4 ui-monospace, Menlo, monospace; letter-spacing: 0.2em; text-transform: uppercase; color: oklch(0.45 0.03 200); padding-bottom: 8px; margin-bottom: 12px; border-bottom: 1px solid oklch(0.88 0 0); } .ds-card-body { font: 400 1.125rem/1.6 ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.01em; color: oklch(0.30 0.08 70); }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "36px to align with default button height. Hairline border, 2px focus ring in primary.",
+      "html": "<input class=\"ds-input\" placeholder=\"Filter nodes\" />",
+      "css": ".ds-input { display: block; width: 100%; height: 36px; padding: 0 12px; background: oklch(0.96 0 0); color: oklch(0.12 0 0); border: 1px solid oklch(0.88 0 0); border-radius: 2px; font: 400 1.0625rem/1.5 ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.01em; outline: none; transition: border-color 150ms, box-shadow 150ms; } .ds-input::placeholder { color: oklch(0.30 0.08 70 / 0.6); } .ds-input:focus-visible { outline: 2px solid oklch(0.61 0.14 39); outline-offset: 2px; }"
+    },
+    {
+      "name": "Cyberpunk Skewed Panel",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Signature clip-path panel: top-left and bottom-right corners chamfered. Used for hero panels and primary CTAs.",
+      "html": "<section class=\"ds-cyber-panel\"><div class=\"ds-cyber-panel-inner\"><span class=\"ds-cyber-eyebrow\">REGION / US-WEST-1</span><h2 class=\"ds-cyber-title\">12 nodes online</h2></div></section>",
+      "css": ".ds-cyber-panel { position: relative; background: oklch(0.96 0.025 94.63); color: oklch(0.12 0 0); clip-path: polygon(0 20px, 20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%); } .ds-cyber-panel::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, currentColor 2px, transparent 2px) 0 0 / 28px 28px no-repeat, linear-gradient(-45deg, currentColor 2px, transparent 2px) 100% 100% / 28px 28px no-repeat; color: oklch(0.40 0.002 200); pointer-events: none; z-index: 1; transition: color 200ms; } .ds-cyber-panel:hover::before { color: oklch(0.61 0.14 39); } .ds-cyber-panel-inner { padding: 32px; position: relative; z-index: 2; } .ds-cyber-eyebrow { display: block; font: 400 0.7rem/1.4 ui-monospace, Menlo, monospace; letter-spacing: 0.2em; text-transform: uppercase; color: oklch(0.45 0.03 200); margin-bottom: 8px; } .ds-cyber-title { font: 600 1.875rem/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: -0.02em; margin: 0; }"
+    },
+    {
+      "name": "Cyber Table Header",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Mono microlabel column head with scan-line underline reveal on hover. Pair with first/last bracket marks on the row.",
+      "html": "<table class=\"ds-cyber-table\"><thead><tr><th class=\"ds-th-cyber\">NODE</th><th class=\"ds-th-cyber\">STATUS</th><th class=\"ds-th-cyber\">UPTIME</th></tr></thead><tbody><tr><td>fuse-01</td><td>healthy</td><td>17d</td></tr></tbody></table>",
+      "css": ".ds-cyber-table { width: 100%; border-collapse: collapse; font: 400 1.0625rem/1.5 ui-sans-serif, system-ui, sans-serif; color: oklch(0.12 0 0); } .ds-cyber-table thead tr { border-bottom: 1px solid oklch(0.40 0.002 200 / 0.3); } .ds-cyber-table tbody td { padding: 10px 8px; border-bottom: 1px solid oklch(0.88 0 0); } .ds-th-cyber { position: relative; padding: 8px; text-align: left; font: 400 0.7rem/1.4 ui-monospace, Menlo, monospace; letter-spacing: 0.2em; text-transform: uppercase; color: oklch(0.45 0.03 200); padding-bottom: 0.5rem; } .ds-th-cyber::after { content: ''; position: absolute; left: 0; bottom: 0; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, oklch(0.40 0.08 200), transparent); transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease; } .ds-th-cyber:hover::after { transform: scaleX(1); } .ds-th-cyber:hover { color: oklch(0.55 0.08 200); } .ds-cyber-table thead th:first-child::before { content: ''; position: absolute; inset: 0 auto auto 0; width: 14px; height: 14px; border-top: 1.5px solid oklch(0.40 0.002 200); border-left: 1.5px solid oklch(0.40 0.002 200); opacity: 0.4; pointer-events: none; } .ds-cyber-table thead th:last-child::before { content: ''; position: absolute; inset: auto 0 0 auto; width: 14px; height: 14px; border-bottom: 1.5px solid oklch(0.40 0.002 200); border-right: 1.5px solid oklch(0.40 0.002 200); opacity: 0.4; pointer-events: none; }"
+    },
+    {
+      "name": "Entity Pastel Chip (Region)",
+      "kind": "chip",
+      "refersTo": null,
+      "description": "Entity tag pill. Each entity type owns one pastel hue across the entire app. Region is magenta (310°).",
+      "html": "<span class=\"ds-chip-region\">us-west-1</span>",
+      "css": ".ds-chip-region { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; background: oklch(0.72 0.15 310 / 0.18); color: oklch(0.50 0.15 310); border: 1px solid oklch(0.72 0.15 310 / 0.4); border-radius: 2px; font: 500 14px/1 ui-sans-serif, system-ui, sans-serif; letter-spacing: 0; }"
+    },
+    {
+      "name": "LED Status Indicator",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Live-state pulse dot. Used to show 'active polling', 'live session', etc. Respects prefers-reduced-motion.",
+      "html": "<span class=\"ds-led ds-led--healthy\" aria-label=\"healthy\"></span>",
+      "css": ".ds-led { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: oklch(0.49 0.17 155); box-shadow: 0 0 6px oklch(0.49 0.17 155); animation: ds-led-pulse 2.5s ease-in-out infinite; } @keyframes ds-led-pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 6px oklch(0.49 0.17 155); } 50% { opacity: 0.6; box-shadow: 0 0 3px oklch(0.49 0.17 155); } } @media (prefers-reduced-motion: reduce) { .ds-led { animation: none !important; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Operator's Console",
+    "overview": "This is a control surface for people who run infrastructure, not a marketing site for people who buy it. The visual language is borrowed from radar terminals, mission-control consoles, and the cyberpunk datacenter trope: warm-on-cold light mode, golden-on-deep-teal dark mode, near-zero radii, corner brackets that frame data without competing with it. Density is the goal. The system rejects the SaaS dashboard reflex of soft cards, rounded edges, decorative gradients, and 'let me explain this to you' empty-state illustrations. Operators are experts; the interface treats them as such.",
+    "keyCharacteristics": [
+      "Sharp geometry: 0.25rem max radius, square cards, corner-bracket frames.",
+      "OKLCH-only color, perceptually uniform across light and dark.",
+      "Warm-rust primary (light) and gold primary (dark): not blue, not teal.",
+      "Entity-coded pastels for object tagging (one hue per noun, dark-text-on-tint).",
+      "Flat by default; depth comes from inset top-edge glow on cyber cards, never drop shadows.",
+      "Cyberpunk corner-bracket and clip-path utilities as the brand's visual signature.",
+      "Dense data tables; no decorative whitespace."
+    ],
+    "rules": [
+      { "name": "The Rationed Color Rule", "body": "Saturated color carries meaning. Primary, destructive, warning, success, and the pastel entity tags are the only saturated families on the page. Everything else, including charts by default, lives in the warm/cool grayscale ramp.", "section": "colors" },
+      { "name": "The Entity Pastel Lock", "body": "Pastel tokens are bound to entity types one-to-one. A region is always --pastel-region (magenta). Reusing --pastel-session (cyan-teal) for a status badge breaks the operator's mental model.", "section": "colors" },
+      { "name": "The OKLCH-Only Rule", "body": "All color tokens are authored in OKLCH. New colors are added in OKLCH or not at all. #fff, #000, rgb(), and hsl() are forbidden in product code.", "section": "colors" },
+      { "name": "The 18px Body Rule", "body": "Body text never drops below 17px (1.0625rem). Operators read for hours; smaller bodies become hostile.", "section": "typography" },
+      { "name": "The Mono-For-Microlabels-Only Rule", "body": "Mono is reserved for column headers and technical IDs. It is forbidden in body copy, button labels, and headings.", "section": "typography" },
+      { "name": "The No-Drop-Shadow Rule", "body": "Cards do not float. Standard box-shadow on container surfaces is prohibited. If a surface needs to feel lifted, change its background tone, not its shadow.", "section": "elevation" },
+      { "name": "The Glow-Is-State Rule", "body": "The cyber glow appears at rest only on opt-in .card-cyber surfaces. Everywhere else, glow signals interaction (hover, focus). It never decorates.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do author every color in OKLCH. Tint neutrals toward 94 deg (warm) in light or 200 deg (cool) in dark; never use #fff or #000.",
+      "Do keep the page flat. If a surface needs separation, change its tone or add a hairline border, not a drop shadow.",
+      "Do use entity-coded pastels (--pastel-region, --pastel-node, etc.) consistently across every screen for the same noun.",
+      "Do treat corner brackets and .cyberpunk-skewed clip-paths as deliberate ornament: frame the primary content of a route, not every tile in a grid.",
+      "Do use .th-cyber mono microlabels on table column heads. Tracking 0.2em, uppercase, paired with scan-line hover underline.",
+      "Do keep body type at 17 to 18px and headings tightened to -0.02em.",
+      "Do apply min-h-[44px] min-w-[44px] to interactive elements in dense tables to keep tap targets honest.",
+      "Do respect prefers-reduced-motion: the global rule already collapses transitions to 0.01ms; don't override it on individual components."
+    ],
+    "donts": [
+      "Don't use rounded, bubbly, or playful aesthetics. --radius caps at 0.25rem for a reason.",
+      "Don't add gratuitous gradients. The corner-bracket gradients are structural, not decorative.",
+      "Don't add decorative illustrations. Empty states use a .tech-grid background and a one-line technical instruction.",
+      "Don't ship marketing-style hero sections. This is admin software.",
+      "Don't use border-left or border-right greater than 1px as a colored stripe accent.",
+      "Don't use background-clip: text with a gradient.",
+      "Don't apply glassmorphism (backdrop-filter: blur) decoratively. Mobile sidebar is solid --background.",
+      "Don't build the SaaS hero-metric template (giant gradient number + small label + supporting stats).",
+      "Don't repeat identical icon-headline-text card grids across a page.",
+      "Don't reach for a modal as the first interaction pattern. Use inline disclosure, drawers, or full-page transitions.",
+      "Don't drop body text below 17px. Don't pad mono into headings or button labels.",
+      "Don't nest cards.",
+      "Don't use em dashes anywhere in product copy.",
+      "Don't introduce a 'secondary brand color.' This system has one accent; it changes between themes (rust to gold) and that is the entire palette story."
+    ]
+  }
+}

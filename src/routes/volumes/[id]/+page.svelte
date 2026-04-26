@@ -139,7 +139,7 @@
     return toDatetimeLocal(new Date(rounded))
   }
 
-  // Mirror of gcserv DefaultDataRetentionDays — fallback when the volume
+  // Mirror of gcserv DefaultDataRetentionDays; fallback when the volume
   // has no plan-level retention set, so the picker bound matches the server.
   const DEFAULT_RETENTION_DAYS = 30
 
@@ -149,7 +149,7 @@
   // needed: any existing fork's snapshot_ts is already >= volume.createdAt.
   // GC floor in ms: mirrors dataserv's gcThreshold = min(now - retention,
   // min over all forks of snapshot_ts). Keyed only on volume.retentionPeriod
-  // and forks — doesn't re-run when createForkParent toggles.
+  // and forks; doesn't re-run when createForkParent toggles.
   const gcFloorMs = $derived.by(() => {
     if (!volume) return 0
     const days = volume.retentionPeriod > 0 ? volume.retentionPeriod : DEFAULT_RETENTION_DAYS
@@ -509,7 +509,7 @@
 </script>
 
 <svelte:head>
-  <title>{volume?.name ?? 'Volume'} — mountOS Admin</title>
+  <title>{volume?.name ?? 'Volume'} · mountOS Admin</title>
 </svelte:head>
 
 <div class="space-y-6">
@@ -629,10 +629,10 @@
               <p class="mt-1 text-sm">{formatQuota(volume.totalVolume, volume.quotaLimit)}</p>
               {#if volume.quotaLimit > 0}
                 {@const pct = quotaPercent(volume.totalVolume, volume.quotaLimit)}
-                <div class="mt-2 h-2 rounded-full bg-muted overflow-hidden" role="progressbar"
+                <div class="mt-2 h-2 rounded-sm bg-muted overflow-hidden" role="progressbar"
                   aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
                   aria-label="Quota usage {pct}%">
-                  <div class="h-full rounded-full transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
+                  <div class="h-full rounded-sm transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
                 </div>
               {/if}
             </div>
@@ -734,10 +734,10 @@
                 <div class="flex items-center gap-2 flex-wrap">
                   <Badge variant={node.fid === 0 ? 'default' : 'outline'}>{node.name}</Badge>
                   {#if node.status === 'pending_deletion'}
-                    <Badge variant="warning" class="text-sm">Pending Deletion — Restorable</Badge>
+                    <Badge variant="warning" class="text-sm">Pending Deletion (Restorable)</Badge>
                   {:else if node.status === 'cleanup_in_progress'}
                     <span class="inline-flex items-center gap-1">
-                      <Badge variant="destructive" class="text-sm">Deleting — No Recovery</Badge>
+                      <Badge variant="destructive" class="text-sm">Deleting (No Recovery)</Badge>
                       <InfoTip text="Data cleanup is in progress. This fork cannot be restored." />
                     </span>
                   {/if}
@@ -899,14 +899,14 @@
                       {session.hostname || session.ipAddr}
                     </TableCell>
                     <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
-                      {session.mountMode ?? '—'}
+                      {session.mountMode ?? '·'}
                     </TableCell>
                     <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
                     <TableCell class="text-sm text-muted-foreground hidden md:table-cell">
-                      {session.connectedAt ? formatDuration(session.connectedAt) : '—'}
+                      {session.connectedAt ? formatDuration(session.connectedAt) : '·'}
                     </TableCell>
                     <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
-                      {session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '—'}
+                      {session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}
                     </TableCell>
                   </TableRow>
                 {/each}

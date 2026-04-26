@@ -39,7 +39,7 @@
     try {
       log('Registering...')
       await webauthn.registerCredential()
-      log(`Registered — total: ${webauthn.credentialCount}`)
+      log(`Registered; total: ${webauthn.credentialCount}`)
     } catch (e: unknown) {
       log(`Register error: ${e instanceof Error ? e.message : e}`)
     }
@@ -49,7 +49,7 @@
     try {
       log('Authenticating...')
       const token = await webauthn.authenticate()
-      log(`Authenticated — stepUpToken: ${token.slice(0, 20)}...`)
+      log(`Authenticated; stepUpToken: ${token.slice(0, 20)}...`)
     } catch (e: unknown) {
       log(`Auth error: ${e instanceof Error ? e.message : e}`)
     }
@@ -60,7 +60,7 @@
     try {
       log(`Deleting credential ${deleteId}...`)
       await webauthn.deleteCredential(deleteId)
-      log(`Deleted — remaining: ${webauthn.credentialCount}`)
+      log(`Deleted; remaining: ${webauthn.credentialCount}`)
       deleteId = ''
     } catch (e: unknown) {
       log(`Delete error: ${e instanceof Error ? e.message : e}`)
@@ -83,7 +83,7 @@
     try {
       log('Requesting step-up verification (modal)...')
       const token = await demandStepUp()
-      log(`Step-up complete — token: ${token.slice(0, 20)}...`)
+      log(`Step-up complete; token: ${token.slice(0, 20)}...`)
     } catch (e: unknown) {
       log(`Step-up cancelled/error: ${e instanceof Error ? e.message : e}`)
     }
@@ -93,7 +93,7 @@
     { id: 'sn-0x7a3f', name: 'appserv-us-east-1a', type: 'appserv', addr: '10.0.12.41:9090', status: 'online', cpu: 23, mem: 61, uptime: '14d 7h' },
     { id: 'sn-0x8b2e', name: 'fuseserv-us-east-1b', type: 'fuseserv', addr: '10.0.12.42:9091', status: 'online', cpu: 67, mem: 84, uptime: '14d 7h' },
     { id: 'sn-0x1c9d', name: 'storeserv-eu-west-1a', type: 'storeserv', addr: '10.0.14.11:9092', status: 'degraded', cpu: 91, mem: 73, uptime: '3d 12h' },
-    { id: 'sn-0x4e5a', name: 'appserv-ap-south-1a', type: 'appserv', addr: '10.0.16.22:9090', status: 'offline', cpu: 0, mem: 0, uptime: '—' },
+    { id: 'sn-0x4e5a', name: 'appserv-ap-south-1a', type: 'appserv', addr: '10.0.16.22:9090', status: 'offline', cpu: 0, mem: 0, uptime: '·' },
     { id: 'sn-0x6f1b', name: 'fuseserv-eu-west-1b', type: 'fuseserv', addr: '10.0.14.12:9091', status: 'online', cpu: 45, mem: 52, uptime: '7d 2h' },
   ]
 
@@ -135,7 +135,7 @@
       <Button variant="outline" onclick={() => showErrorToast('Mount failed', { description: 'FUSE handshake timeout after 30s' })}>
         Error
       </Button>
-      <Button variant="outline" onclick={() => showWarningToast('High memory usage', { description: 'Node sn-0x8b2e at 84% — consider rebalancing' })}>
+      <Button variant="outline" onclick={() => showWarningToast('High memory usage', { description: 'Node sn-0x8b2e at 84%; consider rebalancing' })}>
         Warning
       </Button>
       <Button variant="outline" onclick={() => showInfoToast('Region sync complete', { description: 'us-east-1: 3 nodes, 12 volumes' })}>
@@ -152,7 +152,7 @@
       </Button>
     </div>
     <div class="grid gap-4 md:grid-cols-2">
-      <Button variant="outline" onclick={() => showSuccessToast('Quick toast — no description')}>
+      <Button variant="outline" onclick={() => showSuccessToast('Quick toast; no description')}>
         Title Only
       </Button>
       <Button variant="outline" onclick={() => showErrorToast('Connection refused', {
@@ -171,18 +171,18 @@
       <Card cornerBrackets>
         <CardHeader><CardTitle>Dynamic Brackets</CardTitle></CardHeader>
         <CardContent>
-          <p class="text-sm text-muted-foreground">cornerBrackets — L-shaped lines at all 4 corners, scale with card width (clamp 24px–60px)</p>
+          <p class="text-sm text-muted-foreground">cornerBrackets; L-shaped lines at all 4 corners, scale with card width (clamp 24px–60px)</p>
         </CardContent>
       </Card>
       <Card cornerBrackets fixedBrackets>
         <CardHeader><CardTitle>Fixed Brackets</CardTitle></CardHeader>
         <CardContent>
-          <p class="text-sm text-muted-foreground">cornerBrackets + fixedBrackets — Fixed 32px bracket lines at all 4 corners</p>
+          <p class="text-sm text-muted-foreground">cornerBrackets + fixedBrackets; Fixed 32px bracket lines at all 4 corners</p>
         </CardContent>
       </Card>
       <div class="corner-brackets relative rounded-sm border bg-card p-6 text-card-foreground">
         <p class="text-sm font-medium">Standard Brackets (CSS)</p>
-        <p class="mt-2 text-sm text-muted-foreground">.corner-brackets — smaller 20px fixed brackets, direct CSS class</p>
+        <p class="mt-2 text-sm text-muted-foreground">.corner-brackets; smaller 20px fixed brackets, direct CSS class</p>
       </div>
     </div>
   </section>
@@ -194,17 +194,17 @@
       <Card cornerPlus>
         <CardHeader><CardTitle>Plus Top-Right</CardTitle></CardHeader>
         <CardContent>
-          <p class="text-sm text-muted-foreground">cornerPlus — + mark at top-right corner</p>
+          <p class="text-sm text-muted-foreground">cornerPlus; + mark at top-right corner</p>
         </CardContent>
       </Card>
       <div class="corner-plus-bl relative rounded-sm border bg-card p-6 text-card-foreground">
         <p class="text-sm font-medium">Plus Bottom-Left (CSS)</p>
-        <p class="mt-2 text-sm text-muted-foreground">.corner-plus-bl — + mark at bottom-left corner</p>
+        <p class="mt-2 text-sm text-muted-foreground">.corner-plus-bl; + mark at bottom-left corner</p>
       </div>
       <Card cornerBrackets cornerPlus>
         <CardHeader><CardTitle>Brackets + Plus</CardTitle></CardHeader>
         <CardContent>
-          <p class="text-sm text-muted-foreground">cornerBrackets + cornerPlus — combined bracket lines and + mark</p>
+          <p class="text-sm text-muted-foreground">cornerBrackets + cornerPlus; combined bracket lines and + mark</p>
         </CardContent>
       </Card>
     </div>
@@ -217,13 +217,13 @@
       <div class="cyberpunk-skewed bg-card text-card-foreground">
         <div class="cyberpunk-skewed-inner">
           <p class="text-sm font-medium">Standard Skew</p>
-          <p class="mt-2 text-sm text-muted-foreground">.cyberpunk-skewed — 20px angled clip-path cuts at top-left and bottom-right</p>
+          <p class="mt-2 text-sm text-muted-foreground">.cyberpunk-skewed; 20px angled clip-path cuts at top-left and bottom-right</p>
         </div>
       </div>
       <div class="cyberpunk-skewed-lg bg-card text-card-foreground">
         <div class="cyberpunk-skewed-inner">
           <p class="text-sm font-medium">Large Skew</p>
-          <p class="mt-2 text-sm text-muted-foreground">.cyberpunk-skewed-lg — 32px pronounced angled cuts</p>
+          <p class="mt-2 text-sm text-muted-foreground">.cyberpunk-skewed-lg; 32px pronounced angled cuts</p>
         </div>
       </div>
     </div>
@@ -243,14 +243,14 @@
     <div class="grid gap-6 md:grid-cols-2">
       <div class="tech-grid rounded-sm border bg-card p-6">
         <p class="text-sm font-medium text-card-foreground">Tech Grid</p>
-        <p class="mt-2 text-sm text-muted-foreground">.tech-grid — subtle 20px grid pattern background</p>
+        <p class="mt-2 text-sm text-muted-foreground">.tech-grid; subtle 20px grid pattern background</p>
       </div>
       <div class="rounded-sm border bg-card p-6">
         <p class="text-sm font-medium text-card-foreground">Dashed Connector</p>
         <div class="my-3">
           <hr class="dashed-connector" />
         </div>
-        <p class="text-sm text-muted-foreground">.dashed-connector — dashed separator line</p>
+        <p class="text-sm text-muted-foreground">.dashed-connector; dashed separator line</p>
       </div>
     </div>
   </section>
@@ -277,7 +277,7 @@
       <Card cornerBrackets fixedBrackets cornerPlus>
         <CardHeader><CardTitle>Full Cyber Card</CardTitle></CardHeader>
         <CardContent>
-          <p class="text-sm text-muted-foreground">Fixed brackets + plus sign — maximum decoration</p>
+          <p class="text-sm text-muted-foreground">Fixed brackets + plus sign; maximum decoration</p>
           <div class="mt-4 flex gap-2">
             <Button variant="primary" size="sm">Accept</Button>
             <Button variant="destructive" size="sm">Reject</Button>
@@ -471,16 +471,16 @@
           </TableHeader>
           <TableBody>
             {#each nodes as n}
-              <TableRow class="border-l-2 border-l-transparent hover:border-l-primary">
+              <TableRow class="hover:bg-accent">
                 <TableCell class="font-mono text-xs">{n.id}</TableCell>
                 <TableCell class="font-medium">{n.name}</TableCell>
                 <TableCell><Badge variant={statusVariant(n.status)}>{n.status}</Badge></TableCell>
                 <TableCell>
                   <div class="flex items-center gap-2">
-                    <div class="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+                    <div class="h-1.5 w-16 rounded-sm bg-muted overflow-hidden">
                       <div
-                        class="h-full rounded-full transition-all {n.cpu > 80 ? 'bg-destructive' : n.cpu > 50 ? 'bg-warning' : 'bg-success'}"
-                        style="width: {n.cpu}%"
+                        class="h-full rounded-sm transition-transform origin-left {n.cpu > 80 ? 'bg-destructive' : n.cpu > 50 ? 'bg-warning' : 'bg-success'}"
+                        style="transform: scaleX({n.cpu / 100})"
                       ></div>
                     </div>
                     <span class="font-mono text-xs text-muted-foreground w-8 text-right">{n.cpu}%</span>
@@ -488,10 +488,10 @@
                 </TableCell>
                 <TableCell>
                   <div class="flex items-center gap-2">
-                    <div class="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+                    <div class="h-1.5 w-16 rounded-sm bg-muted overflow-hidden">
                       <div
-                        class="h-full rounded-full transition-all {n.mem > 80 ? 'bg-destructive' : n.mem > 50 ? 'bg-warning' : 'bg-success'}"
-                        style="width: {n.mem}%"
+                        class="h-full rounded-sm transition-transform origin-left {n.mem > 80 ? 'bg-destructive' : n.mem > 50 ? 'bg-warning' : 'bg-success'}"
+                        style="transform: scaleX({n.mem / 100})"
                       ></div>
                     </div>
                     <span class="font-mono text-xs text-muted-foreground w-8 text-right">{n.mem}%</span>
@@ -505,7 +505,7 @@
       </div>
     </div>
 
-    <!-- Variant 6: Full cyberpunk — skewed container + grid + brackets -->
+    <!-- Variant 6: Full cyberpunk; skewed container + grid + brackets -->
     <div class="space-y-2">
       <h3 class="text-sm font-medium text-muted-foreground uppercase tracking-widest">Full Cyberpunk</h3>
       <div class="cyberpunk-skewed bg-card">
@@ -524,16 +524,16 @@
               </TableHeader>
               <TableBody>
                 {#each nodes as n, i}
-                  <TableRow class="border-l-2 border-l-transparent hover:border-l-primary {i % 2 === 0 ? 'bg-background/30' : ''}">
+                  <TableRow class="hover:bg-accent {i % 2 === 0 ? 'bg-background/30' : ''}">
                     <TableCell class="font-mono text-xs">{n.id}</TableCell>
                     <TableCell class="font-medium">{n.name}</TableCell>
                     <TableCell><Badge variant={statusVariant(n.status)}>{n.status}</Badge></TableCell>
                     <TableCell>
                       <div class="flex items-center gap-2">
-                        <div class="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+                        <div class="h-1.5 w-16 rounded-sm bg-muted overflow-hidden">
                           <div
-                            class="h-full rounded-full {n.cpu > 80 ? 'bg-destructive' : n.cpu > 50 ? 'bg-warning' : 'bg-success'}"
-                            style="width: {n.cpu}%"
+                            class="h-full rounded-sm origin-left {n.cpu > 80 ? 'bg-destructive' : n.cpu > 50 ? 'bg-warning' : 'bg-success'}"
+                            style="transform: scaleX({n.cpu / 100})"
                           ></div>
                         </div>
                         <span class="font-mono text-xs text-muted-foreground w-8 text-right">{n.cpu}%</span>
@@ -541,10 +541,10 @@
                     </TableCell>
                     <TableCell>
                       <div class="flex items-center gap-2">
-                        <div class="h-1.5 w-16 rounded-full bg-muted overflow-hidden">
+                        <div class="h-1.5 w-16 rounded-sm bg-muted overflow-hidden">
                           <div
-                            class="h-full rounded-full {n.mem > 80 ? 'bg-destructive' : n.mem > 50 ? 'bg-warning' : 'bg-success'}"
-                            style="width: {n.mem}%"
+                            class="h-full rounded-sm origin-left {n.mem > 80 ? 'bg-destructive' : n.mem > 50 ? 'bg-warning' : 'bg-success'}"
+                            style="transform: scaleX({n.mem / 100})"
                           ></div>
                         </div>
                         <span class="font-mono text-xs text-muted-foreground w-8 text-right">{n.mem}%</span>
@@ -577,7 +577,7 @@
           </TableHeader>
           <TableBody>
             {#each nodes as n}
-              <TableRow class="border-l-2 border-l-transparent hover:border-l-primary">
+              <TableRow class="hover:bg-accent">
                 <TableCell class="font-mono text-xs">{n.id}</TableCell>
                 <TableCell class="font-medium">{n.name}</TableCell>
                 <TableCell><Badge variant={statusVariant(n.status)}>{n.status}</Badge></TableCell>
@@ -640,7 +640,7 @@
       <Card cornerBrackets>
         <CardHeader><CardTitle>Authenticate</CardTitle></CardHeader>
         <CardContent class="space-y-3">
-          <p class="text-sm text-muted-foreground">Direct authentication — returns a step-up token</p>
+          <p class="text-sm text-muted-foreground">Direct authentication; returns a step-up token</p>
           <Button variant="outline" size="sm" onclick={handleAuthenticate}>Authenticate</Button>
         </CardContent>
       </Card>
@@ -649,7 +649,7 @@
       <Card cornerBrackets>
         <CardHeader><CardTitle>Step-Up Modal</CardTitle></CardHeader>
         <CardContent class="space-y-3">
-          <p class="text-sm text-muted-foreground">Full modal flow — register if not enrolled, then authenticate</p>
+          <p class="text-sm text-muted-foreground">Full modal flow; register if not enrolled, then authenticate</p>
           <Button variant="primary" size="sm" onclick={handleStepUpFlow}>Test Step-Up Flow</Button>
         </CardContent>
       </Card>
@@ -660,7 +660,7 @@
         <CardContent class="space-y-3">
           <div class="flex items-end gap-2">
             <div class="flex-1">
-              <Input bind:value={deleteId} placeholder="Credential ID" class="h-9" />
+              <Input bind:value={deleteId} placeholder="Credential ID" aria-label="Credential ID to delete" class="h-9" />
             </div>
             <Button variant="destructive" size="sm" onclick={handleDelete}>Delete</Button>
           </div>
@@ -673,8 +673,8 @@
         <CardContent class="space-y-3">
           <div class="flex items-end gap-2">
             <div class="flex-1 space-y-2">
-              <Input bind:value={renameId} placeholder="Credential ID" class="h-9" />
-              <Input bind:value={renameLabel} placeholder="New label" class="h-9" />
+              <Input bind:value={renameId} placeholder="Credential ID" aria-label="Credential ID to rename" class="h-9" />
+              <Input bind:value={renameLabel} placeholder="New label" aria-label="New credential label" class="h-9" />
             </div>
             <Button variant="outline" size="sm" onclick={handleRename}>Rename</Button>
           </div>

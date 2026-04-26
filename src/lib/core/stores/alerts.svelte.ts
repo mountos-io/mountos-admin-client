@@ -2,6 +2,7 @@ import type { ServiceAlert, AlertListOptions } from '$lib/core/api/types'
 import { api } from './client.svelte'
 import { showWarningToast } from '$lib/core/utils/toast'
 import { playNotificationBeep } from '$lib/core/utils/sound'
+import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
 import { usePreferences } from '$lib/stores/preferences.svelte'
 
 const POLL_INTERVAL = 60_000
@@ -39,7 +40,7 @@ let totalAlerts = $state(0)
 let totalPages = $state(0)
 let hasNewAlert = $state(false)
 let lastKnownRecentCount = 0
-let pollTimer: ReturnType<typeof setInterval> | null = null
+let poll: ActivePoll | null = null
 let pollCtrl: AbortController | null = null
 let fetchCtrl: AbortController | null = null
 
@@ -76,36 +77,22 @@ async function fetchCount(signal?: AbortSignal) {
   }
 }
 
-function onVisibilityChange() {
-  if (document.hidden) {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
-  } else if (pollCtrl && !pollTimer) {
-    fetchCount(pollCtrl.signal)
-    pollTimer = setInterval(() => fetchCount(pollCtrl!.signal), POLL_INTERVAL)
-  }
-}
-
 function startPolling() {
-  if (pollTimer) return
+  if (poll) return
   pollCtrl?.abort()
   lastKnownRecentCount = 0
   pollCtrl = new AbortController()
-  fetchCount(pollCtrl.signal)
-  pollTimer = setInterval(() => fetchCount(pollCtrl!.signal), POLL_INTERVAL)
-  if (typeof document !== 'undefined') {
-    document.addEventListener('visibilitychange', onVisibilityChange)
-  }
+  poll = createActivePoll(() => fetchCount(pollCtrl!.signal), POLL_INTERVAL)
+  poll.start()
 }
 
 function stopPolling() {
-  if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+  poll?.stop()
+  poll = null
   pollCtrl?.abort()
   pollCtrl = null
   fetchCtrl?.abort()
   fetchCtrl = null
-  if (typeof document !== 'undefined') {
-    document.removeEventListener('visibilitychange', onVisibilityChange)
-  }
 }
 
 async function fetchAlerts() {

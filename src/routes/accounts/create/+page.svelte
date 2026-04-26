@@ -61,7 +61,7 @@
   }
 </script>
 
-<svelte:head><title>Create Account — mountOS Admin</title></svelte:head>
+<svelte:head><title>Create Account · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-xl">
   <Card cornerBrackets>
@@ -76,7 +76,9 @@
             {#if previewUrl && !iconError}
               <img
                 src={previewUrl}
-                alt="Icon"
+                alt={name ? `${name} icon preview` : 'Account icon preview'}
+                loading="lazy"
+                decoding="async"
                 class="size-full object-cover"
                 onerror={() => { iconError = true }}
               />

@@ -309,8 +309,8 @@
 
   .dark .tech-grid {
     background-image:
-      linear-gradient(rgba(255, 255, 255, 0.3) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.3) 1px, transparent 1px);
+      linear-gradient(oklch(0.93 0.005 200 / 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, oklch(0.93 0.005 200 / 0.3) 1px, transparent 1px);
   }
 
   /* Dashed connecting lines */
@@ -527,7 +527,7 @@
     color: var(--bracket-hover-dark);
   }
 
-  /* Cyberpunk card accent — top-edge glow + hover halo */
+  /* Cyberpunk card accent; top-edge glow + hover halo */
   .card-cyber {
     box-shadow: inset 0 1px 0 oklch(from var(--accent-glow) l c h / 0.2);
     transition: box-shadow 0.3s ease;
@@ -549,7 +549,7 @@
       0 0 24px oklch(from var(--accent-glow-dark) l c h / 0.08);
   }
 
-  /* Cyberpunk stat cell — bottom scan-line on hover */
+  /* Cyberpunk stat cell; bottom scan-line on hover */
   .stat-cyber {
     position: relative;
   }
@@ -575,7 +575,7 @@
     background: linear-gradient(90deg, transparent, oklch(from var(--accent-glow-dark) l c h / 0.35), transparent);
   }
 
-  /* Cyberpunk table header labels — scan-line underline */
+  /* Cyberpunk table header labels; scan-line underline */
   .th-cyber {
     position: relative;
     font-family: var(--font-mono);

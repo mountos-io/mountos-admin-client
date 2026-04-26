@@ -95,7 +95,7 @@
 </script>
 
 <svelte:head>
-  <title>Volumes — mountOS Admin</title>
+  <title>Volumes · mountOS Admin</title>
 </svelte:head>
 
 <div class="space-y-4">

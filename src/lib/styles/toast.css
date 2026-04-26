@@ -1,4 +1,4 @@
-/* Toast Notifications — Cyberpunk-technical styling for svelte-sonner */
+/* Toast Notifications; Cyberpunk-technical styling for svelte-sonner */
 /* Angled cuts, accent edge lines, theme-aware surfaces */
 
 /* Base toast: skewed cuts, theme surface, partial accent lines */
@@ -95,7 +95,7 @@
   color: var(--muted-foreground) !important;
 }
 
-/* Close button — repositioned to top-right (clear of top-left cut) */
+/* Close button; repositioned to top-right (clear of top-left cut) */
 [data-sonner-toast] button[data-close-button] {
   left: auto !important;
   right: 4px !important;

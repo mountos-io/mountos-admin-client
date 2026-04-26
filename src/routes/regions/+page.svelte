@@ -74,7 +74,7 @@
   }
 </script>
 
-<svelte:head><title>Regions — mountOS Admin</title></svelte:head>
+<svelte:head><title>Regions · mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
   <PageHeader title="Regions" action={accountId && auth.can("regions", "create") ? { label: 'Create Region', href: '/regions/create', icon: Plus } : undefined} />

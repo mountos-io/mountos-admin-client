@@ -54,7 +54,7 @@
   }
 </script>
 
-<svelte:head><title>Create Region — mountOS Admin</title></svelte:head>
+<svelte:head><title>Create Region · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-lg space-y-6">
   {#if !accountId}

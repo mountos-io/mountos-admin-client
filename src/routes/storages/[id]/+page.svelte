@@ -109,7 +109,7 @@
   const isObject = $derived(storage?.storageType === 'object')
 </script>
 
-<svelte:head><title>{storage?.name ?? 'Storage'} — mountOS Admin</title></svelte:head>
+<svelte:head><title>{storage?.name ?? 'Storage'} · mountOS Admin</title></svelte:head>
 
 <div class="space-y-6">
   <div class="flex items-center gap-4">

@@ -183,7 +183,7 @@ export function formatOs(raw: string): string {
 }
 
 export function formatUptime(seconds: number): string {
-  if (!seconds) return '—'
+  if (!seconds) return '·'
   const h = Math.floor(seconds / 3600)
   const m = Math.floor((seconds % 3600) / 60)
   if (h > 24) return `${Math.floor(h / 24)}d ${h % 24}h`
@@ -196,7 +196,7 @@ export function formatNum(n: number): string {
 }
 
 export function formatLatency(us: number): string {
-  if (!Number.isFinite(us) || us <= 0) return '—'
+  if (!Number.isFinite(us) || us <= 0) return '·'
   if (us < 1) return '< 1 μs'
   if (us < 1000) return `${Math.round(us)} μs`
   if (us < 1_000_000) return `${(us / 1000).toFixed(1)} ms`

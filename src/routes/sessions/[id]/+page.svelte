@@ -14,6 +14,7 @@
   import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, betaVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
+  import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { HISTOGRAM_BOUNDS } from '$lib/core/constants'
   import type { ClientSession } from '$lib/core/api/types'
@@ -31,7 +32,7 @@
   let redirected = false
 
   let pollValue = $state('')
-  let pollTimer: ReturnType<typeof setInterval> | null = null
+  let poll: ActivePoll | null = null
 
   async function fetchSession() {
     fetchCtrl?.abort()
@@ -42,7 +43,7 @@
     error = null
     try {
       session = await api.clientSessions.get(sessionId, ctrl.signal)
-      if (!session.isActive && pollTimer) setPoll('')
+      if (!session.isActive && poll) setPoll('')
     } catch (e) {
       if ((e as Error).name === 'AbortError') return
       error = (e as Error).message || 'Failed to load session'
@@ -53,9 +54,13 @@
 
   function setPoll(v: string) {
     pollValue = v
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+    poll?.stop()
+    poll = null
     const secs = Number(v)
-    if (secs > 0) pollTimer = setInterval(() => fetchSession(), secs * 1000)
+    if (secs > 0) {
+      poll = createActivePoll(() => fetchSession(), secs * 1000)
+      poll.start()
+    }
   }
 
   $effect(() => {
@@ -69,7 +74,7 @@
 
   onDestroy(() => {
     fetchCtrl?.abort()
-    if (pollTimer) clearInterval(pollTimer)
+    poll?.stop()
   })
 
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
@@ -105,7 +110,7 @@
   }
 </script>
 
-<svelte:head><title>Session #{isNaN(id) ? 'Invalid' : id} — mountOS Admin</title></svelte:head>
+<svelte:head><title>Session #{isNaN(id) ? 'Invalid' : id} · mountOS Admin</title></svelte:head>
 
 <div class="space-y-6">
   <!-- Header -->
@@ -165,14 +170,14 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
           <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm">{session.account.name}</a></div>
           <div><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm">{session.volume.name || `#${session.volume.id}`}</a></div>
-          <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '—'}</p></div>
+          <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p></div>
           <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
           {#if session.forkName}
             <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
           {/if}
           <div><p class="detail-label">Uptime</p><p class="text-sm">{formatUptime(m.uptimeSeconds ?? 0)}</p></div>
-          <div><p class="detail-label">Connected</p><p class="text-sm">{session.connectedAt ? formatRelative(session.connectedAt) : '—'}</p></div>
-          <div><p class="detail-label">Last Heartbeat</p><p class="text-sm">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '—'}</p></div>
+          <div><p class="detail-label">Connected</p><p class="text-sm">{session.connectedAt ? formatRelative(session.connectedAt) : '·'}</p></div>
+          <div><p class="detail-label">Last Heartbeat</p><p class="text-sm">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</p></div>
           {#if session.disconnectedAt}
             <div><p class="detail-label">Disconnected</p><p class="text-sm">{formatRelative(session.disconnectedAt)}</p></div>
           {/if}
@@ -181,13 +186,13 @@
         <!-- IDs -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
           <div class="min-w-0"><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate">{session.volume.name || `#${session.volume.id}`}</a></div>
-          <div class="min-w-0"><p class="detail-label">User</p>{#if session.user}<a href="/users/{session.user.id}" class="detail-link text-sm font-mono truncate" title={session.user.name}>{session.user.name || `#${session.user.id}`}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
+          <div class="min-w-0"><p class="detail-label">User</p>{#if session.user}<a href="/users/{session.user.id}" class="detail-link text-sm font-mono truncate" title={session.user.name}>{session.user.name || `#${session.user.id}`}</a>{:else}<p class="text-sm font-mono">·</p>{/if}</div>
           {#if session.appVersion}
             <div><p class="detail-label">App Version</p><p class="text-sm font-mono">{session.appVersion}</p></div>
           {/if}
           <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
           {#if pid != null}
-            <div><p class="detail-label">Process ID</p><p class="text-sm font-mono">{Number(pid) || '—'}</p></div>
+            <div><p class="detail-label">Process ID</p><p class="text-sm font-mono">{Number(pid) || '·'}</p></div>
           {/if}
         </div>
       </div>
@@ -243,7 +248,7 @@
             </div>
             <div class="metric-group">
               <p class="detail-label">Network</p>
-              <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '—'}</span></div>
+              <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '·'}</span></div>
               <div class="metric-row {(m.connFailures ?? 0) ? 'text-destructive' : ''}"><span>Conn Failures</span><span>{formatNum(m.connFailures ?? 0)}</span></div>
               <div class="metric-row {(m.connDropped ?? 0) ? 'text-destructive' : ''}"><span>Conn Dropped</span><span>{formatNum(m.connDropped ?? 0)}</span></div>
               <div class="metric-row"><span>TCP Conns</span><span>{formatNum(m.tcpActiveConns ?? 0)}</span></div>

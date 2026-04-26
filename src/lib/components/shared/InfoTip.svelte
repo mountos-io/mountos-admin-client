@@ -29,7 +29,7 @@
 
   function close() { show = false }
 
-  // Dismiss on Escape, scroll, or resize — WCAG 1.4.13 (Content on Hover or Focus).
+  // Dismiss on Escape, scroll, or resize; WCAG 1.4.13 (Content on Hover or Focus).
   $effect(() => {
     if (!show) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close() }

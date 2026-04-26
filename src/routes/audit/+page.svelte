@@ -50,7 +50,7 @@
   }
 </script>
 
-<svelte:head><title>Audit Logs — mountOS Admin</title></svelte:head>
+<svelte:head><title>Audit Logs · mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
   <h1 class="text-2xl font-bold tracking-tight">Audit Logs</h1>
@@ -89,12 +89,12 @@
               {#if log.subject}
                 <span class="audit-subject" style="--sc: {getSubjectColor(log.subject)}">{log.subject}</span>
               {:else}
-                <span class="text-sm text-muted-foreground">—</span>
+                <span class="text-sm text-muted-foreground">·</span>
               {/if}
             </TableCell>
             <TableCell><Badge variant={log.success ? 'default' : 'destructive'}>{log.success ? 'OK' : 'Fail'}</Badge></TableCell>
-            <TableCell class="text-sm text-muted-foreground">{log.createdBy ?? '—'}</TableCell>
-            <TableCell class="text-sm text-muted-foreground">{log.createdAt ? formatRelative(log.createdAt) : '—'}</TableCell>
+            <TableCell class="text-sm text-muted-foreground">{log.createdBy ?? '·'}</TableCell>
+            <TableCell class="text-sm text-muted-foreground">{log.createdAt ? formatRelative(log.createdAt) : '·'}</TableCell>
           </TableRow>
           {#if expanded.has(log.id)}
             <TableRow>

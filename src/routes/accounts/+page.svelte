@@ -30,7 +30,7 @@
   })
 </script>
 
-<svelte:head><title>Accounts — mountOS Admin</title></svelte:head>
+<svelte:head><title>Accounts · mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
   <PageHeader title="Accounts" action={auth.can('accounts', 'create') ? { label: 'Create Account', href: '/accounts/create', icon: Plus } : undefined} />

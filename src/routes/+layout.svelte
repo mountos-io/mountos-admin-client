@@ -109,9 +109,9 @@
         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
       </svg>
       <p class="mt-4 text-sm text-muted-foreground">Authenticating...</p>
-      <div class="mt-4 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+      <div class="mt-4 h-1.5 w-full rounded-sm bg-muted overflow-hidden">
         <div
-          class="h-1.5 rounded-full bg-primary transition-transform duration-300 origin-left"
+          class="h-1.5 rounded-sm bg-primary transition-transform duration-300 origin-left"
           style="transform: scaleX({progress / 100})"
         ></div>
       </div>

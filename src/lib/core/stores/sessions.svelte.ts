@@ -15,7 +15,7 @@ export interface SessionSummaryData {
 }
 
 // getPlatform reads the authoritative platform id that mfuse emits into
-// metadata.platform. No client-type fallback — sessions without this field
+// metadata.platform. No client-type fallback; sessions without this field
 // are treated as unknown so the UI stays aligned with the server-side filter.
 export function getPlatform(s: ClientSession): string {
   const md = s.metadata as { platform?: string } | undefined
@@ -42,7 +42,7 @@ let showInactive = $state(true)
 let displayPage = $state(1)
 let expanded = $state<Set<number>>(new Set())
 
-// Stable option lists (static — previously derived from full dataset client-side).
+// Stable option lists (static; previously derived from full dataset client-side).
 // Keeping these static avoids an unfiltered round-trip just to populate dropdowns.
 const statusOptions = [
   { value: '', label: 'All Status' },
@@ -88,7 +88,7 @@ const regionOptions = $derived.by(() => {
   return [{ value: '', label: 'All Regions' }, ...map.values()]
 })
 
-// Global summary — populated from a separate /summary round-trip so counts
+// Global summary; populated from a separate /summary round-trip so counts
 // reflect the entire dataset, not just the current page.
 let globalSummary = $state<SessionSummary | null>(null)
 

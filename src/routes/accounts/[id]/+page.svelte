@@ -125,7 +125,7 @@
   }
 </script>
 
-<svelte:head><title>{account?.name ?? 'Account'} — mountOS Admin</title></svelte:head>
+<svelte:head><title>{account?.name ?? 'Account'} · mountOS Admin</title></svelte:head>
 
 <div class="space-y-6">
   <div class="flex flex-wrap items-center gap-4">
@@ -149,10 +149,11 @@
               <div class="flex items-center gap-3">
                 <img
                   src={iconSrc}
-                  alt={editName}
+                  alt={editName ? `${editName} icon` : 'Account icon'}
                   width={36} height={36}
+                  loading="lazy"
+                  decoding="async"
                   class="rounded-full shrink-0"
-                  style="width: 36px; height: 36px;"
                   onerror={() => { editIconError = true }}
                 />
                 <CardTitle>Edit Account</CardTitle>
@@ -203,7 +204,7 @@
             </div>
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
-              <p class="mt-1 text-sm">{account.description || '—'}</p>
+              <p class="mt-1 text-sm">{account.description || '·'}</p>
             </div>
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Created</span>

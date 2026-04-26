@@ -6,6 +6,6 @@
   const tab = $derived($page.url.searchParams.get('tab') as 'overview' | 'activity' | 'alerts' | null)
 </script>
 
-<svelte:head><title>Region Nodes — mountOS Admin</title></svelte:head>
+<svelte:head><title>Region Nodes · mountOS Admin</title></svelte:head>
 
 <RegionTopology {regionId} basePath="/nodes" initialTab={tab ?? undefined} />

@@ -16,6 +16,7 @@
   import { formatRelative, nodeStatusVariant } from '$lib/core/utils/format'
   import { poolUtilColor } from '$lib/core/utils/metrics'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
+  import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
   import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import Network from '@lucide/svelte/icons/network'
 
@@ -85,16 +86,20 @@
   ] as const
 
   let pollValue = $state('')
-  let pollTimer: ReturnType<typeof setInterval> | null = null
+  let poll: ActivePoll | null = null
 
   function setPoll(v: string) {
     pollValue = v
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+    poll?.stop()
+    poll = null
     const secs = Number(v)
-    if (secs > 0) pollTimer = setInterval(() => nodeStore.refetch(), secs * 1000)
+    if (secs > 0) {
+      poll = createActivePoll(() => nodeStore.refetch(), secs * 1000)
+      poll.start()
+    }
   }
 
-  onDestroy(() => { if (pollTimer) clearInterval(pollTimer) })
+  onDestroy(() => poll?.stop())
 
   const activityValue = $derived(nodeStore.inactiveHours != null ? String(nodeStore.inactiveHours) : '')
 
@@ -118,7 +123,7 @@
   })
 
   function onRegionChange(v: string) {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; pollValue = '' }
+    if (poll) { poll.stop(); poll = null; pollValue = '' }
     selectedRegionId = v
     currentPage = 1
     nodeStore.clearFilters()
@@ -127,19 +132,19 @@
   }
 
   function onTypeChange(v: string) {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; pollValue = '' }
+    if (poll) { poll.stop(); poll = null; pollValue = '' }
     currentPage = 1
     nodeStore.setServiceType(v)
   }
 
   function onStatusChange(v: string) {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; pollValue = '' }
+    if (poll) { poll.stop(); poll = null; pollValue = '' }
     currentPage = 1
     nodeStore.setStatus(v)
   }
 </script>
 
-<svelte:head><title>Nodes — mountOS Admin</title></svelte:head>
+<svelte:head><title>Nodes · mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
   <h1 class="text-2xl font-bold tracking-tight">Nodes</h1>
@@ -236,18 +241,18 @@
               {#if node.memUsage != null}
                 <span style="color: {poolUtilColor(Math.round(node.memUsage * 100))}">{Math.round(node.memUsage * 100)}%</span>
               {:else}
-                <span class="text-muted-foreground">—</span>
+                <span class="text-muted-foreground">·</span>
               {/if}
             </TableCell>
             <TableCell class="font-mono text-sm hidden md:table-cell">
               {#if node.sysLoad != null}
                 <span style="color: {loadColor(node.sysLoad)}">{node.sysLoad}%</span>
               {:else}
-                <span class="text-muted-foreground">—</span>
+                <span class="text-muted-foreground">·</span>
               {/if}
             </TableCell>
             <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
-              {node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '—'}
+              {node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '·'}
             </TableCell>
           </TableRow>
         {/each}

@@ -53,7 +53,7 @@
   }
 </script>
 
-<svelte:head><title>Add User — mountOS Admin</title></svelte:head>
+<svelte:head><title>Add User · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-lg space-y-6">
   {#if !accountId}

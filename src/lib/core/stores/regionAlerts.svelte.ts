@@ -1,5 +1,6 @@
 import type { AlertCountResponse, RegionAlert, RegionAlertListOptions } from '$lib/core/api/types'
 import { api } from './client.svelte'
+import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
 import { TIME_RANGES } from './alerts.svelte'
 
 export type { AlertCountResponse, RegionAlert }
@@ -14,7 +15,7 @@ function sinceToISO(value: string): string | undefined {
   return new Date(Date.now() - range.ms).toISOString()
 }
 
-export function useRegionAlerts(regionId: number, nodeId?: string) {
+export function useRegionAlerts(getRegionId: () => number, getNodeId?: () => string | undefined) {
   let activeCount = $state(0)
   let recentCount = $state(0)
   let infoCount = $state(0)
@@ -26,7 +27,7 @@ export function useRegionAlerts(regionId: number, nodeId?: string) {
   let error = $state<string | null>(null)
   let totalAlerts = $state(0)
   let totalPages = $state(0)
-  let pollTimer: ReturnType<typeof setInterval> | null = null
+  let poll: ActivePoll | null = null
   let pollCtrl: AbortController | null = null
   let fetchCtrl: AbortController | null = null
 
@@ -37,6 +38,7 @@ export function useRegionAlerts(regionId: number, nodeId?: string) {
   let page = $state(1)
 
   async function fetchCount(signal?: AbortSignal) {
+    const regionId = getRegionId()
     if (!regionId) return
     try {
       const res = await api.regionAlerts.count(regionId, signal)
@@ -50,38 +52,25 @@ export function useRegionAlerts(regionId: number, nodeId?: string) {
     }
   }
 
-  function onVisibilityChange() {
-    if (document.hidden) {
-      if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
-    } else if (pollCtrl && !pollTimer) {
-      fetchCount(pollCtrl.signal)
-      pollTimer = setInterval(() => fetchCount(pollCtrl!.signal), POLL_INTERVAL)
-    }
-  }
-
   function startPolling() {
-    if (pollTimer) return
+    if (poll) return
     pollCtrl?.abort()
     pollCtrl = new AbortController()
-    fetchCount(pollCtrl.signal)
-    pollTimer = setInterval(() => fetchCount(pollCtrl!.signal), POLL_INTERVAL)
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', onVisibilityChange)
-    }
+    poll = createActivePoll(() => fetchCount(pollCtrl!.signal), POLL_INTERVAL)
+    poll.start()
   }
 
   function stopPolling() {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+    poll?.stop()
+    poll = null
     pollCtrl?.abort()
     pollCtrl = null
     fetchCtrl?.abort()
     fetchCtrl = null
-    if (typeof document !== 'undefined') {
-      document.removeEventListener('visibilitychange', onVisibilityChange)
-    }
   }
 
   async function fetchAlerts() {
+    const regionId = getRegionId()
     if (!regionId) return
     fetchCtrl?.abort()
     const ctrl = fetchCtrl = new AbortController()
@@ -92,7 +81,7 @@ export function useRegionAlerts(regionId: number, nodeId?: string) {
       active: activeFilter,
       severity: severityFilter,
       category: categoryFilter || undefined,
-      nodeId,
+      nodeId: getNodeId?.(),
       since: sinceToISO(sinceFilter),
       page,
       limit: DISPLAY_PAGE_SIZE,
@@ -112,6 +101,7 @@ export function useRegionAlerts(regionId: number, nodeId?: string) {
   }
 
   async function resolveAlert(alertId: string) {
+    const regionId = getRegionId()
     if (!regionId) return
     await api.regionAlerts.resolve(regionId, alertId)
     await Promise.all([fetchAlerts(), fetchCount(pollCtrl?.signal)])

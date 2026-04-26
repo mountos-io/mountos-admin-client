@@ -235,7 +235,7 @@
     {@const extraSections = sections.filter(s => s.kind === 'scalar' && !inlineSections.has(s.name) && s.scalars.length > 0)}
     {@const sysSection = sections.find(s => s.name === 'System' && s.kind === 'scalar' && s.scalars.length > 0)}
     <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
-    <!-- Runtime Gauges — instrument panel -->
+    <!-- Runtime Gauges; instrument panel -->
     <div class="">
       <div
         class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-px rounded-sm overflow-hidden bg-border/50"
@@ -302,8 +302,8 @@
             ] as row}
               <div class="flex items-center gap-2 text-sm font-mono">
                 <span class="text-muted-foreground w-12 shrink-0">{row.label}</span>
-                <div class="flex-1 h-1 rounded-full bg-muted overflow-hidden">
-                  <div class="h-full rounded-full transition-transform origin-left duration-700"
+                <div class="flex-1 h-1 rounded-sm bg-muted overflow-hidden">
+                  <div class="h-full rounded-sm transition-transform origin-left duration-700"
                     style="background: {row.color}; transform: scaleX({row.ratio})"></div>
                 </div>
                 <span class="tabular-nums w-24 text-right shrink-0">{formatBytes(row.value)}</span>
@@ -323,8 +323,8 @@
               </div>
               <div class="flex items-center gap-2 text-sm font-mono">
                 <span class="text-muted-foreground w-12 shrink-0">Slots</span>
-                <div class="flex-1 h-1 rounded-full bg-muted overflow-hidden">
-                  <div class="h-full rounded-full transition-transform origin-left duration-700"
+                <div class="flex-1 h-1 rounded-sm bg-muted overflow-hidden">
+                  <div class="h-full rounded-sm transition-transform origin-left duration-700"
                     style="background: var(--pastel-volume); transform: scaleX({slotOccupied / slotCapacity})"></div>
                 </div>
                 <span class="tabular-nums w-24 text-right shrink-0">{fmtNum(slotOccupied)}</span>
@@ -332,8 +332,8 @@
               {#if namepoolCap > 0}
                 <div class="flex items-center gap-2 text-sm font-mono">
                   <span class="text-muted-foreground w-12 shrink-0">Pool</span>
-                  <div class="flex-1 h-1 rounded-full bg-muted overflow-hidden">
-                    <div class="h-full rounded-full transition-transform origin-left duration-700"
+                  <div class="flex-1 h-1 rounded-sm bg-muted overflow-hidden">
+                    <div class="h-full rounded-sm transition-transform origin-left duration-700"
                       style="background: var(--pastel-volume); opacity: 0.6; transform: scaleX({namepoolUsed / namepoolCap})"></div>
                   </div>
                   <span class="tabular-nums w-24 text-right shrink-0">{formatBytes(namepoolUsed)}</span>
@@ -639,8 +639,8 @@
               <span>{formatBytes(sysMemUsed)} used</span>
               <span>{formatBytes(sysMemAvail)} avail / {formatBytes(sysMemTotal)}</span>
             </div>
-            <div class="h-1.5 rounded-full bg-muted overflow-hidden">
-              <div class="h-full rounded-full origin-left [transition:transform_700ms_ease,background-color_700ms_ease]"
+            <div class="h-1.5 rounded-sm bg-muted overflow-hidden">
+              <div class="h-full rounded-sm origin-left [transition:transform_700ms_ease,background-color_700ms_ease]"
                 style="background: {memColor}; transform: scaleX({memUsedPct / 100})"></div>
             </div>
           </div>
@@ -678,8 +678,8 @@
             <span class="text-sm font-mono text-muted-foreground tracking-wider uppercase">MetaEngine Cache</span>
             <span class="text-sm font-mono tabular-nums font-medium" style="color: {hitColor}">{fmtRatio(cacheHitRatio)} hit</span>
           </div>
-          <div class="h-1.5 rounded-full bg-muted overflow-hidden">
-            <div class="h-full rounded-full origin-left [transition:transform_700ms_ease,background-color_700ms_ease]"
+          <div class="h-1.5 rounded-sm bg-muted overflow-hidden">
+            <div class="h-full rounded-sm origin-left [transition:transform_700ms_ease,background-color_700ms_ease]"
               style="background: {hitColor}; transform: scaleX({cacheHitRatio})"></div>
           </div>
           <div class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm font-mono">
@@ -1012,9 +1012,9 @@
       </div>
     </button>
 
-    <div class="mt-1.5 ml-5.5 h-1.5 rounded-full bg-muted overflow-hidden">
+    <div class="mt-1.5 ml-5.5 h-1.5 rounded-sm bg-muted overflow-hidden">
       <div
-        class="h-full rounded-full transition-transform origin-left duration-700"
+        class="h-full rounded-sm transition-transform origin-left duration-700"
         style="background: {latencyColor(
           group.avgLatencyUs,
         )}; transform: scaleX({pct})"
@@ -1139,13 +1139,13 @@
     --_toggle-active-bg: oklch(0.5 0.08 200 / 0.15);
   }
 
-  /* Tab bar — overflow scroll fade */
+  /* Tab bar; overflow scroll fade */
   .tab-bar {
     mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
     -webkit-mask-image: linear-gradient(to right, black calc(100% - 2.5rem), transparent);
   }
 
-  /* Tab bar — scan-line border + corner brackets */
+  /* Tab bar; scan-line border + corner brackets */
   .tab-bar::before {
     content: "";
     position: absolute;
@@ -1180,7 +1180,7 @@
     );
   }
 
-  /* Tab buttons — skewed corners + scan-line underline */
+  /* Tab buttons; skewed corners + scan-line underline */
   .tab-btn {
     position: relative;
     text-transform: uppercase;
@@ -1229,7 +1229,7 @@
     background: linear-gradient(90deg, transparent, var(--_tab-line-active), transparent);
   }
 
-  /* Toggle groups — skewed micro-cuts */
+  /* Toggle groups; skewed micro-cuts */
   .toggle-group {
     clip-path: polygon(
       0 3px,
@@ -1259,7 +1259,7 @@
     background: var(--_toggle-active-bg);
   }
 
-  /* Touch targets — coarse pointer devices (touch screens, tablets) */
+  /* Touch targets; coarse pointer devices (touch screens, tablets) */
   @media (pointer: coarse) {
     .tab-btn {
       min-height: 2.75rem;

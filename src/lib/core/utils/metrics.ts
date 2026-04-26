@@ -161,7 +161,7 @@ export function formatNs(ns: number): string {
   return `${ns.toFixed(0)}ns`
 }
 
-// Coefficient of variation (β) — latency stability indicator
+// Coefficient of variation (β); latency stability indicator
 export function estimateCV(buckets: HistBucket[], avgUs: number): number {
   if (avgUs <= 0 || buckets.length === 0) return 0
   let total = 0

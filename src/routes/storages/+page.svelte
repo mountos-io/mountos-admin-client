@@ -87,7 +87,7 @@
   })
 </script>
 
-<svelte:head><title>Storages — mountOS Admin</title></svelte:head>
+<svelte:head><title>Storages · mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
   <PageHeader title="Storages" action={accountId && auth.can('storages', 'create') ? { label: 'Create Storage', href: '/storages/create', icon: Plus } : undefined} />

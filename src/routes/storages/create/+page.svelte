@@ -180,7 +180,7 @@
   }
 </script>
 
-<svelte:head><title>Create Storage — mountOS Admin</title></svelte:head>
+<svelte:head><title>Create Storage · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-2xl space-y-6">
   {#if !accountId}
@@ -218,13 +218,13 @@
 
             {#if isBlock}
               <div class="space-y-2">
-                <Label>Provider</Label>
-                <Input value="mountOS" disabled />
+                <Label for="storage-provider">Provider</Label>
+                <Input id="storage-provider" value="mountOS" disabled />
               </div>
               <div class="space-y-2">
-                <Label>Block Endpoint</Label>
+                <Label for="block-endpoint">Block Endpoint</Label>
                 {#if blockEndpoint}
-                  <Input value={blockEndpoint} readonly class="font-mono text-sm text-muted-foreground" />
+                  <Input id="block-endpoint" value={blockEndpoint} readonly class="font-mono text-sm text-muted-foreground" />
                   <p class="text-sm text-muted-foreground">Derived from region DNS (block.&lt;region-dns&gt;)</p>
                 {:else if regionId}
                   <p class="text-sm text-destructive">Selected region has no DNS configured.</p>

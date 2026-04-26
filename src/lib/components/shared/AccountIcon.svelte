@@ -13,6 +13,6 @@
   width={size}
   height={size}
   loading="lazy"
+  decoding="async"
   class="rounded-full shrink-0"
-  style="width: {size}px; height: {size}px;"
 />

@@ -83,7 +83,7 @@
   })
 </script>
 
-<svelte:head><title>Dashboard — mountOS Admin</title></svelte:head>
+<svelte:head><title>Dashboard · mountOS Admin</title></svelte:head>
 
 <div class="flex flex-1 flex-col gap-6">
   {#if !account}

@@ -24,7 +24,7 @@
   let { regionId, nodeId, basePath }: { regionId: number; nodeId: string; basePath: string } = $props()
 
   const nodeStore = useNodes()
-  const alertStore = $derived(useRegionAlerts(regionId, nodeId))
+  const alertStore = useRegionAlerts(() => regionId, () => nodeId)
   const auditStore = useRegionAuditLogs()
   const auth = useAuth()
   const canReadAlerts = $derived(auth.can('alerts', 'read'))
@@ -153,7 +153,7 @@
           </div>
           <div>
             <dt class="text-muted-foreground text-sm">Last Heartbeat</dt>
-            <dd class="text-sm mt-0.5">{node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '—'}</dd>
+            <dd class="text-sm mt-0.5">{node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '·'}</dd>
           </div>
           <div>
             <dt class="text-muted-foreground text-sm">Active</dt>
@@ -164,7 +164,7 @@
           {#if nodeProcessId != null}
             <div>
               <dt class="text-muted-foreground text-sm">Process ID</dt>
-              <dd class="font-mono text-sm mt-0.5">{Number(nodeProcessId) || '—'}</dd>
+              <dd class="font-mono text-sm mt-0.5">{Number(nodeProcessId) || '·'}</dd>
             </div>
           {/if}
           {#if nodeFilteredMeta}
@@ -182,7 +182,7 @@
     <Card>
       <CardHeader><CardTitle class="text-base">Metrics</CardTitle></CardHeader>
       <CardContent class="pt-0">
-        <p class="text-sm text-muted-foreground">Metrics unavailable — node is {node.status}{!node.isActive ? ' (inactive)' : ''}.</p>
+        <p class="text-sm text-muted-foreground">Metrics unavailable; node is {node.status}{!node.isActive ? ' (inactive)' : ''}.</p>
       </CardContent>
     </Card>
   {:else if nodeStore.statsLoading && !nodeStore.statsLastUpdated}

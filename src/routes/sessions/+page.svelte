@@ -19,6 +19,7 @@
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
   import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
   import { SESSION_POLL_OPTIONS } from '$lib/core/utils/options'
+  import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
   import { showErrorToast } from '$lib/core/utils/toast'
   import type { ClientSession } from '$lib/core/api/types'
   import ExternalLink from '@lucide/svelte/icons/external-link'
@@ -52,16 +53,20 @@
   })
 
   let pollValue = $state('')
-  let pollTimer: ReturnType<typeof setInterval> | null = null
+  let poll: ActivePoll | null = null
 
   function setPoll(v: string) {
     pollValue = v
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
+    poll?.stop()
+    poll = null
     const secs = Number(v)
-    if (secs > 0) pollTimer = setInterval(() => store.refetch(), secs * 1000)
+    if (secs > 0) {
+      poll = createActivePoll(() => store.refetch(), secs * 1000)
+      poll.start()
+    }
   }
 
-  onDestroy(() => { if (pollTimer) clearInterval(pollTimer); store.reset() })
+  onDestroy(() => { poll?.stop(); store.reset() })
 
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
   function mountModeVariant(m: string) { return m === 'readonly' ? 'outline' as const : 'default' as const }
@@ -71,7 +76,7 @@
   const hasFilters = $derived(store.statusFilter || store.platformFilter || store.regionFilter || store.osFilter || store.searchQuery || store.volumeIdFilter)
 </script>
 
-<svelte:head><title>Sessions — mountOS Admin</title></svelte:head>
+<svelte:head><title>Sessions · mountOS Admin</title></svelte:head>
 
 <div class="space-y-6">
   <div class="flex items-center gap-3">
@@ -121,7 +126,7 @@
           Inactive
         </label>
         <span class="text-sm text-muted-foreground">
-          {#if store.loading && store.summary.total === 0}—{:else}{store.summary.total} result{store.summary.total !== 1 ? 's' : ''}{/if}
+          {#if store.loading && store.summary.total === 0}·{:else}{store.summary.total} result{store.summary.total !== 1 ? 's' : ''}{/if}
         </span>
         <FilterSelect options={SESSION_POLL_OPTIONS} value={pollValue} placeholder="Poll Off" onchange={setPoll} />
       </div>
@@ -177,9 +182,9 @@
               <TableCell><span class="session-region">{session.region.name}</span></TableCell>
               <TableCell><Badge variant={statusVariant(session.status)}>{session.status}</Badge></TableCell>
               <TableCell class="hidden md:table-cell">
-                {#if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)}>{session.mountMode}</Badge>{:else}—{/if}
+                {#if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)}>{session.mountMode}</Badge>{:else}·{/if}
               </TableCell>
-              <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '—'}</TableCell>
+              <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</TableCell>
             </TableRow>
             {#if store.expanded.has(session.id)}
               {@const m = getMetrics(session)}
@@ -193,11 +198,11 @@
                     </a>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm" onclick={(e: MouseEvent) => e.stopPropagation()}>{session.account.name}</a></div>
-                        <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '—'}</p></div>
+                        <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p></div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
                         <div><p class="detail-label">Uptime</p><p class="text-sm">{formatUptime(m.uptimeSeconds ?? 0)}</p></div>
                         <div class="min-w-0"><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate" title={session.volume.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volume.name || `#${session.volume.id}`}</a></div>
-                        <div class="min-w-0"><p class="detail-label">User</p>{#if session.user}<a href="/users/{session.user.id}" class="detail-link text-sm font-mono truncate" title={session.user.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.user.name || `#${session.user.id}`}</a>{:else}<p class="text-sm font-mono">—</p>{/if}</div>
+                        <div class="min-w-0"><p class="detail-label">User</p>{#if session.user}<a href="/users/{session.user.id}" class="detail-link text-sm font-mono truncate" title={session.user.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.user.name || `#${session.user.id}`}</a>{:else}<p class="text-sm font-mono">·</p>{/if}</div>
                         <div><p class="detail-label">Client Type</p><Badge variant="outline">{session.clientType}</Badge></div>
                         {#if session.forkName}
                           <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
@@ -230,7 +235,7 @@
                           </div>
                           <div class="metric-group">
                             <p class="detail-label">Network</p>
-                            <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '—'}</span></div>
+                            <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '·'}</span></div>
                             <div class="metric-row {(m.connFailures ?? 0) ? 'text-destructive' : ''}"><span>Conn Failures</span><span>{formatNum(m.connFailures ?? 0)}</span></div>
                             <div class="metric-row"><span>TCP Conns</span><span>{formatNum(m.tcpActiveConns ?? 0)}</span></div>
                             <div class="metric-row"><span>RPC</span><span>{formatNum(m.rpcCount ?? 0)}</span></div>

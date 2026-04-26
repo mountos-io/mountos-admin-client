@@ -96,7 +96,7 @@
   }
 </script>
 
-<svelte:head><title>{user?.username ?? 'User'} — mountOS Admin</title></svelte:head>
+<svelte:head><title>{user?.username ?? 'User'} · mountOS Admin</title></svelte:head>
 
 <div class="space-y-6">
   <div class="flex items-center gap-4">
@@ -167,7 +167,7 @@
             </div>
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Display Name</span>
-              <p class="mt-1 text-sm">{user.name || '—'}</p>
+              <p class="mt-1 text-sm">{user.name || '·'}</p>
             </div>
           </CardContent>
           {#if auth.can('users', 'update')}

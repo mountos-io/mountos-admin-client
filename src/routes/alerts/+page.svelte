@@ -55,7 +55,7 @@
   }
 </script>
 
-<svelte:head><title>Alerts — mountOS Admin</title></svelte:head>
+<svelte:head><title>Alerts · mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
   <div class="flex items-center gap-3">

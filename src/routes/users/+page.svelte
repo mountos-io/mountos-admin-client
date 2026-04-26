@@ -49,7 +49,7 @@
   }
 </script>
 
-<svelte:head><title>Users — mountOS Admin</title></svelte:head>
+<svelte:head><title>Users · mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
   <PageHeader title="Users" action={accountId && auth.can('users', 'create') ? { label: 'Add User', href: '/users/create', icon: Plus } : undefined} />

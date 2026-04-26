@@ -177,7 +177,7 @@
   }
 </script>
 
-<svelte:head><title>Topology — mountOS Admin</title></svelte:head>
+<svelte:head><title>Topology · mountOS Admin</title></svelte:head>
 
 <div class="space-y-5">
   <!-- Header -->
@@ -267,7 +267,7 @@
                 <span style:color={STATUS_COLORS.inactive}>{rack.inactive} inactive</span>
               {/if}
             </div>
-            <div class="flex h-1 w-full overflow-hidden rounded-full bg-muted">
+            <div class="flex h-1 w-full overflow-hidden rounded-sm bg-muted">
               {#if rack.active > 0}<div style="width: {(rack.active / rack.total) * 100}%; background: {STATUS_COLORS.active}"></div>{/if}
               {#if rack.draining > 0}<div style="width: {(rack.draining / rack.total) * 100}%; background: {STATUS_COLORS.draining}"></div>{/if}
               {#if rack.inactive > 0}<div style="width: {(rack.inactive / rack.total) * 100}%; background: {STATUS_COLORS.inactive}"></div>{/if}
@@ -582,7 +582,7 @@
     to { stroke-dashoffset: -9; }
   }
 
-  /* Status LED ping — GPU-composited (transform + opacity only) */
+  /* Status LED ping; GPU-composited (transform + opacity only) */
   .ping-led {
     will-change: transform, opacity;
     animation: ping-slow 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
@@ -592,7 +592,7 @@
     75%, 100% { opacity: 0; transform: scale(2.8); }
   }
 
-  /* RAFT legend LED glow — use opacity instead of box-shadow */
+  /* RAFT legend LED glow; use opacity instead of box-shadow */
   .led-indicator {
     box-shadow: 0 0 6px var(--led);
     animation: led-pulse 3s ease-in-out infinite;
@@ -603,7 +603,7 @@
     50% { opacity: 0.6; }
   }
 
-  /* Leader badge shimmer — use opacity instead of filter: brightness */
+  /* Leader badge shimmer; use opacity instead of filter: brightness */
   :global(.leader-badge) {
     animation: badge-glow 2.5s ease-in-out infinite;
     will-change: opacity;
@@ -613,7 +613,7 @@
     50% { opacity: 0.75; }
   }
 
-  /* SVG leader glow pulse — already GPU-friendly */
+  /* SVG leader glow pulse; already GPU-friendly */
   .leader-glow-svg {
     animation: svg-glow 2.5s ease-in-out infinite;
     will-change: opacity;
