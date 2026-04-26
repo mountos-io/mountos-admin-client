@@ -4,7 +4,7 @@
     "": {
       "name": "mountos-admin-client",
       "dependencies": {
-        "@mountos-app/admin-sdk": "file:/Users/princejohnwesley/Projects/Private/mountOS/mountos-admin-sdk/ts",
+        "@mountos-app/admin-sdk": "^0.49.0",
         "@simplewebauthn/server": "^13.3.0",
         "hono": "^4.12.15",
         "ioredis": "^5.10.1",
@@ -114,7 +114,7 @@
 
     "@lucide/svelte": ["@lucide/svelte@0.577.0", "", { "peerDependencies": { "svelte": "^5" } }, "sha512-0P6mkySd2MapIEgq08tADPmcN4DHndC/02PWwaLkOerXlx5Sv9aT4BxyXLIY+eccr0g/nEyCYiJesqS61YdBZQ=="],
 
-    "@mountos-app/admin-sdk": ["@mountos-app/admin-sdk@file:../mountos-admin-sdk/ts", { "dependencies": { "jose": "^6.0.11" }, "devDependencies": { "typescript": "^5.7.0" } }],
+    "@mountos-app/admin-sdk": ["@mountos-app/admin-sdk@0.49.0", "", { "dependencies": { "jose": "^6.0.11" } }, "sha512-m/YCv7qMULmt40VJ/d1WfFtZ2rAU7AL/B5KOazqN+Sk6QElYZxnL3iRulJJkKXfcJ/f8MXHRtlsQKTDOXXJYsA=="],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.1", "", {}, "sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q=="],
 
@@ -473,8 +473,6 @@
     "yargs-parser": ["yargs-parser@21.1.1", "", {}, "sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw=="],
 
     "zimmerframe": ["zimmerframe@1.1.4", "", {}, "sha512-B58NGBEoc8Y9MWWCQGl/gq9xBCe4IiKM0a2x7GZdQKOW5Exr8S1W24J6OgM1njK8xCRGvAJIL/MxXHf6SkmQKQ=="],
-
-    "@mountos-app/admin-sdk/jose": ["jose@6.2.1", "", {}, "sha512-jUaKr1yrbfaImV7R2TN/b3IcZzsw38/chqMpo2XJ7i2F8AfM/lA4G1goC3JVEwg0H7UldTmSt3P68nt31W7/mw=="],
 
     "@tailwindcss/node/tailwindcss": ["tailwindcss@4.2.4", "", {}, "sha512-HhKppgO81FQof5m6TEnuBWCZGgfRAWbaeOaGT00KOy/Pf/j6oUihdvBpA7ltCeAvZpFhW3j0PTclkxsd4IXYDA=="],
 
