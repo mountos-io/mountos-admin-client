@@ -14,6 +14,7 @@
   let hoveredLog = $state<PlottedLog | null>(null)
   let popupPosition = $state({ left: '0px', top: '0px', transform: 'translate(-50%, -100%)' })
   let copiedId = $state<number | null>(null)
+  let copyTimer: ReturnType<typeof setTimeout> | undefined
   let disabledSubjects = $state<Set<string>>(new Set())
 
   async function handleCopy(log: PlottedLog) {
@@ -27,8 +28,11 @@
     if (log.data) obj.data = log.data
     await navigator.clipboard.writeText(JSON.stringify(obj, null, 2))
     copiedId = log.id
-    setTimeout(() => { copiedId = null }, 2000)
+    if (copyTimer) clearTimeout(copyTimer)
+    copyTimer = setTimeout(() => { copiedId = null }, 2000)
   }
+
+  $effect(() => () => { if (copyTimer) clearTimeout(copyTimer) })
 
   const timeRanges: Record<TimeRange, { start: number; end: number }> = {
     full:      { start: 0,    end: 1440 },
@@ -154,8 +158,9 @@
         {@const m = meta(log.subject)}
         {@const Icon = m.icon}
         <div class="absolute"
-          style="left: {log.x}%; top: {log.y}%; opacity: 0.15;">
-          <div class="flex items-center justify-center w-7 h-7 rounded-full shadow-sm text-white/90"
+          style="left: {log.x}%; top: {log.y}%; opacity: 0.35;"
+          aria-hidden="true">
+          <div class="flex items-center justify-center w-7 h-7 rounded-full text-white/90"
             style="background: {m.color}; transform: translate(-50%, -50%);">
             <Icon class="w-3.5 h-3.5" />
           </div>
@@ -165,19 +170,17 @@
       {#each plottedLogs.filter(l => isActive(l.subject)) as log}
         {@const m = meta(log.subject)}
         {@const Icon = m.icon}
-        <div class="absolute cursor-pointer will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-full"
+        <button type="button" class="absolute cursor-pointer will-change-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-full"
           style="left: {log.x}%; top: {log.y}%;"
           onmouseenter={(e) => handleEnter(log, e)}
           onmouseleave={() => hoveredLog = null}
           onclick={() => handleCopy(log)}
-          onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), handleCopy(log))}
-          role="button" tabindex="0"
           aria-label="{log.title}{log.subject ? `; ${log.subject}` : ''}, {log.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} {fmtTime(log.timeMinutes)}">
-          <div class="flex items-center justify-center w-7 h-7 rounded-full shadow-sm text-white/90 transition-transform hover:scale-[1.8]"
+          <div class="flex items-center justify-center w-7 h-7 rounded-full text-white/90 transition-transform hover:scale-[1.8]"
             style="background: {m.color}; transform: translate(-50%, -50%);">
             <Icon class="w-3.5 h-3.5" />
           </div>
-        </div>
+        </button>
       {/each}
     </div>
 
@@ -192,7 +195,7 @@
   <!-- Hover popup -->
   {#if hoveredLog}
     {@const m = meta(hoveredLog.subject)}
-    <div class="fixed z-50 w-[28rem] rounded-sm border border-border bg-background shadow-lg p-4 space-y-2.5"
+    <div class="fixed z-50 w-[min(100vw-1.5rem,28rem)] rounded-sm border border-border bg-background p-4 space-y-2.5"
       style="left: {popupPosition.left}; top: {popupPosition.top}; transform: {popupPosition.transform};">
       <h4 class="text-[1rem] font-medium leading-snug break-words">{hoveredLog.title}</h4>
       <div class="flex items-center flex-wrap gap-2">

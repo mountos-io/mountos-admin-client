@@ -10,7 +10,7 @@
   import { Badge } from '$lib/components/ui/badge'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
@@ -106,7 +106,7 @@
   </div>
 
   {#if loading}
-    <LoadingSpinner />
+    <DetailSkeleton gridCols={2} cards={[{ rows: 3, cols: 1 }]} />
   {:else if user}
     <div class="grid gap-6 md:grid-cols-2">
       <Card cornerBrackets>
@@ -118,14 +118,14 @@
             <CardContent class="space-y-5">
               <div class="space-y-2">
                 <Label for="edit-username">Username</Label>
-                <Input id="edit-username" bind:value={editUsername} placeholder="Username" maxlength={16} required autocomplete="username" aria-invalid={!!usernameError || undefined} aria-describedby={usernameError ? 'edit-username-error' : undefined} />
+                <Input id="edit-username" bind:value={editUsername} placeholder="Username" maxlength={16} required aria-required="true" autocomplete="username" aria-invalid={!!usernameError || undefined} aria-describedby={usernameError ? 'edit-username-error' : undefined} />
                 {#if usernameError}
                   <p id="edit-username-error" class="text-destructive text-xs" role="alert">{usernameError}</p>
                 {/if}
               </div>
               <div class="space-y-2">
                 <Label for="edit-email">Email</Label>
-                <Input id="edit-email" type="email" bind:value={editEmail} placeholder="user@example.com" required autocomplete="email" />
+                <Input id="edit-email" type="email" bind:value={editEmail} placeholder="user@example.com" required aria-required="true" autocomplete="email" />
               </div>
               <div class="space-y-2">
                 <Label for="edit-name">Display Name</Label>

@@ -12,7 +12,8 @@
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import ServiceMetricsView from '$lib/components/shared/ServiceMetricsView.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
@@ -91,6 +92,16 @@
     return entries.length > 0 ? Object.fromEntries(entries) : null
   })
 </script>
+
+{#snippet nodeAlertsHeader()}
+  <TableRow>
+    <TableHead class="w-28">Severity</TableHead>
+    <TableHead class="hidden sm:table-cell w-24">Category</TableHead>
+    <TableHead>Title</TableHead>
+    <TableHead class="hidden md:table-cell w-32">Time</TableHead>
+    <TableHead class="w-20">Status</TableHead>
+  </TableRow>
+{/snippet}
 
 <div class="space-y-5">
   <div class="flex items-start justify-between gap-4">
@@ -186,7 +197,7 @@
       </CardContent>
     </Card>
   {:else if nodeStore.statsLoading && !nodeStore.statsLastUpdated}
-    <LoadingSpinner />
+    <DetailSkeleton cards={[{ rows: 4, cols: 3, title: true }]} />
   {:else if nodeStore.statsError}
     <Card>
       <CardContent>
@@ -212,9 +223,18 @@
         </CardHeader>
         <CardContent class="pt-0">
           {#if alertStore.loading && alertStore.alerts.length === 0}
-            <div class="flex items-center justify-center py-8" aria-busy="true">
-              <LoadingSpinner />
-            </div>
+            <TableSkeleton
+              header={nodeAlertsHeader}
+              caption="Loading node alerts"
+              rows={3}
+              cells={[
+                { width: 'w-16', height: 'h-5' },
+                { width: 'w-14', class: 'hidden sm:table-cell' },
+                { width: 'w-48' },
+                { width: 'w-20', class: 'hidden md:table-cell' },
+                { width: 'w-16', height: 'h-5' },
+              ]}
+            />
           {:else if alertStore.error}
             <p class="text-sm text-destructive">{alertStore.error}</p>
           {:else if alertStore.alerts.length === 0}
@@ -223,13 +243,7 @@
             <Table>
               <caption class="sr-only">Node alerts</caption>
               <TableHeader>
-                <TableRow>
-                  <TableHead class="w-28">Severity</TableHead>
-                  <TableHead class="hidden sm:table-cell w-24">Category</TableHead>
-                  <TableHead>Title</TableHead>
-                  <TableHead class="hidden md:table-cell w-32">Time</TableHead>
-                  <TableHead class="w-20">Status</TableHead>
-                </TableRow>
+                {@render nodeAlertsHeader()}
               </TableHeader>
               <TableBody>
                 {#each alertStore.alerts as alert (alert.alertId)}

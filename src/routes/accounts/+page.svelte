@@ -7,8 +7,8 @@
   import { Button } from '$lib/components/ui/button'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { formatDate } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
   import PageHeader from '$lib/components/shared/PageHeader.svelte'
@@ -35,20 +35,33 @@
 <div class="space-y-4">
   <PageHeader title="Accounts" action={auth.can('accounts', 'create') ? { label: 'Create Account', href: '/accounts/create', icon: Plus } : undefined} />
 
+  {#snippet headerRow()}
+    <TableRow>
+      <TableHead class="th-cyber">Name</TableHead>
+      <TableHead class="th-cyber">Status</TableHead>
+      <TableHead class="th-cyber">Created</TableHead>
+      <TableHead class="w-auto"></TableHead>
+    </TableRow>
+  {/snippet}
+
   {#if store.loading}
-    <LoadingSpinner />
+    <TableSkeleton
+      header={headerRow}
+      caption="Loading accounts"
+      cells={[
+        { width: 'w-40' },
+        { width: 'w-16', height: 'h-5' },
+        { width: 'w-24' },
+        { width: 'w-16' },
+      ]}
+    />
   {:else if store.accounts.length === 0}
     <EmptyState title="No accounts" description="No accounts have been created yet." action={auth.can('accounts', 'create') ? { label: 'Create Account', href: '/accounts/create' } : undefined} />
   {:else}
     <Table>
       <caption class="sr-only">Accounts</caption>
       <TableHeader>
-        <TableRow>
-          <TableHead class="th-cyber">Name</TableHead>
-          <TableHead class="th-cyber">Status</TableHead>
-          <TableHead class="th-cyber">Created</TableHead>
-          <TableHead class="w-auto"></TableHead>
-        </TableRow>
+        {@render headerRow()}
       </TableHeader>
       <TableBody>
         {#each store.accounts as account}

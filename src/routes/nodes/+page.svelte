@@ -10,8 +10,8 @@
   import { Button } from '$lib/components/ui/button'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { formatRelative, nodeStatusVariant } from '$lib/core/utils/format'
   import { poolUtilColor } from '$lib/core/utils/metrics'
@@ -188,26 +188,53 @@
     {/if}
   </FilterPanel>
 
-  {#if regionStore.loading || nodeStore.loading}
-    <LoadingSpinner />
+  {#snippet headerRow()}
+    <TableRow>
+      <TableHead class="th-cyber">Node ID</TableHead>
+      {#if !selectedRegionId}
+        <TableHead class="th-cyber">Region</TableHead>
+      {/if}
+      <TableHead class="th-cyber">Type</TableHead>
+      <TableHead class="th-cyber hidden md:table-cell">Address</TableHead>
+      <TableHead class="th-cyber">Status</TableHead>
+      <TableHead class="th-cyber hidden md:table-cell">Memory</TableHead>
+      <TableHead class="th-cyber hidden md:table-cell">Load</TableHead>
+      <TableHead class="th-cyber hidden lg:table-cell">Last Heartbeat</TableHead>
+    </TableRow>
+  {/snippet}
+
+  {#if (regionStore.loading || nodeStore.loading) && nodeStore.nodes.length === 0}
+    <TableSkeleton
+      header={headerRow}
+      caption="Loading nodes"
+      cells={selectedRegionId
+        ? [
+            { width: 'w-32' },
+            { width: 'w-20', height: 'h-5' },
+            { width: 'w-32', class: 'hidden md:table-cell' },
+            { width: 'w-16', height: 'h-5' },
+            { width: 'w-12', class: 'hidden md:table-cell' },
+            { width: 'w-12', class: 'hidden md:table-cell' },
+            { width: 'w-20', class: 'hidden lg:table-cell' },
+          ]
+        : [
+            { width: 'w-32' },
+            { width: 'w-20' },
+            { width: 'w-20', height: 'h-5' },
+            { width: 'w-32', class: 'hidden md:table-cell' },
+            { width: 'w-16', height: 'h-5' },
+            { width: 'w-12', class: 'hidden md:table-cell' },
+            { width: 'w-12', class: 'hidden md:table-cell' },
+            { width: 'w-20', class: 'hidden lg:table-cell' },
+          ]}
+    />
   {:else if nodeStore.nodes.length === 0}
     <EmptyState title="No nodes" description="No nodes found matching the current filters." />
   {:else}
     <Table>
       <caption class="sr-only">Service nodes</caption>
       <TableHeader>
-        <TableRow>
-          <TableHead class="th-cyber">Node ID</TableHead>
-          {#if !selectedRegionId}
-            <TableHead class="th-cyber">Region</TableHead>
-          {/if}
-          <TableHead class="th-cyber">Type</TableHead>
-          <TableHead class="th-cyber hidden md:table-cell">Address</TableHead>
-          <TableHead class="th-cyber">Status</TableHead>
-          <TableHead class="th-cyber hidden md:table-cell">Memory</TableHead>
-          <TableHead class="th-cyber hidden md:table-cell">Load</TableHead>
-          <TableHead class="th-cyber hidden lg:table-cell">Last Heartbeat</TableHead>
-        </TableRow>
+        {@render headerRow()}
       </TableHeader>
       <TableBody>
         {#each pagedNodes as node}

@@ -51,11 +51,11 @@
 </script>
 
 <div class="activity-feed">
-  {#each grouped as group}
+  {#each grouped as group (group.label)}
     <div class="mb-6">
       <div class="feed-date-label font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground mb-3 pl-8">{group.label}</div>
       <div class="space-y-0.5">
-        {#each group.logs as log}
+        {#each group.logs as log (log.id)}
           {@const m = meta(log.subject)}
           {@const Icon = m.icon}
           {@const isOpen = expanded.has(log.id)}

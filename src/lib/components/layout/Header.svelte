@@ -88,6 +88,7 @@
     class="flex h-9 w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
     onclick={() => onToggleSidebar ? onToggleSidebar() : (prefs.sidebarCollapsed = !prefs.sidebarCollapsed)}
     aria-label="Toggle sidebar"
+    aria-expanded={!prefs.sidebarCollapsed}
     title="Toggle sidebar (⌘B)"
   >
     <PanelLeft class="h-4 w-4" />

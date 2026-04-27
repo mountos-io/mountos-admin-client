@@ -14,8 +14,8 @@
   import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
   import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
   import { SESSION_POLL_OPTIONS } from '$lib/core/utils/options'
@@ -79,7 +79,7 @@
 <svelte:head><title>Sessions · mountOS Admin</title></svelte:head>
 
 <div class="space-y-6">
-  <div class="flex items-center gap-3">
+  <div class="flex flex-wrap items-center gap-3">
     <h1 class="text-2xl font-bold tracking-tight">Sessions</h1>
     {#if store.volumeIdFilter}
       <Badge variant="outline" class="gap-1">
@@ -110,7 +110,7 @@
 
     <!-- Filters -->
     <FilterPanel>
-      <div class="flex-1 min-w-48 max-w-sm">
+      <div class="w-full sm:flex-1 sm:min-w-48 sm:max-w-sm">
         <Input value={store.searchQuery} oninput={(e: Event) => store.setSearchQuery((e.target as HTMLInputElement).value)} placeholder="Search host, volume, path, account..." aria-label="Search sessions" />
       </div>
       <FilterSelect options={store.statusOptions} value={store.statusFilter} placeholder="Status" onchange={(v) => store.setStatusFilter(v)} />
@@ -132,8 +132,34 @@
       </div>
     </FilterPanel>
 
+    {#snippet headerRow()}
+      <TableRow>
+        <TableHead class="w-8"></TableHead>
+        <TableHead class="th-cyber">Host</TableHead>
+        <TableHead class="th-cyber">Platform</TableHead>
+        <TableHead class="th-cyber">Volume</TableHead>
+        <TableHead class="th-cyber">Region</TableHead>
+        <TableHead class="th-cyber">Status</TableHead>
+        <TableHead class="th-cyber hidden md:table-cell">Mode</TableHead>
+        <TableHead class="th-cyber hidden lg:table-cell">Heartbeat</TableHead>
+      </TableRow>
+    {/snippet}
+
     {#if store.loading && store.allSessions.length === 0}
-      <div class="flex justify-center py-12" role="status" aria-label="Loading sessions"><LoadingSpinner /></div>
+      <TableSkeleton
+        header={headerRow}
+        caption="Loading sessions"
+        cells={[
+          { width: 'w-4' },
+          { width: 'w-40' },
+          { width: 'w-40', height: 'h-5' },
+          { width: 'w-24' },
+          { width: 'w-24', height: 'h-5' },
+          { width: 'w-16', height: 'h-5' },
+          { width: 'w-16', height: 'h-5', class: 'hidden md:table-cell' },
+          { width: 'w-20', class: 'hidden lg:table-cell' },
+        ]}
+      />
     {:else if store.error}
       <Card><CardContent class="py-8"><p class="text-center text-destructive" role="alert">{store.error}</p></CardContent></Card>
     {:else if store.filtered.length === 0}
@@ -142,16 +168,7 @@
       <Table>
         <caption class="sr-only">Client sessions</caption>
         <TableHeader>
-          <TableRow>
-            <TableHead class="w-8"></TableHead>
-            <TableHead class="th-cyber">Host</TableHead>
-            <TableHead class="th-cyber">Platform</TableHead>
-            <TableHead class="th-cyber">Volume</TableHead>
-            <TableHead class="th-cyber">Region</TableHead>
-            <TableHead class="th-cyber">Status</TableHead>
-            <TableHead class="th-cyber hidden md:table-cell">Mode</TableHead>
-            <TableHead class="th-cyber hidden lg:table-cell">Heartbeat</TableHead>
-          </TableRow>
+          {@render headerRow()}
         </TableHeader>
         <TableBody>
           {#each store.displaySessions as session (session.id)}

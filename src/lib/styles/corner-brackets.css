@@ -636,8 +636,8 @@
     width: 14px;
     height: 14px;
     border: none;
-    border-top: 1.5px solid var(--bracket-color);
-    border-left: 1.5px solid var(--bracket-color);
+    border-top: 1px solid var(--bracket-color);
+    border-left: 1px solid var(--bracket-color);
     opacity: 0.4;
     pointer-events: none;
   }
@@ -650,8 +650,8 @@
     width: 14px;
     height: 14px;
     border: none;
-    border-bottom: 1.5px solid var(--bracket-color);
-    border-right: 1.5px solid var(--bracket-color);
+    border-bottom: 1px solid var(--bracket-color);
+    border-right: 1px solid var(--bracket-color);
     opacity: 0.4;
     pointer-events: none;
   }

@@ -76,12 +76,12 @@
     use:portal
     id={tipId}
     role="tooltip"
-    class="fixed z-50 pointer-events-none rounded-sm border border-border bg-card shadow-lg px-3 py-2"
+    class="fixed z-50 pointer-events-none rounded-sm border border-border bg-card px-3 py-2"
     style:left={pos.left}
     style:top={pos.top}
     style:transform={pos.transform}
     style:max-width="min(260px, calc(100vw - 1.5rem))"
   >
-    <p class="text-xs leading-relaxed text-foreground whitespace-pre-line">{text}</p>
+    <p class="text-sm leading-relaxed text-foreground whitespace-pre-line">{text}</p>
   </div>
 {/if}

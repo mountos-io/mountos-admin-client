@@ -12,7 +12,7 @@
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import { Skeleton } from '$lib/components/ui/skeleton'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { formatRelative } from '$lib/core/utils/format'
   import { showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import CheckCircle from '@lucide/svelte/icons/check-circle'
@@ -110,39 +110,37 @@
     </div>
   </FilterPanel>
 
+  {#snippet headerRow()}
+    <TableRow>
+      <TableHead class="w-28">Severity</TableHead>
+      <TableHead class="w-24">Category</TableHead>
+      <TableHead>Title</TableHead>
+      <TableHead class="hidden md:table-cell">Account</TableHead>
+      <TableHead class="hidden md:table-cell">Region</TableHead>
+      <TableHead class="hidden lg:table-cell">Source</TableHead>
+      <TableHead class="hidden xl:table-cell">Node</TableHead>
+      <TableHead class="w-32">Time</TableHead>
+      <TableHead class="w-20">Actions</TableHead>
+    </TableRow>
+  {/snippet}
+
   {#if store.loading && store.alerts.length === 0}
     <Card cornerPlus class="px-4">
-      <Table>
-        <caption class="sr-only">Loading alerts</caption>
-        <TableHeader>
-          <TableRow>
-            <TableHead class="w-28">Severity</TableHead>
-            <TableHead class="w-24">Category</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead class="hidden md:table-cell">Account</TableHead>
-            <TableHead class="hidden md:table-cell">Region</TableHead>
-            <TableHead class="hidden lg:table-cell">Source</TableHead>
-            <TableHead class="hidden xl:table-cell">Node</TableHead>
-            <TableHead class="w-32">Time</TableHead>
-            <TableHead class="w-20">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {#each { length: 5 } as _}
-            <TableRow>
-              <TableCell><Skeleton class="h-5 w-16" /></TableCell>
-              <TableCell><Skeleton class="h-4 w-14" /></TableCell>
-              <TableCell><Skeleton class="h-4 w-48" /></TableCell>
-              <TableCell class="hidden md:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
-              <TableCell class="hidden md:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
-              <TableCell class="hidden lg:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
-              <TableCell class="hidden xl:table-cell"><Skeleton class="h-4 w-24" /></TableCell>
-              <TableCell><Skeleton class="h-4 w-20" /></TableCell>
-              <TableCell><Skeleton class="h-5 w-16" /></TableCell>
-            </TableRow>
-          {/each}
-        </TableBody>
-      </Table>
+      <TableSkeleton
+        header={headerRow}
+        caption="Loading alerts"
+        cells={[
+          { width: 'w-16', height: 'h-5' },
+          { width: 'w-14' },
+          { width: 'w-48' },
+          { width: 'w-20', class: 'hidden md:table-cell' },
+          { width: 'w-20', class: 'hidden md:table-cell' },
+          { width: 'w-20', class: 'hidden lg:table-cell' },
+          { width: 'w-24', class: 'hidden xl:table-cell' },
+          { width: 'w-20' },
+          { width: 'w-20', height: 'h-7' },
+        ]}
+      />
     </Card>
   {:else if store.error}
     <Card cornerPlus>
@@ -160,17 +158,7 @@
       <Table>
         <caption class="sr-only">Service alerts</caption>
         <TableHeader>
-          <TableRow>
-            <TableHead class="w-28">Severity</TableHead>
-            <TableHead class="w-24">Category</TableHead>
-            <TableHead>Title</TableHead>
-            <TableHead class="hidden md:table-cell">Account</TableHead>
-            <TableHead class="hidden md:table-cell">Region</TableHead>
-            <TableHead class="hidden lg:table-cell">Source</TableHead>
-            <TableHead class="hidden xl:table-cell">Node</TableHead>
-            <TableHead class="w-32">Time</TableHead>
-            <TableHead class="w-20">Actions</TableHead>
-          </TableRow>
+          {@render headerRow()}
         </TableHeader>
         <TableBody>
           {#each store.alerts as alert (alert.alertId)}

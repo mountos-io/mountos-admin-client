@@ -7,8 +7,8 @@
   import { Button } from '$lib/components/ui/button'
   import { Badge } from '$lib/components/ui/badge'
   import { Input } from '$lib/components/ui/input'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { formatRelative } from '$lib/core/utils/format'
   import { getSubjectColor } from '$lib/core/utils/subjects'
   import { showErrorToast } from '$lib/core/utils/toast'
@@ -62,21 +62,36 @@
     <Button variant="primary" size="sm" onclick={applyFilter}>Filter</Button>
   </FilterPanel>
 
+  {#snippet headerRow()}
+    <TableRow>
+      <TableHead class="w-8"></TableHead>
+      <TableHead class="th-cyber">Title</TableHead>
+      <TableHead class="th-cyber">Subject</TableHead>
+      <TableHead class="th-cyber">Result</TableHead>
+      <TableHead class="th-cyber">By</TableHead>
+      <TableHead class="th-cyber">When</TableHead>
+    </TableRow>
+  {/snippet}
+
   {#if store.loading && store.logs.length === 0}
-    <LoadingSpinner />
+    <TableSkeleton
+      header={headerRow}
+      caption="Loading audit logs"
+      cells={[
+        { width: 'w-4' },
+        { width: 'w-48' },
+        { width: 'w-20', height: 'h-5' },
+        { width: 'w-12', height: 'h-5' },
+        { width: 'w-24' },
+        { width: 'w-20' },
+      ]}
+    />
   {:else if store.logs.length === 0}
     <EmptyState title="No audit logs" description="No entries match the current filters." />
   {:else}
     <Table>
       <TableHeader>
-        <TableRow>
-          <TableHead class="w-8"></TableHead>
-          <TableHead class="th-cyber">Title</TableHead>
-          <TableHead class="th-cyber">Subject</TableHead>
-          <TableHead class="th-cyber">Result</TableHead>
-          <TableHead class="th-cyber">By</TableHead>
-          <TableHead class="th-cyber">When</TableHead>
-        </TableRow>
+        {@render headerRow()}
       </TableHeader>
       <TableBody>
         {#each store.logs as log}

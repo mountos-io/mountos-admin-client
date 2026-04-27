@@ -18,7 +18,9 @@
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import DeactivateVolumeDialog from '$lib/components/shared/DeactivateVolumeDialog.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
+  import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import { formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes, formatClientType, formatSessionStatus, formatDuration, formatRelative } from '$lib/core/utils/format'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
@@ -512,6 +514,17 @@
   <title>{volume?.name ?? 'Volume'} · mountOS Admin</title>
 </svelte:head>
 
+{#snippet sessionsHeaderRow()}
+  <TableRow>
+    <TableHead class="th-cyber">Client</TableHead>
+    <TableHead class="th-cyber hidden md:table-cell">Host</TableHead>
+    <TableHead class="th-cyber hidden lg:table-cell">Mount</TableHead>
+    <TableHead class="th-cyber">Status</TableHead>
+    <TableHead class="th-cyber hidden md:table-cell">Duration</TableHead>
+    <TableHead class="th-cyber hidden lg:table-cell">Last Heartbeat</TableHead>
+  </TableRow>
+{/snippet}
+
 <div class="space-y-6">
   <div class="flex items-center gap-4">
     <Button variant="ghost" size="sm" href="/volumes" aria-label="Back to volumes"><ArrowLeft class="h-4 w-4" /></Button>
@@ -519,7 +532,7 @@
     {#if volume}<Badge variant="outline" style="border-color: var(--pastel-volume); color: var(--pastel-volume-text)">Volume</Badge>{/if}
   </div>
   {#if loading}
-    <LoadingSpinner />
+    <DetailSkeleton cards={[{ rows: 5, cols: 1 }]} />
   {:else if volume}
     <div class="grid gap-6">
       <Card cornerBrackets>
@@ -721,7 +734,7 @@
       </CardHeader>
       <CardContent>
         {#if forksLoading}
-          <LoadingSpinner />
+          <ListSkeleton rows={3} />
         {:else if forks.length === 0}
           <p class="text-sm text-muted-foreground">No forks</p>
         {:else if forkView === 'list'}
@@ -869,21 +882,26 @@
           </div>
         </CardHeader>
         <CardContent>
-          {#if sessionsLoading}
-            <LoadingSpinner />
+          {#if sessionsLoading && volSessions.length === 0}
+            <TableSkeleton
+              header={sessionsHeaderRow}
+              caption="Loading active sessions"
+              rows={3}
+              cells={[
+                { width: 'w-32' },
+                { width: 'w-32', class: 'hidden md:table-cell' },
+                { width: 'w-16', class: 'hidden lg:table-cell' },
+                { width: 'w-16', height: 'h-5' },
+                { width: 'w-20', class: 'hidden md:table-cell' },
+                { width: 'w-20', class: 'hidden lg:table-cell' },
+              ]}
+            />
           {:else if volSessions.length === 0}
             <p class="text-sm text-muted-foreground">No active sessions</p>
           {:else}
             <Table containerLabel="Active sessions">
               <TableHeader>
-                <TableRow>
-                  <TableHead class="th-cyber">Client</TableHead>
-                  <TableHead class="th-cyber hidden md:table-cell">Host</TableHead>
-                  <TableHead class="th-cyber hidden lg:table-cell">Mount</TableHead>
-                  <TableHead class="th-cyber">Status</TableHead>
-                  <TableHead class="th-cyber hidden md:table-cell">Duration</TableHead>
-                  <TableHead class="th-cyber hidden lg:table-cell">Last Heartbeat</TableHead>
-                </TableRow>
+                {@render sessionsHeaderRow()}
               </TableHeader>
               <TableBody>
                 {#each volSessions as session}

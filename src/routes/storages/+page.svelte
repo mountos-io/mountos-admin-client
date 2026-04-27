@@ -13,8 +13,8 @@
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import PageHeader from '$lib/components/shared/PageHeader.svelte'
   import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
@@ -96,7 +96,7 @@
     <FilterPanel class="max-w-full">
       <div class="relative">
         <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
-        <Input class="pl-8 w-[200px] text-base" placeholder="Search by name..." value={search} oninput={onSearchInput} aria-label="Search storages" />
+        <Input class="pl-8 w-full sm:w-[200px] text-base" placeholder="Search by name..." value={search} oninput={onSearchInput} aria-label="Search storages" />
       </div>
       <FilterSelect options={regionOptions} bind:value={regionFilter} placeholder="All Regions" label="Filter by region" />
       <FilterSelect options={typeOptions} bind:value={typeFilter} placeholder="All Types" label="Filter by type" />
@@ -104,24 +104,39 @@
     </FilterPanel>
   {/if}
 
+  {#snippet headerRow()}
+    <TableRow>
+      <TableHead class="th-cyber">Name</TableHead>
+      <TableHead class="th-cyber hidden sm:table-cell">Region</TableHead>
+      <TableHead class="th-cyber hidden md:table-cell">Type</TableHead>
+      <TableHead class="th-cyber hidden md:table-cell">Provider</TableHead>
+      <TableHead class="th-cyber">Status</TableHead>
+      <TableHead class="th-cyber w-12"></TableHead>
+    </TableRow>
+  {/snippet}
+
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account to view its storages." />
   {:else if storageStore.loading}
-    <LoadingSpinner />
+    <TableSkeleton
+      header={headerRow}
+      caption="Loading storages"
+      cells={[
+        { width: 'w-32' },
+        { width: 'w-24', class: 'hidden sm:table-cell' },
+        { width: 'w-16', height: 'h-5', class: 'hidden md:table-cell' },
+        { width: 'w-20', height: 'h-5', class: 'hidden md:table-cell' },
+        { width: 'w-16', height: 'h-5' },
+        { width: 'w-6' },
+      ]}
+    />
   {:else if storageStore.storages.length === 0}
     <EmptyState title="No storages" description={hasFilter ? 'No storages match the current filters.' : undefined} action={!hasFilter && auth.can('storages', 'create') ? { label: 'Create Storage', href: '/storages/create' } : undefined} />
   {:else}
     <Table>
       <caption class="sr-only">Storages</caption>
       <TableHeader>
-        <TableRow>
-          <TableHead class="th-cyber">Name</TableHead>
-          <TableHead class="th-cyber">Region</TableHead>
-          <TableHead class="th-cyber">Type</TableHead>
-          <TableHead class="th-cyber">Provider</TableHead>
-          <TableHead class="th-cyber">Status</TableHead>
-          <TableHead class="th-cyber w-12"></TableHead>
-        </TableRow>
+        {@render headerRow()}
       </TableHeader>
       <TableBody>
         {#each storageStore.storages as storage}
@@ -134,9 +149,9 @@
             aria-label="Storage {storage.name}"
           >
             <TableCell class="font-medium max-w-[200px] truncate" title={storage.name}>{storage.name}</TableCell>
-            <TableCell class="text-sm text-muted-foreground">{storage.regionInfo.name}</TableCell>
-            <TableCell><Badge variant="outline">{storage.storageType}</Badge></TableCell>
-            <TableCell><Badge variant="secondary">{storage.providerType}</Badge></TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden sm:table-cell">{storage.regionInfo.name}</TableCell>
+            <TableCell class="hidden md:table-cell"><Badge variant="outline">{storage.storageType}</Badge></TableCell>
+            <TableCell class="hidden md:table-cell"><Badge variant="secondary">{storage.providerType}</Badge></TableCell>
             <TableCell><StatusBadge active={storage.isActive} /></TableCell>
             <TableCell>
               {#if auth.can('volumes', 'create')}

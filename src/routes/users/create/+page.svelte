@@ -68,14 +68,14 @@
         <form onsubmit={handleSubmit} class="space-y-4">
           <div class="space-y-2">
             <Label for="username">Username</Label>
-            <Input id="username" bind:value={username} placeholder="Username" maxlength={16} required autocomplete="username" aria-invalid={!!usernameError || undefined} aria-describedby={usernameError ? 'username-error' : undefined} />
+            <Input id="username" bind:value={username} placeholder="Username" maxlength={16} required aria-required="true" autocomplete="username" aria-invalid={!!usernameError || undefined} aria-describedby={usernameError ? 'username-error' : undefined} />
             {#if usernameError}
               <p id="username-error" class="text-destructive text-sm" role="alert">{usernameError}</p>
             {/if}
           </div>
           <div class="space-y-2">
             <Label for="email">Email</Label>
-            <Input id="email" type="email" bind:value={email} placeholder="user@example.com" required autocomplete="email" />
+            <Input id="email" type="email" bind:value={email} placeholder="user@example.com" required aria-required="true" autocomplete="email" />
           </div>
           <div class="space-y-2">
             <Label for="name">Display Name</Label>

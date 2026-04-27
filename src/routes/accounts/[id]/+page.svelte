@@ -11,7 +11,7 @@
   import { Badge } from '$lib/components/ui/badge'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
@@ -139,7 +139,7 @@
   </div>
 
   {#if loading}
-    <LoadingSpinner />
+    <DetailSkeleton gridCols={2} cards={[{ rows: 3, cols: 1 }, { rows: 3, cols: 1 }]} />
   {:else if account}
     <div class="grid gap-6 md:grid-cols-2">
       <Card cornerBrackets>
@@ -162,7 +162,7 @@
             <CardContent class="space-y-5">
               <div class="space-y-2">
                 <Label for="edit-name">Name</Label>
-                <Input id="edit-name" bind:value={editName} placeholder="Account name" required autocomplete="organization" />
+                <Input id="edit-name" bind:value={editName} placeholder="Account name" required aria-required="true" autocomplete="organization" />
               </div>
               <div class="space-y-2">
                 <Label for="edit-description">Description</Label>

@@ -132,13 +132,12 @@
         role="tabpanel"
         id="settings-panel-{modal.tab}"
         aria-labelledby="settings-tab-{modal.tab}"
-        tabindex="0"
-        class="flex-1 min-w-0 min-h-0 p-4 sm:p-6 overflow-y-auto focus:outline-none"
+        class="flex-1 min-w-0 min-h-0 p-4 sm:p-6 overflow-y-auto"
       >
         {#if modal.tab === 'appearance'}
           <div class="space-y-6">
             <div class="space-y-4">
-              <h4 class="text-sm font-medium">Theme</h4>
+              <h3 class="text-sm font-medium">Theme</h3>
               <div class="flex gap-2">
                 {#each themes as t}
                   {@const Icon = t.icon}
@@ -157,7 +156,7 @@
             {#if prefs.theme === 'light'}
               {@const skins = presetsForMode('light')}
               <div class="space-y-4">
-                <h4 class="text-sm font-medium">Skin</h4>
+                <h3 class="text-sm font-medium">Skin</h3>
                 <div class="flex flex-wrap gap-2">
                   {#each skins as preset}
                     {@const active = preset.name === 'mountOS Light' ? !prefs.skin || prefs.skin === 'mountOS Light' : prefs.skin === preset.name}
@@ -178,7 +177,7 @@
             {:else if prefs.theme === 'dark'}
               {@const skins = presetsForMode('dark')}
               <div class="space-y-4">
-                <h4 class="text-sm font-medium">Skin</h4>
+                <h3 class="text-sm font-medium">Skin</h3>
                 <div class="flex flex-wrap gap-2">
                   {#each skins as preset}
                     {@const active = preset.name === 'mountOS Dark' ? !prefs.skin || prefs.skin === 'mountOS Dark' : prefs.skin === preset.name}
@@ -198,7 +197,7 @@
               </div>
             {/if}
             <div class="space-y-3">
-              <h4 class="text-sm font-medium">Font Size</h4>
+              <h3 class="text-sm font-medium">Font Size</h3>
               <div class="flex flex-wrap gap-2">
                 {#each fontSizes as fs}
                   <Button
@@ -212,7 +211,7 @@
               </div>
             </div>
             <div class="space-y-3">
-              <h4 class="text-sm font-medium">Grayscale</h4>
+              <h3 class="text-sm font-medium">Grayscale</h3>
               <div class="flex items-center gap-3">
                 <Button
                   variant={prefs.grayscale ? 'primary' : 'outline'}
@@ -228,7 +227,7 @@
             </div>
             <div class="space-y-3">
               <div class="flex items-center justify-between">
-                <h4 class="text-sm font-medium">Brightness</h4>
+                <h3 class="text-sm font-medium">Brightness</h3>
                 <span class="text-sm tabular-nums text-muted-foreground">{prefs.brightness}%</span>
               </div>
               <div class="flex items-center gap-3">
@@ -253,7 +252,7 @@
         {:else if modal.tab === 'preferences'}
           <div class="space-y-6">
             <div class="space-y-3">
-              <h4 class="text-sm font-medium">Default Page Size</h4>
+              <h3 class="text-sm font-medium">Default Page Size</h3>
               <div class="flex gap-2">
                 {#each pageSizes as ps}
                   <Button
@@ -267,7 +266,7 @@
               </div>
             </div>
             <div class="space-y-3">
-              <h4 class="text-sm font-medium">Default Account</h4>
+              <h3 class="text-sm font-medium">Default Account</h3>
               {#if accountStore.accounts.length > 0}
                 <div class="flex flex-wrap gap-2">
                   <Button
@@ -293,7 +292,7 @@
             </div>
             {#if !auth.isUserRole}
               <div class="space-y-3">
-                <h4 class="text-sm font-medium">Notifications</h4>
+                <h3 class="text-sm font-medium">Notifications</h3>
                 <div class="flex items-center gap-3">
                   <Button
                     variant={prefs.alertSound ? 'primary' : 'outline'}
@@ -327,7 +326,7 @@
             {@const lic = licenseStore.license}
             <div class="space-y-5">
               <div class="flex items-center justify-between" aria-live="polite" aria-atomic="true">
-                <h4 class="text-sm font-medium">License</h4>
+                <h3 class="text-sm font-medium">License</h3>
                 <Badge variant={licenseStore.badgeVariant ?? 'default'}>{licenseStore.statusLabel(lic.status)}</Badge>
               </div>
               <dl class="grid gap-3 text-sm">

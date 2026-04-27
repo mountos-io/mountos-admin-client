@@ -9,7 +9,7 @@
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { api } from '$lib/core/stores/client.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
   import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, betaVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
@@ -133,7 +133,7 @@
   </div>
 
   {#if loading && !session}
-    <div class="flex justify-center py-12" role="status" aria-label="Loading session"><LoadingSpinner /></div>
+    <DetailSkeleton cards={[{ rows: 4, cols: 2 }]} />
   {:else if error && !session}
     <Card><CardContent class="py-8"><p class="text-center text-destructive" role="alert">{error}</p></CardContent></Card>
   {:else if session}

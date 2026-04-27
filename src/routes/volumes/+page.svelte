@@ -10,8 +10,8 @@
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { formatBytes, formatQuota } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { HUB_REGION_NAME } from '$lib/core/constants'
@@ -117,34 +117,50 @@
         onchange={onStorageChange}
       />
     </FilterPanel>
+    {#snippet headerRow()}
+      <TableRow>
+        <TableHead class="th-cyber">Name</TableHead>
+        <TableHead class="th-cyber hidden lg:table-cell">Region</TableHead>
+        <TableHead class="th-cyber hidden lg:table-cell">Storage</TableHead>
+        <TableHead class="th-cyber w-10"><span class="sr-only">Lock</span></TableHead>
+        <TableHead class="th-cyber w-10"><span class="sr-only">Encryption</span></TableHead>
+        <TableHead class="th-cyber hidden md:table-cell">
+          <span class="inline-flex items-center gap-1">
+            Live
+            <InfoTip text="Sum of all live files for this volume" />
+          </span>
+        </TableHead>
+        <TableHead class="th-cyber hidden md:table-cell">
+          <span class="inline-flex items-center gap-1">
+            Quota
+            <InfoTip text="Total volume usage vs allocated quota limit" />
+          </span>
+        </TableHead>
+        <TableHead class="th-cyber">Status</TableHead>
+      </TableRow>
+    {/snippet}
     {#if volumeStore.loading}
-      <LoadingSpinner />
+      <TableSkeleton
+        header={headerRow}
+        caption="Loading volumes"
+        cells={[
+          { width: 'w-32' },
+          { width: 'w-20', class: 'hidden lg:table-cell' },
+          { width: 'w-24', class: 'hidden lg:table-cell' },
+          { width: 'w-4' },
+          { width: 'w-4' },
+          { width: 'w-16', class: 'hidden md:table-cell' },
+          { width: 'w-24', class: 'hidden md:table-cell' },
+          { width: 'w-16', height: 'h-5' },
+        ]}
+      />
     {:else if volumeStore.volumes.length === 0}
       <EmptyState title="No volumes" action={canCreate ? { label: 'Create Volume', href: '/volumes/create' } : undefined} />
     {:else}
       <Table>
         <caption class="sr-only">Volumes</caption>
         <TableHeader>
-          <TableRow>
-            <TableHead class="th-cyber">Name</TableHead>
-            <TableHead class="th-cyber hidden lg:table-cell">Region</TableHead>
-            <TableHead class="th-cyber hidden lg:table-cell">Storage</TableHead>
-            <TableHead class="th-cyber w-10"><span class="sr-only">Lock</span></TableHead>
-            <TableHead class="th-cyber w-10"><span class="sr-only">Encryption</span></TableHead>
-            <TableHead class="th-cyber hidden md:table-cell">
-              <span class="inline-flex items-center gap-1">
-                Live
-                <InfoTip text="Sum of all live files for this volume" />
-              </span>
-            </TableHead>
-            <TableHead class="th-cyber hidden md:table-cell">
-              <span class="inline-flex items-center gap-1">
-                Quota
-                <InfoTip text="Total volume usage vs allocated quota limit" />
-              </span>
-            </TableHead>
-            <TableHead class="th-cyber">Status</TableHead>
-          </TableRow>
+          {@render headerRow()}
         </TableHeader>
         <TableBody>
           {#each volumeStore.volumes as volume}

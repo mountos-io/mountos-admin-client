@@ -12,7 +12,8 @@
   import { features } from '$lib/config/features'
   import AccountIcon from '$lib/components/shared/AccountIcon.svelte'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import { Skeleton } from '$lib/components/ui/skeleton'
+  import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import QuotaBar from '$lib/components/shared/QuotaBar.svelte'
   import UsersIcon from '@lucide/svelte/icons/users'
@@ -106,8 +107,19 @@
     </div>
 
     {#if dashboard.loading && !stats}
-      <div class="flex justify-center py-12" aria-busy="true">
-        <LoadingSpinner />
+      <div class="corner-brackets relative border border-border/30 rounded-sm" role="status" aria-busy="true" aria-label="Loading dashboard">
+        <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+        <div class="relative flex flex-wrap">
+          {#each { length: 6 } as _, i (i)}
+            <div class="flex-1 min-w-[120px] sm:min-w-[140px] flex items-center gap-3 px-4 py-3">
+              <Skeleton class="h-8 w-8 rounded-sm" />
+              <div class="flex-1 space-y-2">
+                <Skeleton class="h-3 w-16" />
+                <Skeleton class="h-5 w-12" />
+              </div>
+            </div>
+          {/each}
+        </div>
       </div>
     {:else if dashboard.error}
       <Card cornerPlus>
@@ -280,9 +292,7 @@
           <CardContent>
             <div class="audit-content-scroll">
               {#if auditStore.loading && auditStore.logs.length === 0}
-                <div class="flex items-center justify-center py-16">
-                  <LoadingSpinner />
-                </div>
+                <ListSkeleton rows={5} class="py-2" />
               {:else if auditStore.logs.length === 0}
                 <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No recent activity</div>
               {:else}

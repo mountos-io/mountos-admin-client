@@ -12,8 +12,9 @@
   import { Button } from '$lib/components/ui/button'
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { Skeleton } from '$lib/components/ui/skeleton'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
@@ -372,13 +373,22 @@
 
     <!-- Topology -->
     {#if nodeStore.loading}
-      <LoadingSpinner />
+      <div class="flex flex-wrap gap-5" role="status" aria-busy="true" aria-label="Loading topology">
+        {#each { length: 3 } as _, i (i)}
+          <div class="flex flex-col gap-3 w-full md:w-72 border border-border/50 rounded-sm p-3">
+            <Skeleton class="h-4 w-24" />
+            {#each { length: 3 } as _, j (j)}
+              <Skeleton class="h-12 w-full" />
+            {/each}
+          </div>
+        {/each}
+      </div>
     {:else if nodeStore.nodes.length === 0}
       <EmptyState title="No nodes" description="No nodes registered in this region." />
     {:else if topoView === 'list'}
       <RegionNodeList {tierData} {basePath} {regionId} />
     {:else}
-      <div class="topo-grid scanlines relative flex flex-wrap gap-5">
+      <div class="topo-grid scanlines relative flex flex-wrap gap-5" style="contain: layout;">
         {#each tierData as tier}
           {@const tierColor = TIER_COLORS[tier.id]}
           <div class="monitor-frame flex flex-col items-center w-full md:w-auto">
@@ -520,9 +530,7 @@
             <CardContent aria-live="polite">
               <div class="audit-content-scroll">
                 {#if regionAudit.loading && regionAudit.logs.length === 0}
-                  <div class="flex items-center justify-center py-16" aria-busy="true">
-                    <LoadingSpinner />
-                  </div>
+                  <ListSkeleton rows={5} class="py-2" />
                 {:else if regionAudit.error}
                   <div class="flex items-center justify-center gap-2 py-16 text-sm text-destructive">
                     <span>Failed to load audit logs</span>
@@ -635,35 +643,33 @@
         </div>
       </FilterPanel>
 
+      {#snippet alertsHeaderRow()}
+        <TableRow>
+          <TableHead class="w-28">Severity</TableHead>
+          <TableHead class="w-24">Category</TableHead>
+          <TableHead>Title</TableHead>
+          <TableHead class="hidden lg:table-cell">Source</TableHead>
+          <TableHead class="hidden xl:table-cell">Node</TableHead>
+          <TableHead class="w-32">Time</TableHead>
+          <TableHead class="w-20">Actions</TableHead>
+        </TableRow>
+      {/snippet}
+
       {#if alertStore.loading && alertStore.alerts.length === 0}
         <Card cornerPlus class="px-4">
-          <Table>
-            <caption class="sr-only">Loading region alerts</caption>
-            <TableHeader>
-              <TableRow>
-                <TableHead class="w-28">Severity</TableHead>
-                <TableHead class="w-24">Category</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead class="hidden lg:table-cell">Source</TableHead>
-                <TableHead class="hidden xl:table-cell">Node</TableHead>
-                <TableHead class="w-32">Time</TableHead>
-                <TableHead class="w-20">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each { length: 5 } as _}
-                <TableRow>
-                  <TableCell><Skeleton class="h-5 w-16" /></TableCell>
-                  <TableCell><Skeleton class="h-4 w-14" /></TableCell>
-                  <TableCell><Skeleton class="h-4 w-48" /></TableCell>
-                  <TableCell class="hidden lg:table-cell"><Skeleton class="h-4 w-20" /></TableCell>
-                  <TableCell class="hidden xl:table-cell"><Skeleton class="h-4 w-24" /></TableCell>
-                  <TableCell><Skeleton class="h-4 w-20" /></TableCell>
-                  <TableCell><Skeleton class="h-5 w-16" /></TableCell>
-                </TableRow>
-              {/each}
-            </TableBody>
-          </Table>
+          <TableSkeleton
+            header={alertsHeaderRow}
+            caption="Loading region alerts"
+            cells={[
+              { width: 'w-16', height: 'h-5' },
+              { width: 'w-14' },
+              { width: 'w-48' },
+              { width: 'w-20', class: 'hidden lg:table-cell' },
+              { width: 'w-24', class: 'hidden xl:table-cell' },
+              { width: 'w-20' },
+              { width: 'w-16', height: 'h-5' },
+            ]}
+          />
         </Card>
       {:else if alertStore.error}
         <Card cornerPlus>
@@ -681,15 +687,7 @@
           <Table>
             <caption class="sr-only">Region alerts</caption>
             <TableHeader>
-              <TableRow>
-                <TableHead class="w-28">Severity</TableHead>
-                <TableHead class="w-24">Category</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead class="hidden lg:table-cell">Source</TableHead>
-                <TableHead class="hidden xl:table-cell">Node</TableHead>
-                <TableHead class="w-32">Time</TableHead>
-                <TableHead class="w-20">Actions</TableHead>
-              </TableRow>
+              {@render alertsHeaderRow()}
             </TableHeader>
             <TableBody>
               {#each alertStore.alerts as alert (alert.alertId)}
@@ -762,7 +760,7 @@
 {#if hoveredNode}
   <div
     role="tooltip"
-    class="tooltip-card fixed z-50 pointer-events-none rounded-sm border bg-card shadow-lg"
+    class="tooltip-card fixed z-50 pointer-events-none rounded-sm border bg-card"
     style:left="{hoveredNode.x + 16}px"
     style:top="{hoveredNode.y - 12}px"
   >

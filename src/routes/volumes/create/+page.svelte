@@ -14,7 +14,7 @@
   import { Separator } from '$lib/components/ui/separator'
   import Combobox from '$lib/components/shared/Combobox.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import { HUB_REGION_NAME } from '$lib/core/constants'
   import { gbToBytes } from '$lib/core/utils/format'
@@ -111,7 +111,7 @@
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before creating a volume." />
   {:else if !storagesLoaded}
-    <LoadingSpinner />
+    <FormSkeleton fields={7} />
   {:else if createResult}
     <Card cornerBrackets>
       <CardHeader>
@@ -145,7 +145,7 @@
         <form onsubmit={handleSubmit} class="space-y-4">
           <div class="space-y-2">
             <Label for="name">Name</Label>
-            <Input id="name" bind:value={name} placeholder="Volume name" required autocomplete="off" />
+            <Input id="name" bind:value={name} placeholder="Volume name" required aria-required="true" autocomplete="off" />
           </div>
           <div class="space-y-2">
             <Label for="description">Description</Label>

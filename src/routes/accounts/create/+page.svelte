@@ -72,7 +72,7 @@
             <CardTitle>Create Account</CardTitle>
             <CardDescription>Set up a new account with its profile.</CardDescription>
           </div>
-          <div class="size-14 rounded-lg border border-border bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
+          <div class="size-14 rounded-sm border border-border bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
             {#if previewUrl && !iconError}
               <img
                 src={previewUrl}
@@ -91,7 +91,7 @@
       <CardContent class="space-y-4">
         <div class="space-y-2">
           <Label for="name">Name</Label>
-          <Input id="name" bind:value={name} placeholder="Account name" required autocomplete="organization" />
+          <Input id="name" bind:value={name} placeholder="Account name" required aria-required="true" autocomplete="organization" />
         </div>
         <div class="space-y-2">
           <Label for="description">Description</Label>

@@ -14,7 +14,7 @@
   import { Separator } from '$lib/components/ui/separator'
   import Combobox from '$lib/components/shared/Combobox.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import {
@@ -205,7 +205,7 @@
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before creating a storage." />
   {:else if !regionsLoaded}
-    <LoadingSpinner />
+    <FormSkeleton fields={4} />
   {:else}
     <Card cornerBrackets>
       <CardHeader>
@@ -216,7 +216,7 @@
         <form onsubmit={handleSubmit} class="space-y-4">
           <div class="space-y-2">
             <Label for="name">Name</Label>
-            <Input id="name" bind:value={name} placeholder="Storage name" required autocomplete="off" />
+            <Input id="name" bind:value={name} placeholder="Storage name" required aria-required="true" autocomplete="off" />
           </div>
           <div class="space-y-2">
             <Label for="description">Description</Label>
@@ -285,7 +285,7 @@
                 <div class="space-y-2">
                   <Label for="endpoint">Endpoint</Label>
                   {#if isCustomEndpoint(providerType)}
-                    <Input id="endpoint" bind:value={endpoint} placeholder="https://your-s3-endpoint.com" required />
+                    <Input id="endpoint" bind:value={endpoint} placeholder="https://your-s3-endpoint.com" required aria-required="true" />
                   {:else}
                     <Input id="endpoint" value={endpoint} readonly class="font-mono text-sm text-muted-foreground" />
                   {/if}

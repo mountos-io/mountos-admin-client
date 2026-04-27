@@ -13,7 +13,7 @@
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
@@ -70,10 +70,17 @@
   const credsBothFilled = $derived(!credsChanged || (!!editAccessKey.trim() && !!editSecretKey.trim()))
   const canSave = $derived(editName.trim() && !editSubmitting && credsBothFilled && (!credsChanged || credTestPassed))
 
+  let fetchCtrl: AbortController | undefined
   $effect(() => {
     if (Number.isNaN(id)) { loading = false; return }
+    fetchCtrl?.abort()
+    fetchCtrl = new AbortController()
+    const ctrl = fetchCtrl
     loading = true
-    store.getStorage(id).then(s => { storage = s }).catch(() => { storage = null }).finally(() => { loading = false })
+    store.getStorage(id)
+      .then(s => { if (!ctrl.signal.aborted) storage = s })
+      .catch(() => { if (!ctrl.signal.aborted) storage = null })
+      .finally(() => { if (!ctrl.signal.aborted) loading = false })
   })
 
   async function reload() {
@@ -124,7 +131,7 @@
     {#if storage}<Badge variant="outline" style="border-color: var(--pastel-storage); color: var(--pastel-storage-text)">Storage</Badge>{/if}
   </div>
   {#if loading}
-    <LoadingSpinner />
+    <DetailSkeleton cards={[{ rows: 3, cols: 2 }]} />
   {:else if storage}
     <Card cornerBrackets>
       {#if editing}
@@ -133,7 +140,7 @@
           <CardContent class="space-y-5">
             <div class="space-y-2">
               <Label for="edit-name">Name</Label>
-              <Input id="edit-name" bind:value={editName} placeholder="Storage name" required />
+              <Input id="edit-name" bind:value={editName} placeholder="Storage name" required aria-required="true" />
             </div>
 
             <Separator />

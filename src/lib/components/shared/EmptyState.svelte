@@ -11,7 +11,7 @@
     <h2 id="empty-heading" class="font-mono text-sm tracking-widest text-muted-foreground/60 font-medium">[ {title.toLowerCase()} ]</h2>
   </div>
   {#if description}
-    <p class="mt-3 text-sm text-muted-foreground/70 max-w-xs">{description}</p>
+    <p class="mt-3 text-base text-muted-foreground/80 max-w-xs">{description}</p>
   {/if}
   {#if action}
     <a
@@ -36,13 +36,13 @@
   .empty-bracket::before {
     top: 0;
     left: 0;
-    border-top: 1.5px solid;
-    border-left: 1.5px solid;
+    border-top: 1px solid;
+    border-left: 1px solid;
   }
   .empty-bracket::after {
     bottom: 0;
     right: 0;
-    border-bottom: 1.5px solid;
-    border-right: 1.5px solid;
+    border-bottom: 1px solid;
+    border-right: 1px solid;
   }
 </style>

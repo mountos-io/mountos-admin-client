@@ -15,8 +15,8 @@
   import { Button } from "$lib/components/ui/button";
   import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
   import Pagination from "$lib/components/shared/Pagination.svelte";
-  import LoadingSpinner from "$lib/components/shared/LoadingSpinner.svelte";
   import EmptyState from "$lib/components/shared/EmptyState.svelte";
+  import TableSkeleton from "$lib/components/shared/TableSkeleton.svelte";
   import ConfirmDialog from "$lib/components/shared/ConfirmDialog.svelte";
   import { formatDate, formatBytes } from "$lib/core/utils/format";
   import { showErrorToast, showSuccessToast } from "$lib/core/utils/toast";
@@ -82,39 +82,56 @@
     <Input bind:value={nameFilter} placeholder="Filter by name..." aria-label="Filter by name" class="max-w-sm" />
   </FilterPanel>
 
+  {#snippet headerRow()}
+    <TableRow>
+      <TableHead class="th-cyber">Name</TableHead>
+      <TableHead class="th-cyber">Base DNS</TableHead>
+      <TableHead class="th-cyber hidden lg:table-cell">
+        <span class="inline-flex items-center gap-1">
+          Export ID
+          <InfoTip text="Set as env on service instances to group them under one regional umbrella" />
+        </span>
+      </TableHead>
+      <TableHead class="th-cyber hidden md:table-cell">
+        <span class="inline-flex items-center gap-1">
+          Live
+          <InfoTip text="Sum of all live files across volumes in this region" />
+        </span>
+      </TableHead>
+      <TableHead class="th-cyber hidden md:table-cell">
+        <span class="inline-flex items-center gap-1">
+          Total
+          <InfoTip text="Total storage space used across volumes in this region" />
+        </span>
+      </TableHead>
+      <TableHead class="th-cyber">Status</TableHead>
+      <TableHead class="th-cyber">Created</TableHead>
+      <TableHead class="w-24"></TableHead>
+    </TableRow>
+  {/snippet}
+
   {#if store.loading}
-    <LoadingSpinner />
+    <TableSkeleton
+      header={headerRow}
+      caption="Loading regions"
+      cells={[
+        { width: 'w-32' },
+        { width: 'w-40' },
+        { width: 'w-24', class: 'hidden lg:table-cell' },
+        { width: 'w-16', class: 'hidden md:table-cell' },
+        { width: 'w-16', class: 'hidden md:table-cell' },
+        { width: 'w-16', height: 'h-5' },
+        { width: 'w-20' },
+        { width: 'w-12' },
+      ]}
+    />
   {:else if filteredRegions.length === 0}
     <EmptyState title="No regions" description={nameFilter ? 'No regions match the current filter.' : undefined} action={!nameFilter && auth.can('regions', 'create') ? { label: 'Create Region', href: '/regions/create' } : undefined} />
   {:else}
     <Table>
       <caption class="sr-only">Regions</caption>
       <TableHeader>
-        <TableRow>
-          <TableHead class="th-cyber">Name</TableHead>
-          <TableHead class="th-cyber">Base DNS</TableHead>
-          <TableHead class="th-cyber hidden lg:table-cell">
-            <span class="inline-flex items-center gap-1">
-              Export ID
-              <InfoTip text="Set as env on service instances to group them under one regional umbrella" />
-            </span>
-          </TableHead>
-          <TableHead class="th-cyber hidden md:table-cell">
-            <span class="inline-flex items-center gap-1">
-              Live
-              <InfoTip text="Sum of all live files across volumes in this region" />
-            </span>
-          </TableHead>
-          <TableHead class="th-cyber hidden md:table-cell">
-            <span class="inline-flex items-center gap-1">
-              Total
-              <InfoTip text="Total storage space used across volumes in this region" />
-            </span>
-          </TableHead>
-          <TableHead class="th-cyber">Status</TableHead>
-          <TableHead class="th-cyber">Created</TableHead>
-          <TableHead class="w-24"></TableHead>
-        </TableRow>
+        {@render headerRow()}
       </TableHeader>
       <TableBody>
         {#each filteredRegions as region}

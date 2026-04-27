@@ -9,7 +9,7 @@
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { TokenAuthAdapter } from '$lib/core/auth/token'
   import Shell from '$lib/components/layout/Shell.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import { Skeleton } from '$lib/components/ui/skeleton'
   import { Toaster } from '$lib/components/ui/sonner'
 
   const auth = useAuth()
@@ -130,8 +130,12 @@
 {:else if $page.url.pathname === '/login'}
   {#if children}{@render children()}{/if}
 {:else if auth.loading}
-  <div class="flex h-screen items-center justify-center">
-    <LoadingSpinner />
+  <div class="flex h-screen items-center justify-center" role="status" aria-busy="true" aria-label="Authenticating">
+    <div class="w-full max-w-sm space-y-3 px-6">
+      <Skeleton class="h-8 w-2/3 mx-auto" />
+      <Skeleton class="h-4 w-full" />
+      <Skeleton class="h-4 w-5/6" />
+    </div>
   </div>
 {:else if !auth.authenticated}
   <div class="flex h-screen items-center justify-center">

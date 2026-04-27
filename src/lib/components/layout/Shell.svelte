@@ -93,7 +93,7 @@
   {#if mobileOpen}
     <div class="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Navigation menu" tabindex={-1}
       onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') { mobileOpen = false; sidebarToggleRef?.focus() } }}>
-      <button type="button" class="absolute inset-0 bg-foreground/50" aria-label="Close navigation menu" onclick={() => { mobileOpen = false; sidebarToggleRef?.focus() }}></button>
+      <button type="button" class="absolute inset-0 bg-foreground/50 dark:bg-foreground/30" aria-label="Close navigation menu" onclick={() => { mobileOpen = false; sidebarToggleRef?.focus() }}></button>
       <div class="relative z-10 h-full w-60" onfocusout={(e: FocusEvent) => {
         const related = e.relatedTarget as Node | null
         const container = e.currentTarget as HTMLElement

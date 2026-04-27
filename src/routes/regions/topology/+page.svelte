@@ -447,7 +447,9 @@
           {@const dim = activeFilter !== null && node.raftGroup !== activeFilter}
           {@const r = node.isRaftLeader ? 14 : 10}
           {@const rstyle = node.raftGroup ? RAFT_STYLES[node.raftGroup] : null}
-          <g class="topo-node" role="button" tabindex="0"
+          <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+          <g class="topo-node" role={node.raftGroup ? 'button' : undefined}
+            tabindex={node.raftGroup ? 0 : undefined}
             aria-label="Node {node.nodeId}, {node.serviceType}, status: {node.status}{node.isRaftLeader ? ', RAFT leader' : ''}"
             style="opacity: {dim ? 0.1 : 1}; transition: opacity 0.3s ease;"
             onpointerenter={(e: PointerEvent) => { enterNode(node); svgTip = { node, x: e.clientX, y: e.clientY } }}
@@ -555,7 +557,7 @@
 <!-- SVG Tooltip -->
 {#if svgTip}
   <div
-    class="fixed z-50 pointer-events-none rounded-sm border bg-card px-3 py-2 shadow-lg"
+    class="fixed z-50 pointer-events-none rounded-sm border bg-card px-3 py-2"
     style:left="{svgTip.x + 16}px"
     style:top="{svgTip.y - 12}px"
   >

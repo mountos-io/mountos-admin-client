@@ -8,8 +8,8 @@
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Input } from '$lib/components/ui/input'
   import Pagination from '$lib/components/shared/Pagination.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import PageHeader from '$lib/components/shared/PageHeader.svelte'
@@ -63,22 +63,35 @@
     </FilterPanel>
   {/if}
 
+  {#snippet headerRow()}
+    <TableRow>
+      <TableHead class="th-cyber">Username</TableHead>
+      <TableHead class="th-cyber">Name</TableHead>
+      <TableHead class="th-cyber">Email</TableHead>
+      <TableHead class="th-cyber">Status</TableHead>
+    </TableRow>
+  {/snippet}
+
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account to view its users." />
   {:else if userStore.loading}
-    <LoadingSpinner />
+    <TableSkeleton
+      header={headerRow}
+      caption="Loading users"
+      cells={[
+        { width: 'w-28' },
+        { width: 'w-32' },
+        { width: 'w-48' },
+        { width: 'w-16', height: 'h-5' },
+      ]}
+    />
   {:else if userStore.users.length === 0}
     <EmptyState title="No users" description={activeSearch ? 'No users match your search.' : 'No users found for this account.'} action={!activeSearch && auth.can('users', 'create') ? { label: 'Add User', href: '/users/create' } : undefined} />
   {:else}
     <Table>
       <caption class="sr-only">Users</caption>
       <TableHeader>
-        <TableRow>
-          <TableHead class="th-cyber">Username</TableHead>
-          <TableHead class="th-cyber">Name</TableHead>
-          <TableHead class="th-cyber">Email</TableHead>
-          <TableHead class="th-cyber">Status</TableHead>
-        </TableRow>
+        {@render headerRow()}
       </TableHeader>
       <TableBody>
         {#each userStore.users as user}

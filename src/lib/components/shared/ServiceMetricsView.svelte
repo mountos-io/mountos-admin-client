@@ -137,7 +137,14 @@
     return String(sec.scalars.find(x => x.name === key)?.value ?? '')
   }
 
-  const sections = $derived(parseMetrics(raw));
+  let lastParsedRaw = '';
+  let lastParsedSections: MetricSection[] = [];
+  const sections = $derived.by(() => {
+    if (raw === lastParsedRaw) return lastParsedSections;
+    lastParsedRaw = raw;
+    lastParsedSections = parseMetrics(raw);
+    return lastParsedSections;
+  });
 
   const uptime = $derived(sv(sections, "Overview", "uptime_seconds"));
   const pid = $derived(sv(sections, "Overview", "pid"));
@@ -270,7 +277,7 @@
       <Card cornerBrackets={false}>
         <CardHeader>
           <div class="flex items-center justify-between">
-            <CardTitle class="text-base font-mono">Process</CardTitle>
+            <CardTitle class="text-base">Process</CardTitle>
             <div class="flex items-center gap-2">
               {#if hasArena}
                 <Badge variant="outline" class="font-mono">{formatBytes(totalProcess)} total</Badge>
@@ -514,7 +521,7 @@
     <CardHeader>
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2">
-          <CardTitle class="text-base font-mono">{section.name}</CardTitle>
+          <CardTitle class="text-base">{section.name}</CardTitle>
           <Badge
             variant="secondary"
             class="font-mono tabular-nums text-[0.7rem]"
@@ -558,7 +565,7 @@
     <CardHeader>
       <div class="flex items-center justify-between flex-wrap gap-2">
         <div class="flex items-center gap-2">
-          <CardTitle class="text-base font-mono">{section.name}</CardTitle>
+          <CardTitle class="text-base">{section.name}</CardTitle>
           <Badge variant="secondary" class="font-mono tabular-nums text-[0.7rem]">{section.groups.length} queries</Badge>
           <Badge variant="outline" class="font-mono tabular-nums text-[0.7rem]">{totalHits} hits</Badge>
           {#if totalDuration > 0}
@@ -592,7 +599,7 @@
 {#snippet scalarCard(sec: MetricSection)}
   <Card cornerBrackets={false}>
     <CardHeader>
-      <CardTitle class="text-base font-mono">{sec.name}</CardTitle>
+      <CardTitle class="text-base">{sec.name}</CardTitle>
     </CardHeader>
     <CardContent class="pt-0">
       <div class="grid grid-cols-1 gap-y-1.5 text-sm font-mono">
@@ -623,7 +630,7 @@
   <Card cornerBrackets={false}>
     <CardHeader>
       <div class="flex items-center justify-between">
-        <CardTitle class="text-base font-mono">System</CardTitle>
+        <CardTitle class="text-base">System</CardTitle>
         <span class="font-mono text-xs text-muted-foreground">{osName}/{arch} &middot; {kernel} &middot; {cores} cores</span>
       </div>
     </CardHeader>
