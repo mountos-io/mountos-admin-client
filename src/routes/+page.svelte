@@ -271,19 +271,19 @@
                 <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
                 <div class="relative flex items-center gap-1.5">
                   <Button variant={activityDays === 'auto' ? 'primary' : 'ghost'} size="sm"
-                    class="h-7 w-12 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                    class="h-7 w-12 min-h-[44px] sm:min-h-0 text-xs justify-center"
                     onclick={() => activityDays = 'auto'}>Auto</Button>
                   {#each activityDayOptions as d}
                     <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
-                      class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                      class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs justify-center"
                       onclick={() => activityDays = d}>{d}d</Button>
                   {/each}
-                  <span class="filter-divider"></span>
+                  <span class="filter-divider" aria-hidden="true"></span>
                   <Button variant={activityView === 'feed' ? 'primary' : 'ghost'} size="sm"
-                    class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                    class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs justify-center"
                     onclick={() => activityView = 'feed'}>Feed</Button>
                   <Button variant={activityView === 'chart' ? 'primary' : 'ghost'} size="sm"
-                    class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                    class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs justify-center"
                     onclick={() => activityView = 'chart'}>Chart</Button>
                 </div>
               </div>
@@ -325,13 +325,7 @@
     width: 1px;
     height: 24px;
     margin: 0 10px;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      color-mix(in oklch, var(--border) 60%, transparent) 30%,
-      color-mix(in oklch, var(--border) 30%, transparent) 70%,
-      transparent 100%
-    );
+    background: color-mix(in oklch, var(--border) 50%, transparent);
   }
 
   .severity-dot {

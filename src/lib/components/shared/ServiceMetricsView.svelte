@@ -439,7 +439,7 @@
         id="tab-{t.uiId}"
         aria-selected={activeTab === t.id}
         aria-controls="panel-{t.uiId}"
-        class="tab-btn flex items-center gap-1.5 px-4 py-2 font-mono transition-colors
+        class="tab-btn flex items-center gap-1.5 px-4 py-2 transition-colors
           {activeTab === t.id ? 'font-medium' : 'text-muted-foreground'}"
         onclick={() => (activeTab = t.id)}
       >
@@ -455,7 +455,7 @@
 {#snippet toggleBar(groups: HistogramGroup[], sectionKey: string)}
   {@const allOpen = isAllExpanded(groups, sectionKey)}
   <div class="flex items-center gap-2">
-    <div class="toggle-group flex items-center font-mono overflow-hidden" role="group" aria-label="Layout">
+    <div class="toggle-group flex items-center overflow-hidden" role="group" aria-label="Layout">
       <button
         class="toggle-btn px-2.5 py-1 transition-colors {layout === 'histogram'
           ? 'toggle-active'
@@ -472,7 +472,7 @@
         onclick={() => (layout = "table")}>Table</button
       >
     </div>
-    <div class="toggle-group flex items-center font-mono overflow-hidden" role="group" aria-label="Metric mode">
+    <div class="toggle-group flex items-center overflow-hidden" role="group" aria-label="Metric mode">
       <button
         class="toggle-btn px-2.5 py-1 transition-colors {metricMode ===
         'latency'
@@ -492,7 +492,7 @@
       >
     </div>
     <button
-      class="toggle-btn toggle-group flex items-center gap-1 px-2 py-1 font-mono transition-colors {allOpen
+      class="toggle-btn toggle-group flex items-center gap-1 px-2 py-1 transition-colors {allOpen
         ? 'toggle-active'
         : 'text-muted-foreground'}"
       aria-pressed={allOpen}

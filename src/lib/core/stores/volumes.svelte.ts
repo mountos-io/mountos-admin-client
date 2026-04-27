@@ -88,6 +88,10 @@ async function restoreFork(volumeId: number, forkName: string) {
   return api.volumes.restoreFork(volumeId, forkName)
 }
 
+async function sizeHistory(volumeId: number, from: string, to: string) {
+  return api.volumes.sizeHistory(volumeId, from, to)
+}
+
 export function useVolumes() {
   return {
     get volumes() { return volumes },
@@ -110,5 +114,6 @@ export function useVolumes() {
     createFork,
     deleteFork,
     restoreFork,
+    sizeHistory,
   }
 }

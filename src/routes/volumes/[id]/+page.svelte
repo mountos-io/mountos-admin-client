@@ -25,7 +25,8 @@
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import { api } from '$lib/core/stores/client.svelte'
-  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest } from '$lib/core/api/types'
+  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint } from '$lib/core/api/types'
+  import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
@@ -281,7 +282,7 @@
     }).catch(() => { if (!ctrl.signal.aborted) volume = null }).finally(() => { if (!ctrl.signal.aborted) loading = false })
   })
 
-  onDestroy(() => { volFetchCtrl?.abort(); sessionsCtrl?.abort() })
+  onDestroy(() => { volFetchCtrl?.abort(); sessionsCtrl?.abort(); sizeCtrl?.abort() })
 
   async function reload() {
     const v = await store.getVolume(id)
@@ -383,6 +384,34 @@
 
   let forks = $state<Fork[]>([])
   let forksLoading = $state(false)
+
+  type SizeRange = '24h' | '7d' | '30d' | '1y'
+  const sizeRangeDays: Record<SizeRange, number> = { '24h': 1, '7d': 7, '30d': 30, '1y': 366 }
+  let sizeRange = $state<SizeRange>('30d')
+  let sizePoints = $state<VolumeSizePoint[]>([])
+  let sizeLoading = $state(false)
+  let sizeCtrl: AbortController | null = null
+
+  async function fetchSizeHistory() {
+    if (!volume) return
+    sizeCtrl?.abort()
+    const ctrl = sizeCtrl = new AbortController()
+    sizeLoading = true
+    try {
+      const to = new Date()
+      const from = new Date(to.getTime() - sizeRangeDays[sizeRange] * 86400_000)
+      const res = await store.sizeHistory(id, from.toISOString(), to.toISOString())
+      if (ctrl.signal.aborted) return
+      sizePoints = res.points
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return
+      sizePoints = []
+    } finally {
+      if (sizeCtrl === ctrl) sizeLoading = false
+    }
+  }
+
+  $effect(() => { void sizeRange; if (volume) fetchSizeHistory() })
 
   const forkParentOptions = $derived(
     forks.filter(f => f.status === 'active').map(f => ({ value: f.name, label: f.name }))
@@ -707,6 +736,32 @@
     <Card cornerBrackets>
       <CardHeader>
         <div class="flex items-center justify-between">
+          <CardTitle>Size History</CardTitle>
+          <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
+            <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+            <div class="relative flex items-center gap-1.5" role="group" aria-label="Select size history range">
+              {#each [['24h','24h'],['7d','7d'],['30d','30d'],['1y','1y']] as [val, label]}
+                <Button variant={sizeRange === val ? 'primary' : 'ghost'} size="sm"
+                  class="h-7 px-3 text-xs font-mono justify-center"
+                  aria-pressed={sizeRange === val}
+                  onclick={() => sizeRange = val as SizeRange}>{label}</Button>
+              {/each}
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {#if sizeLoading && sizePoints.length === 0}
+          <ListSkeleton rows={3} />
+        {:else}
+          <VolumeSizeHistoryChart points={sizePoints} />
+        {/if}
+      </CardContent>
+    </Card>
+
+    <Card cornerBrackets>
+      <CardHeader>
+        <div class="flex items-center justify-between">
           <CardTitle>Forks ({forks.length})</CardTitle>
           <div class="flex items-center gap-2">
           {#if forks.length > 1}
@@ -785,13 +840,13 @@
               {#if node.fid !== 0 && canEdit && auth.can('volumes', 'delete')}
                 <div class="flex items-center gap-1 shrink-0">
                   {#if node.status === 'active'}
-                    <Button variant="ghost" size="sm" class="h-9 min-h-[44px] min-w-[44px] px-3 text-xs text-destructive hover:text-destructive"
+                    <Button variant="ghost" size="sm" class="h-9 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 text-xs text-destructive hover:text-destructive"
                       aria-label="Delete fork {node.name}"
                       onclick={() => confirmDeleteFork(node)}>
                       Delete
                     </Button>
                   {:else if node.status === 'pending_deletion'}
-                    <Button variant="ghost" size="sm" class="h-9 min-h-[44px] min-w-[44px] px-3 text-xs text-success hover:text-success"
+                    <Button variant="ghost" size="sm" class="h-9 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 text-xs text-success hover:text-success"
                       aria-label="Restore fork {node.name}"
                       onclick={() => confirmRestoreFork(node)}>
                       Restore

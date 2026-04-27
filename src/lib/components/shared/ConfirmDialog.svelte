@@ -37,7 +37,7 @@
 </script>
 
 <Dialog.Root bind:open onOpenChange={(v) => { if (!v) { loading = false } }}>
-  <Dialog.Content class="cyberpunk-skewed sm:max-w-md p-0 gap-0 border-none" showCloseButton={false} role="alertdialog" aria-busy={loading}>
+  <Dialog.Content class="cyberpunk-skewed sm:max-w-md p-0 gap-0 border-none" showCloseButton={false} role="alertdialog" aria-busy={loading} aria-describedby={description ? 'confirm-dialog-desc' : undefined}>
     <div class="cyberpunk-skewed-inner flex flex-col gap-4">
       <div class="flex items-start gap-4">
         {#if icon}
@@ -48,7 +48,7 @@
         <div class="flex flex-col gap-1.5 {icon ? 'pt-0.5' : ''}">
           <Dialog.Title class="text-base font-semibold tracking-tight">{title}</Dialog.Title>
           {#if description}
-            <Dialog.Description class="text-sm text-muted-foreground leading-relaxed">{description}</Dialog.Description>
+            <Dialog.Description id="confirm-dialog-desc" class="text-sm text-muted-foreground leading-relaxed">{description}</Dialog.Description>
           {/if}
         </div>
       </div>

@@ -166,7 +166,7 @@
           {#each volumeStore.volumes as volume}
             <TableRow
               class="cursor-pointer hover:bg-muted/50"
-              role="link"
+              role="button"
               onclick={() => goto(`/volumes/${volume.id}`)}
               onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/volumes/${volume.id}`))}
               tabindex={0}

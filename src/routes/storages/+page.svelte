@@ -142,7 +142,7 @@
         {#each storageStore.storages as storage}
           <TableRow
             class="cursor-pointer hover:bg-muted/50"
-            role="link"
+            role="button"
             onclick={() => goto(`/storages/${storage.id}`)}
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/storages/${storage.id}`))}
             tabindex={0}

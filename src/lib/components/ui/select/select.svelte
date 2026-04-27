@@ -29,7 +29,7 @@
       <button {...props} {id} type="button" aria-label={placeholder || 'Select option'}
         class={cn(
           "border-input bg-background dark:bg-input/20 ring-offset-background flex h-9 w-full items-center justify-between rounded-sm border px-3 py-1 text-base outline-none transition-[border-color] md:text-sm",
-          "focus-visible:border-foreground/40 focus-visible:ring-0",
+          "focus-visible:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring",
           "disabled:cursor-not-allowed disabled:opacity-50",
           !value && "text-muted-foreground",
           className

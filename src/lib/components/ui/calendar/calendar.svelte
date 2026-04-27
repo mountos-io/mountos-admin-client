@@ -52,7 +52,7 @@
           <CalendarPrimitive.MonthSelect
             monthFormat="short"
             aria-label="Month"
-            class="bg-transparent cursor-pointer outline-none hover:text-primary focus:text-primary appearance-none pl-2 pr-5 py-0.5 rounded-sm"
+            class="bg-transparent cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring hover:text-primary focus:text-primary appearance-none pl-2 pr-5 py-0.5 rounded-sm"
           />
           <ChevronDown aria-hidden="true" class="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/70" />
         </span>
@@ -60,7 +60,7 @@
           <CalendarPrimitive.YearSelect
             years={years}
             aria-label="Year"
-            class="bg-transparent tabular-nums cursor-pointer outline-none hover:text-primary focus:text-primary appearance-none pl-2 pr-5 py-0.5 rounded-sm"
+            class="bg-transparent tabular-nums cursor-pointer outline-none focus-visible:ring-1 focus-visible:ring-ring hover:text-primary focus:text-primary appearance-none pl-2 pr-5 py-0.5 rounded-sm"
           />
           <ChevronDown aria-hidden="true" class="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/70" />
         </span>

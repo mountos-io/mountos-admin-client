@@ -50,6 +50,7 @@ export type {
   AlertCountResponse,
   DeleteVolumeForkRequest,
   CreateVolumeForkRequest,
+  VolumeSizePoint,
   RegionAlert,
   RegionAlertListOptions,
 } from '@mountos-app/admin-sdk'

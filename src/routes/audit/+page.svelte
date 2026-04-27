@@ -167,7 +167,7 @@
     left: 0;
     width: 40%;
     height: 1px;
-    background: linear-gradient(90deg, var(--primary), transparent);
+    background: var(--primary);
     opacity: 0.4;
   }
 
@@ -182,21 +182,12 @@
     font-size: 0.8125rem;
     padding: 0.75rem 1rem;
     overflow-x: auto;
-    height: 12rem;
+    max-height: 12rem;
     overflow-y: auto;
     border-radius: 0;
     color: var(--card-foreground);
     background: transparent;
     position: relative;
-    background-image: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent calc(1.6em - 1px),
-      var(--border) calc(1.6em - 1px),
-      var(--border) 1.6em
-    );
-    background-size: 100% 1.6em;
-    background-position: 0 0.75rem;
     line-height: 1.6;
   }
 

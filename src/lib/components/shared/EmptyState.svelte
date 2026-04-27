@@ -8,7 +8,7 @@
 
 <section aria-labelledby="empty-heading" class="flex flex-col items-center justify-center py-8 sm:py-16 text-center">
   <div class="empty-bracket relative px-10 py-6">
-    <h2 id="empty-heading" class="font-mono text-sm tracking-widest text-muted-foreground/60 font-medium">[ {title.toLowerCase()} ]</h2>
+    <h2 id="empty-heading" class="text-sm tracking-widest text-muted-foreground/60 font-medium uppercase">[ {title.toLowerCase()} ]</h2>
   </div>
   {#if description}
     <p class="mt-3 text-base text-muted-foreground/80 max-w-xs">{description}</p>

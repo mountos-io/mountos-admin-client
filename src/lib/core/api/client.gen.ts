@@ -9,11 +9,11 @@ import type {
   Storage, StorageListOptions, EditStorageRequest, TestStorageBucketRequest, 
   CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest, 
   DeactivateVolumeRequest, GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, 
-  RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, CreateVolumeForkRequest, 
-  Fork, DeleteVolumeForkRequest, AuditLog, AuditLogListOptions, RegionAuditLogListOptions, 
-  ServiceNode, ClientSession, ClientSessionListOptions, SessionSummary, 
-  DiscoverMetaResponse, DashboardStats, LicenseDetails, LicenseTerms, ServiceAlert, 
-  AlertListOptions, AlertCountResponse, RegionAlert, RegionAlertListOptions,
+  RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, VolumeSizePoint, 
+  CreateVolumeForkRequest, Fork, DeleteVolumeForkRequest, AuditLog, AuditLogListOptions, 
+  RegionAuditLogListOptions, ServiceNode, ClientSession, ClientSessionListOptions, 
+  SessionSummary, DiscoverMetaResponse, DashboardStats, LicenseDetails, LicenseTerms, 
+  ServiceAlert, AlertListOptions, AlertCountResponse, RegionAlert, RegionAlertListOptions,
 } from '@mountos-app/admin-sdk'
 
 function queryString(params: Record<string, string | number | boolean | undefined>): string {
@@ -382,6 +382,10 @@ class VolumesResource {
 
   stats(volumeId: number): Promise<{ volumeId: string; liveVolume: number; totalVolume: number; pendingVolume: number; liveInactiveVolume: number; restrictByLiveVolume: boolean }> {
     return this.client.request('GET', `/volumes/${volumeId}/stats`)
+  }
+
+  sizeHistory(volumeId: number, from: string, to: string, signal?: AbortSignal): Promise<{ points: VolumeSizePoint[] }> {
+    return this.client.request('GET', `/volumes/:volumeId/size-history${queryString({ from: from, to: to })}`, undefined, signal)
   }
 
   createFork(volumeId: number, req: CreateVolumeForkRequest): Promise<Fork> {

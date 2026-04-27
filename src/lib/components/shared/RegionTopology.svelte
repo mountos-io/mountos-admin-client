@@ -823,13 +823,7 @@
     top: 8px;
     width: 1px;
     height: 40px;
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      oklch(0.6 0.08 250 / 0.5) 30%,
-      oklch(0.6 0.08 250 / 0.25) 70%,
-      transparent 100%
-    );
+    background: color-mix(in oklch, var(--border) 70%, transparent);
   }
 
   .svc-tag {
@@ -851,13 +845,13 @@
   }
 
   :global(.svc-card[data-slot="card"]) {
-    box-shadow: inset 0 3px 12px -4px var(--svc-accent);
+    box-shadow: inset 0 1px 0 color-mix(in oklch, var(--svc-accent) 40%, transparent);
   }
 
   .svc-glow {
     position: absolute;
     inset: 0;
-    background: linear-gradient(180deg, var(--svc-bg) 0%, transparent 50%);
+    background: color-mix(in oklch, var(--svc-bg) 35%, transparent);
   }
 
   .monitor-stand {

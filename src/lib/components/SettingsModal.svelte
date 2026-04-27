@@ -408,11 +408,11 @@
                 </summary>
                 <div class="mt-2 max-h-64 overflow-y-auto rounded border bg-muted/50 p-3">
                   {#if licenseStore.terms}
-                    <pre class="whitespace-pre-wrap break-words text-xs text-muted-foreground font-mono leading-relaxed">{licenseStore.terms}</pre>
+                    <pre class="whitespace-pre-wrap break-words text-sm text-muted-foreground font-mono leading-relaxed">{licenseStore.terms}</pre>
                   {:else if licenseStore.termsLoading}
-                    <p class="text-xs text-muted-foreground">Loading terms...</p>
+                    <p class="text-sm text-muted-foreground">Loading terms...</p>
                   {:else}
-                    <p class="text-xs text-muted-foreground">License terms not available.</p>
+                    <p class="text-sm text-muted-foreground">License terms not available.</p>
                   {/if}
                 </div>
               </details>
@@ -461,7 +461,7 @@
     height: 10px;
     border-radius: 50%;
     background: var(--sw-fg);
-    box-shadow: 0 0 4px var(--sw-fg);
+    border: 1px solid color-mix(in oklch, var(--sw-fg) 60%, transparent);
   }
 
   .sw-label {

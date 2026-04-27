@@ -256,6 +256,22 @@ The brand's visual signature, defined in `src/lib/styles/corner-brackets.css`. U
 - `.dashed-connector`: 1px dashed top-border for separator lines between paired stat groups.
 - `.th-cyber`: mono microlabel + animated scan-line underline for table column heads. Pair with `thead:has(.th-cyber)` in the parent so the auto-rendered top-left and bottom-right thread brackets appear on the row.
 
+### Sanctioned Cyberpunk Patterns (NOT "decorative gradients")
+
+The "no gradients" rule (§6) targets *gratuitous* gradients: hero-text fades, marketing color washes, multi-stop animated borders, purple-to-cyan splash. The patterns below use `linear-gradient`, `repeating-linear-gradient`, `clip-path`, or low-alpha `box-shadow` to *form* the cyberpunk visual language. They are STRUCTURAL, not decorative, and audits must not strip them:
+
+- **Corner-bracket gradients** (`src/lib/styles/corner-brackets.css`): the 2px right-angle marks themselves are gradient-painted. Don't replace with borders.
+- **`.tech-grid` line patterns**: dual `linear-gradient` forming the 20×20 grid backdrop. Brand backdrop, keep.
+- **Scan-line overlays** (`.scanlines` in topology, `.th-cyber` underline, `.stat-cyber` hover line): `repeating-linear-gradient` at very low alpha (≤0.04) that gives surfaces the CRT scanline texture. Signature, keep.
+- **Toast accent edges & corner stripes** (`src/lib/styles/toast.css`): the partial top/bottom edge lines (`linear-gradient(to right ...) / 100% 1.5px`) and the diagonal corner stripes (`linear-gradient(135deg, currentColor 1px, transparent 1px) / 5px 5px` in the `::before`) are the toast equivalent of corner-brackets — they communicate type-coded severity and frame the chamfered toast. Keep paired with `clip-path` chamfer.
+- **Striped "no data" cells**: `repeating-linear-gradient` at 45° on empty matrix cells is a state pattern (absence-of-data semantic), not decoration. Keep where it conveys state.
+- **`.card-cyber` inset top-edge glow** (`box-shadow: inset 0 1px 0 ...`): the resting-state warmth on opt-in cyber cards. Hairline only; not a drop shadow.
+- **LED ping shadows** (`.led-ping`, `.led-dot`, `.led-raft`): low-radius `box-shadow` glows on small status dots are live-status indicators, not container shadows.
+- **Connection-flow dash animations** (`stroke-dasharray` cycling on RAFT topology paths): SVG-stroke animation that conveys traffic direction. Functional, keep.
+- **Service-card inset glow** (`.svc-card`): 1px inset top-edge accent matching the `.card-cyber` pattern. Keep at 1px; do NOT inflate to soft 12px-blur depth shadows.
+
+**Audit rule:** any new `linear-gradient`, `repeating-linear-gradient`, animated SVG stroke, or low-alpha glow must either fit one of the sanctioned patterns above or earn an explicit entry here. Default-deny; add when justified.
+
 ### Status Indicators
 - **LED Ping** (`.led-ping`): a 2.5s ease-in-out pulse on a small dot. Reserved for live-status indicators (node "active polling", session "live"). Respects `prefers-reduced-motion`.
 - **Stat Cyber** (`.stat-cyber`): a hover-only horizontal scan-line under a stat cell. Subtle.
@@ -274,7 +290,7 @@ The brand's visual signature, defined in `src/lib/styles/corner-brackets.css`. U
 
 ### Don't:
 - **Don't** use rounded, bubbly, or playful aesthetics (PRODUCT.md anti-pattern). `--radius` caps at 0.25rem for a reason.
-- **Don't** add gratuitous gradients (PRODUCT.md anti-pattern). The system has zero `linear-gradient` decoration on text or backgrounds. The corner-bracket gradients are structural, not decorative.
+- **Don't** add gratuitous gradients (PRODUCT.md anti-pattern): hero-text fades, multi-stop animated borders, marketing color washes, purple-to-cyan splash. The sanctioned cyberpunk patterns in §5 (corner brackets, tech-grid, scan-lines, toast accent edges & corner stripes, striped no-data cells, LED glows, `.card-cyber` inset, RAFT dash flow) are STRUCTURAL brand signature and must NOT be stripped by audits. Default-deny new gradients; add to the sanctioned list when justified.
 - **Don't** add decorative illustrations (PRODUCT.md anti-pattern). Empty states use a `.tech-grid` background and a one-line technical instruction, never an SVG mascot.
 - **Don't** ship marketing-style hero sections (PRODUCT.md anti-pattern). This is admin software; there is no "Get Started" splash.
 - **Don't** use `border-left` or `border-right` greater than 1px as a colored stripe accent on cards, list items, callouts, or alerts. Use a full hairline border or a tinted background.

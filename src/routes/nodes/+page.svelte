@@ -240,7 +240,7 @@
         {#each pagedNodes as node}
           <TableRow
             class="cursor-pointer hover:bg-muted/50"
-            role="link"
+            role="button"
             onclick={() => goto(`/nodes/${node.regionId}/${node.nodeId}`)}
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/nodes/${node.regionId}/${node.nodeId}`))}
             tabindex={0}

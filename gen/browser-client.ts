@@ -319,15 +319,25 @@ function generate(spec: Spec): string {
 
   // Collect type imports
   const seen = new Set<string>()
-  const builtins = new Set(['string', 'number', 'boolean', 'void', 'object', 'unknown'])
+  const builtins = new Set([
+    'string', 'number', 'boolean', 'void', 'object', 'unknown',
+    'datetime', 'int64', 'int32', 'int', 'float', 'float64', 'bool', 'json',
+  ])
   const imports: string[] = []
   const add = (n: string) => { if (!seen.has(n) && !builtins.has(n)) { seen.add(n); imports.push(n) } }
+  const baseTypeName = (t: string): string => {
+    let s = t.endsWith('?') ? t.slice(0, -1) : t
+    while (s.endsWith('[]')) s = s.slice(0, -2)
+    return s
+  }
   for (const res of spec.resources) {
     for (const ep of res.endpoints) {
       if (ep.request?.length) add(reqTypeName(res.name, ep.action))
       if (ep.responseType) add(ep.responseType)
       if (ep.pagination === 'page' && hasExtraQuery(ep.query || [])) add(listOptsName(res.name))
       if (ep.pagination === 'cursor') add(listOptsName(res.name))
+      for (const s of ep.response ?? []) add(baseTypeName(parseField(s).type))
+      for (const s of ep.request ?? []) add(baseTypeName(parseField(s).type))
     }
   }
 

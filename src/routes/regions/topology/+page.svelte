@@ -335,7 +335,7 @@
                 {@const node = matrixNode(serviceType, rack.address)}
                 {@const cellBg = node?.raftGroup
                   ? RAFT_STYLES[node.raftGroup].bgColor
-                  : !node ? 'repeating-linear-gradient(45deg,transparent,transparent 4px,var(--border) 4px,var(--border) 5px)' : 'transparent'}
+                  : !node ? 'color-mix(in oklch, var(--muted) 60%, transparent)' : 'transparent'}
                 <TableCell
                   class="transition-[background-color,opacity] duration-200"
                   style="background: {cellBg}; opacity: {nodeOpacity(node)}"
@@ -661,19 +661,10 @@
     border-radius: 2px;
   }
 
-  /* Topo SVG container with animated gradient border */
+  /* Topo SVG container */
   .topo-container {
-    background:
-      linear-gradient(var(--color-card), var(--color-card)) padding-box,
-      linear-gradient(135deg, oklch(0.55 0.18 260), oklch(0.65 0.18 55), oklch(0.55 0.15 175), oklch(0.55 0.18 260)) border-box;
-    border: 1.5px solid transparent;
-    background-size: 100% 100%, 400% 400%;
-    animation: border-shift 6s ease-in-out infinite;
-  }
-  @keyframes border-shift {
-    0%, 100% { background-position: 0 0, 0% 0%; }
-    33% { background-position: 0 0, 100% 0%; }
-    66% { background-position: 0 0, 100% 100%; }
+    background: var(--color-card);
+    border: 1px solid var(--color-border);
   }
 
   /* Topology node cursor */

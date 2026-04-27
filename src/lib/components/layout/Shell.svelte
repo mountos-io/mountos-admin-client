@@ -127,7 +127,6 @@
     .app-shell {
       display: grid;
       grid-template-columns: 15rem 1fr;
-      transition: grid-template-columns 200ms ease-in-out;
     }
     .app-shell.sidebar-collapsed {
       grid-template-columns: 3.5rem 1fr;

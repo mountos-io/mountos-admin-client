@@ -84,7 +84,7 @@
                   <XCircle class="w-3.5 h-3.5 text-destructive shrink-0" />
                 {/if}
               </div>
-              <div class="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground font-mono">
+              <div class="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
                 {#if log.createdAt}
                   <span>{formatRelative(log.createdAt)}</span>
                 {/if}
