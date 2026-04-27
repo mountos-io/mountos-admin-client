@@ -9,7 +9,7 @@
   let {
     options, value = $bindable(''), placeholder = 'Select...',
     emptyText = 'No results found.', disabled = false,
-    class: className,
+    class: className, 'aria-labelledby': ariaLabelledby, 'aria-label': ariaLabel,
   }: {
     options: readonly { value: string; label: string }[]
     value?: string
@@ -17,6 +17,8 @@
     emptyText?: string
     disabled?: boolean
     class?: string
+    'aria-labelledby'?: string
+    'aria-label'?: string
   } = $props()
 
   let open = $state(false)
@@ -32,7 +34,7 @@
 <Popover bind:open>
   <PopoverTrigger>
     {#snippet child({ props })}
-      <Button {...props} variant="outline" role="combobox" aria-expanded={open} aria-haspopup="listbox" {disabled}
+      <Button {...props} variant="outline" role="combobox" aria-expanded={open} aria-haspopup="listbox" aria-labelledby={ariaLabelledby} aria-label={ariaLabel} {disabled}
         class={cn(
           "w-full justify-between font-normal",
           !value && "text-muted-foreground",

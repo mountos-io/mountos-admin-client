@@ -276,7 +276,7 @@
           <CardContent class="pt-0">
             {#each rack.nodes as node, ni}
               <div role="listitem"
-                class="node-slot flex items-center gap-2.5 px-3 py-2.5 transition-[opacity,box-shadow] duration-200"
+                class="node-slot flex items-center gap-2.5 px-3 py-2.5 transition-opacity duration-200"
                 class:node-slot-last={ni === rack.nodes.length - 1}
                 style:opacity={nodeOpacity(node)}
                 style:box-shadow={nodeGlow(node)}
@@ -502,8 +502,8 @@
                 fill={STATUS_COLORS[node.status]}>{node.status.toUpperCase()}</text>
             {/if}
 
-            <!-- Invisible hover target -->
-            <circle cx={x} cy={y} r="24" fill="transparent" class="cursor-pointer" />
+            <!-- Invisible hover target; parent <g> handles interactivity -->
+            <circle cx={x} cy={y} r="24" fill="transparent" aria-hidden="true" />
           </g>
         {/each}
       </svg>

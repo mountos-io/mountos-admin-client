@@ -95,7 +95,7 @@
       </TableHeader>
       <TableBody>
         {#each store.logs as log}
-          <TableRow class="cursor-pointer" onclick={() => toggleRow(log.id)} tabindex={0} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRow(log.id) } }}>
+          <TableRow class="cursor-pointer" role="button" aria-expanded={expanded.has(log.id)} aria-label="Audit log {log.title}" onclick={() => toggleRow(log.id)} tabindex={0} onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleRow(log.id) } }}>
             <TableCell class="text-muted-foreground">
               <button type="button" class="inline-flex items-center justify-center p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-expanded={expanded.has(log.id)} aria-label="Toggle log details">{#if expanded.has(log.id)}<ChevronDown class="h-4 w-4" aria-hidden="true" />{:else}<ChevronRight class="h-4 w-4" aria-hidden="true" />{/if}</button>
             </TableCell>

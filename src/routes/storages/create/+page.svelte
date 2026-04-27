@@ -223,8 +223,8 @@
             <Input id="description" bind:value={description} placeholder="Description" autocomplete="off" />
           </div>
           <div class="space-y-2">
-            <Label>Region</Label>
-            <Combobox options={regionOptions} bind:value={regionId} placeholder="Select region..." emptyText="No regions found." />
+            <Label id="region-label">Region</Label>
+            <Combobox options={regionOptions} bind:value={regionId} placeholder="Select region..." emptyText="No regions found." aria-labelledby="region-label" />
           </div>
           <div class="space-y-2">
             <Label for="storageType">Storage Type</Label>

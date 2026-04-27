@@ -6,10 +6,10 @@
 
   type SeriesKey = 'liveVolume' | 'totalVolume' | 'pendingVolume' | 'liveInactiveVolume'
   const seriesDefs: { key: SeriesKey; label: string; color: string }[] = [
-    { key: 'totalVolume',        label: 'Total',    color: 'var(--fork-0, #5b8def)' },
-    { key: 'liveVolume',         label: 'Live',     color: 'var(--fork-1, #2bb673)' },
-    { key: 'liveInactiveVolume', label: 'Inactive', color: 'var(--fork-2, #d97706)' },
-    { key: 'pendingVolume',      label: 'Pending',  color: 'var(--fork-3, #b85cff)' },
+    { key: 'totalVolume',        label: 'Total',    color: 'var(--fork-0, oklch(0.65 0.15 45))' },
+    { key: 'liveVolume',         label: 'Live',     color: 'var(--fork-1, oklch(0.62 0.16 160))' },
+    { key: 'liveInactiveVolume', label: 'Inactive', color: 'var(--fork-2, oklch(0.58 0.16 250))' },
+    { key: 'pendingVolume',      label: 'Pending',  color: 'var(--fork-3, oklch(0.62 0.16 330))' },
   ]
   let disabled = $state<Set<SeriesKey>>(new Set())
   function toggle(k: SeriesKey) {
