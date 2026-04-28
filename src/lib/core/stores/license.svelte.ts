@@ -45,16 +45,23 @@ function statusLabel(status: LicenseStatus): string {
   }
 }
 
+// formatLimit renders a license cap. value <= 0 is the "unlimited"
+// sentinel and renders as ∞. Use formatBytes for factual byte counts
+// (e.g. current usage) where 0 means literally zero, not unlimited.
 function formatLimit(value: number, unit?: string): string {
   if (value <= 0) return '∞'
-  if (unit === 'bytes') {
-    const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
-    let i = 0
-    let v = value
-    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++ }
-    return `${Math.round(v * 100) / 100} ${units[i]}`
-  }
+  if (unit === 'bytes') return formatBytes(value)
   return value.toLocaleString()
+}
+
+// formatBytes renders a factual byte count. 0 → "0 B" (NOT ∞).
+function formatBytes(value: number): string {
+  if (value < 0) return '—'
+  const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
+  let i = 0
+  let v = value
+  while (v >= 1024 && i < units.length - 1) { v /= 1024; i++ }
+  return `${Math.round(v * 100) / 100} ${units[i]}`
 }
 
 async function fetchTerms() {
@@ -83,5 +90,6 @@ export function useLicense() {
     fetchTerms,
     statusLabel,
     formatLimit,
+    formatBytes,
   }
 }

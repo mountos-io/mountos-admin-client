@@ -325,9 +325,19 @@
           {#if licenseStore.license}
             {@const lic = licenseStore.license}
             <div class="space-y-5">
-              <div class="flex items-center justify-between" aria-live="polite" aria-atomic="true">
+              <div class="flex items-center justify-between gap-2 flex-wrap" aria-live="polite" aria-atomic="true">
                 <h3 class="text-sm font-medium">License</h3>
-                <Badge variant={licenseStore.badgeVariant ?? 'default'}>{licenseStore.statusLabel(lic.status)}</Badge>
+                <div class="flex items-center gap-2 flex-wrap min-w-0">
+                  <Badge variant={licenseStore.badgeVariant ?? 'default'}>{licenseStore.statusLabel(lic.status)}</Badge>
+                  {#if lic.quota}
+                    <Badge
+                      variant={lic.quota.state === 'exceeded' ? 'destructive' : (lic.quota.state === 'unknown' ? 'secondary' : 'default')}
+                      title="Global storage usage across all active volumes vs. license cap"
+                    >
+                      Quota: {lic.quota.state}
+                    </Badge>
+                  {/if}
+                </div>
               </div>
               <dl class="grid gap-3 text-sm">
                 <div class="flex justify-between gap-3 min-w-0">
@@ -401,6 +411,25 @@
                   <dt class="text-muted-foreground">Max Storage</dt>
                   <dd>{licenseStore.formatLimit(lic.maxStorageBytes, 'bytes')}</dd>
                 </div>
+                {#if lic.quota && lic.quota.state !== 'unknown'}
+                  <hr class="border-border" aria-hidden="true" />
+                  <div class="flex justify-between gap-2">
+                    <dt class="text-muted-foreground">Total Used</dt>
+                    <dd class:text-destructive={lic.quota.state === 'exceeded'} class="text-right">
+                      {licenseStore.formatBytes(lic.quota.totalVolume)}
+                      {#if lic.maxStorageBytes > 0}
+                        <span class="text-muted-foreground"> / {licenseStore.formatBytes(lic.maxStorageBytes)}</span>
+                        <span class:text-destructive={lic.quota.state === 'exceeded'} class="text-muted-foreground">
+                          ({Math.round((lic.quota.totalVolume / lic.maxStorageBytes) * 100)}%)
+                        </span>
+                      {/if}
+                    </dd>
+                  </div>
+                  <div class="flex justify-between">
+                    <dt class="text-muted-foreground">Live Used</dt>
+                    <dd>{licenseStore.formatBytes(lic.quota.liveVolume)}</dd>
+                  </div>
+                {/if}
               </dl>
               <details class="group mt-2" ontoggle={(e: Event) => { if ((e.target as HTMLDetailsElement).open) licenseStore.fetchTerms() }}>
                 <summary class="cursor-pointer text-sm font-medium text-muted-foreground hover:text-foreground select-none py-2">

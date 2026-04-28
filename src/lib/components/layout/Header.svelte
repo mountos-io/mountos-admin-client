@@ -12,6 +12,7 @@
   import PanelLeft from '@lucide/svelte/icons/panel-left'
   import LogOut from '@lucide/svelte/icons/log-out'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert'
+  import AlertOctagon from '@lucide/svelte/icons/alert-octagon'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { useLicense } from '$lib/core/stores/license.svelte'
@@ -128,6 +129,24 @@
         <span class="text-sm">⌘</span>K
       </kbd>
     </button>
+    {#if !auth.isUserRole && licenseStore.license?.quota?.state === 'exceeded'}
+      {@const q = licenseStore.license.quota}
+      {@const cap = licenseStore.license.maxStorageBytes}
+      <button
+        type="button"
+        class="flex items-center gap-1.5 rounded-sm px-2 min-h-[44px] text-sm font-medium transition-colors hover:bg-accent/50"
+        onclick={() => settingsModal.show('license')}
+        title="License storage quota exceeded — click for details"
+        aria-label="License storage quota exceeded. Total used: {licenseStore.formatBytes(q.totalVolume)}{cap > 0 ? `, cap: ${licenseStore.formatBytes(cap)}` : ''}"
+      >
+        <AlertOctagon class="size-3.5 text-destructive" aria-hidden="true" />
+        <span aria-hidden="true">
+          <Badge variant="destructive">
+            Quota{cap > 0 ? ` ${Math.round((q.totalVolume / cap) * 100)}%` : ''}
+          </Badge>
+        </span>
+      </button>
+    {/if}
     {#if !auth.isUserRole && licenseStore.needsAttention && licenseStore.license}
       {@const lic = licenseStore.license}
       <button
