@@ -63,7 +63,7 @@
   let expandedGroups = $state(new Set<string>())
   let dimmedServices = $state(new Set<string>())
   let auditView = $state<'chart' | 'feed'>('chart')
-  let activityDays = $state(7)
+  let activityDays = $state<7 | 15 | 30 | 'auto'>('auto')
 
   // Alerts tab state
   const alertStore = useRegionAlerts(() => regionId)
@@ -84,6 +84,7 @@
     fuseserv:      { accent: 'var(--pastel-mount)',   bg: 'color-mix(in oklch, var(--pastel-mount) 8%, transparent)',   label: 'FUSE', icon: HardDrive },
     blockserv:     { accent: 'var(--pastel-storage)', bg: 'color-mix(in oklch, var(--pastel-storage) 8%, transparent)', label: 'Block', icon: Box },
     s3gatewayserv: { accent: 'var(--pastel-license)', bg: 'color-mix(in oklch, var(--pastel-license) 8%, transparent)', label: 'S3 Gateway', icon: Cloud },
+    hdfsserv:      { accent: 'var(--pastel-license)', bg: 'color-mix(in oklch, var(--pastel-license) 8%, transparent)', label: 'HDFS Gateway', icon: Cloud },
     csiserv:       { accent: 'var(--pastel-session)', bg: 'color-mix(in oklch, var(--pastel-session) 8%, transparent)', label: 'CSI', icon: Container },
   }
 
@@ -99,7 +100,7 @@
     { id: 'control', label: 'CONTROL', types: ['hub'] },
     { id: 'data', label: 'DATA', types: ['dataserv', 'gcserv'] },
     { id: 'storage', label: 'STORAGE', types: ['blockserv'] },
-    { id: 'gateway', label: 'GATEWAY', types: ['s3gatewayserv'] },
+    { id: 'gateway', label: 'GATEWAY', types: ['s3gatewayserv', 'hdfsserv'] },
     { id: 'edge', label: 'CLIENT / EDGE', types: ['fuseserv', 'csiserv'] },
   ]
 
@@ -512,6 +513,9 @@
                 <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
                   <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
                   <div class="relative flex items-center gap-1.5">
+                    <Button variant={activityDays === 'auto' ? 'primary' : 'ghost'} size="sm"
+                      class="h-7 w-12 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                      onclick={() => activityDays = 'auto'}>Auto</Button>
                     {#each [7, 15, 30] as d}
                       <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
                         class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
@@ -540,8 +544,9 @@
                 {:else if regionAudit.logs.length === 0}
                   <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No regional audit activity</div>
                 {:else if auditView === 'chart'}
-                  {@const cutoff = Date.now() - activityDays * 86400000}
-                  {@const filtered = regionAudit.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= cutoff)}
+                  {@const filtered = activityDays === 'auto'
+                    ? regionAudit.logs
+                    : regionAudit.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= Date.now() - activityDays * 86400000)}
                   {#if filtered.length === 0}
                     <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
                   {:else}

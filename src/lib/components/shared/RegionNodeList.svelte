@@ -24,6 +24,7 @@
     fuseserv: 'FUSE',
     blockserv: 'Block',
     s3gatewayserv: 'S3 Gateway',
+    hdfsserv: 'HDFS Gateway',
     csiserv: 'CSI',
   }
 
@@ -51,7 +52,7 @@
     <TableHeader>
       <TableRow>
         <TableHead>Node ID</TableHead>
-        <TableHead class="w-36">Service Type</TableHead>
+        <TableHead class="w-44">Service Type</TableHead>
         <TableHead class="w-32">Tier</TableHead>
         <TableHead class="w-28">Status</TableHead>
       </TableRow>
@@ -66,7 +67,7 @@
             <span class="font-mono text-sm">{node.nodeId}</span>
           </TableCell>
           <TableCell>
-            <span class="text-sm">{node.serviceLabel}</span>
+            <span class="text-sm whitespace-nowrap">{node.serviceLabel}</span>
           </TableCell>
           <TableCell>
             <span class="text-xs font-bold uppercase tracking-wider text-muted-foreground">{node.tier}</span>

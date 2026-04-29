@@ -28,6 +28,7 @@
     mfuse:         'var(--pastel-mount)',
     blockserv:     'var(--pastel-storage)',
     s3gatewayserv: 'var(--pastel-license)',
+    hdfsserv:      'var(--pastel-license)',
     csiserv:       'var(--pastel-session)',
   }
 
@@ -63,6 +64,7 @@
     { value: 'fuseserv', label: 'fuseserv' },
     { value: 'blockserv', label: 'blockserv' },
     { value: 's3gatewayserv', label: 's3gatewayserv' },
+    { value: 'hdfsserv', label: 'hdfsserv' },
     { value: 'csiserv', label: 'csiserv' },
     { value: 'mfuse', label: 'mfuse' },
   ] as const
