@@ -516,7 +516,7 @@
                     <Button variant={activityDays === 'auto' ? 'primary' : 'ghost'} size="sm"
                       class="h-7 w-12 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                       onclick={() => activityDays = 'auto'}>Auto</Button>
-                    {#each [7, 15, 30] as d}
+                    {#each [7, 15, 30] as const as d}
                       <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
                         class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                         onclick={() => activityDays = d}>{d}d</Button>
@@ -544,9 +544,10 @@
                 {:else if regionAudit.logs.length === 0}
                   <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No regional audit activity</div>
                 {:else if auditView === 'chart'}
-                  {@const filtered = activityDays === 'auto'
+                  {@const days = activityDays}
+                  {@const filtered = days === 'auto'
                     ? regionAudit.logs
-                    : regionAudit.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= Date.now() - activityDays * 86400000)}
+                    : regionAudit.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= Date.now() - days * 86400000)}
                   {#if filtered.length === 0}
                     <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
                   {:else}
