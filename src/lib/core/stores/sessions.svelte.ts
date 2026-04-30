@@ -65,9 +65,10 @@ const platformOptions = [
   // Embedded gateway in mfuse: gateway-only sessions advertise the
   // protocol(s) here; mount+gateway sessions still report a FUSE platform
   // and the gateway shows up via metrics.gateway instead.
-  { value: 's3', label: 's3' },
-  { value: 'hdfs', label: 'hdfs' },
-  { value: 's3+hdfs', label: 's3+hdfs' },
+  { value: 's3', label: 's3:gateway' },
+  { value: 'hdfs', label: 'hdfs:gateway' },
+  { value: 's3+hdfs', label: 's3+hdfs:gateway' },
+  { value: 'hdfs+hadoop', label: 'hdfs:api' },
 ]
 const osOptions = [
   { value: '', label: 'All OS' },
