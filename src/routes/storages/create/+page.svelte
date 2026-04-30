@@ -92,12 +92,12 @@
 
   const isBlock = $derived(storageType === 'block')
   const isHybrid = $derived(isBlock && blockType === 'hybrid')
-  const needsS3 = $derived(!isBlock || isHybrid)
+  const needsObjectStore = $derived(!isBlock || isHybrid)
   const blockEndpoint = $derived(
     selectedRegion?.dns ? `https://block.${selectedRegion.dns}` : ''
   )
 
-  function resetS3Fields() {
+  function resetObjectStoreFields() {
     providerType = ''
     endpoint = ''
     region = ''
@@ -110,7 +110,7 @@
 
   function onStorageTypeChange(v: string) {
     storageType = v
-    resetS3Fields()
+    resetObjectStoreFields()
     blockType = ''
     if (v === 'block') providerType = 'mountOS'
   }
@@ -129,7 +129,7 @@
 
   // auto-fill endpoint for known providers
   $effect(() => {
-    if (needsS3 && providerType && !isCustomEndpoint(providerType)) {
+    if (needsObjectStore && providerType && !isCustomEndpoint(providerType)) {
       endpoint = generateEndpoint(providerType, region)
     }
   })
@@ -137,13 +137,13 @@
   // Azure: storage-account name doubles as the auth identity, so mirror the
   // "Storage Account" field into accessKey to spare the user typing it twice.
   $effect(() => {
-    if (needsS3 && getProvider(providerType)?.regionDrivesAccessKey) {
+    if (needsObjectStore && getProvider(providerType)?.regionDrivesAccessKey) {
       accessKey = region
     }
   })
 
-  const s3RegionLabel = $derived(getProvider(providerType)?.regionLabel ?? 'Region')
-  const s3RegionPlaceholder = $derived(getProvider(providerType)?.regionPlaceholder ?? 'us-east-1')
+  const regionLabel = $derived(getProvider(providerType)?.regionLabel ?? 'Region')
+  const regionPlaceholder = $derived(getProvider(providerType)?.regionPlaceholder ?? 'us-east-1')
   const bucketLabel = $derived(getProvider(providerType)?.bucketLabel ?? 'Bucket')
   const bucketPlaceholder = $derived(getProvider(providerType)?.bucketPlaceholder ?? 'my-bucket')
   const accessKeyLabel = $derived(getProvider(providerType)?.accessKeyLabel ?? 'Access Key')
@@ -156,15 +156,15 @@
   // (blockserv's BlobClientCache dispatches on provider_type).
   const providerOptionsForContext = $derived(PROVIDER_OPTIONS)
 
-  const s3Ready = $derived(
+  const objectStoreReady = $derived(
     !!(endpoint.trim() && bucket.trim() && accessKey.trim() && secretKey.trim())
   )
 
   const canSubmit = $derived(
     !!(name.trim() && regionId && storageType && providerType
     && (isBlock
-      ? blockType && (isHybrid ? s3Ready && bucketVerified : !!blockEndpoint)
-      : s3Ready && bucketVerified))
+      ? blockType && (isHybrid ? objectStoreReady && bucketVerified : !!blockEndpoint)
+      : objectStoreReady && bucketVerified))
   )
 
   async function handleSubmit(e: Event) {
@@ -268,7 +268,7 @@
               {/if}
             {/if}
 
-            {#if needsS3}
+            {#if needsObjectStore}
               {#if !isBlock}
                 <div class="space-y-2">
                   <Label for="providerType">Object Storage Provider</Label>
@@ -285,15 +285,15 @@
                 <div class="space-y-2">
                   <Label for="endpoint">Endpoint</Label>
                   {#if isCustomEndpoint(providerType)}
-                    <Input id="endpoint" bind:value={endpoint} placeholder="https://your-s3-endpoint.com" required aria-required="true" />
+                    <Input id="endpoint" bind:value={endpoint} placeholder="https://your-object-store-endpoint.com" required aria-required="true" />
                   {:else}
                     <Input id="endpoint" value={endpoint} readonly class="font-mono text-sm text-muted-foreground" />
                   {/if}
                 </div>
                 <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
                   <div class="space-y-2">
-                    <Label for="region">{s3RegionLabel}</Label>
-                    <Input id="region" bind:value={region} placeholder={s3RegionPlaceholder} />
+                    <Label for="region">{regionLabel}</Label>
+                    <Input id="region" bind:value={region} placeholder={regionPlaceholder} />
                   </div>
                   <div class="space-y-2">
                     <Label for="bucket">{bucketLabel}</Label>
@@ -335,7 +335,7 @@
                   {accessKey}
                   {secretKey}
                   {providerType}
-                  disabled={!s3Ready}
+                  disabled={!objectStoreReady}
                   onresult={(passed) => { bucketVerified = passed }}
                 />
               {/if}

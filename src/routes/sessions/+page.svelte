@@ -245,10 +245,10 @@
                             <div class="metric-row"><span>Size</span><span>{formatBytes(m.cacheSize ?? 0)}</span></div>
                           </div>
                           <div class="metric-group">
-                            <p class="detail-label">S3</p>
-                            <div class="metric-row"><span>GET</span><span>{formatNum(m.s3GetCount ?? 0)} / {formatBytes(m.s3GetBytes ?? 0)}</span></div>
-                            <div class="metric-row"><span>PUT</span><span>{formatNum(m.s3PutCount ?? 0)} / {formatBytes(m.s3PutBytes ?? 0)}</span></div>
-                            <div class="metric-row {(m.s3Errors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.s3Errors ?? 0)}</span></div>
+                            <p class="detail-label">Object Store</p>
+                            <div class="metric-row"><span>GET</span><span>{formatNum(m.objectGetCount ?? 0)} / {formatBytes(m.objectGetBytes ?? 0)}</span></div>
+                            <div class="metric-row"><span>PUT</span><span>{formatNum(m.objectPutCount ?? 0)} / {formatBytes(m.objectPutBytes ?? 0)}</span></div>
+                            <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
                           </div>
                           <div class="metric-group">
                             <p class="detail-label">Network</p>

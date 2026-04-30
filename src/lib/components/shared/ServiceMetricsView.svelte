@@ -69,7 +69,7 @@
   const overviewSections = new Set([
     'Overview', 'Runtime', 'DB Pool', 'Semaphore', 'TCP Connections',
     'Raft', 'MetaEngine Arena', 'MetaEngine Name Pool', 'MetaEngine Cache',
-    'S3 Operations', 'RPC Operations', 'Cache', 'File Handles',
+    'Object Operations', 'RPC Operations', 'Cache', 'File Handles',
     'TCP Connection', 'TCP Events', 'System', 'Config',
   ])
 
