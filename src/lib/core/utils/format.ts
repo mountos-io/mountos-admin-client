@@ -82,6 +82,7 @@ const CLIENT_TYPE_NAMES: Record<string, string> = {
   'csi-driver': 'CSI Driver (K8s)',
   'fuse+iouring': 'FUSE io_uring (Linux)',
   'fp': 'File Provider (macOS)',
+  'hdfs-sdk': 'HDFS SDK',
 }
 
 export function formatClientType(raw: string): string {
@@ -169,7 +170,7 @@ const PLATFORM_LABELS: Record<string, string> = {
   macfuse: 'macFUSE', nfs: 'NFS', fuse: 'FUSE', fskit: 'FSKit',
   winfsp: 'WinFSP', mountosio: 'mountOSIO', cloudfilter: 'CloudFilter',
   'fuse+iouring': 'FUSE io_uring', 'csi-driver': 'CSI Driver',
-  cfapi: 'CloudFilter', fp: 'File Provider',
+  cfapi: 'CloudFilter', fp: 'File Provider', hdfs: 'HDFS',
 }
 
 export function formatPlatform(raw: string): string {
