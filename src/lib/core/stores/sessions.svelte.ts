@@ -62,6 +62,12 @@ const platformOptions = [
   { value: 'winfsp', label: 'winfsp' },
   { value: 'mountosio', label: 'mountosio' },
   { value: 'cloudfilter', label: 'cloudfilter' },
+  // Embedded gateway in mfuse: gateway-only sessions advertise the
+  // protocol(s) here; mount+gateway sessions still report a FUSE platform
+  // and the gateway shows up via metrics.gateway instead.
+  { value: 's3', label: 's3' },
+  { value: 'hdfs', label: 'hdfs' },
+  { value: 's3+hdfs', label: 's3+hdfs' },
 ]
 const osOptions = [
   { value: '', label: 'All OS' },

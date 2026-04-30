@@ -95,6 +95,24 @@
     return Object.entries(rl).sort((a, b) => b[1].count - a[1].count)
   }
 
+  // Embedded gateway counters emitted by mfuse when the per-volume S3 /
+  // WebHDFS gateway is running. Shape mirrors gateway.EmbedStatsSnapshot
+  // in the Go side; rendered in the Gateway Activity card below.
+  interface ProtoStatsSnapshot { requests: number; errors: number; bytes_in: number; bytes_out: number }
+  interface GatewaySnapshot { s3?: ProtoStatsSnapshot; hdfs?: ProtoStatsSnapshot }
+  function getGatewayMetrics(m: Record<string, any>): GatewaySnapshot | null {
+    const g = m.gateway as GatewaySnapshot | undefined
+    if (!g) return null
+    if (!g.s3 && !g.hdfs) return null
+    return g
+  }
+  function gatewayProtocols(g: GatewaySnapshot): { proto: string; snap: ProtoStatsSnapshot }[] {
+    const out: { proto: string; snap: ProtoStatsSnapshot }[] = []
+    if (g.s3) out.push({ proto: 's3', snap: g.s3 })
+    if (g.hdfs) out.push({ proto: 'hdfs', snap: g.hdfs })
+    return out
+  }
+
   function toBuckets(raw?: number[]): HistBucket[] {
     if (!raw || raw.length !== HISTOGRAM_BOUNDS.length) return []
     return raw.map((count, i) => ({ le: formatUs(HISTOGRAM_BOUNDS[i]), leUs: HISTOGRAM_BOUNDS[i], count }))
@@ -267,6 +285,44 @@
           </div>
         </div>
       </div>
+
+      <!-- Gateway Activity (embedded per-volume S3 / WebHDFS gateway in mfuse). -->
+      <!-- Present only when mfuse reported gateway counters; mount-only sessions skip. -->
+      {@const gw = getGatewayMetrics(m)}
+      {#if gw}
+        <div class="corner-brackets relative border border-border/30 rounded-sm">
+          <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+          <div class="relative p-5">
+            <div class="flex flex-wrap items-center gap-3 mb-4">
+              <h2 class="text-lg font-semibold">Gateway Activity</h2>
+              <span class="text-sm text-muted-foreground font-mono">embedded per-volume</span>
+            </div>
+            <div class="grid gap-4 sm:grid-cols-2">
+              {#each gatewayProtocols(gw) as { proto, snap }}
+                {@const errPct = snap.requests > 0 ? (snap.errors * 100) / snap.requests : 0}
+                <div class="border border-border/30 rounded-sm p-4">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="font-mono text-sm uppercase tracking-wider">{proto}</span>
+                    <Badge variant={errPct > 1 ? 'destructive' : 'outline'} class="font-mono text-xs">
+                      {snap.errors}/{snap.requests} err
+                    </Badge>
+                  </div>
+                  <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono">
+                    <dt class="text-muted-foreground">requests</dt>
+                    <dd class="text-right">{formatNum(snap.requests)}</dd>
+                    <dt class="text-muted-foreground">errors</dt>
+                    <dd class="text-right">{formatNum(snap.errors)}</dd>
+                    <dt class="text-muted-foreground">in</dt>
+                    <dd class="text-right">{formatBytes(snap.bytes_in)}</dd>
+                    <dt class="text-muted-foreground">out</dt>
+                    <dd class="text-right">{formatBytes(snap.bytes_out)}</dd>
+                  </dl>
+                </div>
+              {/each}
+            </div>
+          </div>
+        </div>
+      {/if}
 
       <!-- RPC Latency Breakdown -->
       {@const rpcEntries = getRpcLatency(m)}
