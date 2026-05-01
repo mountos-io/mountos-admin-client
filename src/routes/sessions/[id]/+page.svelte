@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation'
   import { onDestroy } from 'svelte'
   import { untrack } from 'svelte'
-  import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
+  import { Card, CardContent } from '$lib/components/ui/card'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import { useAuth } from '$lib/core/stores/auth.svelte'
@@ -299,11 +299,12 @@
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
               {#each gatewayProtocols(gw) as { proto, snap }}
-                {@const errPct = snap.requests > 0 ? (snap.errors * 100) / snap.requests : 0}
+                {@const errPct = snap.requests > 0 ? (snap.errors * 100) / snap.requests : (snap.errors > 0 ? 100 : 0)}
+                {@const errBad = errPct > 1}
                 <div class="border border-border/30 rounded-sm p-4">
                   <div class="flex items-center justify-between mb-2">
                     <span class="font-mono text-sm uppercase tracking-wider">{proto}</span>
-                    <Badge variant={errPct > 1 ? 'destructive' : 'outline'} class="font-mono text-xs">
+                    <Badge variant={errBad ? 'destructive' : 'outline'} class="font-mono text-xs" aria-label={errBad ? `${proto} error rate ${errPct.toFixed(1)} percent` : `${proto} error rate normal`}>
                       {snap.errors}/{snap.requests} err
                     </Badge>
                   </div>
