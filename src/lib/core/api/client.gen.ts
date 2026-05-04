@@ -10,10 +10,11 @@ import type {
   CreateVolumeRequest, Volume, VolumeListOptions, EditVolumeRequest, 
   DeactivateVolumeRequest, GenerateVolumeAPIKeysRequest, RevokeVolumeAPIKeyRequest, 
   RevokeVolumeAPIKeysByUserRequest, UpdateVolumeQuotaRequest, VolumeSizePoint, 
-  CreateVolumeForkRequest, Fork, DeleteVolumeForkRequest, AuditLog, AuditLogListOptions, 
-  RegionAuditLogListOptions, ServiceNode, ClientSession, ClientSessionListOptions, 
-  SessionSummary, DiscoverMetaResponse, DashboardStats, LicenseDetails, LicenseTerms, 
-  ServiceAlert, AlertListOptions, AlertCountResponse, RegionAlert, RegionAlertListOptions,
+  CreateVolumeForkRequest, Fork, DeleteVolumeForkRequest, RestoreVolumeForkRequest, 
+  AuditLog, AuditLogListOptions, RegionAuditLogListOptions, ServiceNode, ClientSession, 
+  ClientSessionListOptions, SessionSummary, DiscoverMetaResponse, DashboardStats, 
+  LicenseDetails, LicenseTerms, ServiceAlert, AlertListOptions, AlertCountResponse, 
+  RegionAlert, RegionAlertListOptions,
 } from '@mountos-app/admin-sdk'
 
 function queryString(params: Record<string, string | number | boolean | undefined>): string {
@@ -392,20 +393,20 @@ class VolumesResource {
     return this.client.request('POST', `/volumes/${volumeId}/forks/create`, req)
   }
 
-  listForks(volumeId: number, signal?: AbortSignal): Promise<Fork[]> {
-    return this.client.request('GET', `/volumes/${volumeId}/forks`, undefined, signal)
+  listForks(volumeId: number, volumeType?: string, signal?: AbortSignal): Promise<Fork[]> {
+    return this.client.request('GET', `/volumes/${volumeId}/forks` + queryString({ volumeType: volumeType }), undefined, signal)
   }
 
-  listAllForks(volumeId: number, signal?: AbortSignal): Promise<Fork[]> {
-    return this.client.request('GET', `/volumes/${volumeId}/forks?include_inactive=true`, undefined, signal)
+  listAllForks(volumeId: number, volumeType?: string, signal?: AbortSignal): Promise<Fork[]> {
+    return this.client.request('GET', `/volumes/${volumeId}/forks?include_inactive=true` + queryString({ volumeType: volumeType }), undefined, signal)
   }
 
   deleteFork(volumeId: number, forkName: string, req: DeleteVolumeForkRequest): Promise<{ inactivatedFids: number[] }> {
     return this.client.request('POST', `/volumes/${volumeId}/forks/${encodeURIComponent(forkName)}/delete`, req)
   }
 
-  restoreFork(volumeId: number, forkName: string, signal?: AbortSignal): Promise<Fork> {
-    return this.client.request('GET', `/volumes/${volumeId}/forks/${encodeURIComponent(forkName)}/restore`, undefined, signal)
+  restoreFork(volumeId: number, forkName: string, req: RestoreVolumeForkRequest): Promise<Fork> {
+    return this.client.request('POST', `/volumes/${volumeId}/forks/${encodeURIComponent(forkName)}/restore`, req)
   }
 }
 

@@ -84,7 +84,10 @@
     if (!deleteForkTarget) return
     deleteForkLoading = true
     try {
-      await store.deleteFork(id, deleteForkTarget.name, deleteForkForce)
+      await store.deleteFork(id, deleteForkTarget.name, {
+        force: deleteForkForce,
+        volumeType: forksVolumeType === 'iceberg' ? 'iceberg' : undefined,
+      })
       showSuccessToast(`Fork "${deleteForkTarget.name}" marked for deletion`)
       deleteForkOpen = false
       deleteForkTarget = null
@@ -109,7 +112,9 @@
     if (!restoreForkTarget) return
     restoreForkLoading = true
     try {
-      await store.restoreFork(id, restoreForkTarget.name)
+      await store.restoreFork(id, restoreForkTarget.name, {
+        volumeType: forksVolumeType === 'iceberg' ? 'iceberg' : undefined,
+      })
       showSuccessToast(`Fork "${restoreForkTarget.name}" restored`)
       restoreForkOpen = false
       restoreForkTarget = null
@@ -127,6 +132,10 @@
   let createForkLoading = $state(false)
   let createForkAsOfEnabled = $state(false)
   let createForkAsOfLocal = $state('')
+  let createForkVolumeType = $state<'general' | 'iceberg'>('general')
+
+  // Active filter for the fork list — switches between general and iceberg fork views.
+  let forksVolumeType = $state<'general' | 'iceberg'>('general')
 
   function toDatetimeLocal(d: Date): string {
     const pad = (n: number) => String(n).padStart(2, '0')
@@ -187,6 +196,9 @@
     createForkParent = 'main'
     createForkAsOfEnabled = false
     createForkAsOfLocal = toDatetimeLocal(new Date())
+    // Inherit the active list filter so the dialog defaults to whatever the
+    // user is currently viewing.
+    createForkVolumeType = forksVolumeType
     createForkOpen = true
   }
 
@@ -199,6 +211,9 @@
       if (createForkParent && createForkParent !== 'main') req.parentName = createForkParent
       if (createForkAsOfEnabled) {
         req.asOf = new Date(createForkAsOfLocal).getTime() * 1000
+      }
+      if (createForkVolumeType === 'iceberg') {
+        req.volumeType = 'iceberg'
       }
       await store.createFork(id, req)
       showSuccessToast(`Fork "${createForkName.trim()}" created`)
@@ -421,10 +436,18 @@
     if (!volume) return
     forksLoading = true
     try {
-      forks = await store.listAllForks(id)
+      forks = await store.listAllForks(id, forksVolumeType)
     } catch { forks = [] }
     finally { forksLoading = false }
   }
+
+  // Re-fetch forks when the user toggles between general / iceberg.
+  // Skips the initial mount (volume null) — that case is handled by the
+  // volume-load $effect which calls fetchForks() once after getVolume.
+  $effect(() => {
+    void forksVolumeType
+    if (volume) fetchForks()
+  })
 
   type ForkNode = Fork & { children: ForkNode[] }
 
@@ -761,9 +784,22 @@
 
     <Card cornerBrackets>
       <CardHeader>
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-2">
           <CardTitle>Forks ({forks.length})</CardTitle>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
+          <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
+            <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+            <div class="relative flex items-center gap-1.5" role="group" aria-label="Fork type filter">
+              <Button variant={forksVolumeType === 'general' ? 'primary' : 'ghost'} size="sm"
+                class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                aria-pressed={forksVolumeType === 'general'}
+                onclick={() => forksVolumeType = 'general'}>General</Button>
+              <Button variant={forksVolumeType === 'iceberg' ? 'primary' : 'ghost'} size="sm"
+                class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                aria-pressed={forksVolumeType === 'iceberg'}
+                onclick={() => forksVolumeType = 'iceberg'}>Iceberg</Button>
+            </div>
+          </div>
           {#if forks.length > 1}
             <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit hidden md:block">
               <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
@@ -1145,6 +1181,25 @@
       </Dialog.Description>
     </Dialog.Header>
     <div class="space-y-4 py-2">
+      <div class="space-y-1.5">
+        <Label class="text-sm font-semibold inline-flex items-center gap-1">
+          Type
+          <InfoTip text={"General: filesystem fork over volume data.\nIceberg: lake-catalog fork over Iceberg tables (table metadata only)."} />
+        </Label>
+        <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
+          <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+          <div class="relative flex items-center gap-1.5" role="group" aria-label="Fork type">
+            <Button variant={createForkVolumeType === 'general' ? 'primary' : 'ghost'} size="sm"
+              class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+              aria-pressed={createForkVolumeType === 'general'}
+              onclick={() => createForkVolumeType = 'general'}>General</Button>
+            <Button variant={createForkVolumeType === 'iceberg' ? 'primary' : 'ghost'} size="sm"
+              class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+              aria-pressed={createForkVolumeType === 'iceberg'}
+              onclick={() => createForkVolumeType = 'iceberg'}>Iceberg</Button>
+          </div>
+        </div>
+      </div>
       <div class="space-y-1.5">
         <Label for="create-fork-name" class="text-sm font-semibold">Name</Label>
         <Input id="create-fork-name" bind:value={createForkName} placeholder="Fork name" />

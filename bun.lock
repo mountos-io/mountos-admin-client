@@ -4,11 +4,11 @@
     "": {
       "name": "mountos-admin-client",
       "dependencies": {
-        "@mountos-app/admin-sdk": "^0.51.0",
+        "@mountos-app/admin-sdk": "file:/Users/princejohnwesley/Projects/Private/mountOS/mountos-admin-sdk/ts",
         "@simplewebauthn/server": "^13.3.0",
         "hono": "^4.12.15",
         "ioredis": "^5.10.1",
-        "jose": "^6.2.2",
+        "jose": "^6.2.3",
         "prom-client": "^15.1.3",
       },
       "devDependencies": {
@@ -114,7 +114,7 @@
 
     "@lucide/svelte": ["@lucide/svelte@0.577.0", "", { "peerDependencies": { "svelte": "^5" } }, "sha512-0P6mkySd2MapIEgq08tADPmcN4DHndC/02PWwaLkOerXlx5Sv9aT4BxyXLIY+eccr0g/nEyCYiJesqS61YdBZQ=="],
 
-    "@mountos-app/admin-sdk": ["@mountos-app/admin-sdk@0.51.0", "", { "dependencies": { "jose": "^6.0.11" } }, "sha512-HcJQT4BRpzJSaRrfw11KXezuf51Q7OLtagqsZ0enDRyTkSTv0xiQ86s0QmEVvcjyWUwtvdVAZ6DLk1w9eoxveg=="],
+    "@mountos-app/admin-sdk": ["@mountos-app/admin-sdk@file:../mountos-admin-sdk/ts", { "dependencies": { "jose": "^6.0.11" }, "devDependencies": { "typescript": "^5.7.0" } }],
 
     "@opentelemetry/api": ["@opentelemetry/api@1.9.1", "", {}, "sha512-gLyJlPHPZYdAk1JENA9LeHejZe1Ti77/pTeFm/nMXmQH/HFZlcS/O2XJB+L8fkbrNSqhdtlvjBVjxwUYanNH5Q=="],
 

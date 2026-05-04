@@ -50,6 +50,7 @@ export type {
   AlertCountResponse,
   DeleteVolumeForkRequest,
   CreateVolumeForkRequest,
+  RestoreVolumeForkRequest,
   VolumeSizePoint,
   RegionAlert,
   RegionAlertListOptions,

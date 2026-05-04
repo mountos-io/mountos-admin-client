@@ -1,7 +1,7 @@
 import type {
   Volume, CreateVolumeRequest, EditVolumeRequest,
   DeactivateVolumeRequest, GenerateVolumeAPIKeysRequest, UpdateVolumeQuotaRequest,
-  CreateVolumeForkRequest,
+  CreateVolumeForkRequest, DeleteVolumeForkRequest, RestoreVolumeForkRequest,
 } from '$lib/core/api/types'
 import { api } from './client.svelte'
 
@@ -68,24 +68,24 @@ async function updateQuota(volumeId: number, quotaLimit: number) {
   return api.volumes.updateQuota(volumeId, { quotaLimit })
 }
 
-async function listForks(volumeId: number) {
-  return api.volumes.listForks(volumeId)
+async function listForks(volumeId: number, volumeType?: string) {
+  return api.volumes.listForks(volumeId, volumeType)
 }
 
-async function listAllForks(volumeId: number) {
-  return api.volumes.listAllForks(volumeId)
+async function listAllForks(volumeId: number, volumeType?: string) {
+  return api.volumes.listAllForks(volumeId, volumeType)
 }
 
 async function createFork(volumeId: number, req: CreateVolumeForkRequest) {
   return api.volumes.createFork(volumeId, req)
 }
 
-async function deleteFork(volumeId: number, forkName: string, force: boolean = false) {
-  return api.volumes.deleteFork(volumeId, forkName, { force })
+async function deleteFork(volumeId: number, forkName: string, req: DeleteVolumeForkRequest = {}) {
+  return api.volumes.deleteFork(volumeId, forkName, req)
 }
 
-async function restoreFork(volumeId: number, forkName: string) {
-  return api.volumes.restoreFork(volumeId, forkName)
+async function restoreFork(volumeId: number, forkName: string, req: RestoreVolumeForkRequest = {}) {
+  return api.volumes.restoreFork(volumeId, forkName, req)
 }
 
 async function sizeHistory(volumeId: number, from: string, to: string) {
