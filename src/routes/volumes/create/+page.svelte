@@ -156,9 +156,17 @@
             <Combobox options={storageOptions} bind:value={storageId} placeholder="Select storage..." emptyText="No storages found." />
           </div>
           <div class="space-y-2">
-            <Label for="volumeType">Volume Type</Label>
-            <Select id="volumeType" bind:value={volumeType} placeholder="Select type..."
-              options={[{ value: 'object', label: 'Object' }, { value: 'block', label: 'Block' }]} />
+            <Label for="volumeType">
+              <span class="inline-flex items-center gap-1">
+                Volume Kind
+                <InfoTip text={"General: file/object filesystem (mount, S3 gateway, FUSE).\nIceberg: lake catalog (Iceberg REST + lake-S3 endpoints; FUSE mount renders the catalog tree, read-only). Engines (DuckDB/Spark/Trino) write through the lake-S3 listener."} />
+              </span>
+            </Label>
+            <Select id="volumeType" bind:value={volumeType} placeholder="Select kind..."
+              options={[
+                { value: 'general', label: 'General (file/object)' },
+                { value: 'iceberg', label: 'Iceberg (lake catalog)' },
+              ]} />
           </div>
 
           <Separator />
