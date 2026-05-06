@@ -31,7 +31,7 @@ if (missing.length) {
 await dashboardAuth.init()
 
 const hasLocalCerts = await Bun.file('.certs/cert.pem').exists()
-const rpId = process.env.WEBAUTHN_RP_ID ?? (hasLocalCerts ? 'local.mountos.app' : 'localhost')
+const rpId = process.env.WEBAUTHN_RP_ID ?? (hasLocalCerts ? 'local.mountos.io' : 'localhost')
 const webauthnConfig: WebAuthnConfig = {
   rpId,
   rpName: process.env.WEBAUTHN_RP_NAME ?? 'mountOS Dashboard',

@@ -1,6 +1,6 @@
 import * as jose from 'jose'
 import Redis from 'ioredis'
-import { MountOSAdmin, MountOSError } from '@mountos-app/admin-sdk'
+import { MountOSAdmin, MountOSError } from '@mountos-io/admin-sdk'
 import type { AdminUser, Capabilities, DashboardAuthConfig } from './types'
 import { providerAuthConfig } from '../src/provider/server/config'
 

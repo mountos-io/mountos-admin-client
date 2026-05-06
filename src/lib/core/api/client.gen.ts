@@ -15,7 +15,7 @@ import type {
   ClientSessionListOptions, SessionSummary, DiscoverMetaResponse, DashboardStats, 
   LicenseDetails, LicenseTerms, ServiceAlert, AlertListOptions, AlertCountResponse, 
   RegionAlert, RegionAlertListOptions,
-} from '@mountos-app/admin-sdk'
+} from '@mountos-io/admin-sdk'
 
 function queryString(params: Record<string, string | number | boolean | undefined>): string {
   const entries = Object.entries(params).filter(([, v]) => v !== undefined)

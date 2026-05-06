@@ -13,7 +13,7 @@ const loadCerts = async () => {
 export default defineConfig(async () => ({
   plugins: [tailwindcss(), sveltekit()],
   server: {
-    host: 'local.mountos.app',
+    host: 'local.mountos.io',
     port: 5173,
     strictPort: true,
     https: await loadCerts(),

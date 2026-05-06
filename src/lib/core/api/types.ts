@@ -54,7 +54,7 @@ export type {
   VolumeSizePoint,
   RegionAlert,
   RegionAlertListOptions,
-} from '@mountos-app/admin-sdk'
+} from '@mountos-io/admin-sdk'
 
 export { ApiError } from './errors.js'
 export { AdminClient, type ClientConfig } from './client.gen.js'

@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { TokenSigner, signDashboardUser } from '@mountos-app/admin-sdk'
-import type { DashboardUser } from '@mountos-app/admin-sdk'
+import { TokenSigner, signDashboardUser } from '@mountos-io/admin-sdk'
+import type { DashboardUser } from '@mountos-io/admin-sdk'
 import type { AdminUser } from './types'
 
 const APPSERV_URL = process.env.MOUNTOS_APPSERV_URL ?? 'http://localhost:8080'

@@ -349,7 +349,7 @@ function generate(spec: Spec): string {
     line += imports[i]
   }
   if (line.length > 2) w(line + ',\n')
-  w("} from '@mountos-app/admin-sdk'\n\n")
+  w("} from '@mountos-io/admin-sdk'\n\n")
 
   // queryString helper
   w('function queryString(params: Record<string, string | number | boolean | undefined>): string {\n')
@@ -497,7 +497,7 @@ function generate(spec: Spec): string {
 
 // --- Entry ---
 
-const sdkUrl = import.meta.resolve('@mountos-app/admin-sdk')
+const sdkUrl = import.meta.resolve('@mountos-io/admin-sdk')
 const specPath = join(dirname(fileURLToPath(sdkUrl)), '..', 'api.yaml')
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const outPath = join(root, 'src', 'lib', 'core', 'api', 'client.gen.ts')

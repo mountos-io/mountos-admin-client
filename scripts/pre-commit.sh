@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PKG="@mountos-app/admin-sdk"
+PKG="@mountos-io/admin-sdk"
 
 # Only act if package.json is staged
 git diff --cached --name-only | grep -qx 'package.json' || exit 0

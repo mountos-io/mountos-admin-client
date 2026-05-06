@@ -39,22 +39,22 @@ test-auto-login: ## Generate test token and open login URL in browser
 
 setup-certs: ## Generate mkcert TLS certs for local HTTPS dev (requires: brew install mkcert && mkcert -install)
 	@mkdir -p .certs
-	mkcert -cert-file .certs/cert.pem -key-file .certs/key.pem local.mountos.app localhost 127.0.0.1
+	mkcert -cert-file .certs/cert.pem -key-file .certs/key.pem local.mountos.io localhost 127.0.0.1
 
 clean: ## Remove build artifacts
 	rm -rf .svelte-kit build node_modules
 
 SDK_PATH := $(realpath $(or $(MOUNTOS_ADMIN_TS_SDK_PATH),../mountos-admin-sdk/ts))
 
-set-local-admin-sdk: ## Point @mountos-app/admin-sdk to local file: path for dev
+set-local-admin-sdk: ## Point @mountos-io/admin-sdk to local file: path for dev
 	@if [ ! -d "$(SDK_PATH)" ]; then echo "error: SDK path not found: $(SDK_PATH)" >&2; exit 1; fi
-	@jq --arg p "file:$(SDK_PATH)" '.dependencies["@mountos-app/admin-sdk"] = $$p' package.json > package.json.tmp && mv package.json.tmp package.json
-	@echo "set @mountos-app/admin-sdk → file:$(SDK_PATH)"
+	@jq --arg p "file:$(SDK_PATH)" '.dependencies["@mountos-io/admin-sdk"] = $$p' package.json > package.json.tmp && mv package.json.tmp package.json
+	@echo "set @mountos-io/admin-sdk → file:$(SDK_PATH)"
 	@cp -f scripts/pre-commit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
 	@echo "installed pre-commit hook"
 
-reset-local-admin-sdk: ## Revert @mountos-app/admin-sdk to ^<npm latest>
-	$(eval LATEST := $(shell npm view @mountos-app/admin-sdk version))
+reset-local-admin-sdk: ## Revert @mountos-io/admin-sdk to ^<npm latest>
+	$(eval LATEST := $(shell npm view @mountos-io/admin-sdk version))
 	@if [ -z "$(LATEST)" ]; then echo "error: failed to fetch latest version from npm" >&2; exit 1; fi
-	@jq --arg v "^$(LATEST)" '.dependencies["@mountos-app/admin-sdk"] = $$v' package.json > package.json.tmp && mv package.json.tmp package.json
-	@echo "reset @mountos-app/admin-sdk → ^$(LATEST)"
+	@jq --arg v "^$(LATEST)" '.dependencies["@mountos-io/admin-sdk"] = $$v' package.json > package.json.tmp && mv package.json.tmp package.json
+	@echo "reset @mountos-io/admin-sdk → ^$(LATEST)"

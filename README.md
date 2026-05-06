@@ -46,7 +46,7 @@ Pass custom user details: `bun run gen/test-token.ts <sub> <name> <email>`
 ## Code Generation
 
 The browser API client (`src/lib/core/api/client.gen.ts`) is generated from the
-`api.yaml` spec bundled in `@mountos-app/admin-sdk`.
+`api.yaml` spec bundled in `@mountos-io/admin-sdk`.
 
 ```sh
 make gen                      # default: bun
