@@ -21,6 +21,7 @@
   let exchangeError = $state('')
   let progress = $state(0)
   let bootDone = false
+  let attemptedToken: string | null = null
 
   async function exchangeToken(providerToken: string) {
     exchanging = true
@@ -89,6 +90,8 @@
 
     const providerToken = $page.url.searchParams.get('token')
     if (providerToken) {
+      if (attemptedToken === providerToken) return
+      attemptedToken = providerToken
       exchangeToken(providerToken)
       return
     }
