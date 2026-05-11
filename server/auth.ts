@@ -1,6 +1,6 @@
 import * as jose from 'jose'
 import Redis from 'ioredis'
-import { MountOSAdmin, MountOSError } from '@mountos-io/admin-sdk'
+import { createServerClient, MountOSError, type AdminClient } from '@mountos-io/admin-sdk'
 import type { AdminUser, Capabilities, DashboardAuthConfig } from './types'
 import { providerAuthConfig } from '../src/provider/server/config'
 
@@ -91,7 +91,7 @@ class DashboardAuth {
   private sessionPub!: jose.KeyLike
   private providerPub!: jose.KeyLike
   private redis!: Redis
-  private sdk!: MountOSAdmin
+  private sdk!: AdminClient
   private config: DashboardAuthConfig
 
   constructor() {
@@ -108,7 +108,7 @@ class DashboardAuth {
     this.sessionPub = await importEd25519PublicKey('DASHBOARD_VERIFICATION_KEY', process.env.DASHBOARD_VERIFICATION_KEY!)
     this.redis = new Redis(process.env.REDIS_URL!)
     await this.redis.ping()
-    this.sdk = new MountOSAdmin({
+    this.sdk = createServerClient({
       baseUrl: process.env.MOUNTOS_APPSERV_URL ?? 'http://localhost:8080',
       privateKey: process.env.MOUNTOS_SDK_SIGNING_KEY!,
     })

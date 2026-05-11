@@ -57,4 +57,4 @@ export type {
 } from '@mountos-io/admin-sdk'
 
 export { ApiError } from './errors.js'
-export { AdminClient, type ClientConfig } from './client.gen.js'
+export type { AdminClient } from '@mountos-io/admin-sdk'
