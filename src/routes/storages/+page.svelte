@@ -59,7 +59,7 @@
   }
 
   function fetchPage(page = 1) {
-    if (accountId) storageStore.fetchStorages(accountId, page, prefs.pageSize, buildFilters())
+    if (accountId) storageStore.fetchStorages({ accountId, page, limit: prefs.pageSize, filters: buildFilters() })
   }
 
   const debouncedApplySearch = debounce(() => {
@@ -79,7 +79,7 @@
     }
     if (accountId) {
       if (filtersLoadedFor !== accountId) {
-        regionStore.fetchRegions(1, 100)
+        regionStore.fetchRegions({ page: 1, limit: 100 })
         filtersLoadedFor = accountId
       }
       fetchPage()

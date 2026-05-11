@@ -11,12 +11,25 @@ let totalPages = $state(0)
 let currentPage = $state(1)
 let fetchCtrl: AbortController | null = null
 
-async function fetchVolumes(accountId: number, page = 1, limit = 20, regionId?: number, storageId?: number) {
+type FetchVolumesParams = {
+  accountId: number
+  page?: number
+  limit?: number
+  regionId?: number
+  storageId?: number
+  volumeType?: string
+  locked?: boolean
+}
+
+async function fetchVolumes({
+  accountId, page = 1, limit = 20,
+  regionId, storageId, volumeType, locked,
+}: FetchVolumesParams) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.volumes.list({ accountId, page, limit, regionId, storageId }, ctrl.signal)
+    const res = await api.volumes.list({ accountId, page, limit, regionId, storageId, volumeType, locked }, ctrl.signal)
     volumes = res.items
     totalPages = res.pagination?.totalPages ?? 0
     currentPage = res.pagination?.page ?? 1
@@ -60,11 +73,11 @@ async function revokeApiKey(volumeId: number, apiKey: string) {
   return api.volumes.revokeAPIKey(volumeId, { apiKey })
 }
 
-async function revokeApiKeysByUser(volumeId: number, userId: number) {
+async function revokeApiKeysByUser({ volumeId, userId }: { volumeId: number; userId: number }) {
   return api.volumes.revokeAPIKeysByUser(volumeId, { userId })
 }
 
-async function updateQuota(volumeId: number, quotaLimit: number) {
+async function updateQuota({ volumeId, quotaLimit }: { volumeId: number; quotaLimit: number }) {
   return api.volumes.updateQuota(volumeId, { quotaLimit })
 }
 
@@ -88,7 +101,7 @@ async function restoreFork(volumeId: number, forkName: string, req: RestoreVolum
   return api.volumes.restoreFork(volumeId, forkName, req)
 }
 
-async function sizeHistory(volumeId: number, from: string, to: string) {
+async function sizeHistory({ volumeId, from, to }: { volumeId: number; from: string; to: string }) {
   return api.volumes.sizeHistory(volumeId, from, to)
 }
 

@@ -61,7 +61,7 @@
     }
     const interval = Number(pollValue)
     if (interval > 0) {
-      nodeStore.startPolling(regionId, nodeId, interval)
+      nodeStore.startPolling({ regionId, nodeId, interval })
     } else {
       nodeStore.stopPolling()
       nodeStore.fetchStats(regionId, nodeId)

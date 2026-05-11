@@ -14,7 +14,14 @@ export interface StorageFilters {
   providerType?: string
 }
 
-async function fetchStorages(accountId: number, page = 1, limit = 20, filters?: StorageFilters) {
+type FetchStoragesParams = {
+  accountId: number
+  page?: number
+  limit?: number
+  filters?: StorageFilters
+}
+
+async function fetchStorages({ accountId, page = 1, limit = 20, filters }: FetchStoragesParams) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true

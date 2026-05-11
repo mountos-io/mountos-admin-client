@@ -7,7 +7,7 @@
 
   let {
     options, value = $bindable(''), placeholder = 'Select...',
-    onchange, class: className, label,
+    onchange, class: className, label, controls,
   }: {
     options: readonly { value: string; label: string }[]
     value?: string
@@ -15,6 +15,7 @@
     onchange?: (value: string) => void
     class?: string
     label?: string
+    controls?: string
   } = $props()
 
   let open = $state(false)
@@ -27,6 +28,7 @@
       <Button {...props} variant="outline" size="sm"
         aria-haspopup="listbox"
         aria-label={label ?? placeholder}
+        aria-controls={controls}
         class={cn(
           "justify-between gap-1.5 min-w-24 max-w-[12rem]",
           value ? "font-semibold" : "font-normal text-muted-foreground",

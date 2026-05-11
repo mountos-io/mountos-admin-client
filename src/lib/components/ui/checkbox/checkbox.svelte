@@ -14,14 +14,14 @@
 </script>
 
 <label class={cn(
-  "inline-flex items-center gap-2.5 select-none group",
+  "inline-flex min-h-8 items-center gap-2.5 px-1 select-none group",
   disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
   className
 )}>
   <span class={cn(
     "relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[2px] border border-input bg-transparent transition-[border-color,background-color]",
     !disabled && "group-hover:border-foreground/40",
-    "has-[:focus-visible]:border-foreground/40",
+    "has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background",
     checked && "border-primary bg-primary/10",
   )}>
     <input bind:this={ref} type="checkbox" data-slot="checkbox"

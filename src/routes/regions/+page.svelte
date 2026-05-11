@@ -51,7 +51,7 @@
       goto("/", { replaceState: true });
       return;
     }
-    store.fetchRegions(1, prefs.pageSize);
+    store.fetchRegions({ page: 1, limit: prefs.pageSize });
   });
 
   async function copyExportId(exportId: string) {
@@ -197,7 +197,7 @@
     <Pagination
       currentPage={store.currentPage}
       totalPages={store.totalPages}
-      onPageChange={(p) => store.fetchRegions(p, prefs.pageSize)}
+      onPageChange={(p) => store.fetchRegions({ page: p, limit: prefs.pageSize })}
     />
   {/if}
 </div>

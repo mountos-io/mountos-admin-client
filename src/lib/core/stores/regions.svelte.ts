@@ -7,7 +7,7 @@ let totalPages = $state(0)
 let currentPage = $state(1)
 let fetchCtrl: AbortController | null = null
 
-async function fetchRegions(page = 1, limit = 20) {
+async function fetchRegions({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
@@ -38,7 +38,7 @@ async function getRegion(id: number) {
 
 async function deactivateRegion(id: number) {
   await api.regions.deactivate(id)
-  await fetchRegions(currentPage)
+  await fetchRegions({ page: currentPage })
 }
 
 export function useRegions() {

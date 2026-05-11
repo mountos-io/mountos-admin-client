@@ -9,6 +9,7 @@
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
+  import { Checkbox } from '$lib/components/ui/checkbox'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
@@ -32,6 +33,8 @@
 
   let selectedRegionId = $state('')
   let selectedStorageId = $state('')
+  let selectedVolumeType = $state('')
+  let lockedOnly = $state(false)
 
   const hubRegionIds = $derived(
     new Set(regionStore.regions.filter(r => r.name === HUB_REGION_NAME).map(r => r.id))
@@ -41,27 +44,37 @@
   const canCreate = $derived(auth.can('volumes', 'create') && !isHubSelected)
 
   const regionOptions = $derived([
-    { value: '', label: 'All Regions' },
+    { value: '', label: 'Any region' },
     ...regionStore.regions
       .filter(r => r.name.toLowerCase() !== 'hub')
       .map(r => ({ value: String(r.id), label: r.name })),
   ])
 
   const storageOptions = $derived([
-    { value: '', label: 'All Storage' },
+    { value: '', label: 'Any storage' },
     ...storageStore.storages
       .filter(s => !hubRegionIds.has(s.regionInfo.id))
       .filter(s => !selectedRegionId || s.regionInfo.id === Number(selectedRegionId))
       .map(s => ({ value: String(s.id), label: s.name })),
   ])
 
+  const volumeTypeOptions = [
+    { value: '', label: 'Any type' },
+    { value: 'general', label: 'General' },
+    { value: 'iceberg', label: 'Iceberg' },
+  ]
+
   function refetch(page = 1) {
     if (!accountId) return
-    volumeStore.fetchVolumes(
-      accountId, page, prefs.pageSize,
-      selectedRegionId ? Number(selectedRegionId) : undefined,
-      selectedStorageId ? Number(selectedStorageId) : undefined,
-    )
+    volumeStore.fetchVolumes({
+      accountId,
+      page,
+      limit: prefs.pageSize,
+      regionId: selectedRegionId ? Number(selectedRegionId) : undefined,
+      storageId: selectedStorageId ? Number(selectedStorageId) : undefined,
+      volumeType: selectedVolumeType || undefined,
+      locked: lockedOnly || undefined,
+    })
   }
 
   function onRegionChange(v: string) {
@@ -76,6 +89,10 @@
     selectedStorageId = v
   }
 
+  function onVolumeTypeChange(v: string) {
+    selectedVolumeType = v
+  }
+
   let filtersLoadedFor: number | null = null
   $effect(() => {
     if (!auth.loading && !auth.can('volumes', 'read')) {
@@ -85,8 +102,8 @@
     }
     if (accountId) {
       if (filtersLoadedFor !== accountId) {
-        regionStore.fetchRegions(1, 100)
-        storageStore.fetchStorages(accountId, 1, 100)
+        regionStore.fetchRegions({ page: 1, limit: 100 })
+        storageStore.fetchStorages({ accountId, page: 1, limit: 100 })
         filtersLoadedFor = accountId
       }
       refetch()
@@ -103,23 +120,40 @@
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account to view its volumes." />
   {:else}
-    <FilterPanel class="max-w-full text-base">
-      <FilterSelect class="text-base"
-        options={regionOptions}
-        value={selectedRegionId}
-        placeholder="All Regions"
-        onchange={onRegionChange}
-      />
-      <FilterSelect class="text-base"
-        options={storageOptions}
-        value={selectedStorageId}
-        placeholder="All Storage"
-        onchange={onStorageChange}
-      />
-    </FilterPanel>
+    <fieldset>
+      <legend class="sr-only">Volume filters</legend>
+      <FilterPanel class="max-w-full text-base">
+        <FilterSelect class="text-base"
+          options={regionOptions}
+          value={selectedRegionId}
+          placeholder="Any region"
+          label="Filter by region"
+          controls="volumes-table"
+          onchange={onRegionChange}
+        />
+        <FilterSelect class="text-base"
+          options={storageOptions}
+          value={selectedStorageId}
+          placeholder="Any storage"
+          label="Filter by storage"
+          controls="volumes-table"
+          onchange={onStorageChange}
+        />
+        <FilterSelect class="text-base"
+          options={volumeTypeOptions}
+          value={selectedVolumeType}
+          placeholder="Any type"
+          label="Filter by volume type"
+          controls="volumes-table"
+          onchange={onVolumeTypeChange}
+        />
+        <Checkbox bind:checked={lockedOnly} label="Locked only" aria-controls="volumes-table" />
+      </FilterPanel>
+    </fieldset>
     {#snippet headerRow()}
       <TableRow>
         <TableHead class="th-cyber">Name</TableHead>
+        <TableHead class="th-cyber">Type</TableHead>
         <TableHead class="th-cyber hidden lg:table-cell">Region</TableHead>
         <TableHead class="th-cyber hidden lg:table-cell">Storage</TableHead>
         <TableHead class="th-cyber w-10"><span class="sr-only">Lock</span></TableHead>
@@ -145,6 +179,7 @@
         caption="Loading volumes"
         cells={[
           { width: 'w-32' },
+          { width: 'w-16' },
           { width: 'w-20', class: 'hidden lg:table-cell' },
           { width: 'w-24', class: 'hidden lg:table-cell' },
           { width: 'w-4' },
@@ -157,7 +192,10 @@
     {:else if volumeStore.volumes.length === 0}
       <EmptyState title="No volumes" action={canCreate ? { label: 'Create Volume', href: '/volumes/create' } : undefined} />
     {:else}
-      <Table>
+      <p class="sr-only" role="status" aria-live="polite">
+        Showing {volumeStore.volumes.length} {volumeStore.volumes.length === 1 ? 'volume' : 'volumes'} on page {volumeStore.currentPage} of {volumeStore.totalPages}
+      </p>
+      <Table id="volumes-table" containerLabel="Volumes">
         <caption class="sr-only">Volumes</caption>
         <TableHeader>
           {@render headerRow()}
@@ -173,6 +211,7 @@
               aria-label="Volume {volume.name}"
             >
               <TableCell class="font-medium max-w-[200px] truncate" title={volume.name}>{volume.name}</TableCell>
+              <TableCell class="text-sm text-muted-foreground capitalize">{volume.volumeType}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.region.name}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.storage.name}</TableCell>
               <TableCell>

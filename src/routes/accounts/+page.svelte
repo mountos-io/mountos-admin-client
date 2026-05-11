@@ -26,7 +26,7 @@
       goto('/', { replaceState: true })
       return
     }
-    store.fetchAccounts(1, prefs.pageSize)
+    store.fetchAccounts({ page: 1, limit: prefs.pageSize })
   })
 </script>
 
@@ -93,7 +93,7 @@
         {/each}
       </TableBody>
     </Table>
-    <Pagination currentPage={store.currentPage} totalPages={store.totalPages} onPageChange={(p) => store.fetchAccounts(p, prefs.pageSize)} />
+    <Pagination currentPage={store.currentPage} totalPages={store.totalPages} onPageChange={(p) => store.fetchAccounts({ page: p, limit: prefs.pageSize })} />
   {/if}
 </div>
 

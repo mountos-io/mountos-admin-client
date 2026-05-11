@@ -15,11 +15,11 @@
   import Combobox from '$lib/components/shared/Combobox.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
+  import FieldLabel from '$lib/components/shared/FieldLabel.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import { HUB_REGION_NAME } from '$lib/core/constants'
   import { gbToBytes } from '$lib/core/utils/format'
   import Copy from '@lucide/svelte/icons/copy'
-  import InfoTip from '$lib/components/shared/InfoTip.svelte'
 
   const volumeStore = useVolumes()
   const storageStore = useStorages()
@@ -41,7 +41,7 @@
     if (accountId) {
       storageId = ''
       storagesLoaded = false
-      storageStore.fetchStorages(accountId, 1, 100).finally(() => {
+      storageStore.fetchStorages({ accountId, page: 1, limit: 100 }).finally(() => {
         if (preselectedStorageId) storageId = preselectedStorageId
         storagesLoaded = true
       })
@@ -57,14 +57,19 @@
   let name = $state('')
   let description = $state('')
   let storageId = $state('')
-  let volumeType = $state('')
+  let volumeType = $state('general')
   let encryption = $state(false)
   let encryptionKey = $state('')
+  let encryptionKeyRef = $state<HTMLInputElement | null>(null)
   let retentionPeriod = $state('30')
   let gracePeriod = $state('14')
   let quotaLimit = $state('')
   let submitting = $state(false)
   let createResult = $state<{ id: number; encryptionKey: string } | null>(null)
+
+  $effect(() => {
+    if (encryption && encryptionKeyRef) encryptionKeyRef.focus()
+  })
 
   const canSubmit = $derived(name.trim() && storageId && volumeType)
 
@@ -113,17 +118,17 @@
   {:else if !storagesLoaded}
     <FormSkeleton fields={7} />
   {:else if createResult}
-    <Card cornerBrackets>
+    <Card cornerBrackets role="status" aria-live="polite">
       <CardHeader>
         <CardTitle>Volume Created</CardTitle>
       </CardHeader>
       <CardContent>
         {#if createResult.encryptionKey}
           <p class="text-sm text-muted-foreground mb-3">Save the encryption key below; it will not be shown again.</p>
-          <div class="rounded-sm border p-3 space-y-2 bg-muted/50">
-            <span class="text-sm text-muted-foreground">Encryption Key</span>
-            <p class="font-mono text-sm break-all">{createResult.encryptionKey}</p>
-          </div>
+          <dl class="rounded-sm border p-3 space-y-2 bg-muted/50">
+            <dt class="text-sm text-muted-foreground">Encryption Key</dt>
+            <dd class="font-mono text-sm break-all">{createResult.encryptionKey}</dd>
+          </dl>
           <Button variant="outline" size="sm" class="mt-3 gap-1.5" onclick={copyKey}>
             <Copy class="h-4 w-4" /> Copy Key
           </Button>
@@ -152,68 +157,64 @@
             <Input id="description" bind:value={description} placeholder="Description" autocomplete="off" />
           </div>
           <div class="space-y-2">
-            <Label>Storage</Label>
-            <Combobox options={storageOptions} bind:value={storageId} placeholder="Select storage..." emptyText="No storages found." />
+            <Label id="storage-label">Storage</Label>
+            <Combobox options={storageOptions} bind:value={storageId} placeholder="Select storage..." emptyText="No storages found." aria-labelledby="storage-label" />
           </div>
           <div class="space-y-2">
-            <Label for="volumeType">
-              <span class="inline-flex items-center gap-1">
-                Volume Kind
-                <InfoTip text={"General: file/object filesystem (mount, S3 gateway, FUSE).\nIceberg: lake catalog (Iceberg REST + lake-S3 endpoints; FUSE mount renders the catalog tree, read-only). Engines (DuckDB/Spark/Trino) write through the lake-S3 listener."} />
-              </span>
-            </Label>
+            <FieldLabel for="volumeType" tooltip={"General: file/object filesystem (mount, S3 gateway, FUSE).\nIceberg: lake catalog (Iceberg REST + lake-S3 endpoints; FUSE mount renders the catalog tree, read-only). Engines (DuckDB/Spark/Trino) write through the lake-S3 listener."}>
+              Volume Kind
+            </FieldLabel>
             <Select id="volumeType" bind:value={volumeType} placeholder="Select kind..."
               options={[
-                { value: 'general', label: 'General (file/object)' },
-                { value: 'iceberg', label: 'Iceberg (lake catalog)' },
+                { value: 'general', label: 'General' },
+                { value: 'iceberg', label: 'Iceberg' },
               ]} />
           </div>
 
           <Separator />
 
-          <p class="text-sm font-medium">Encryption</p>
-          <Checkbox bind:checked={encryption} label="Enable encryption" />
-          {#if encryption}
-            <div class="space-y-2">
-              <Label for="encryptionKey">Encryption Key</Label>
-              <Input id="encryptionKey" bind:value={encryptionKey} placeholder="Leave empty to auto-generate" />
-            </div>
-          {/if}
+          <fieldset class="space-y-2">
+            <legend class="text-sm font-medium">Encryption</legend>
+            <Checkbox bind:checked={encryption} label="Enable encryption" />
+            {#if encryption}
+              <div class="space-y-2">
+                <Label for="encryptionKey">Encryption Key</Label>
+                <Input id="encryptionKey" bind:value={encryptionKey} bind:ref={encryptionKeyRef} placeholder="Leave empty to auto-generate" />
+              </div>
+            {/if}
+          </fieldset>
 
           <Separator />
 
-          <p class="text-sm font-medium">Retention & Lifecycle</p>
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="space-y-2">
-              <Label for="retentionPeriod">
-                <span class="inline-flex items-center gap-1">
+          <fieldset class="space-y-2">
+            <legend class="text-sm font-medium">Retention & Lifecycle</legend>
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="space-y-2">
+                <FieldLabel for="retentionPeriod" tooltip="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data.">
                   Snapshot Window (days)
-                  <InfoTip text="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data." />
-                </span>
-              </Label>
-              <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="30" min="0" max="366" aria-describedby="retentionPeriod-hint" />
-              <p id="retentionPeriod-hint" class="sr-only">How long deleted items and old versions are retained before cleanup, in days</p>
-            </div>
-            <div class="space-y-2">
-              <Label for="gracePeriod">
-                <span class="inline-flex items-center gap-1">
+                </FieldLabel>
+                <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="30" min="0" max="366" aria-describedby="retentionPeriod-hint" />
+                <p id="retentionPeriod-hint" class="sr-only">How long deleted items and old versions are retained before cleanup, in days</p>
+              </div>
+              <div class="space-y-2">
+                <FieldLabel for="gracePeriod" tooltip="How long data stays before cleanup after deactivation">
                   Grace Period (days)
-                  <InfoTip text="How long data stays before cleanup after deactivation" />
-                </span>
-              </Label>
-              <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" max="91" aria-describedby="gracePeriod-hint" />
-              <p id="gracePeriod-hint" class="sr-only">How long data stays before cleanup after deactivation, in days</p>
+                </FieldLabel>
+                <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" max="91" aria-describedby="gracePeriod-hint" />
+                <p id="gracePeriod-hint" class="sr-only">How long data stays before cleanup after deactivation, in days</p>
+              </div>
             </div>
-          </div>
+          </fieldset>
 
           <Separator />
 
           <div class="space-y-2">
             <Label for="quotaLimit">Quota Limit (GB)</Label>
-            <Input id="quotaLimit" type="number" bind:value={quotaLimit} placeholder="0 = unlimited" min="0" step="0.01" />
+            <Input id="quotaLimit" type="number" bind:value={quotaLimit} placeholder="0" min="0" step="0.01" aria-describedby="quotaLimit-hint" />
+            <p id="quotaLimit-hint" class="text-xs text-muted-foreground">0 means unlimited.</p>
           </div>
 
-          <div class="flex gap-3 pt-2">
+          <div class="flex flex-wrap gap-3 pt-2">
             <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !canSubmit}>
               {submitting ? 'Creating...' : 'Create Volume'}
             </Button>

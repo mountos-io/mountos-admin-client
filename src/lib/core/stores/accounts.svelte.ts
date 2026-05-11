@@ -10,7 +10,7 @@ let fetchCtrl: AbortController | null = null
 
 const selectedAccount = $derived(accounts.find(a => a.id === selectedAccountId) ?? null)
 
-async function fetchAccounts(page = 1, limit = 20) {
+async function fetchAccounts({ page = 1, limit = 20 }: { page?: number; limit?: number } = {}) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
@@ -38,29 +38,29 @@ function setFixedAccount(account: Account) {
 
 async function createAccount(req: CreateAccountRequest) {
   const res = await api.accounts.create(req)
-  await fetchAccounts(currentPage)
+  await fetchAccounts({ page: currentPage })
   return res
 }
 
 async function editAccount(id: number, req: EditAccountRequest) {
   const res = await api.accounts.edit(id, req)
-  await fetchAccounts(currentPage)
+  await fetchAccounts({ page: currentPage })
   return res
 }
 
 async function lockAccount(id: number) {
   await api.accounts.lock(id)
-  await fetchAccounts(currentPage)
+  await fetchAccounts({ page: currentPage })
 }
 
 async function unlockAccount(id: number) {
   await api.accounts.unlock(id)
-  await fetchAccounts(currentPage)
+  await fetchAccounts({ page: currentPage })
 }
 
 async function deactivateAccount(id: number) {
   await api.accounts.deactivate(id)
-  await fetchAccounts(currentPage)
+  await fetchAccounts({ page: currentPage })
 }
 
 async function getAccount(id: number) {

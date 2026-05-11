@@ -30,6 +30,7 @@
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
+  import FieldLabel from '$lib/components/shared/FieldLabel.svelte'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
   import Check from '@lucide/svelte/icons/check'
@@ -323,7 +324,7 @@
       })
       if (quotaChanged) {
         const gb = Number(editQuota)
-        await store.updateQuota(id, isNaN(gb) || gb <= 0 ? 0 : gbToBytes(gb))
+        await store.updateQuota({ volumeId: id, quotaLimit: isNaN(gb) || gb <= 0 ? 0 : gbToBytes(gb) })
       }
       showSuccessToast('Volume updated')
       editing = false
@@ -415,7 +416,7 @@
     try {
       const to = new Date()
       const from = new Date(to.getTime() - sizeRangeDays[sizeRange] * 86400_000)
-      const res = await store.sizeHistory(id, from.toISOString(), to.toISOString())
+      const res = await store.sizeHistory({ volumeId: id, from: from.toISOString(), to: to.toISOString() })
       if (ctrl.signal.aborted) return
       sizePoints = res.points
     } catch (e) {
@@ -556,7 +557,7 @@
     if (!revokeUserId || Number.isNaN(uid)) return
     const label = selectedUserLabel || `User #${uid}`
     dialog.confirm('Revoke Key', `Revoke API key for ${label}?`, async () => {
-      await store.revokeApiKeysByUser(id, uid)
+      await store.revokeApiKeysByUser({ volumeId: id, userId: uid })
       showSuccessToast(`API key revoked for ${label}`)
     }, 'destructive')
   }
@@ -626,21 +627,15 @@
           {#if editing}
             <div class="grid gap-4 md:grid-cols-2">
               <div class="space-y-1.5">
-                <Label for="edit-retention" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
-                  <span class="inline-flex items-center gap-1">
-                    Snapshot Window (days)
-                    <InfoTip text="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data." />
-                  </span>
-                </Label>
+                <FieldLabel for="edit-retention" tooltip="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                  Snapshot Window (days)
+                </FieldLabel>
                 <Input id="edit-retention" type="number" bind:value={editRetention} placeholder="30" min="0" max="366" />
               </div>
               <div class="space-y-1.5">
-                <Label for="edit-grace" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
-                  <span class="inline-flex items-center gap-1">
-                    Grace Period (days)
-                    <InfoTip text="How long data stays before cleanup after deactivation" />
-                  </span>
-                </Label>
+                <FieldLabel for="edit-grace" tooltip="How long data stays before cleanup after deactivation" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                  Grace Period (days)
+                </FieldLabel>
                 <Input id="edit-grace" type="number" bind:value={editGrace} placeholder="14" min="0" max="91" />
               </div>
             </div>

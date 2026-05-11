@@ -93,7 +93,7 @@ async function fetchStats(regionId: number, nodeId: string) {
   }
 }
 
-function startPolling(regionId: number, nodeId: string, interval: number) {
+function startPolling({ regionId, nodeId, interval }: { regionId: number; nodeId: string; interval: number }) {
   stopPolling()
   pollInterval = interval
   if (interval <= 0) return

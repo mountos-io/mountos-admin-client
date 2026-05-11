@@ -42,7 +42,7 @@
     if (accountId) {
       regionId = ''
       regionsLoaded = false
-      regionStore.fetchRegions(1, 100).finally(() => {
+      regionStore.fetchRegions({ page: 1, limit: 100 }).finally(() => {
         if (preselectedRegionId) regionId = preselectedRegionId
         regionsLoaded = true
       })
