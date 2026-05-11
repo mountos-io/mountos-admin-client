@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import { Table, TableHeader, TableBody, TableRow, TableCell } from '$lib/components/ui/table'
-  import { Skeleton } from '$lib/components/ui/skeleton'
+  import { CyberSkeleton } from '$lib/components/ui/skeleton'
 
   type Cell = { width: string; class?: string; height?: string }
 
@@ -29,7 +29,7 @@
         <TableRow>
           {#each cells as cell, c (c)}
             <TableCell class={cell.class}>
-              <Skeleton class="{cell.height ?? 'h-4'} {cell.width}" />
+              <CyberSkeleton class="{cell.height ?? 'h-4'} {cell.width}" />
             </TableCell>
           {/each}
         </TableRow>

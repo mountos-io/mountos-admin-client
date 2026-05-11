@@ -1,19 +1,29 @@
 <script lang="ts">
   import type { SessionSummaryData } from '$lib/core/stores/sessions.svelte'
   import { Badge } from '$lib/components/ui/badge'
+  import { CyberSkeleton } from '$lib/components/ui/skeleton'
   import { formatSessionStatus } from '$lib/core/utils/format'
   import Activity from '@lucide/svelte/icons/activity'
   import MapPin from '@lucide/svelte/icons/map-pin'
   import HardDrive from '@lucide/svelte/icons/hard-drive'
   import Monitor from '@lucide/svelte/icons/monitor'
 
-  let { summary, loading = false }: { summary: SessionSummaryData; loading?: boolean } = $props()
+  let { summary, loaded = true }: { summary: SessionSummaryData; loaded?: boolean } = $props()
 
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
 </script>
 
-{#if loading && summary.total === 0}
-  <span class="text-sm text-muted-foreground" role="status">Loading...</span>
+{#if !loaded}
+  <div class="summary-stats tech-grid summary-loading" role="status" aria-label="Loading session summary">
+    <div class="summary-stat"><CyberSkeleton class="h-6 w-6" /><CyberSkeleton class="h-8 w-24" /></div>
+    <span class="summary-divider hidden sm:block" aria-hidden="true"></span>
+    <div class="summary-stat"><CyberSkeleton class="h-6 w-16" /><CyberSkeleton class="h-8 w-8" /></div>
+    <div class="summary-stat"><CyberSkeleton class="h-6 w-16" /><CyberSkeleton class="h-8 w-8" /></div>
+    <span class="summary-divider hidden sm:block" aria-hidden="true"></span>
+    <div class="summary-stat"><CyberSkeleton class="h-5 w-5" /><CyberSkeleton class="h-8 w-10" /><CyberSkeleton class="h-3 w-14" /></div>
+    <div class="summary-stat"><CyberSkeleton class="h-5 w-5" /><CyberSkeleton class="h-8 w-10" /><CyberSkeleton class="h-3 w-14" /></div>
+    <div class="summary-stat"><CyberSkeleton class="h-5 w-5" /><CyberSkeleton class="h-8 w-10" /><CyberSkeleton class="h-3 w-14" /></div>
+  </div>
 {:else}
   <div class="summary-stats">
     <div class="summary-stat">
@@ -54,4 +64,5 @@
   .summary-sub { font-size: 1rem; font-weight: 400; color: var(--muted-foreground); }
   .summary-label { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); }
   .summary-divider { width: 1px; height: 2.5rem; background: var(--border); flex-shrink: 0; }
+  .summary-loading { padding: 0.5rem; }
 </style>

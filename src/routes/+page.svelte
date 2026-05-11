@@ -255,7 +255,7 @@
               </div>
             </CardHeader>
             <CardContent>
-              <SessionSummaryStrip summary={sessionStore.summary} loading={sessionStore.loading} />
+              <SessionSummaryStrip summary={sessionStore.summary} loaded={sessionStore.summaryLoaded} />
             </CardContent>
           </Card>
         {/if}

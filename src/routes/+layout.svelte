@@ -22,6 +22,7 @@
   let progress = $state(0)
   let bootDone = false
   let attemptedToken: string | null = null
+  let networkRetryUsed = false
 
   async function exchangeToken(providerToken: string) {
     exchanging = true
@@ -47,7 +48,13 @@
       await goto('/', { replaceState: true })
       await auth.init()
     } catch {
-      exchangeError = 'Authentication failed'
+      if (!networkRetryUsed) {
+        networkRetryUsed = true
+        attemptedToken = null
+        exchangeError = ''
+      } else {
+        exchangeError = 'Authentication failed'
+      }
     } finally {
       exchanging = false
     }

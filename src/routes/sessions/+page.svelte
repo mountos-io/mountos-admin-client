@@ -94,7 +94,7 @@
   {:else}
     <!-- Summary Stats -->
     <div class="flex flex-wrap gap-3 items-center">
-      <SessionSummaryStrip summary={store.summary} loading={store.loading} />
+      <SessionSummaryStrip summary={store.summary} loaded={store.summaryLoaded} />
       {#if store.summary.byPlatform.length > 0 || store.summary.byOs.length > 1}
         <span class="stat-divider" aria-hidden="true"></span>
       {/if}
@@ -165,6 +165,14 @@
     {:else if store.filtered.length === 0}
       <EmptyState title="No sessions" description={hasFilters ? 'No sessions match filters.' : 'No client sessions found for this account.'} />
     {:else}
+      <div role="status" aria-live="polite" class="sr-only">
+        {#if store.loading && store.allSessions.length > 0}Loading page {store.displayPage} of {store.totalDisplayPages}{/if}
+      </div>
+      <div
+        inert={store.loading || undefined}
+        class:opacity-60={store.loading}
+        aria-busy={store.loading}
+        class="transition-opacity duration-200 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)]">
       <Table>
         <caption class="sr-only">Client sessions</caption>
         <TableHeader>
@@ -268,6 +276,7 @@
           {/each}
         </TableBody>
       </Table>
+      </div>
       <Pagination currentPage={store.displayPage} totalPages={store.totalDisplayPages} onPageChange={(p) => store.setDisplayPage(p)} />
     {/if}
   {/if}

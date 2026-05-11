@@ -8,6 +8,7 @@ export interface SessionSummaryData {
   byPlatform: [string, number][]
   byOs: [string, number][]
   activeCount: number
+  unhealthyCount: number
   regionCount: number
   volumeCount: number
   hostCount: number
@@ -110,27 +111,20 @@ const summary: SessionSummaryData = $derived.by(() => {
     .map(f => [f.label, Number(f.count)])
   const byOs: [string, number][] = (globalSummary?.byOsName ?? [])
     .map(f => [f.label, Number(f.count)])
-  // region/volume/host distinct counts are per-page only; the server summary
-  // endpoint doesn't expose them yet and they're cosmetic in the strip.
-  const regions = new Set<number>()
-  const volumes = new Set<number>()
-  const hosts = new Set<string>()
-  for (const s of pageSessions) {
-    regions.add(s.region.id)
-    volumes.add(s.volume.id)
-    if (s.hostname) hosts.add(s.hostname)
-  }
   return {
     byStatus: Object.entries(byStatus).sort((a, b) => b[1] - a[1]),
     byPlatform,
     byOs,
     activeCount,
-    regionCount: regions.size,
-    volumeCount: volumes.size,
-    hostCount: hosts.size,
+    unhealthyCount: Number(globalSummary?.unhealthyCount ?? 0),
+    regionCount: Number(globalSummary?.regionCount ?? 0),
+    volumeCount: Number(globalSummary?.volumeCount ?? 0),
+    hostCount: Number(globalSummary?.hostCount ?? 0),
     total: totalCount,
   }
 })
+
+const summaryLoaded = $derived(globalSummary !== null)
 
 function buildListOptions(accountId: number): ClientSessionListOptions {
   const opts: ClientSessionListOptions = {
@@ -256,6 +250,7 @@ export function useSessions() {
     get displaySessions() { return pageSessions },
     get filtered() { return pageSessions },
     get summary() { return summary },
+    get summaryLoaded() { return summaryLoaded },
     get loading() { return loading },
     get error() { return error },
     // Old "capped" banner is obsolete with server pagination.
