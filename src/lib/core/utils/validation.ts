@@ -40,7 +40,10 @@ export function forkNameErrorMessage(name: string): string {
 }
 
 export function isForkNameValid(name: string): boolean {
-  return forkNameErrorMessage(name) === ''
+  // forkNameErrorMessage suppresses errors for empty input (form UX);
+  // require non-empty here so callers that only need a boolean don't
+  // accept the empty string.
+  return !!name && forkNameErrorMessage(name) === ''
 }
 
 // Mirrors Go SanitizeForkName: lowercase, strip invalid chars,

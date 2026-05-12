@@ -233,7 +233,9 @@
   async function handleCreateFork() {
     if (!volume) return
     const finalName = createForkSanitized
-    if (forkNameErrorMessage(finalName)) return
+    // Use the derived error (includes duplicate-name check) to close the
+    // race where forks refresh between derived recompute and submit.
+    if (!finalName || createForkNameError) return
     if (createForkAsOfEnabled && !createForkAsOfLocal) return
     createForkLoading = true
     try {
@@ -456,9 +458,10 @@
 
   $effect(() => { void sizeRange; if (volume) fetchSizeHistory() })
 
-  const forkParentOptions = $derived(
-    forks.filter(f => f.status === 'active').map(f => ({ value: f.name, label: f.name }))
-  )
+  const forkParentOptions = $derived([
+    { value: 'main', label: 'main' },
+    ...forks.filter(f => f.status === 'active' && f.name !== 'main').map(f => ({ value: f.name, label: f.name })),
+  ])
 
   async function fetchForks() {
     if (!volume) return
@@ -1153,21 +1156,19 @@
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
       <Dialog.Title>Delete Fork</Dialog.Title>
-      <Dialog.Description>
-        {#if deleteForkTarget}
-          {#if deleteForkForce}
-            <div class="flex items-center gap-2 mt-2 p-2 rounded-md bg-destructive/10 text-destructive text-sm">
-              <ShieldAlert class="h-4 w-4 shrink-0" />
-              <span>Force delete: also removes {deleteForkTarget.children.length} child fork{deleteForkTarget.children.length !== 1 ? 's' : ''}: <strong>{deleteForkTarget.children.map(c => c.name).join(', ')}</strong></span>
-            </div>
-          {/if}
-          <p class="mt-2 text-sm">
-            Fork <span class="font-semibold">{deleteForkTarget.name}</span> will be marked for deletion.
-            Data cleanup starts after the grace period. You can restore during this window.
-          </p>
-        {/if}
-      </Dialog.Description>
+      {#if deleteForkTarget}
+        <Dialog.Description class="mt-2">
+          Fork <span class="font-semibold">{deleteForkTarget.name}</span> will be marked for deletion.
+          Data cleanup starts after the grace period. You can restore during this window.
+        </Dialog.Description>
+      {/if}
     </Dialog.Header>
+    {#if deleteForkTarget && deleteForkForce}
+      <div class="flex items-center gap-2 p-2 rounded-md bg-destructive/10 text-destructive text-sm">
+        <ShieldAlert class="h-4 w-4 shrink-0" />
+        <span>Force delete: also removes {deleteForkTarget.children.length} child fork{deleteForkTarget.children.length !== 1 ? 's' : ''}: <strong>{deleteForkTarget.children.map(c => c.name).join(', ')}</strong></span>
+      </div>
+    {/if}
     <Dialog.Footer>
       <Button variant="outline" onclick={() => deleteForkOpen = false}>Cancel</Button>
       <Button variant="destructive" disabled={deleteForkLoading} onclick={handleDeleteFork}>
@@ -1184,13 +1185,11 @@
   <Dialog.Content class="sm:max-w-md">
     <Dialog.Header>
       <Dialog.Title>Restore Fork</Dialog.Title>
-      <Dialog.Description>
-        {#if restoreForkTarget}
-          <p class="mt-2 text-sm">
-            Restore fork <span class="font-semibold">{restoreForkTarget.name}</span>? This will make it active again and allow client connections.
-          </p>
-        {/if}
-      </Dialog.Description>
+      {#if restoreForkTarget}
+        <Dialog.Description class="mt-2">
+          Restore fork <span class="font-semibold">{restoreForkTarget.name}</span>? This will make it active again and allow client connections.
+        </Dialog.Description>
+      {/if}
     </Dialog.Header>
     <Dialog.Footer>
       <Button variant="outline" onclick={() => restoreForkOpen = false}>Cancel</Button>
@@ -1205,31 +1204,45 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={createForkOpen}>
-  <Dialog.Content class="sm:max-w-md">
+  <Dialog.Content class="sm:max-w-md"
+    onOpenAutoFocus={(e) => {
+      e.preventDefault()
+      document.getElementById('create-fork-name')?.focus()
+    }}>
     <Dialog.Header>
       <Dialog.Title>Create Fork</Dialog.Title>
-      <Dialog.Description>
-        <p class="mt-2 text-sm">Snapshot the parent fork at the current moment, or rewind to a past point within the volume's retention window.</p>
+      <Dialog.Description class="mt-2">
+        Snapshot the parent fork at the current moment, or rewind to a past point within the volume's retention window.
       </Dialog.Description>
     </Dialog.Header>
     <div class="space-y-4 py-2">
       <div class="space-y-1.5">
-        <Label for="create-fork-name" class="text-sm font-semibold">Name</Label>
-        <Input id="create-fork-name" bind:value={createForkName} placeholder="lowercase-with-hyphens" />
-        {#if createForkNameError}
-          <p class="text-xs text-destructive">{createForkNameError}</p>
-        {:else if createForkNameChanged}
-          <p class="text-xs text-muted-foreground">
-            Will be saved as
-            <button
-              type="button"
-              class="font-mono text-foreground underline-offset-2 hover:underline"
-              onclick={() => createForkName = createForkSanitized}
-            >{createForkSanitized}</button>
+        <Label for="create-fork-name" class="text-sm font-semibold">
+          Name <span class="text-destructive" aria-hidden="true">*</span>
+        </Label>
+        <Input id="create-fork-name" bind:value={createForkName}
+          placeholder="lowercase-with-hyphens"
+          required
+          aria-invalid={!!createForkNameError}
+          aria-describedby={createForkNameError ? 'create-fork-name-error create-fork-name-hint' : 'create-fork-name-hint'} />
+        <div class="min-h-[2.5rem] space-y-1">
+          {#if createForkNameError}
+            <p id="create-fork-name-error" class="text-xs text-destructive">{createForkNameError}</p>
+          {:else if createForkNameChanged}
+            <p class="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+              <span>Will be saved as</span>
+              <button
+                type="button"
+                aria-label={`Use sanitized name ${createForkSanitized}`}
+                class="inline-flex min-h-[28px] items-center rounded-sm border border-border bg-card px-2 py-0.5 font-mono text-foreground hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                onclick={() => createForkName = createForkSanitized}
+              >{createForkSanitized}</button>
+            </p>
+          {/if}
+          <p id="create-fork-name-hint" class="text-xs text-muted-foreground">
+            3–63 chars · lowercase letters, digits, <code>.</code> <code>-</code> · start/end alphanumeric
           </p>
-        {:else}
-          <p class="text-xs text-muted-foreground">3–63 chars · lowercase letters, digits, <code>.</code> <code>-</code> · start/end alphanumeric</p>
-        {/if}
+        </div>
       </div>
       <div class="space-y-1.5">
         <Label for="create-fork-parent" class="text-sm font-semibold">Parent Fork</Label>
@@ -1255,10 +1268,13 @@
       </div>
     </div>
     <Dialog.Footer>
+      {#if forksLoading && createForkSanitized && !createForkNameError}
+        <span class="mr-auto self-center text-xs text-muted-foreground">Checking existing forks…</span>
+      {/if}
       <Button variant="outline" onclick={() => createForkOpen = false}>Cancel</Button>
       <Button
         variant="default"
-        disabled={createForkLoading || !createForkSanitized || !!createForkNameError || (createForkAsOfEnabled && !createForkAsOfLocal)}
+        disabled={createForkLoading || forksLoading || !createForkSanitized || !!createForkNameError || (createForkAsOfEnabled && !createForkAsOfLocal)}
         onclick={handleCreateFork}
       >
         {#if createForkLoading}
