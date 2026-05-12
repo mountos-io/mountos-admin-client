@@ -54,6 +54,13 @@ export type {
   VolumeSizePoint,
   RegionAlert,
   RegionAlertListOptions,
+  ForkTreeEntry,
+  ForkEntryDetail,
+  ForkTreeMatch,
+  ForkEntryVersion,
+  VolumeForkTreeListOptions,
+  VolumeForkEntryListOptions,
+  VolumeForkSearchListOptions,
 } from '@mountos-io/admin-sdk'
 
 export { ApiError } from './errors.js'

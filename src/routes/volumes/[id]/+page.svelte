@@ -22,11 +22,13 @@
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import { formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes, formatClientType, formatSessionStatus, formatDuration, formatRelative } from '$lib/core/utils/format'
+  import { toDatetimeUTC, parseDatetimeUTC, forkAsOfMin, forkAsOfMax } from '$lib/core/utils/forkRetention'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import { api } from '$lib/core/stores/client.svelte'
   import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint } from '$lib/core/api/types'
   import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
+  import TreeTab from '$lib/components/volume-tree/TreeTab.svelte'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
@@ -155,65 +157,11 @@
   let createForkAsOfEnabled = $state(false)
   let createForkAsOfLocal = $state('')
 
-  function toDatetimeLocal(d: Date): string {
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-  }
-
-  // Round up to the next whole minute so the value is strictly within the
-  // server's bound (server compares at microsecond precision against the
-  // exact volume creation / retention timestamps).
-  function ceilDatetimeLocal(d: Date): string {
-    const ms = d.getTime()
-    const rounded = ms % 60_000 === 0 ? ms : (Math.floor(ms / 60_000) + 1) * 60_000
-    return toDatetimeLocal(new Date(rounded))
-  }
-
-  // Mirror of gcserv DefaultDataRetentionDays; fallback when the volume
-  // has no plan-level retention set, so the picker bound matches the server.
-  const DEFAULT_RETENTION_DAYS = 30
-
-  // Effective lower bound = gcThreshold = min(now - retention, min(existing
-  // fork snapshot_ts)). Mirrors dataserv handleForksCreate + gcserv
-  // getEffectiveRetentionThreshold exactly. No separate volume.createdAt floor
-  // needed: any existing fork's snapshot_ts is already >= volume.createdAt.
-  // GC floor in ms: mirrors dataserv's gcThreshold = min(now - retention,
-  // min over all forks of snapshot_ts). Keyed only on volume.retentionPeriod
-  // and forks; doesn't re-run when createForkParent toggles.
-  const gcFloorMs = $derived.by(() => {
-    if (!volume) return 0
-    const days = volume.retentionPeriod > 0 ? volume.retentionPeriod : DEFAULT_RETENTION_DAYS
-    let floor = Date.now() - days * 86400_000
-    for (const f of forks) {
-      const snapMs = Math.floor(f.snapshotTs / 1000)
-      if (snapMs < floor) floor = snapMs
-    }
-    return floor
-  })
-
-  // Parent-snapshot floor: only tightens the bound when a non-main parent is
-  // chosen. Mirrors dataserv's parent-snapshot guard.
-  const parentFloorMs = $derived.by(() => {
-    if (!createForkParent || createForkParent === 'main') return 0
-    const parent = forks.find(f => f.name === createForkParent)
-    return parent ? Math.floor(parent.snapshotTs / 1000) : 0
-  })
-
-  const createForkAsOfMin = $derived.by(() => {
-    if (!volume) return ''
-    return ceilDatetimeLocal(new Date(Math.max(gcFloorMs, parentFloorMs)))
-  })
-
-  // Upper bound is minute-floor(now): the current in-progress minute is
-  // disallowed, matching the server's minuteNow check. If now is exactly on a
-  // minute boundary the just-ended minute is reachable.
-  const createForkAsOfMax = $derived(toDatetimeLocal(new Date(Math.floor(Date.now() / 60_000) * 60_000)))
-
   function openCreateFork() {
     createForkName = ''
     createForkParent = 'main'
     createForkAsOfEnabled = false
-    createForkAsOfLocal = toDatetimeLocal(new Date())
+    createForkAsOfLocal = toDatetimeUTC(new Date())
     createForkOpen = true
   }
 
@@ -242,7 +190,7 @@
       const req: CreateVolumeForkRequest = { name: finalName }
       if (createForkParent && createForkParent !== 'main') req.parentName = createForkParent
       if (createForkAsOfEnabled) {
-        req.asOf = new Date(createForkAsOfLocal).getTime() * 1000
+        req.asOf = parseDatetimeUTC(createForkAsOfLocal) * 1000
       }
       req.volumeType = volume.volumeType
       await store.createFork(id, req)
@@ -430,6 +378,36 @@
   let forks = $state<Fork[]>([])
   let forksLoading = $state(false)
 
+  const createForkAsOfMin = $derived(forkAsOfMin(volume, forks, createForkParent))
+  const createForkAsOfMax = $derived(forkAsOfMax())
+
+  const activeTab = $derived($page.url.searchParams.get('tab') === 'tree' ? 'tree' : 'overview')
+  const TAB_IDS: ReadonlyArray<'overview' | 'tree'> = ['overview', 'tree']
+  function setTab(t: 'overview' | 'tree') {
+    const sp = new URLSearchParams($page.url.searchParams)
+    if (t === 'overview') sp.delete('tab')
+    else sp.set('tab', 'tree')
+    const qs = sp.toString()
+    goto(qs ? `?${qs}` : window.location.pathname, { replaceState: true, noScroll: true, keepFocus: true })
+  }
+  function handleTabKey(e: KeyboardEvent, current: 'overview' | 'tree') {
+    let next: 'overview' | 'tree' | null = null
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      next = TAB_IDS[(TAB_IDS.indexOf(current) + 1) % TAB_IDS.length]
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      next = TAB_IDS[(TAB_IDS.indexOf(current) - 1 + TAB_IDS.length) % TAB_IDS.length]
+    } else if (e.key === 'Home') {
+      next = TAB_IDS[0]
+    } else if (e.key === 'End') {
+      next = TAB_IDS[TAB_IDS.length - 1]
+    }
+    if (!next) return
+    e.preventDefault()
+    setTab(next)
+    const targetId = `volume-tab-${next}`
+    requestAnimationFrame(() => document.getElementById(targetId)?.focus())
+  }
+
   type SizeRange = '24h' | '7d' | '30d' | '1y'
   const sizeRangeDays: Record<SizeRange, number> = { '24h': 1, '7d': 7, '30d': 30, '1y': 366 }
   let sizeRange = $state<SizeRange>('30d')
@@ -609,9 +587,39 @@
       <Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize" aria-label="Volume type {volume.volumeType}">{volume.volumeType}</Badge>
     {/if}
   </div>
+  {#if volume}
+    <div class="flex items-center gap-2 flex-wrap" role="tablist" aria-label="Volume sections">
+      <div class="relative border border-border/30 rounded-sm px-2 py-1 w-fit">
+        <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+        <div class="relative flex items-center gap-1">
+          <Button variant={activeTab === 'overview' ? 'primary' : 'ghost'} size="sm"
+            class="h-7 min-h-[44px] sm:min-h-7 px-3 text-xs font-mono justify-center"
+            id="volume-tab-overview" role="tab"
+            aria-selected={activeTab === 'overview'}
+            aria-controls="volume-tabpanel-overview"
+            tabindex={activeTab === 'overview' ? 0 : -1}
+            onkeydown={(e: KeyboardEvent) => handleTabKey(e, 'overview')}
+            onclick={() => setTab('overview')}>Overview</Button>
+          <Button variant={activeTab === 'tree' ? 'primary' : 'ghost'} size="sm"
+            class="h-7 min-h-[44px] sm:min-h-7 px-3 text-xs font-mono justify-center"
+            id="volume-tab-tree" role="tab"
+            aria-selected={activeTab === 'tree'}
+            aria-controls="volume-tabpanel-tree"
+            tabindex={activeTab === 'tree' ? 0 : -1}
+            onkeydown={(e: KeyboardEvent) => handleTabKey(e, 'tree')}
+            onclick={() => setTab('tree')}>Tree</Button>
+        </div>
+      </div>
+    </div>
+  {/if}
   {#if loading}
     <DetailSkeleton cards={[{ rows: 5, cols: 1 }]} />
+  {:else if volume && activeTab === 'tree'}
+    <div role="tabpanel" id="volume-tabpanel-tree" aria-labelledby="volume-tab-tree" tabindex={0}>
+      <TreeTab volumeId={id} {volume} {forks} />
+    </div>
   {:else if volume}
+    <div role="tabpanel" id="volume-tabpanel-overview" aria-labelledby="volume-tab-overview" tabindex={0} class="space-y-6">
     {#if !volume.isActive}
       <section
         aria-labelledby="volume-deactivated-heading"
@@ -1143,6 +1151,7 @@
         </CardContent>
       </Card>
     {/if}
+    </div>
   {:else}
     <p class="text-muted-foreground">Volume not found.</p>
   {/if}
@@ -1253,7 +1262,7 @@
         <div class="flex items-center gap-2">
           <Checkbox id="create-fork-asof" bind:checked={createForkAsOfEnabled} />
           <Label for="create-fork-asof" class="text-sm inline-flex items-center gap-1">
-            Snapshot at past time
+            Snapshot at past time <span class="text-xs text-muted-foreground font-mono">(UTC)</span>
             <InfoTip text={"Off: snapshot the parent now.\nOn: snapshot at the chosen UTC timestamp. Reachable back to (now − retention), extended further if an existing fork's snapshot pins older data."} />
           </Label>
         </div>

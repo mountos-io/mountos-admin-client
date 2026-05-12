@@ -28,6 +28,25 @@ export function formatDate(date: string | number | Date): string {
   return dtf.format(parseDate(date))
 }
 
+// Operator-readable UTC stamp: "2026-05-12 01:14 UTC". Forensic surfaces
+// must show this as the primary string (relative time is the secondary
+// scanning aid) so incident-time comparisons don't require math.
+export function formatUTCShort(date: string | number | Date): string {
+  const d = parseDate(date)
+  if (!Number.isFinite(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())} UTC`
+}
+
+// Second-precision variant for surfaces that need to distinguish writes
+// within the same minute (e.g. file version histories).
+export function formatUTCFull(date: string | number | Date): string {
+  const d = parseDate(date)
+  if (!Number.isFinite(d.getTime())) return ''
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`
+}
+
 export function formatRelative(date: string | number | Date): string {
   const d = parseDate(date)
   const diff = d.getTime() - Date.now()
