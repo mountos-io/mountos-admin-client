@@ -218,7 +218,14 @@
   }
 
   const createForkSanitized = $derived(sanitizeForkName(createForkName.trim()))
-  const createForkNameError = $derived(forkNameErrorMessage(createForkSanitized))
+  const createForkNameError = $derived.by(() => {
+    const err = forkNameErrorMessage(createForkSanitized)
+    if (err) return err
+    if (createForkSanitized && forks.some(f => f.name === createForkSanitized)) {
+      return `Fork "${createForkSanitized}" already exists`
+    }
+    return ''
+  })
   const createForkNameChanged = $derived(
     createForkName.trim().length > 0 && createForkSanitized !== createForkName.trim()
   )
