@@ -8,6 +8,7 @@
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
+  import { Badge } from '$lib/components/ui/badge'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import { Checkbox } from '$lib/components/ui/checkbox'
   import Pagination from '$lib/components/shared/Pagination.svelte'
@@ -34,6 +35,9 @@
   let selectedRegionId = $state('')
   let selectedStorageId = $state('')
   let selectedVolumeType = $state('')
+  // 'active' (default) | 'inactive' | 'all'.  'active' maps to isActive=true,
+  // 'inactive' to isActive=false, 'all' to omitting the param (server returns both).
+  let statusFilter = $state<'active' | 'inactive' | 'all'>('active')
   let lockedOnly = $state(false)
 
   const hubRegionIds = $derived(
@@ -64,6 +68,17 @@
     { value: 'iceberg', label: 'Iceberg' },
   ]
 
+  const statusOptions = [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'all', label: 'All' },
+  ]
+
+  const hasFilter = $derived(
+    selectedRegionId !== '' || selectedStorageId !== '' || selectedVolumeType !== '' ||
+    statusFilter !== 'active' || lockedOnly
+  )
+
   function refetch(page = 1) {
     if (!accountId) return
     volumeStore.fetchVolumes({
@@ -74,6 +89,7 @@
       storageId: selectedStorageId ? Number(selectedStorageId) : undefined,
       volumeType: selectedVolumeType || undefined,
       locked: lockedOnly || undefined,
+      isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
     })
   }
 
@@ -93,6 +109,10 @@
     selectedVolumeType = v
   }
 
+  function onStatusChange(v: string) {
+    statusFilter = v as 'active' | 'inactive' | 'all'
+  }
+
   let filtersLoadedFor: number | null = null
   $effect(() => {
     if (!auth.loading && !auth.can('volumes', 'read')) {
@@ -106,6 +126,9 @@
         storageStore.fetchStorages({ accountId, page: 1, limit: 100 })
         filtersLoadedFor = accountId
       }
+      // Refetch on any filter change (tracked via reactive reads).
+      void selectedRegionId; void selectedStorageId; void selectedVolumeType
+      void statusFilter; void lockedOnly
       refetch()
     }
   })
@@ -146,6 +169,14 @@
           label="Filter by volume type"
           controls="volumes-table"
           onchange={onVolumeTypeChange}
+        />
+        <FilterSelect class="text-base"
+          options={statusOptions}
+          value={statusFilter}
+          placeholder="Active"
+          label="Filter by status"
+          controls="volumes-table"
+          onchange={onStatusChange}
         />
         <Checkbox bind:checked={lockedOnly} label="Locked only" aria-controls="volumes-table" />
       </FilterPanel>
@@ -190,7 +221,7 @@
         ]}
       />
     {:else if volumeStore.volumes.length === 0}
-      <EmptyState title="No volumes" action={canCreate ? { label: 'Create Volume', href: '/volumes/create' } : undefined} />
+      <EmptyState title="No volumes" description={hasFilter ? 'No volumes match the current filters.' : undefined} action={!hasFilter && canCreate ? { label: 'Create Volume', href: '/volumes/create' } : undefined} />
     {:else}
       <p class="sr-only" role="status" aria-live="polite">
         Showing {volumeStore.volumes.length} {volumeStore.volumes.length === 1 ? 'volume' : 'volumes'} on page {volumeStore.currentPage} of {volumeStore.totalPages}
@@ -203,15 +234,17 @@
         <TableBody>
           {#each volumeStore.volumes as volume}
             <TableRow
-              class="cursor-pointer hover:bg-muted/50"
+              class={`cursor-pointer hover:bg-muted/50 ${volume.isActive ? '' : 'bg-muted/40'}`}
               role="button"
               onclick={() => goto(`/volumes/${volume.id}`)}
               onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/volumes/${volume.id}`))}
               tabindex={0}
-              aria-label="Volume {volume.name}"
+              aria-label="Volume {volume.name}{volume.isActive ? '' : ', deactivated'}"
             >
               <TableCell class="font-medium max-w-[200px] truncate" title={volume.name}>{volume.name}</TableCell>
-              <TableCell class="text-sm text-muted-foreground capitalize">{volume.volumeType}</TableCell>
+              <TableCell>
+                <Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize">{volume.volumeType}</Badge>
+              </TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.region.name}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.storage.name}</TableCell>
               <TableCell>

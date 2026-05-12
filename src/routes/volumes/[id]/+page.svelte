@@ -43,6 +43,7 @@
   import { Checkbox } from '$lib/components/ui/checkbox'
   import DateTimePicker from '$lib/components/shared/DateTimePicker.svelte'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
+  import { sanitizeForkName, forkNameErrorMessage } from '$lib/core/utils/validation'
 
   const store = useVolumes()
   const userStore = useUsers()
@@ -69,6 +70,26 @@
 
   let editing = $state(false)
   let deactivateOpen = $state(false)
+  let reactivating = $state(false)
+
+  async function handleReactivate() {
+    if (!volume) return
+    dialog.confirm(
+      'Reactivate Volume',
+      `Reactivate "${volume.name}"? Allowed only while cleanup has not begun. The server returns an error if any cleanup flag has fired.`,
+      async () => {
+        reactivating = true
+        try {
+          await store.activateVolume(id)
+          showSuccessToast('Volume reactivated')
+        } catch (e: unknown) {
+          handleApiError(e, 'Failed to reactivate volume')
+        } finally {
+          reactivating = false
+        }
+      },
+    )
+  }
 
   let deleteForkTarget = $state<ForkNode | null>(null)
   let deleteForkForce = $state(false)
@@ -82,12 +103,12 @@
   }
 
   async function handleDeleteFork() {
-    if (!deleteForkTarget) return
+    if (!deleteForkTarget || !volume) return
     deleteForkLoading = true
     try {
       await store.deleteFork(id, deleteForkTarget.name, {
         force: deleteForkForce,
-        volumeType: forksVolumeType === 'iceberg' ? 'iceberg' : undefined,
+        volumeType: volume.volumeType,
       })
       showSuccessToast(`Fork "${deleteForkTarget.name}" marked for deletion`)
       deleteForkOpen = false
@@ -110,11 +131,11 @@
   }
 
   async function handleRestoreFork() {
-    if (!restoreForkTarget) return
+    if (!restoreForkTarget || !volume) return
     restoreForkLoading = true
     try {
       await store.restoreFork(id, restoreForkTarget.name, {
-        volumeType: forksVolumeType === 'iceberg' ? 'iceberg' : undefined,
+        volumeType: volume.volumeType,
       })
       showSuccessToast(`Fork "${restoreForkTarget.name}" restored`)
       restoreForkOpen = false
@@ -133,10 +154,6 @@
   let createForkLoading = $state(false)
   let createForkAsOfEnabled = $state(false)
   let createForkAsOfLocal = $state('')
-  let createForkVolumeType = $state<'general' | 'iceberg'>('general')
-
-  // Active filter for the fork list — switches between general and iceberg fork views.
-  let forksVolumeType = $state<'general' | 'iceberg'>('general')
 
   function toDatetimeLocal(d: Date): string {
     const pad = (n: number) => String(n).padStart(2, '0')
@@ -197,27 +214,30 @@
     createForkParent = 'main'
     createForkAsOfEnabled = false
     createForkAsOfLocal = toDatetimeLocal(new Date())
-    // Inherit the active list filter so the dialog defaults to whatever the
-    // user is currently viewing.
-    createForkVolumeType = forksVolumeType
     createForkOpen = true
   }
 
+  const createForkSanitized = $derived(sanitizeForkName(createForkName.trim()))
+  const createForkNameError = $derived(forkNameErrorMessage(createForkSanitized))
+  const createForkNameChanged = $derived(
+    createForkName.trim().length > 0 && createForkSanitized !== createForkName.trim()
+  )
+
   async function handleCreateFork() {
-    if (!createForkName.trim()) return
+    if (!volume) return
+    const finalName = createForkSanitized
+    if (forkNameErrorMessage(finalName)) return
     if (createForkAsOfEnabled && !createForkAsOfLocal) return
     createForkLoading = true
     try {
-      const req: CreateVolumeForkRequest = { name: createForkName.trim() }
+      const req: CreateVolumeForkRequest = { name: finalName }
       if (createForkParent && createForkParent !== 'main') req.parentName = createForkParent
       if (createForkAsOfEnabled) {
         req.asOf = new Date(createForkAsOfLocal).getTime() * 1000
       }
-      if (createForkVolumeType === 'iceberg') {
-        req.volumeType = 'iceberg'
-      }
+      req.volumeType = volume.volumeType
       await store.createFork(id, req)
-      showSuccessToast(`Fork "${createForkName.trim()}" created`)
+      showSuccessToast(`Fork "${finalName}" created`)
       createForkOpen = false
       await fetchForks()
     } catch (err) {
@@ -437,18 +457,10 @@
     if (!volume) return
     forksLoading = true
     try {
-      forks = await store.listAllForks(id, forksVolumeType)
+      forks = await store.listAllForks(id, volume.volumeType)
     } catch { forks = [] }
     finally { forksLoading = false }
   }
-
-  // Re-fetch forks when the user toggles between general / iceberg.
-  // Skips the initial mount (volume null) — that case is handled by the
-  // volume-load $effect which calls fetchForks() once after getVolume.
-  $effect(() => {
-    void forksVolumeType
-    if (volume) fetchForks()
-  })
 
   type ForkNode = Fork & { children: ForkNode[] }
 
@@ -579,14 +591,41 @@
 {/snippet}
 
 <div class="space-y-6">
-  <div class="flex items-center gap-4">
+  <div class="flex items-center gap-4 flex-wrap">
     <Button variant="ghost" size="sm" href="/volumes" aria-label="Back to volumes"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight min-w-0 truncate">{volume?.name ?? 'Volume'}</h1>
-    {#if volume}<Badge variant="outline" style="border-color: var(--pastel-volume); color: var(--pastel-volume-text)">Volume</Badge>{/if}
+    {#if volume}
+      <Badge variant="outline" style="border-color: var(--pastel-volume); color: var(--pastel-volume-text)">Volume</Badge>
+      <Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize" aria-label="Volume type {volume.volumeType}">{volume.volumeType}</Badge>
+    {/if}
   </div>
   {#if loading}
     <DetailSkeleton cards={[{ rows: 5, cols: 1 }]} />
   {:else if volume}
+    {#if !volume.isActive}
+      <section
+        aria-labelledby="volume-deactivated-heading"
+        class="rounded-md border border-warning/70 bg-warning/15 px-4 py-3 text-base flex flex-wrap items-center gap-3"
+      >
+        <ShieldAlert class="size-4 shrink-0 text-warning" aria-hidden="true" />
+        <span class="flex-1 min-w-[200px]">
+          <span id="volume-deactivated-heading" class="font-semibold">Deactivated.</span>
+          Cleanup begins after the grace period. Reactivation is only possible while no cleanup flag has fired.
+        </span>
+        {#if auth.can('volumes', 'update')}
+          <Button
+            variant="primary" size="sm"
+            class="cyberpunk-skewed-sm min-h-[44px] sm:min-h-0"
+            disabled={reactivating}
+            aria-busy={reactivating}
+            onclick={handleReactivate}
+          >
+            {#if reactivating}<Loader2 class="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />{/if}
+            Reactivate
+          </Button>
+        {/if}
+      </section>
+    {/if}
     <div class="grid gap-6">
       <Card cornerBrackets>
         <CardHeader>
@@ -596,7 +635,7 @@
               <button
                 type="button"
                 onclick={() => (editing = true)}
-                class="opacity-50 hover:opacity-100 hover:text-primary transition-[color,opacity]"
+                class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-50 hover:opacity-100 hover:text-primary transition-[color,opacity]"
                 title="Edit volume" aria-label="Edit volume"
               >
                 <PencilIcon class="size-4" aria-hidden="true" />
@@ -616,13 +655,19 @@
               <p class="mt-1 text-sm break-words">{volume.description}</p>
             </div>
           {/if}
-          <div>
-            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
-            <div class="mt-1"><StatusBadge active={volume.isActive} locked={volume.locked} /></div>
-          </div>
-          <div>
-            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Encryption</span>
-            <div class="mt-1"><Badge variant={volume.encryption ? 'default' : 'outline'}>{volume.encryption ? 'Enabled' : 'Disabled'}</Badge></div>
+          <div class="flex flex-wrap gap-6">
+            <div>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
+              <div class="mt-1"><StatusBadge active={volume.isActive} locked={volume.locked} /></div>
+            </div>
+            <div>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Kind</span>
+              <div class="mt-1"><Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize">{volume.volumeType}</Badge></div>
+            </div>
+            <div>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Encryption</span>
+              <div class="mt-1"><Badge variant={volume.encryption ? 'default' : 'outline'}>{volume.encryption ? 'Enabled' : 'Disabled'}</Badge></div>
+            </div>
           </div>
           {#if editing}
             <div class="grid gap-4 md:grid-cols-2">
@@ -735,11 +780,9 @@
             </Button>
             <Button variant="secondary" size="sm" onclick={cancelEdit} disabled={editSaving}>Cancel</Button>
           </CardFooter>
-        {:else if auth.can('volumes', 'update')}
+        {:else if auth.can('volumes', 'update') && volume.isActive}
           <CardFooter class="flex gap-2">
-            {#if volume.isActive}
-              <Button variant="destructive" size="sm" onclick={() => { deactivateOpen = true }}>Deactivate</Button>
-            {/if}
+            <Button variant="destructive" size="sm" onclick={() => { deactivateOpen = true }}>Deactivate</Button>
             <Button variant="outline" size="sm" onclick={() => dialog.confirm(
               volume!.locked ? 'Unlock' : 'Lock',
               `${volume!.locked ? 'Unlock' : 'Lock'} "${volume!.name}"?`,
@@ -782,19 +825,6 @@
         <div class="flex items-center justify-between flex-wrap gap-2">
           <CardTitle>Forks ({forks.length})</CardTitle>
           <div class="flex items-center gap-2 flex-wrap">
-          <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
-            <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-            <div class="relative flex items-center gap-1.5" role="group" aria-label="Fork type filter">
-              <Button variant={forksVolumeType === 'general' ? 'primary' : 'ghost'} size="sm"
-                class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
-                aria-pressed={forksVolumeType === 'general'}
-                onclick={() => forksVolumeType = 'general'}>General</Button>
-              <Button variant={forksVolumeType === 'iceberg' ? 'primary' : 'ghost'} size="sm"
-                class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
-                aria-pressed={forksVolumeType === 'iceberg'}
-                onclick={() => forksVolumeType = 'iceberg'}>Iceberg</Button>
-            </div>
-          </div>
           {#if forks.length > 1}
             <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit hidden md:block">
               <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
@@ -842,7 +872,7 @@
                   {/if}
                   {#if node.fid !== 0 && node.snapshotTs}
                     <span class="text-sm text-muted-foreground whitespace-nowrap">
-                      snapshot of <span class="font-medium">{node.parentName}</span> @ <span class="font-mono">{formatTimestamp(node.snapshotTs)}</span>
+                      snapshot of <span class="font-medium">{node.parentName}</span> @ <span class="font-mono">{formatTimestamp(node.snapshotTs / 1000)}</span>
                     </span>
                   {/if}
                   {#if node.size > 0}
@@ -855,14 +885,14 @@
                 {#if node.fid !== 0}
                   <div class="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
                     {#if node.createdAt}
-                      <span>created <span class="font-mono">{formatRelative(node.createdAt / 1000)}</span></span>
+                      <span>created <span class="font-mono">{formatRelative(node.createdAt / 1_000_000)}</span></span>
                     {/if}
                     {#if node.createdBy}
                       <span>by {node.createdBy}</span>
                     {/if}
                     {#if node.inactiveAt}
                       <span class="text-warning">
-                        deleted <span class="font-mono">{formatRelative(node.inactiveAt / 1000)}</span>
+                        deleted <span class="font-mono">{formatRelative(node.inactiveAt / 1_000_000)}</span>
                       </span>
                     {/if}
                   </div>
@@ -932,7 +962,7 @@
                   <text x={bx} y={above ? y - G_DOT - 6 : y + G_DOT + 16}
                     text-anchor="middle" dominant-baseline="auto"
                     fill={br.color} opacity="0.7"
-                    class="font-mono text-sm">{formatShortDate(br.snapshotTs)}</text>
+                    class="font-mono text-sm">{formatShortDate(br.snapshotTs / 1000)}</text>
                 {:else}
                   <circle cx={startX} cy={y} r={G_DOT + 1}
                     fill={br.color} stroke="var(--background)" stroke-width="2" />
@@ -944,7 +974,7 @@
                 {#if br.fid !== 0}
                   <text x={gNowX + 14} y={y}
                     dominant-baseline="central"
-                    class="font-mono" style="font-size: 13px" fill="currentColor" opacity="0.55">{formatRelative(br.createdAt / 1000)}{br.createdBy ? ` · ${br.createdBy}` : ''}{br.size > 0 ? ` · ${formatBytes(br.size)}` : ''}</text>
+                    class="font-mono" style="font-size: 13px" fill="currentColor" opacity="0.55">{formatRelative(br.createdAt / 1_000_000)}{br.createdBy ? ` · ${br.createdBy}` : ''}{br.size > 0 ? ` · ${formatBytes(br.size)}` : ''}</text>
                 {:else if br.size > 0}
                   <text x={gNowX + 14} y={y}
                     dominant-baseline="central"
@@ -1024,7 +1054,7 @@
       </Card>
     {/if}
 
-    {#if auth.can('volumes', 'update') || auth.userMountosUserId != null}
+    {#if volume.isActive && (auth.can('volumes', 'update') || auth.userMountosUserId != null)}
       <Separator />
 
       <Card>
@@ -1177,27 +1207,22 @@
     </Dialog.Header>
     <div class="space-y-4 py-2">
       <div class="space-y-1.5">
-        <Label class="text-sm font-semibold inline-flex items-center gap-1">
-          Type
-          <InfoTip text={"General: filesystem fork over volume data.\nIceberg: lake-catalog fork over Iceberg tables (table metadata only)."} />
-        </Label>
-        <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
-          <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-          <div class="relative flex items-center gap-1.5" role="group" aria-label="Fork type">
-            <Button variant={createForkVolumeType === 'general' ? 'primary' : 'ghost'} size="sm"
-              class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
-              aria-pressed={createForkVolumeType === 'general'}
-              onclick={() => createForkVolumeType = 'general'}>General</Button>
-            <Button variant={createForkVolumeType === 'iceberg' ? 'primary' : 'ghost'} size="sm"
-              class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
-              aria-pressed={createForkVolumeType === 'iceberg'}
-              onclick={() => createForkVolumeType = 'iceberg'}>Iceberg</Button>
-          </div>
-        </div>
-      </div>
-      <div class="space-y-1.5">
         <Label for="create-fork-name" class="text-sm font-semibold">Name</Label>
-        <Input id="create-fork-name" bind:value={createForkName} placeholder="Fork name" />
+        <Input id="create-fork-name" bind:value={createForkName} placeholder="lowercase-with-hyphens" />
+        {#if createForkNameError}
+          <p class="text-xs text-destructive">{createForkNameError}</p>
+        {:else if createForkNameChanged}
+          <p class="text-xs text-muted-foreground">
+            Will be saved as
+            <button
+              type="button"
+              class="font-mono text-foreground underline-offset-2 hover:underline"
+              onclick={() => createForkName = createForkSanitized}
+            >{createForkSanitized}</button>
+          </p>
+        {:else}
+          <p class="text-xs text-muted-foreground">3–63 chars · lowercase letters, digits, <code>.</code> <code>-</code> · start/end alphanumeric</p>
+        {/if}
       </div>
       <div class="space-y-1.5">
         <Label for="create-fork-parent" class="text-sm font-semibold">Parent Fork</Label>
@@ -1226,7 +1251,7 @@
       <Button variant="outline" onclick={() => createForkOpen = false}>Cancel</Button>
       <Button
         variant="default"
-        disabled={createForkLoading || !createForkName.trim() || (createForkAsOfEnabled && !createForkAsOfLocal)}
+        disabled={createForkLoading || !createForkSanitized || !!createForkNameError || (createForkAsOfEnabled && !createForkAsOfLocal)}
         onclick={handleCreateFork}
       >
         {#if createForkLoading}

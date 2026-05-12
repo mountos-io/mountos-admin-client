@@ -12,6 +12,7 @@ export interface StorageFilters {
   regionId?: number
   storageType?: string
   providerType?: string
+  isActive?: boolean
 }
 
 type FetchStoragesParams = {
@@ -32,6 +33,7 @@ async function fetchStorages({ accountId, page = 1, limit = 20, filters }: Fetch
       regionId: filters?.regionId,
       storageType: filters?.storageType,
       providerType: filters?.providerType,
+      isActive: filters?.isActive,
     }, ctrl.signal)
     storages = res.items
     totalPages = res.pagination?.totalPages ?? 0

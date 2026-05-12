@@ -90,8 +90,12 @@
         gracePeriod: gracePeriod ? Number(gracePeriod) : undefined,
         quotaLimit: quotaLimit ? gbToBytes(Number(quotaLimit)) : undefined,
       })
-      createResult = result
       showSuccessToast('Volume created')
+      if (result.encryptionKey) {
+        createResult = result
+      } else {
+        goto(`/volumes/${result.id}`, { replaceState: true })
+      }
     } catch (err: unknown) {
       handleApiError(err, 'Failed to create volume')
     } finally {
@@ -132,12 +136,10 @@
           <Button variant="outline" size="sm" class="mt-3 gap-1.5" onclick={copyKey}>
             <Copy class="h-4 w-4" /> Copy Key
           </Button>
-        {:else}
-          <p class="text-sm text-muted-foreground">Volume created successfully (no encryption key generated).</p>
         {/if}
       </CardContent>
       <CardFooter>
-        <Button onclick={() => goto('/volumes')}>Go to Volumes</Button>
+        <Button onclick={() => goto(`/volumes/${createResult?.id}`)}>View Volume</Button>
       </CardFooter>
     </Card>
   {:else}
@@ -161,7 +163,7 @@
             <Combobox options={storageOptions} bind:value={storageId} placeholder="Select storage..." emptyText="No storages found." aria-labelledby="storage-label" />
           </div>
           <div class="space-y-2">
-            <FieldLabel for="volumeType" tooltip={"General: file/object filesystem (mount, S3 gateway, FUSE).\nIceberg: lake catalog (Iceberg REST + lake-S3 endpoints; FUSE mount renders the catalog tree, read-only). Engines (DuckDB/Spark/Trino) write through the lake-S3 listener."}>
+            <FieldLabel for="volumeType" tooltip={"General: POSIX filesystem volume.\nIceberg: lake catalog for query engines."}>
               Volume Kind
             </FieldLabel>
             <Select id="volumeType" bind:value={volumeType} placeholder="Select kind..."

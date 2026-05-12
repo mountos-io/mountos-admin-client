@@ -187,7 +187,7 @@
             <CardTitle class="flex-1 truncate" title={storage.name}>{storage.name}</CardTitle>
             {#if auth.can('storages', 'update')}
               <button type="button" onclick={startEdit}
-                class="opacity-60 hover:opacity-100 hover:text-primary transition-[color,opacity] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+                class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-60 hover:opacity-100 hover:text-primary transition-[color,opacity] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
                 title="Edit storage" aria-label="Edit storage">
                 <PencilIcon class="size-4" aria-hidden="true" />
               </button>

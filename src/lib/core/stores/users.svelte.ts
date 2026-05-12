@@ -9,12 +9,12 @@ let totalPages = $state(0)
 let currentPage = $state(1)
 let fetchCtrl: AbortController | null = null
 
-async function fetchUsers(accountId: number, page = 1, limit = 20, search?: string) {
+async function fetchUsers(accountId: number, page = 1, limit = 20, search?: string, isActive?: boolean) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.users.list({ accountId, search, page, limit }, ctrl.signal)
+    const res = await api.users.list({ accountId, search, page, limit, isActive }, ctrl.signal)
     users = res.items
     totalPages = res.pagination?.totalPages ?? 0
     currentPage = res.pagination?.page ?? 1

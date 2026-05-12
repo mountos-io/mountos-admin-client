@@ -19,17 +19,18 @@ type FetchVolumesParams = {
   storageId?: number
   volumeType?: string
   locked?: boolean
+  isActive?: boolean
 }
 
 async function fetchVolumes({
   accountId, page = 1, limit = 20,
-  regionId, storageId, volumeType, locked,
+  regionId, storageId, volumeType, locked, isActive,
 }: FetchVolumesParams) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.volumes.list({ accountId, page, limit, regionId, storageId, volumeType, locked }, ctrl.signal)
+    const res = await api.volumes.list({ accountId, page, limit, regionId, storageId, volumeType, locked, isActive }, ctrl.signal)
     volumes = res.items
     totalPages = res.pagination?.totalPages ?? 0
     currentPage = res.pagination?.page ?? 1
@@ -63,6 +64,10 @@ async function unlockVolume(id: number) {
 
 async function deactivateVolume(id: number, req: DeactivateVolumeRequest) {
   await api.volumes.deactivate(id, req)
+}
+
+async function activateVolume(id: number) {
+  await api.volumes.activate(id)
 }
 
 async function generateApiKeys(volumeId: number, req: GenerateVolumeAPIKeysRequest) {
@@ -118,6 +123,7 @@ export function useVolumes() {
     lockVolume,
     unlockVolume,
     deactivateVolume,
+    activateVolume,
     generateApiKeys,
     revokeApiKey,
     revokeApiKeysByUser,

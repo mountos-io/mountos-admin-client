@@ -12,6 +12,8 @@
   import { formatDate } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
   import PageHeader from '$lib/components/shared/PageHeader.svelte'
+  import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
+  import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Plus from '@lucide/svelte/icons/plus'
   import Pencil from '@lucide/svelte/icons/pencil'
   import ArrowRightLeft from '@lucide/svelte/icons/arrow-right-left'
@@ -20,13 +22,26 @@
   const auth = useAuth()
   const prefs = usePreferences()
 
+  let statusFilter = $state<'active' | 'inactive' | 'all'>('active')
+  const statusOptions = [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'all', label: 'All' },
+  ]
+  const hasFilter = $derived(statusFilter !== 'active')
+
   $effect(() => {
     if (!auth.loading && !auth.can('accounts', 'read')) {
       showErrorToast('Access denied')
       goto('/', { replaceState: true })
       return
     }
-    store.fetchAccounts({ page: 1, limit: prefs.pageSize })
+    void statusFilter
+    store.fetchAccounts({
+      page: 1,
+      limit: prefs.pageSize,
+      isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+    })
   })
 </script>
 
@@ -34,6 +49,16 @@
 
 <div class="space-y-4">
   <PageHeader title="Accounts" action={auth.can('accounts', 'create') ? { label: 'Create Account', href: '/accounts/create', icon: Plus } : undefined} />
+
+  <FilterPanel class="max-w-full">
+    <FilterSelect
+      options={statusOptions}
+      value={statusFilter}
+      placeholder="Active"
+      label="Filter by status"
+      onchange={(v) => (statusFilter = v as 'active' | 'inactive' | 'all')}
+    />
+  </FilterPanel>
 
   {#snippet headerRow()}
     <TableRow>
@@ -56,7 +81,7 @@
       ]}
     />
   {:else if store.accounts.length === 0}
-    <EmptyState title="No accounts" description="No accounts have been created yet." action={auth.can('accounts', 'create') ? { label: 'Create Account', href: '/accounts/create' } : undefined} />
+    <EmptyState title="No accounts" description={hasFilter ? 'No accounts match the current filter.' : 'No accounts have been created yet.'} action={!hasFilter && auth.can('accounts', 'create') ? { label: 'Create Account', href: '/accounts/create' } : undefined} />
   {:else}
     <Table>
       <caption class="sr-only">Accounts</caption>
@@ -65,7 +90,7 @@
       </TableHeader>
       <TableBody>
         {#each store.accounts as account}
-          <TableRow>
+          <TableRow class={account.isActive ? '' : 'bg-muted/40'} aria-label="Account {account.name}{account.isActive ? '' : ', deactivated'}">
             <TableCell class="font-medium max-w-[200px]">
               <a href="/accounts/{account.id}" class="hover:text-primary truncate block transition-colors" title={account.name}>{account.name}</a>
             </TableCell>
@@ -93,7 +118,11 @@
         {/each}
       </TableBody>
     </Table>
-    <Pagination currentPage={store.currentPage} totalPages={store.totalPages} onPageChange={(p) => store.fetchAccounts({ page: p, limit: prefs.pageSize })} />
+    <Pagination currentPage={store.currentPage} totalPages={store.totalPages} onPageChange={(p) => store.fetchAccounts({
+      page: p,
+      limit: prefs.pageSize,
+      isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+    })} />
   {/if}
 </div>
 

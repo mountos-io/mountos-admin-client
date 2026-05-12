@@ -14,6 +14,7 @@
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import PageHeader from '$lib/components/shared/PageHeader.svelte'
   import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
+  import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Plus from '@lucide/svelte/icons/plus'
   import Search from '@lucide/svelte/icons/search'
 
@@ -25,9 +26,20 @@
 
   let search = $state('')
   let activeSearch = $state('')
+  let statusFilter = $state<'active' | 'inactive' | 'all'>('active')
+  const statusOptions = [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'all', label: 'All' },
+  ]
+  const hasFilter = $derived(activeSearch !== '' || statusFilter !== 'active')
 
   function fetchPage(page = 1) {
-    if (accountId) userStore.fetchUsers(accountId, page, prefs.pageSize, activeSearch || undefined)
+    if (accountId) userStore.fetchUsers(
+      accountId, page, prefs.pageSize,
+      activeSearch || undefined,
+      statusFilter === 'all' ? undefined : statusFilter === 'active',
+    )
   }
 
   const debouncedApplySearch = debounce(() => {
@@ -40,6 +52,7 @@
       goto('/', { replaceState: true })
       return
     }
+    void statusFilter
     if (accountId) fetchPage()
   })
 
@@ -60,6 +73,13 @@
         <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" aria-hidden="true" />
         <Input class="pl-8 w-64 text-base" placeholder="Search users..." value={search} oninput={onSearchInput} aria-label="Search users" />
       </div>
+      <FilterSelect
+        options={statusOptions}
+        value={statusFilter}
+        placeholder="Active"
+        label="Filter by status"
+        onchange={(v) => (statusFilter = v as 'active' | 'inactive' | 'all')}
+      />
     </FilterPanel>
   {/if}
 
@@ -86,7 +106,7 @@
       ]}
     />
   {:else if userStore.users.length === 0}
-    <EmptyState title="No users" description={activeSearch ? 'No users match your search.' : 'No users found for this account.'} action={!activeSearch && auth.can('users', 'create') ? { label: 'Add User', href: '/users/create' } : undefined} />
+    <EmptyState title="No users" description={hasFilter ? 'No users match the current filters.' : 'No users found for this account.'} action={!hasFilter && auth.can('users', 'create') ? { label: 'Add User', href: '/users/create' } : undefined} />
   {:else}
     <Table>
       <caption class="sr-only">Users</caption>
@@ -95,7 +115,7 @@
       </TableHeader>
       <TableBody>
         {#each userStore.users as user}
-          <TableRow class="cursor-pointer hover:bg-muted/50" role="button" onclick={() => goto(`/users/${user.id}`)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/users/${user.id}`))} tabindex={0} aria-label="User {user.username}">
+          <TableRow class={`cursor-pointer hover:bg-muted/50 ${user.isActive ? '' : 'bg-muted/40'}`} role="button" onclick={() => goto(`/users/${user.id}`)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/users/${user.id}`))} tabindex={0} aria-label="User {user.username}{user.isActive ? '' : ', deactivated'}">
             <TableCell class="font-medium max-w-[160px] truncate" title={user.username}>{user.username}</TableCell>
             <TableCell class="max-w-[160px] truncate" title={user.name}>{user.name}</TableCell>
             <TableCell class="text-muted-foreground max-w-[200px] truncate" title={user.email}>{user.email}</TableCell>

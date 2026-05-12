@@ -28,6 +28,7 @@
   import Copy from "@lucide/svelte/icons/copy";
   import PageHeader from '$lib/components/shared/PageHeader.svelte';
   import FilterPanel from '$lib/components/shared/FilterPanel.svelte';
+  import FilterSelect from '$lib/components/shared/FilterSelect.svelte';
   import InfoTip from '$lib/components/shared/InfoTip.svelte';
   import HardDriveIcon from "@lucide/svelte/icons/hard-drive";
 
@@ -39,11 +40,19 @@
   const dialog = useConfirmDialog();
 
   let nameFilter = $state('');
+  let statusFilter = $state<'active' | 'inactive' | 'all'>('active');
+  const statusOptions = [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'all', label: 'All' },
+  ];
+
   const filteredRegions = $derived(
     nameFilter
       ? store.regions.filter(r => r.name.toLowerCase().includes(nameFilter.toLowerCase()))
       : store.regions
   );
+  const hasFilter = $derived(nameFilter !== '' || statusFilter !== 'active');
 
   $effect(() => {
     if (!auth.loading && !auth.can("regions", "read")) {
@@ -51,7 +60,12 @@
       goto("/", { replaceState: true });
       return;
     }
-    store.fetchRegions({ page: 1, limit: prefs.pageSize });
+    void statusFilter;
+    store.fetchRegions({
+      page: 1,
+      limit: prefs.pageSize,
+      isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+    });
   });
 
   async function copyExportId(exportId: string) {
@@ -80,6 +94,13 @@
   <PageHeader title="Regions" action={accountId && auth.can("regions", "create") ? { label: 'Create Region', href: '/regions/create', icon: Plus } : undefined} />
   <FilterPanel class="max-w-full">
     <Input bind:value={nameFilter} placeholder="Filter by name..." aria-label="Filter by name" class="max-w-sm" />
+    <FilterSelect
+      options={statusOptions}
+      value={statusFilter}
+      placeholder="Active"
+      label="Filter by status"
+      onchange={(v) => (statusFilter = v as 'active' | 'inactive' | 'all')}
+    />
   </FilterPanel>
 
   {#snippet headerRow()}
@@ -126,7 +147,7 @@
       ]}
     />
   {:else if filteredRegions.length === 0}
-    <EmptyState title="No regions" description={nameFilter ? 'No regions match the current filter.' : undefined} action={!nameFilter && auth.can('regions', 'create') ? { label: 'Create Region', href: '/regions/create' } : undefined} />
+    <EmptyState title="No regions" description={hasFilter ? 'No regions match the current filters.' : undefined} action={!hasFilter && auth.can('regions', 'create') ? { label: 'Create Region', href: '/regions/create' } : undefined} />
   {:else}
     <Table>
       <caption class="sr-only">Regions</caption>
@@ -136,12 +157,12 @@
       <TableBody>
         {#each filteredRegions as region}
           <TableRow
-            class="cursor-pointer hover:bg-muted/50"
+            class={`cursor-pointer hover:bg-muted/50 ${region.isActive ? '' : 'bg-muted/40'}`}
             role="button"
             onclick={() => goto(`/regions/${region.id}`)}
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/regions/${region.id}`))}
             tabindex={0}
-            aria-label="Region {region.name}"
+            aria-label="Region {region.name}{region.isActive ? '' : ', deactivated'}"
           >
             <TableCell class="font-medium max-w-[160px] truncate" title={region.name}>{region.name}</TableCell>
             <TableCell class="font-mono text-sm max-w-[200px] truncate" title={region.dns}>{region.dns}</TableCell>
@@ -197,7 +218,11 @@
     <Pagination
       currentPage={store.currentPage}
       totalPages={store.totalPages}
-      onPageChange={(p) => store.fetchRegions({ page: p, limit: prefs.pageSize })}
+      onPageChange={(p) => store.fetchRegions({
+        page: p,
+        limit: prefs.pageSize,
+        isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+      })}
     />
   {/if}
 </div>

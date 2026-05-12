@@ -30,7 +30,7 @@
         aria-label={label ?? placeholder}
         aria-controls={controls}
         class={cn(
-          "justify-between gap-1.5 min-w-24 max-w-[12rem]",
+          "justify-between gap-1.5 min-w-24 max-w-[12rem] min-h-[44px] sm:min-h-0",
           value ? "font-semibold" : "font-normal text-muted-foreground",
           className
         )}>

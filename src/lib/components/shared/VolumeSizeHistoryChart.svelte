@@ -109,14 +109,14 @@
       <svg viewBox="0 0 {W} {H}" class="w-full h-auto select-none" onmousemove={onMove} onmouseleave={onLeave} role="img" aria-label="Volume size over time">
         {#each yTicks as t}
           <line x1={PAD_L} y1={t.y} x2={W - PAD_R} y2={t.y} stroke="currentColor" opacity="0.08" />
-          <text x={PAD_L - 6} y={t.y} text-anchor="end" dominant-baseline="central" font-size="10" font-family="monospace" fill="currentColor" opacity="0.6">{t.label}</text>
+          <text x={PAD_L - 6} y={t.y} text-anchor="end" dominant-baseline="central" font-size="7" font-family="monospace" fill="currentColor" opacity="0.6">{t.label}</text>
         {/each}
         {#each xTicks as t}
-          <text x={t.x} y={H - 8} text-anchor="middle" font-size="10" font-family="monospace" fill="currentColor" opacity="0.6">{t.label}</text>
+          <text x={t.x} y={H - 8} text-anchor="middle" font-size="7" font-family="monospace" fill="currentColor" opacity="0.6">{t.label}</text>
         {/each}
         {#each seriesDefs as s}
           {#if !disabled.has(s.key)}
-            <path d={pathFor(s.key)} fill="none" stroke={s.color} stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            <path d={pathFor(s.key)} fill="none" stroke={s.color} stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
           {/if}
         {/each}
         {#if hover}

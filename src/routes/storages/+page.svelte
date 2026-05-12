@@ -34,9 +34,16 @@
   let regionFilter = $state('')
   let typeFilter = $state('')
   let providerFilter = $state('')
+  let statusFilter = $state<'active' | 'inactive' | 'all'>('active')
   let filtersLoadedFor: number | null = null
 
-  const hasFilter = $derived(activeSearch || regionFilter || typeFilter || providerFilter)
+  const statusOptions = [
+    { value: 'active', label: 'Active' },
+    { value: 'inactive', label: 'Inactive' },
+    { value: 'all', label: 'All' },
+  ]
+
+  const hasFilter = $derived(activeSearch || regionFilter || typeFilter || providerFilter || statusFilter !== 'active')
 
   const regionOptions = $derived([
     { value: '', label: 'All Regions' },
@@ -55,6 +62,7 @@
       regionId: regionFilter ? Number(regionFilter) : undefined,
       storageType: typeFilter || undefined,
       providerType: providerFilter || undefined,
+      isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
     }
   }
 
@@ -82,6 +90,7 @@
         regionStore.fetchRegions({ page: 1, limit: 100 })
         filtersLoadedFor = accountId
       }
+      void statusFilter
       fetchPage()
     }
   })
@@ -101,6 +110,13 @@
       <FilterSelect options={regionOptions} bind:value={regionFilter} placeholder="All Regions" label="Filter by region" />
       <FilterSelect options={typeOptions} bind:value={typeFilter} placeholder="All Types" label="Filter by type" />
       <FilterSelect options={providerOptions} bind:value={providerFilter} placeholder="All Providers" label="Filter by provider" />
+      <FilterSelect
+        options={statusOptions}
+        value={statusFilter}
+        placeholder="Active"
+        label="Filter by status"
+        onchange={(v) => (statusFilter = v as 'active' | 'inactive' | 'all')}
+      />
     </FilterPanel>
   {/if}
 
@@ -141,12 +157,12 @@
       <TableBody>
         {#each storageStore.storages as storage}
           <TableRow
-            class="cursor-pointer hover:bg-muted/50"
+            class={`cursor-pointer hover:bg-muted/50 ${storage.isActive ? '' : 'bg-muted/40'}`}
             role="button"
             onclick={() => goto(`/storages/${storage.id}`)}
             onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/storages/${storage.id}`))}
             tabindex={0}
-            aria-label="Storage {storage.name}"
+            aria-label="Storage {storage.name}{storage.isActive ? '' : ', deactivated'}"
           >
             <TableCell class="font-medium max-w-[200px] truncate" title={storage.name}>{storage.name}</TableCell>
             <TableCell class="text-sm text-muted-foreground hidden sm:table-cell">{storage.regionInfo.name}</TableCell>

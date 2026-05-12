@@ -14,13 +14,13 @@
 </script>
 
 <label class={cn(
-  "inline-flex min-h-8 items-center gap-2.5 px-1 select-none group",
+  "inline-flex min-h-[44px] sm:min-h-8 items-center gap-2.5 px-1 select-none group",
   disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
   className
 )}>
   <span class={cn(
-    "relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[2px] border border-input bg-transparent transition-[border-color,background-color]",
-    !disabled && "group-hover:border-foreground/40",
+    "relative inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-[2px] border border-foreground/35 bg-background/60 shadow-sm transition-[border-color,background-color]",
+    !disabled && "group-hover:border-foreground/60",
     "has-[:focus-visible]:outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-background",
     checked && "border-primary bg-primary/10",
   )}>
