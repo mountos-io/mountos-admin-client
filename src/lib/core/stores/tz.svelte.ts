@@ -56,24 +56,22 @@ export const tz = {
   reset() { this.set(browserTz()) },
 }
 
-// Curated short list for the picker. Users can also free-type a full IANA
-// name in case the dropdown doesn't cover their zone.
-export const COMMON_TZ = [
-  'UTC',
-  'America/Los_Angeles',
-  'America/Denver',
-  'America/Chicago',
-  'America/New_York',
-  'America/Sao_Paulo',
-  'Europe/London',
-  'Europe/Paris',
-  'Europe/Berlin',
-  'Africa/Cairo',
-  'Asia/Dubai',
-  'Asia/Kolkata',
-  'Asia/Shanghai',
-  'Asia/Singapore',
-  'Asia/Tokyo',
-  'Australia/Sydney',
-  'Pacific/Auckland',
-]
+// Full IANA list when the runtime supports it (Chrome/Edge 99+, Safari 15.4+,
+// Firefox 93+); falls back to a small curated set on older engines. The
+// picker exposes a text filter on top so even ~400 entries stay usable.
+export const ALL_TZ: string[] = (() => {
+  try {
+    const fn = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf
+    if (typeof fn === 'function') {
+      const zones = fn('timeZone')
+      if (Array.isArray(zones) && zones.length > 0) return zones
+    }
+  } catch { /* ignore */ }
+  return [
+    'UTC', 'America/Los_Angeles', 'America/Denver', 'America/Chicago',
+    'America/New_York', 'America/Sao_Paulo', 'Europe/London', 'Europe/Paris',
+    'Europe/Berlin', 'Africa/Cairo', 'Asia/Dubai', 'Asia/Kolkata',
+    'Asia/Shanghai', 'Asia/Singapore', 'Asia/Tokyo', 'Australia/Sydney',
+    'Pacific/Auckland',
+  ]
+})()

@@ -62,7 +62,7 @@
         <TableHead class="th-cyber w-[28px]"></TableHead>
         <TableHead class="th-cyber">Name</TableHead>
         <TableHead class="th-cyber hidden md:table-cell w-[120px] text-right">Size</TableHead>
-        <TableHead class="th-cyber hidden lg:table-cell w-[200px]">Modified</TableHead>
+        <TableHead class="th-cyber hidden lg:table-cell w-[260px]">Modified</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
@@ -91,7 +91,7 @@
           <TableCell class="hidden md:table-cell text-right text-xs text-muted-foreground tabular-nums py-4">
             {isDir(e.kind) ? '' : formatBytes(e.size)}
           </TableCell>
-          <TableCell class="hidden lg:table-cell text-xs text-muted-foreground tabular-nums py-4 align-middle">
+          <TableCell class="hidden lg:table-cell text-xs text-muted-foreground tabular-nums py-4 align-middle whitespace-nowrap">
             {#if e.mtime}
               <div class="leading-tight">
                 <div class="text-foreground">{formatTzShort(e.mtime / 1_000_000, tz.value)}</div>

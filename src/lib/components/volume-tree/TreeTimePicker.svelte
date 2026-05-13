@@ -9,7 +9,6 @@
   import { tz } from '$lib/core/stores/tz.svelte'
   import { formatTzShort } from '$lib/core/utils/format'
   import { showWarningToast } from '$lib/core/utils/toast'
-  import InfoTip from '$lib/components/shared/InfoTip.svelte'
 
   let {
     volume,
@@ -107,21 +106,15 @@
   // the same zone — keeps the affordance consistent across zones.
   const tzEcho = $derived(asOf == null ? '' : formatTzShort(asOf / 1000, tz.value))
 
-  // Pre-commit hint so operators near the retention edge can validate before
-  // typing. Browser min/max enforce the same bounds; this just surfaces them.
-  const rangeHint = $derived.by(() => {
-    if (!minBound || !maxBound) return ''
-    return `${minBound.replace('T', ' ')} → ${maxBound.replace('T', ' ')}`
-  })
-
-  // Quick presets (most-recent first). Disabled when they would fall outside
-  // the volume's retention window — surfaces the bound without a 4xx round-trip.
+  // Quick presets (most-recent first). Labelled with a leading "-" so the
+  // chip reads "now minus N". Disabled when they would fall outside the
+  // volume's retention window — surfaces the bound without a 4xx round-trip.
   const PRESETS: { label: string; offsetMs: number }[] = [
-    { label: '5m',  offsetMs: 5  * 60_000 },
-    { label: '1h',  offsetMs: 60 * 60_000 },
-    { label: '6h',  offsetMs: 6  * 3600_000 },
-    { label: '1d',  offsetMs: 24 * 3600_000 },
-    { label: '7d',  offsetMs: 7  * 86400_000 },
+    { label: '-5m', offsetMs: 5  * 60_000 },
+    { label: '-1h', offsetMs: 60 * 60_000 },
+    { label: '-6h', offsetMs: 6  * 3600_000 },
+    { label: '-1d', offsetMs: 24 * 3600_000 },
+    { label: '-7d', offsetMs: 7  * 86400_000 },
   ]
   function presetDisabled(offsetMs: number): boolean {
     return nowTick - offsetMs < minMs
@@ -150,24 +143,21 @@
     </div>
 
     {#if !isLive}
-      <div class="flex items-center gap-1.5">
-        <Input
-          type="datetime-local"
-          class="h-9 min-h-[44px] sm:min-h-9 w-fit font-mono text-xs"
-          {value}
-          min={minBound}
-          max={maxBound}
-          onchange={(e) => apply((e.currentTarget as HTMLInputElement).value)}
-          aria-label="As-of timestamp" />
-        <InfoTip text={`Snapshot of the selected fork at this wall-clock time, read in ${tz.value}.\nReachable back to (now − retention), extended further if a fork's snapshot pins older data.`} />
-      </div>
+      <Input
+        type="datetime-local"
+        class="h-9 min-h-[44px] sm:min-h-9 w-fit font-mono text-sm [color-scheme:light] dark:[color-scheme:dark]"
+        {value}
+        min={minBound}
+        max={maxBound}
+        onchange={(e) => apply((e.currentTarget as HTMLInputElement).value)}
+        title={`Snapshot of the selected fork at this wall-clock time, read in ${tz.value}. Reachable back to (now − retention).`}
+        aria-label="As-of timestamp" />
     {/if}
   </div>
 
   <!-- Quick presets: visible whether you're in Live or At-time so an operator
        can jump straight into the snapshot view with one click. -->
-  <div class="flex items-center gap-1 flex-wrap justify-end" role="group" aria-label="Quick presets">
-    <span class="text-[10px] uppercase tracking-wider text-muted-foreground/70 mr-0.5">ago</span>
+  <div class="flex items-center gap-1 flex-wrap justify-end" role="group" aria-label="Quick presets — offsets from now">
     {#each PRESETS as p (p.label)}
       {@const disabled = presetDisabled(p.offsetMs)}
       {@const active = presetActive(p.offsetMs)}
@@ -175,8 +165,8 @@
         onclick={() => applyOffset(p.offsetMs)}
         {disabled}
         aria-pressed={active}
-        title={disabled ? `${p.label} ago: outside retention window` : `Snapshot at ${p.label} ago`}
-        class="h-7 px-3 min-h-[44px] sm:min-h-[28px] min-w-[44px] sm:min-w-0 rounded-sm border text-[11px] font-mono tabular-nums transition-colors
+        title={disabled ? `${p.label} from now: outside retention window` : `Snapshot at ${p.label} from now`}
+        class="h-7 px-3 min-h-[44px] sm:min-h-7 min-w-[44px] sm:min-w-0 rounded-sm border text-sm font-mono tabular-nums transition-colors
           {active ? 'border-primary bg-primary/15 text-primary'
           : disabled ? 'border-border/30 text-muted-foreground/40 cursor-not-allowed'
           : 'border-border/40 text-muted-foreground hover:text-foreground hover:border-border focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring'}">
@@ -186,13 +176,8 @@
   </div>
 
   {#if !isLive && tzEcho}
-    <span class="text-[11px] font-mono text-muted-foreground tabular-nums leading-none">
+    <span class="text-sm font-mono text-foreground tabular-nums leading-tight">
       = {tzEcho}
-    </span>
-  {/if}
-  {#if !isLive && rangeHint}
-    <span class="text-[11px] font-mono text-muted-foreground/70 tabular-nums leading-none">
-      retention: {rangeHint}
     </span>
   {/if}
 </div>

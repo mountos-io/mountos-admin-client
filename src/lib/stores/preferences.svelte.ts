@@ -58,6 +58,9 @@ function applyTheme(t: Theme) {
     ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
     : t
   el.classList.add(mode)
+  // Pin color-scheme inline so native form controls (datetime picker, scrollbars)
+  // match the chosen theme even when an extension injects color-scheme: dark.
+  el.style.colorScheme = mode
   applySkinPreset()
 }
 
