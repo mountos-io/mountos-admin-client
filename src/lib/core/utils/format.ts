@@ -47,6 +47,49 @@ export function formatUTCFull(date: string | number | Date): string {
   return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())} UTC`
 }
 
+// Render `date` in IANA `tz` as "2026-05-13 15:16 IST". The abbreviation is
+// derived from Intl so it matches the user's chosen zone, including DST.
+// Falls back to formatUTCShort when tz="UTC" to keep the canonical label.
+export function formatTzShort(date: string | number | Date, tz: string): string {
+  if (!tz || tz === 'UTC') return formatUTCShort(date)
+  const d = parseDate(date)
+  if (!Number.isFinite(d.getTime())) return ''
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+      timeZoneName: 'short',
+    }).formatToParts(d)
+    const get = (t: string) => parts.find(p => p.type === t)?.value ?? ''
+    const tag = get('timeZoneName') || tz
+    return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')} ${tag}`
+  } catch {
+    return formatUTCShort(date)
+  }
+}
+
+// Second-precision tz-aware variant for version history surfaces that need
+// to distinguish writes within the same minute.
+export function formatTzFull(date: string | number | Date, tz: string): string {
+  if (!tz || tz === 'UTC') return formatUTCFull(date)
+  const d = parseDate(date)
+  if (!Number.isFinite(d.getTime())) return ''
+  try {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+      timeZoneName: 'short',
+    }).formatToParts(d)
+    const get = (t: string) => parts.find(p => p.type === t)?.value ?? ''
+    const tag = get('timeZoneName') || tz
+    return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}:${get('second')} ${tag}`
+  } catch {
+    return formatUTCFull(date)
+  }
+}
+
 export function formatRelative(date: string | number | Date): string {
   const d = parseDate(date)
   const diff = d.getTime() - Date.now()

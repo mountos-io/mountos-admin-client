@@ -2,7 +2,8 @@
   import type { ForkEntryVersion } from '$lib/core/api/types'
   import * as Dialog from '$lib/components/ui/dialog'
   import { Button } from '$lib/components/ui/button'
-  import { formatBytes, formatRelative, formatUTCFull } from '$lib/core/utils/format'
+  import { formatBytes, formatRelative, formatTzFull } from '$lib/core/utils/format'
+  import { tz } from '$lib/core/stores/tz.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
@@ -73,7 +74,7 @@
               <span class="font-mono text-xs text-muted-foreground">Generation {v.generation}</span>
               <div class="min-w-0">
                 {#if v.mtime}
-                  <p class="text-xs tabular-nums">{formatUTCFull(v.mtime / 1_000_000)}</p>
+                  <p class="text-xs tabular-nums">{formatTzFull(v.mtime / 1_000_000, tz.value)}</p>
                   <p class="text-[11px] text-muted-foreground tabular-nums">{formatRelative(v.mtime / 1_000_000)}</p>
                 {/if}
                 {#if v.modifiedBy}

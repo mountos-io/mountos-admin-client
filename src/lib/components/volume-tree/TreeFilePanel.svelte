@@ -8,7 +8,8 @@
   import { Dialog as DialogPrimitive } from 'bits-ui'
   import { Button } from '$lib/components/ui/button'
   import { Badge } from '$lib/components/ui/badge'
-  import { formatBytes, formatRelative, formatUTCShort } from '$lib/core/utils/format'
+  import { formatBytes, formatRelative, formatTzShort } from '$lib/core/utils/format'
+  import { tz } from '$lib/core/stores/tz.svelte'
   import XIcon from '@lucide/svelte/icons/x'
   import HistoryIcon from '@lucide/svelte/icons/history'
   import CopyIcon from '@lucide/svelte/icons/copy'
@@ -154,14 +155,14 @@
             <div>
               <div class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Modified</div>
               {#if detail.mtime}
-                <p class="text-sm tabular-nums mt-1">{formatUTCShort(detail.mtime / 1_000_000)}</p>
+                <p class="text-sm tabular-nums mt-1">{formatTzShort(detail.mtime / 1_000_000, tz.value)}</p>
                 <p class="text-xs text-muted-foreground tabular-nums">{formatRelative(detail.mtime / 1_000_000)}</p>
               {/if}
             </div>
             <div>
               <div class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Created</div>
               {#if detail.ctime}
-                <p class="text-sm tabular-nums mt-1">{formatUTCShort(detail.ctime / 1_000_000)}</p>
+                <p class="text-sm tabular-nums mt-1">{formatTzShort(detail.ctime / 1_000_000, tz.value)}</p>
                 <p class="text-xs text-muted-foreground tabular-nums">{formatRelative(detail.ctime / 1_000_000)}</p>
               {/if}
             </div>

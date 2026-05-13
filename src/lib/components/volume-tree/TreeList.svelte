@@ -2,7 +2,8 @@
   import type { ForkTreeEntry } from '$lib/core/api/types'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Button } from '$lib/components/ui/button'
-  import { formatBytes, formatRelative, formatUTCShort } from '$lib/core/utils/format'
+  import { formatBytes, formatRelative, formatTzShort } from '$lib/core/utils/format'
+  import { tz } from '$lib/core/stores/tz.svelte'
   import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import Folder from '@lucide/svelte/icons/folder'
@@ -48,8 +49,11 @@
 {#if loading && entries.length === 0}
   <ListSkeleton rows={6} />
 {:else if entries.length === 0}
-  <div class="tech-grid relative rounded-sm">
-    <EmptyState title="Empty directory" description="No entries at this path." />
+  <div class="relative rounded-sm border border-border/60 bg-card/60 overflow-hidden">
+    <div class="tech-grid absolute inset-0 pointer-events-none opacity-60"></div>
+    <div class="relative">
+      <EmptyState title="Empty directory" description="No entries at this path." />
+    </div>
   </div>
 {:else}
   <Table>
@@ -59,7 +63,6 @@
         <TableHead class="th-cyber">Name</TableHead>
         <TableHead class="th-cyber hidden md:table-cell w-[120px] text-right">Size</TableHead>
         <TableHead class="th-cyber hidden lg:table-cell w-[200px]">Modified</TableHead>
-        <TableHead class="th-cyber hidden xl:table-cell w-[100px] text-right" title="Generation number: monotonic version counter for this entry">Gen</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
@@ -91,13 +94,10 @@
           <TableCell class="hidden lg:table-cell text-xs text-muted-foreground tabular-nums py-4 align-middle">
             {#if e.mtime}
               <div class="leading-tight">
-                <div class="text-foreground">{formatUTCShort(e.mtime / 1_000_000)}</div>
+                <div class="text-foreground">{formatTzShort(e.mtime / 1_000_000, tz.value)}</div>
                 <div class="text-muted-foreground/70">{formatRelative(e.mtime / 1_000_000)}</div>
               </div>
             {/if}
-          </TableCell>
-          <TableCell class="hidden xl:table-cell text-right font-mono text-xs text-muted-foreground py-4">
-            {e.generation || ''}
           </TableCell>
         </TableRow>
       {/each}

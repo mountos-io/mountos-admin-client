@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { toDatetimeUTC } from '$lib/core/utils/forkRetention'
+  import { formatTzShort } from '$lib/core/utils/format'
+  import { tz } from '$lib/core/stores/tz.svelte'
   import GitFork from '@lucide/svelte/icons/git-fork'
   import LockIcon from '@lucide/svelte/icons/lock'
   import Clock from '@lucide/svelte/icons/clock'
@@ -15,7 +16,8 @@
     size?: 'sm' | 'md'
   } = $props()
 
-  const utcLabel = $derived(asOf == null ? '' : toDatetimeUTC(new Date(asOf)).replace('T', ' '))
+  // asOf is ms in the URL contract; pass seconds to formatTzShort.
+  const tzLabel = $derived(asOf == null ? '' : formatTzShort(asOf / 1000, tz.value))
 </script>
 
 <div
@@ -45,8 +47,7 @@
       <span class="text-foreground">live</span>
     {:else}
       <Clock class="h-3 w-3" aria-hidden="true" />
-      <span class="font-mono tabular-nums text-foreground">{utcLabel}</span>
-      <span class="text-muted-foreground/70">UTC</span>
+      <span class="font-mono tabular-nums text-foreground">{tzLabel}</span>
     {/if}
   </span>
 </div>

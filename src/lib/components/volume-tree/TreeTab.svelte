@@ -13,6 +13,7 @@
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
   import { Button } from '$lib/components/ui/button'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
+  import TimezonePicker from '$lib/components/shared/TimezonePicker.svelte'
   import SearchIcon from '@lucide/svelte/icons/search'
   import TreeBreadcrumb from './TreeBreadcrumb.svelte'
   import TreeTimePicker from './TreeTimePicker.svelte'
@@ -46,6 +47,12 @@
   })
   const q = $derived(params.get('q') ?? '')
   const exact = $derived(params.get('exact') === '1')
+
+  // URL stores asof in ms (human-readable, matches Date.now() conventions);
+  // backend tree APIs operate in microseconds (matching mtime/ctime).
+  function asOfMicros(): number | undefined {
+    return asOf != null ? asOf * 1000 : undefined
+  }
 
   function normalisePath(p: string): string {
     if (!p || p === '') return '/'
@@ -89,7 +96,7 @@
     try {
       const res = await api.volumeForkTrees.list(volumeId, forkName, {
         path,
-        asOf: asOf ?? undefined,
+        asOf: asOfMicros(),
         cursor: append ? (cursor ?? undefined) : undefined,
         limit: PAGE_SIZE,
       }, listCtrl.signal)
@@ -121,7 +128,7 @@
   let searchLoadingMore = $state(false)
   let searchError = $state<string | null>(null)
   let searchOpen = $state(false)
-  let searchInputEl: HTMLInputElement | undefined = $state()
+  let searchInputEl: HTMLInputElement | null = $state(null)
   let searchCtrl: AbortController | null = null
 
   // Mirror q/exact into draft state only when they actually change, not on
@@ -157,7 +164,7 @@
       const res = await api.volumeForkSearches.find(volumeId, forkName, {
         q,
         path,
-        asOf: asOf ?? undefined,
+        asOf: asOfMicros(),
         exact,
         cursor: append ? (searchCursor ?? undefined) : undefined,
         limit: PAGE_SIZE,
@@ -275,7 +282,7 @@
     detail = null
     detailError = null
     try {
-      detail = await api.volumeForkEntries.get(volumeId, forkName, p, asOf ?? 0, detailCtrl.signal)
+      detail = await api.volumeForkEntries.get(volumeId, forkName, p, asOfMicros() ?? 0, detailCtrl.signal)
     } catch (e) {
       if ((e as Error).name === 'AbortError') return
       detailError = e instanceof ApiError ? e.message : 'Failed to load entry'
@@ -343,12 +350,13 @@
     <!-- Row 1: title + context controls -->
     <div class="flex items-start justify-between flex-wrap gap-3">
       <CardTitle class="shrink-0">Tree</CardTitle>
-      <div class="flex items-center gap-2 flex-wrap justify-end">
+      <div class="flex items-start gap-2 flex-wrap justify-end">
         <FilterSelect
           options={forkOptions}
           value={forkName}
           placeholder="Fork"
           onchange={(v) => changeFork(v ?? MAIN_FORK)} />
+        <TimezonePicker />
         <TreeTimePicker
           {volume}
           {forks}

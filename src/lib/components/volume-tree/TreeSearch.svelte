@@ -13,7 +13,7 @@
   let {
     draft = $bindable(''),
     exact = $bindable(false),
-    inputEl = $bindable(),
+    inputEl = $bindable(null),
     active,
     results,
     loading,
@@ -28,7 +28,7 @@
   }: {
     draft: string
     exact: boolean
-    inputEl?: HTMLInputElement
+    inputEl: HTMLInputElement | null
     active: boolean
     results: ForkTreeMatch[]
     loading: boolean

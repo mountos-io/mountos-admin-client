@@ -22,7 +22,8 @@
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import { formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes, formatClientType, formatSessionStatus, formatDuration, formatRelative } from '$lib/core/utils/format'
-  import { toDatetimeUTC, parseDatetimeUTC, forkAsOfMin, forkAsOfMax } from '$lib/core/utils/forkRetention'
+  import { toDatetimeTz, parseDatetimeTz, forkAsOfMin, forkAsOfMax } from '$lib/core/utils/forkRetention'
+  import { tz } from '$lib/core/stores/tz.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import { api } from '$lib/core/stores/client.svelte'
@@ -161,7 +162,7 @@
     createForkName = ''
     createForkParent = 'main'
     createForkAsOfEnabled = false
-    createForkAsOfLocal = toDatetimeUTC(new Date())
+    createForkAsOfLocal = toDatetimeTz(new Date(), tz.value)
     createForkOpen = true
   }
 
@@ -190,7 +191,7 @@
       const req: CreateVolumeForkRequest = { name: finalName }
       if (createForkParent && createForkParent !== 'main') req.parentName = createForkParent
       if (createForkAsOfEnabled) {
-        req.asOf = parseDatetimeUTC(createForkAsOfLocal) * 1000
+        req.asOf = parseDatetimeTz(createForkAsOfLocal, tz.value) * 1000
       }
       req.volumeType = volume.volumeType
       await store.createFork(id, req)
@@ -378,8 +379,8 @@
   let forks = $state<Fork[]>([])
   let forksLoading = $state(false)
 
-  const createForkAsOfMin = $derived(forkAsOfMin(volume, forks, createForkParent))
-  const createForkAsOfMax = $derived(forkAsOfMax())
+  const createForkAsOfMin = $derived(forkAsOfMin(volume, forks, createForkParent, tz.value))
+  const createForkAsOfMax = $derived(forkAsOfMax(tz.value))
 
   const activeTab = $derived($page.url.searchParams.get('tab') === 'tree' ? 'tree' : 'overview')
   const TAB_IDS: ReadonlyArray<'overview' | 'tree'> = ['overview', 'tree']
