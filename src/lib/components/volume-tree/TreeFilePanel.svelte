@@ -10,6 +10,7 @@
   import { Badge } from '$lib/components/ui/badge'
   import { formatBytes, formatRelative, formatTzShort } from '$lib/core/utils/format'
   import { tz } from '$lib/core/stores/tz.svelte'
+  import { userCache } from '$lib/core/stores/user-cache.svelte'
   import XIcon from '@lucide/svelte/icons/x'
   import HistoryIcon from '@lucide/svelte/icons/history'
   import CopyIcon from '@lucide/svelte/icons/copy'
@@ -149,10 +150,6 @@
               <p class="text-sm tabular-nums mt-1">{isFile(detail.kind) ? formatBytes(detail.size) : ''}</p>
             </div>
             <div>
-              <div class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Generation</div>
-              <p class="text-sm font-mono mt-1">{detail.generation || ''}</p>
-            </div>
-            <div>
               <div class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Modified</div>
               {#if detail.mtime}
                 <p class="text-sm tabular-nums mt-1">{formatTzShort(detail.mtime / 1_000_000, tz.value)}</p>
@@ -174,6 +171,20 @@
               <div class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Mode</div>
               <p class="text-sm font-mono mt-1">{fmtMode(detail.mode)}</p>
             </div>
+            {#if detail.creatorId || detail.updaterId}
+              <div>
+                <div class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Created by</div>
+                <p class="text-sm mt-1" title={detail.creatorId ? `user#${detail.creatorId}` : ''}>
+                  {void userCache.rev, userCache.display(detail.creatorId ?? 0)}
+                </p>
+              </div>
+              <div>
+                <div class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Updated by</div>
+                <p class="text-sm mt-1" title={detail.updaterId ? `user#${detail.updaterId}` : ''}>
+                  {void userCache.rev, userCache.display(detail.updaterId ?? 0)}
+                </p>
+              </div>
+            {/if}
           </section>
 
           {#if xattrEntries.length > 0}

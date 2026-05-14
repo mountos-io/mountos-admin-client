@@ -4,6 +4,7 @@
   import { Button } from '$lib/components/ui/button'
   import { formatBytes, formatRelative, formatTzFull } from '$lib/core/utils/format'
   import { tz } from '$lib/core/stores/tz.svelte'
+  import { userCache } from '$lib/core/stores/user-cache.svelte'
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
@@ -69,16 +70,18 @@
         <p class="text-sm text-muted-foreground py-4 text-center">No prior versions.</p>
       {:else}
         <ul class="divide-y divide-border/30 border border-border/40 rounded-sm">
-          {#each versions as v (v.generation)}
+          {#each versions as v, i (v.generation)}
             <li class="grid grid-cols-[max-content_1fr_max-content] gap-3 px-3 py-2 items-center">
-              <span class="font-mono text-xs text-muted-foreground">Generation {v.generation}</span>
+              <span class="font-mono text-xs text-muted-foreground tabular-nums">v{versions.length - i}</span>
               <div class="min-w-0">
                 {#if v.mtime}
                   <p class="text-xs tabular-nums">{formatTzFull(v.mtime / 1_000_000, tz.value)}</p>
                   <p class="text-[11px] text-muted-foreground tabular-nums">{formatRelative(v.mtime / 1_000_000)}</p>
                 {/if}
-                {#if v.modifiedBy}
-                  <p class="text-xs text-muted-foreground">by {v.modifiedBy}</p>
+                {#if v.updaterId}
+                  <p class="text-xs text-muted-foreground" title={`user#${v.updaterId}`}>
+                    by {void userCache.rev, userCache.display(v.updaterId)}
+                  </p>
                 {/if}
                 {#if v.contentHash}
                   <div class="flex items-center gap-1 min-w-0">

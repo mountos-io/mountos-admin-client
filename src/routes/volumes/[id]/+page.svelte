@@ -42,7 +42,7 @@
   import Copy from '@lucide/svelte/icons/copy'
   import Plus from '@lucide/svelte/icons/plus'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert'
-  import { Select } from '$lib/components/ui/select'
+  import ForkPicker from '$lib/components/volume-tree/ForkPicker.svelte'
   import { Checkbox } from '$lib/components/ui/checkbox'
   import DateTimePicker from '$lib/components/shared/DateTimePicker.svelte'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
@@ -589,8 +589,8 @@
     {/if}
   </div>
   {#if volume}
-    <div class="flex items-center gap-2 flex-wrap" role="tablist" aria-label="Volume sections">
-      <div class="relative border border-border/30 rounded-sm px-2 py-1 w-fit">
+    <div class="flex items-center justify-between gap-2 flex-wrap">
+      <div role="tablist" aria-label="Volume sections" class="relative border border-border/30 rounded-sm px-2 py-1 w-fit">
         <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
         <div class="relative flex items-center gap-1">
           <Button variant={activeTab === 'overview' ? 'primary' : 'ghost'} size="sm"
@@ -611,6 +611,15 @@
             onclick={() => setTab('tree')}>Tree</Button>
         </div>
       </div>
+      {#if canEdit}
+        <button type="button"
+          onclick={openCreateFork}
+          title="Create a new fork from this volume"
+          class="cyberpunk-skewed-sm group inline-flex items-center gap-2 h-9 min-h-[44px] sm:min-h-9 px-4 bg-warning/10 text-warning font-mono text-xs uppercase tracking-[0.18em] transition-colors hover:bg-warning/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+          <Plus class="h-3.5 w-3.5" aria-hidden="true" />
+          <span>New Fork</span>
+        </button>
+      {/if}
     </div>
   {/if}
   {#if loading}
@@ -1214,7 +1223,7 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={createForkOpen}>
-  <Dialog.Content class="sm:max-w-md"
+  <Dialog.Content class="w-[min(100vw-2rem,640px)] sm:max-w-[640px]"
     onOpenAutoFocus={(e) => {
       e.preventDefault()
       document.getElementById('create-fork-name')?.focus()
@@ -1226,6 +1235,14 @@
       </Dialog.Description>
     </Dialog.Header>
     <div class="space-y-4 py-2">
+      <div class="space-y-1.5">
+        <Label for="create-fork-parent" class="text-sm font-semibold">Parent Fork</Label>
+        <ForkPicker
+          options={forkParentOptions}
+          value={createForkParent}
+          placeholder="Select parent fork"
+          onchange={(v) => (createForkParent = v ?? 'main')} />
+      </div>
       <div class="space-y-1.5">
         <Label for="create-fork-name" class="text-sm font-semibold">
           Name <span class="text-destructive" aria-hidden="true">*</span>
@@ -1253,11 +1270,6 @@
             3–63 chars · lowercase letters, digits, <code>.</code> <code>-</code> · start/end alphanumeric
           </p>
         </div>
-      </div>
-      <div class="space-y-1.5">
-        <Label for="create-fork-parent" class="text-sm font-semibold">Parent Fork</Label>
-        <Select id="create-fork-parent" bind:value={createForkParent}
-          options={forkParentOptions} placeholder="Select parent fork" />
       </div>
       <div class="space-y-1.5">
         <div class="flex items-center gap-2">

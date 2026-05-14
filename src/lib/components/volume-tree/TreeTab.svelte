@@ -12,7 +12,7 @@
   import { debounce } from '$lib/utils'
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
   import { Button } from '$lib/components/ui/button'
-  import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
+  import ForkPicker from './ForkPicker.svelte'
   import TimezonePicker from '$lib/components/shared/TimezonePicker.svelte'
   import SearchIcon from '@lucide/svelte/icons/search'
   import TreeBreadcrumb from './TreeBreadcrumb.svelte'
@@ -207,7 +207,10 @@
       const parent = m.path.replace(/\/[^/]+$/, '') || '/'
       updateUrl({ path: parent, q: null, exact: null })
       searchOpen = false
-      void openDetailByPath(m.path)
+      // Use inode for the detail lookup — search results may carry a path
+      // built from a partial parent walk (orphan rows), so a path-based
+      // re-resolve would 404. Inode is the stable identifier.
+      void openDetailByInode(m.inode, m.path)
     }
   }
 
@@ -272,17 +275,25 @@
   let detailError = $state<string | null>(null)
   let detailCtrl: AbortController | null = null
 
-  async function openDetailByPath(p: string) {
+  // Last identifier used to open the detail panel — retry replays whichever
+  // mode opened the panel (path for breadcrumb nav, inode for search picks).
+  let panelInode = $state(0)
+
+  async function fetchDetail(p: string, inode: number) {
     if (!volume) return
     if (detailCtrl) detailCtrl.abort()
     detailCtrl = new AbortController()
     panelOpen = true
     panelPath = p
+    panelInode = inode
     detailLoading = true
     detail = null
     detailError = null
     try {
-      detail = await api.volumeForkEntries.get(volumeId, forkName, p, asOfMicros() ?? 0, detailCtrl.signal)
+      detail = await api.volumeForkEntries.get(volumeId, forkName, p, inode, asOfMicros() ?? 0, detailCtrl.signal)
+      // Backend reconstructs path from inode walk when path is empty — sync
+      // panelPath so breadcrumbs/version-modal use the resolved value.
+      if (!p && detail?.path) panelPath = detail.path
     } catch (e) {
       if ((e as Error).name === 'AbortError') return
       detailError = e instanceof ApiError ? e.message : 'Failed to load entry'
@@ -290,7 +301,12 @@
       detailLoading = false
     }
   }
-  function retryDetail() { if (panelPath) void openDetailByPath(panelPath) }
+  async function openDetailByPath(p: string) { await fetchDetail(p, 0) }
+  async function openDetailByInode(inode: number, hintPath: string) { await fetchDetail(hintPath || '', inode) }
+  function retryDetail() {
+    if (panelInode > 0) void openDetailByInode(panelInode, panelPath)
+    else if (panelPath) void openDetailByPath(panelPath)
+  }
   function closePanel() {
     if (detailCtrl) detailCtrl.abort()
     panelOpen = false
@@ -351,7 +367,7 @@
     <div class="flex items-start justify-between flex-wrap gap-3">
       <CardTitle class="shrink-0">Tree</CardTitle>
       <div class="flex items-start gap-2 flex-wrap justify-end">
-        <FilterSelect
+        <ForkPicker
           options={forkOptions}
           value={forkName}
           placeholder="Fork"

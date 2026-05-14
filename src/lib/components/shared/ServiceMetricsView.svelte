@@ -63,7 +63,7 @@
   }
 
   type Layout = "histogram" | "table";
-  type MetricMode = "latency" | "percentiles";
+  type MetricMode = "minMax" | "percentiles";
 
   // Sections rendered inside Overview (not as separate tabs)
   const overviewSections = new Set([
@@ -75,7 +75,7 @@
 
   let activeTab = $state<string>("overview");
   let layout = $state<Layout>("table");
-  let metricMode = $state<MetricMode>("latency");
+  let metricMode = $state<MetricMode>("percentiles");
   let sortCol = $state<SortCol>("avgLatencyUs");
   let sortDir = $state<SortDir>("desc");
 
@@ -475,11 +475,11 @@
     <div class="toggle-group flex items-center overflow-hidden" role="group" aria-label="Metric mode">
       <button
         class="toggle-btn px-2.5 py-1 transition-colors {metricMode ===
-        'latency'
+        'minMax'
           ? 'toggle-active'
           : 'text-muted-foreground'}"
-        aria-pressed={metricMode === 'latency'}
-        onclick={() => (metricMode = "latency")}>Latency</button
+        aria-pressed={metricMode === 'minMax'}
+        onclick={() => (metricMode = "minMax")}>Min/Max</button
       >
       <span class="text-border/40 select-none" aria-hidden="true">&vert;</span>
       <button
@@ -760,7 +760,7 @@
           {@render sortableHead("durationSec", "Total")}
           {@render sortableHead("avgLatencyUs", "Avg")}
           {@render sortableHead("cv", "\u03B2")}
-          {#if metricMode === "latency"}
+          {#if metricMode === "minMax"}
             {@render sortableHead("minUs", "Min")}
             {@render sortableHead("maxUs", "Max")}
           {:else}
@@ -829,7 +829,7 @@
                 >
               {/if}
             </TableCell>
-            {#if metricMode === "latency"}
+            {#if metricMode === "minMax"}
               <TableCell class="font-mono tabular-nums text-sm text-right">
                 <span style="color: {latencyColor(group.minUs)}"
                   >{formatUs(group.minUs)}</span
@@ -862,7 +862,7 @@
             )}
             <TableRow>
               <TableCell
-                colspan={metricMode === "latency" ? 9 : 10}
+                colspan={metricMode === "minMax" ? 9 : 10}
                 class="p-0"
               >
                 <div
@@ -1037,7 +1037,7 @@
       <span class="text-border">|</span>
       <span>total {formatTotalTime(group.durationSec)}</span>
       <span class="text-border">|</span>
-      {#if metricMode === "latency"}
+      {#if metricMode === "minMax"}
         <span
           >min <span style="color: {latencyColor(group.minUs)}"
             >{formatUs(group.minUs)}</span

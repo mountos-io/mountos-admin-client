@@ -4,6 +4,7 @@
   import { Button } from '$lib/components/ui/button'
   import { formatBytes, formatRelative, formatTzShort } from '$lib/core/utils/format'
   import { tz } from '$lib/core/stores/tz.svelte'
+  import { userCache } from '$lib/core/stores/user-cache.svelte'
   import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import Folder from '@lucide/svelte/icons/folder'
@@ -28,6 +29,14 @@
     onselect: (entry: ForkTreeEntry) => void
     onloadMore: () => void
   } = $props()
+
+  // Pre-warm the user cache for every updater on the visible page so the
+  // bulk endpoint sees one request per page-load instead of one per cell.
+  $effect(() => {
+    const ids = new Set<number>()
+    for (const e of entries) if (e.updaterId) ids.add(e.updaterId)
+    if (ids.size > 0) userCache.ensure(ids)
+  })
 
   function isDir(kind: string): boolean {
     return kind === 'dir' || kind === 'directory'
@@ -63,6 +72,7 @@
         <TableHead class="th-cyber">Name</TableHead>
         <TableHead class="th-cyber hidden md:table-cell w-[120px] text-right">Size</TableHead>
         <TableHead class="th-cyber hidden lg:table-cell w-[260px]">Modified</TableHead>
+        <TableHead class="th-cyber hidden xl:table-cell w-[180px]">Updater</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
@@ -97,6 +107,12 @@
                 <div class="text-foreground">{formatTzShort(e.mtime / 1_000_000, tz.value)}</div>
                 <div class="text-muted-foreground/70">{formatRelative(e.mtime / 1_000_000)}</div>
               </div>
+            {/if}
+          </TableCell>
+          <TableCell class="hidden xl:table-cell text-xs text-muted-foreground py-4 align-middle truncate"
+            title={e.updaterId ? `user#${e.updaterId}` : ''}>
+            {#if e.updaterId}
+              {void userCache.rev, userCache.display(e.updaterId)}
             {/if}
           </TableCell>
         </TableRow>

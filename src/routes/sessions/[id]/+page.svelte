@@ -119,7 +119,7 @@
   }
 
   let rpcExpanded = $state<Set<string>>(new Set())
-  let rpcMetricMode = $state<'latency' | 'percentiles'>('latency')
+  let rpcMetricMode = $state<'minMax' | 'percentiles'>('percentiles')
 
   function toggleRpcExpand(method: string) {
     const next = new Set(rpcExpanded)
@@ -348,7 +348,7 @@
                 {#if bands.over100ms}<Badge variant="destructive" class="font-mono text-xs">&gt;100ms: {bands.over100ms}</Badge>{/if}
                 {#if hasBuckets}
                   <div class="rpc-toggle-group flex items-center font-mono overflow-hidden ml-2">
-                    <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'latency'} aria-pressed={rpcMetricMode === 'latency'} onclick={() => rpcMetricMode = 'latency'}>Latency</button>
+                    <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'minMax'} aria-pressed={rpcMetricMode === 'minMax'} onclick={() => rpcMetricMode = 'minMax'}>Min/Max</button>
                     <span class="text-border/40">|</span>
                     <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'percentiles'} aria-pressed={rpcMetricMode === 'percentiles'} onclick={() => rpcMetricMode = 'percentiles'}>Percentiles</button>
                   </div>
@@ -368,7 +368,7 @@
                     <th scope="col" class="text-right">Total</th>
                     <th scope="col" class="text-right">Avg</th>
                     {#if hasBuckets}<th scope="col" class="text-right">&beta;</th>{/if}
-                    {#if rpcMetricMode === 'latency'}
+                    {#if rpcMetricMode === 'minMax'}
                       <th scope="col" class="text-right">Min</th>
                       <th scope="col" class="text-right">Max</th>
                     {:else}
@@ -401,7 +401,7 @@
                           {#if cv >= 0}<Badge variant={betaVariant(cv)} class="font-mono text-xs px-1 py-0">{cv.toFixed(2)}</Badge>{/if}
                         </td>
                       {/if}
-                      {#if rpcMetricMode === 'latency'}
+                      {#if rpcMetricMode === 'minMax'}
                         <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.minUs)}">{formatUs(lat.minUs)}</td>
                         <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.maxUs)}">{formatUs(lat.maxUs)}</td>
                       {:else}
@@ -412,7 +412,7 @@
                     </tr>
                     {#if isOpen && bkts.length > 0}
                       {@const totalCount = bkts.reduce((s, b) => s + b.count, 0)}
-                      {@const bktColspan = rpcMetricMode === 'latency' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)}
+                      {@const bktColspan = rpcMetricMode === 'minMax' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)}
                       <tr>
                         <td colspan={bktColspan} class="p-0">
                           <div class="py-2 px-4 space-y-1 ml-6">
