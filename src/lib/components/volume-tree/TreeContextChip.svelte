@@ -24,7 +24,7 @@
   class="inline-flex items-center gap-2 border rounded-sm
     {asOf == null ? 'border-border/40 bg-background/60' : 'border-warning/40 bg-warning/10'}
     {size === 'sm' ? 'px-1.5 py-0.5 text-[11px]' : 'px-2 py-1 text-xs'}"
-  aria-label={asOf == null ? 'Live state of fork' : 'Read-only point-in-time view'}>
+  aria-label={asOf == null ? 'Current state of fork' : 'Point-in-time view'}>
 
   {#if asOf != null}
     <span class="inline-flex items-center gap-1 text-warning uppercase tracking-wider font-semibold">

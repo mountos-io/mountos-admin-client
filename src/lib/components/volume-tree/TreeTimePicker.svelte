@@ -134,11 +134,11 @@
         <Button variant={isLive ? 'primary' : 'ghost'} size="sm"
           class="h-7 min-h-[44px] sm:min-h-7 px-3 text-xs font-mono justify-center"
           aria-pressed={isLive}
-          onclick={setLive}>Live</Button>
+          onclick={setLive}>Now</Button>
         <Button variant={!isLive ? 'primary' : 'ghost'} size="sm"
           class="h-7 min-h-[44px] sm:min-h-7 px-3 text-xs font-mono justify-center"
           aria-pressed={!isLive}
-          onclick={setAtTime}>At time</Button>
+          onclick={setAtTime}>Past</Button>
       </div>
     </div>
 

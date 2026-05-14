@@ -10,7 +10,6 @@
   import Folder from '@lucide/svelte/icons/folder'
   import FileIcon from '@lucide/svelte/icons/file'
   import LinkIcon from '@lucide/svelte/icons/link'
-  import Tag from '@lucide/svelte/icons/tag'
 
   let {
     entries,
@@ -30,11 +29,15 @@
     onloadMore: () => void
   } = $props()
 
-  // Pre-warm the user cache for every updater on the visible page so the
-  // bulk endpoint sees one request per page-load instead of one per cell.
+  // Pre-warm the user cache for every creator/updater on the visible page
+  // so the bulk endpoint sees one request per page-load instead of one
+  // per cell.
   $effect(() => {
     const ids = new Set<number>()
-    for (const e of entries) if (e.updaterId) ids.add(e.updaterId)
+    for (const e of entries) {
+      if (e.creatorId) ids.add(e.creatorId)
+      if (e.updaterId) ids.add(e.updaterId)
+    }
     if (ids.size > 0) userCache.ensure(ids)
   })
 
@@ -69,10 +72,12 @@
     <TableHeader>
       <TableRow>
         <TableHead class="th-cyber w-[28px]"></TableHead>
-        <TableHead class="th-cyber">Name</TableHead>
+        <TableHead class="th-cyber min-w-[50ch]">Name</TableHead>
         <TableHead class="th-cyber hidden md:table-cell w-[120px] text-right">Size</TableHead>
-        <TableHead class="th-cyber hidden lg:table-cell w-[260px]">Modified</TableHead>
-        <TableHead class="th-cyber hidden xl:table-cell w-[180px]">Updater</TableHead>
+        <TableHead class="th-cyber hidden xl:table-cell w-[180px]">Created</TableHead>
+        <TableHead class="th-cyber hidden xl:table-cell w-[140px]">Created By</TableHead>
+        <TableHead class="th-cyber hidden lg:table-cell w-[180px]">Last Modified</TableHead>
+        <TableHead class="th-cyber hidden lg:table-cell w-[140px]">Last Modified By</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
@@ -92,14 +97,30 @@
               <FileIcon class="h-4 w-4" aria-hidden="true" />
             {/if}
           </TableCell>
-          <TableCell class="text-sm py-4 min-h-[44px]">
+          <TableCell class="text-sm py-4 min-h-[44px] min-w-[50ch]">
             <span class="truncate">{e.name}</span>
-            {#if e.hasXattr}
-              <Tag class="inline-block h-3 w-3 ml-1 align-text-bottom text-muted-foreground" aria-label="Has extended attributes" />
-            {/if}
           </TableCell>
           <TableCell class="hidden md:table-cell text-right text-xs text-muted-foreground tabular-nums py-4">
             {isDir(e.kind) ? '' : formatBytes(e.size)}
+          </TableCell>
+          <TableCell class="hidden xl:table-cell text-xs text-muted-foreground tabular-nums py-4 align-middle whitespace-nowrap">
+            {#if e.ctime}
+              <div class="leading-tight">
+                <div class="text-foreground">{formatTzShort(e.ctime / 1_000_000, tz.value)}</div>
+                <div class="text-muted-foreground/70">{formatRelative(e.ctime / 1_000_000)}</div>
+              </div>
+            {/if}
+          </TableCell>
+          <TableCell class="hidden xl:table-cell text-xs text-muted-foreground py-4 align-middle truncate">
+            {#if e.creatorId}
+              <a
+                href={`/users/${e.creatorId}`}
+                class="detail-link inline-block max-w-full truncate font-mono"
+                title={`user#${e.creatorId}`}
+                onclick={(ev: MouseEvent) => ev.stopPropagation()}>
+                {void userCache.rev, userCache.display(e.creatorId)}
+              </a>
+            {/if}
           </TableCell>
           <TableCell class="hidden lg:table-cell text-xs text-muted-foreground tabular-nums py-4 align-middle whitespace-nowrap">
             {#if e.mtime}
@@ -109,10 +130,15 @@
               </div>
             {/if}
           </TableCell>
-          <TableCell class="hidden xl:table-cell text-xs text-muted-foreground py-4 align-middle truncate"
-            title={e.updaterId ? `user#${e.updaterId}` : ''}>
+          <TableCell class="hidden lg:table-cell text-xs text-muted-foreground py-4 align-middle truncate">
             {#if e.updaterId}
-              {void userCache.rev, userCache.display(e.updaterId)}
+              <a
+                href={`/users/${e.updaterId}`}
+                class="detail-link inline-block max-w-full truncate font-mono"
+                title={`user#${e.updaterId}`}
+                onclick={(ev: MouseEvent) => ev.stopPropagation()}>
+                {void userCache.rev, userCache.display(e.updaterId)}
+              </a>
             {/if}
           </TableCell>
         </TableRow>
