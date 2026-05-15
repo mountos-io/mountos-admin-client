@@ -11,7 +11,7 @@
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
-  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, betaVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
+  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, cvVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
@@ -367,7 +367,7 @@
                     <th scope="col" class="text-right">Ops/s</th>
                     <th scope="col" class="text-right">Total</th>
                     <th scope="col" class="text-right">Avg</th>
-                    {#if hasBuckets}<th scope="col" class="text-right">&beta;</th>{/if}
+                    {#if hasBuckets}<th scope="col" class="text-right">σ/μ</th>{/if}
                     {#if rpcMetricMode === 'minMax'}
                       <th scope="col" class="text-right">Min</th>
                       <th scope="col" class="text-right">Max</th>
@@ -398,7 +398,7 @@
                       <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.avgUs)}">{formatUs(lat.avgUs)}</td>
                       {#if hasBuckets}
                         <td class="text-right">
-                          {#if cv >= 0}<Badge variant={betaVariant(cv)} class="font-mono text-xs px-1 py-0">{cv.toFixed(2)}</Badge>{/if}
+                          {#if cv >= 0}<Badge variant={cvVariant(cv)} class="font-mono text-xs px-1 py-0">{cv.toFixed(2)}</Badge>{/if}
                         </td>
                       {/if}
                       {#if rpcMetricMode === 'minMax'}

@@ -31,7 +31,7 @@
     interpolatePercentile,
     latencyVariant,
     latencyColor,
-    betaVariant,
+    cvVariant,
     poolUtilColor,
     bucketBarColor,
     type MetricSection,
@@ -823,7 +823,7 @@
             <TableCell class="text-right">
               {#if cv > 0}
                 <Badge
-                  variant={betaVariant(cv)}
+                  variant={cvVariant(cv)}
                   class="font-mono text-[0.65rem] px-1 py-0"
                   >{cv.toFixed(2)}</Badge
                 >
@@ -1065,8 +1065,8 @@
       {#if cv > 0}
         <span class="text-border">|</span>
         <span
-          >&beta; <Badge
-            variant={betaVariant(cv)}
+          >σ/μ <Badge
+            variant={cvVariant(cv)}
             class="font-mono text-[0.65rem] px-1 py-0">{cv.toFixed(2)}</Badge
           ></span
         >

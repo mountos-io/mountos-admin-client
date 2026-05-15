@@ -161,7 +161,7 @@ export function formatNs(ns: number): string {
   return `${ns.toFixed(0)}ns`
 }
 
-// Coefficient of variation (β); latency stability indicator
+// Coefficient of variation (σ/μ); latency stability indicator
 export function estimateCV(buckets: HistBucket[], avgUs: number): number {
   if (avgUs <= 0 || buckets.length === 0) return 0
   let total = 0
@@ -221,7 +221,7 @@ export function pingRttColor(ms: number): string {
   if (ms < 500) return 'var(--warning)'
   return 'var(--destructive)'
 }
-export function betaVariant(cv: number): 'success' | 'outline' | 'warning' | 'destructive' {
+export function cvVariant(cv: number): 'success' | 'outline' | 'warning' | 'destructive' {
   if (cv <= 0) return 'outline'
   if (cv < 0.5) return 'success'
   if (cv < 1.0) return 'warning'
