@@ -95,9 +95,9 @@
     return Object.entries(rl).sort((a, b) => b[1].count - a[1].count)
   }
 
-  // Embedded gateway counters emitted by mfuse when the per-volume S3 /
-  // WebHDFS gateway is running. Shape mirrors gateway.EmbedStatsSnapshot
-  // in the Go side; rendered in the Gateway Activity card below.
+  // Embedded gateway counters reported by the client when the per-volume
+  // S3 / WebHDFS gateway is running; rendered in the Gateway Activity
+  // card below.
   interface ProtoStatsSnapshot { requests: number; errors: number; bytes_in: number; bytes_out: number }
   interface GatewaySnapshot { s3?: ProtoStatsSnapshot; hdfs?: ProtoStatsSnapshot }
   function getGatewayMetrics(m: Record<string, any>): GatewaySnapshot | null {
@@ -286,8 +286,8 @@
         </div>
       </div>
 
-      <!-- Gateway Activity (embedded per-volume S3 / WebHDFS gateway in mfuse). -->
-      <!-- Present only when mfuse reported gateway counters; mount-only sessions skip. -->
+      <!-- Gateway Activity (embedded per-volume S3 / WebHDFS gateway). -->
+      <!-- Present only when the client reported gateway counters; mount-only sessions skip. -->
       {@const gw = getGatewayMetrics(m)}
       {#if gw}
         <div class="corner-brackets relative border border-border/30 rounded-sm">

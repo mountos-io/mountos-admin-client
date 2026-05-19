@@ -3,8 +3,8 @@ import type { Fork, Volume } from '@mountos-io/admin-sdk'
 // Root fork name.
 export const MAIN_FORK = 'main'
 
-// Mirror of gcserv DefaultDataRetentionDays. Fallback when the volume has no
-// plan-level retention set, so picker bounds match server-side cutoffs.
+// Fallback retention when the volume has no plan-level retention set,
+// so picker bounds match server-side cutoffs.
 export const DEFAULT_RETENTION_DAYS = 30
 
 // Picker values are authored in the operator's chosen display timezone.
@@ -98,7 +98,7 @@ export function ceilDatetimeTz(d: Date, tz: string): string {
 }
 
 // gcThreshold = min(now - retention, min over all forks of snapshot_ts).
-// Mirrors dataserv handleForksCreate + gcserv getEffectiveRetentionThreshold.
+// Must stay aligned with the server-side retention threshold.
 export function gcFloorMs(volume: Pick<Volume, 'retentionPeriod'> | null | undefined, forks: Fork[]): number {
   if (!volume) return 0
   const days = volume.retentionPeriod > 0 ? volume.retentionPeriod : DEFAULT_RETENTION_DAYS

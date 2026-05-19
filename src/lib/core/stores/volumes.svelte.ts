@@ -16,6 +16,7 @@ type FetchVolumesParams = {
   page?: number
   limit?: number
   regionId?: number
+  regionClusterId?: number
   storageId?: number
   volumeType?: string
   locked?: boolean
@@ -24,13 +25,13 @@ type FetchVolumesParams = {
 
 async function fetchVolumes({
   accountId, page = 1, limit = 20,
-  regionId, storageId, volumeType, locked, isActive,
+  regionId, regionClusterId, storageId, volumeType, locked, isActive,
 }: FetchVolumesParams) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.volumes.list({ accountId, page, limit, regionId, storageId, volumeType, locked, isActive }, ctrl.signal)
+    const res = await api.volumes.list({ accountId, page, limit, regionId, regionClusterId, storageId, volumeType, locked, isActive }, ctrl.signal)
     volumes = res.items
     totalPages = res.pagination?.totalPages ?? 0
     currentPage = res.pagination?.page ?? 1

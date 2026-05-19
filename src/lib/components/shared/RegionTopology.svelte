@@ -234,6 +234,9 @@
       </Badge>
     {/if}
     <div class="ml-auto flex items-center gap-2">
+      <Button variant="outline" size="sm" onclick={() => goto(`${basePath}/${regionId}/clusters`)}>
+        Clusters
+      </Button>
       {#if isSuperAdmin}
         <span class="flex items-center gap-1.5">
           <Button variant="outline" size="sm" class="gap-1.5" disabled={resyncInFlight} aria-busy={resyncInFlight}

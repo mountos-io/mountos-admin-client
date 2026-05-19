@@ -3,6 +3,7 @@
   import { useVolumes } from '$lib/core/stores/volumes.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useRegions } from '$lib/core/stores/regions.svelte'
+  import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { useStorages } from '$lib/core/stores/storages.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
@@ -27,12 +28,14 @@
   const volumeStore = useVolumes()
   const accountStore = useAccounts()
   const regionStore = useRegions()
+  const clusterStore = useClusters()
   const storageStore = useStorages()
   const auth = useAuth()
   const prefs = usePreferences()
   const accountId = $derived(accountStore.selectedAccountId)
 
   let selectedRegionId = $state('')
+  let selectedClusterId = $state('')
   let selectedStorageId = $state('')
   let selectedVolumeType = $state('')
   // 'active' (default) | 'inactive' | 'all'.  'active' maps to isActive=true,
@@ -53,6 +56,17 @@
       .filter(r => r.name.toLowerCase() !== 'hub')
       .map(r => ({ value: String(r.id), label: r.name })),
   ])
+
+  // Cluster filter is dependent on the selected region. If no region is
+  // selected we hide the dropdown entirely; clusters don't span regions so
+  // a global cluster-id filter would be misleading.
+  const clusterOptions = $derived(
+    selectedRegionId
+      ? [{ value: '', label: 'Any cluster' }].concat(
+          clusterStore.clustersFor(Number(selectedRegionId)).map(c => ({ value: String(c.id), label: c.name })),
+        )
+      : [],
+  )
 
   const storageOptions = $derived([
     { value: '', label: 'Any storage' },
@@ -75,7 +89,7 @@
   ]
 
   const hasFilter = $derived(
-    selectedRegionId !== '' || selectedStorageId !== '' || selectedVolumeType !== '' ||
+    selectedRegionId !== '' || selectedClusterId !== '' || selectedStorageId !== '' || selectedVolumeType !== '' ||
     statusFilter !== 'active' || lockedOnly
   )
 
@@ -86,6 +100,7 @@
       page,
       limit: prefs.pageSize,
       regionId: selectedRegionId ? Number(selectedRegionId) : undefined,
+      regionClusterId: selectedClusterId ? Number(selectedClusterId) : undefined,
       storageId: selectedStorageId ? Number(selectedStorageId) : undefined,
       volumeType: selectedVolumeType || undefined,
       locked: lockedOnly || undefined,
@@ -95,10 +110,18 @@
 
   function onRegionChange(v: string) {
     selectedRegionId = v
+    // Reset the cluster filter when region changes; load the new region's
+    // clusters so the dependent dropdown has options before the user opens it.
+    selectedClusterId = ''
+    if (v) clusterStore.fetchClusters(Number(v))
     if (v && selectedStorageId) {
       const s = storageStore.storages.find(s => String(s.id) === selectedStorageId)
       if (s && s.regionInfo.id !== Number(v)) selectedStorageId = ''
     }
+  }
+
+  function onClusterChange(v: string) {
+    selectedClusterId = v
   }
 
   function onStorageChange(v: string) {
@@ -127,7 +150,7 @@
         filtersLoadedFor = accountId
       }
       // Refetch on any filter change (tracked via reactive reads).
-      void selectedRegionId; void selectedStorageId; void selectedVolumeType
+      void selectedRegionId; void selectedClusterId; void selectedStorageId; void selectedVolumeType
       void statusFilter; void lockedOnly
       refetch()
     }
@@ -154,6 +177,16 @@
           controls="volumes-table"
           onchange={onRegionChange}
         />
+        {#if clusterOptions.length > 1}
+          <FilterSelect class="text-base"
+            options={clusterOptions}
+            value={selectedClusterId}
+            placeholder="Any cluster"
+            label="Filter by cluster"
+            controls="volumes-table"
+            onchange={onClusterChange}
+          />
+        {/if}
         <FilterSelect class="text-base"
           options={storageOptions}
           value={selectedStorageId}

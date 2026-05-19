@@ -3,6 +3,7 @@
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { useVolumes } from '$lib/core/stores/volumes.svelte'
+  import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { useUsers } from '$lib/core/stores/users.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { cn, debounce } from '$lib/utils'
@@ -43,12 +44,14 @@
   import Plus from '@lucide/svelte/icons/plus'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert'
   import ForkPicker from '$lib/components/volume-tree/ForkPicker.svelte'
+  import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import { Checkbox } from '$lib/components/ui/checkbox'
   import DateTimePicker from '$lib/components/shared/DateTimePicker.svelte'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import { sanitizeForkName, forkNameErrorMessage } from '$lib/core/utils/validation'
 
   const store = useVolumes()
+  const clusterStore = useClusters()
   const userStore = useUsers()
   const auth = useAuth()
   const id = $derived(Number($page.params.id))
@@ -74,6 +77,9 @@
   let editing = $state(false)
   let deactivateOpen = $state(false)
   let reactivating = $state(false)
+  let moveClusterOpen = $state(false)
+  let moveClusterSubmitting = $state(false)
+  let moveTargetClusterId = $state('')
 
   async function handleReactivate() {
     if (!volume) return
@@ -282,6 +288,39 @@
     const v = await store.getVolume(id)
     volume = v
     syncEditFields(v)
+  }
+
+  // Lazily load the region's clusters when the move modal opens, so the
+  // dropdown is populated even for volumes the operator hasn't browsed via
+  // the region detail page yet.
+  $effect(() => {
+    if (moveClusterOpen && volume?.region?.id) {
+      clusterStore.fetchClusters(volume.region.id)
+    }
+  })
+
+  const moveClusterCandidates = $derived(
+    volume?.region?.id
+      ? clusterStore.clustersFor(volume.region.id).filter(c =>
+          c.isActive && c.isReady && c.id !== (volume?.regionCluster?.id ?? 0))
+      : [],
+  )
+
+  async function submitMoveCluster() {
+    if (!volume || !moveTargetClusterId) return
+    moveClusterSubmitting = true
+    try {
+      const res = await api.volumes.moveCluster(id, { targetClusterId: Number(moveTargetClusterId) })
+      const min = Math.max(0, Math.round((res.handoverUntil * 1000 - Date.now()) / 60000))
+      showSuccessToast(`Move committed; old cluster keeps serving for ~${min}m`)
+      moveClusterOpen = false
+      moveTargetClusterId = ''
+      await reload()
+    } catch (e) {
+      handleApiError(e, 'Failed to move cluster')
+    } finally {
+      moveClusterSubmitting = false
+    }
   }
 
   function cancelEdit() {
@@ -816,6 +855,7 @@
               `${volume!.locked ? 'Unlock' : 'Lock'} "${volume!.name}"?`,
               () => volume!.locked ? store.unlockVolume(id) : store.lockVolume(id),
             )}>{volume.locked ? 'Unlock' : 'Lock'}</Button>
+            <Button variant="outline" size="sm" onclick={() => { moveClusterOpen = true }}>Move Cluster</Button>
           </CardFooter>
         {/if}
       </Card>
@@ -1170,6 +1210,45 @@
 {#if volume}
   <DeactivateVolumeDialog bind:open={deactivateOpen} volumeName={volume.name} onConfirm={handleDeactivate} />
 {/if}
+
+<Dialog.Root bind:open={moveClusterOpen} onOpenChange={(v) => { if (!v) moveTargetClusterId = '' }}>
+  <Dialog.Content class="sm:max-w-md">
+    <Dialog.Header>
+      <Dialog.Title>Move volume to another cluster</Dialog.Title>
+      <Dialog.Description>
+        The old cluster keeps serving briefly so live clients re-resolve cheaply.
+        A volume can only be moved once every 15 minutes; earlier attempts are rejected.
+      </Dialog.Description>
+    </Dialog.Header>
+    {#if moveClusterCandidates.length === 0}
+      <p class="text-muted-foreground text-base">No other ready clusters available in this region.</p>
+    {:else}
+      <div class="space-y-2">
+        <span class="text-base font-medium">Target cluster</span>
+        <FilterSelect
+          class="w-full max-w-none"
+          label="Target cluster"
+          placeholder="Select cluster…"
+          options={moveClusterCandidates.map(c => ({
+            value: String(c.id),
+            label: `${c.name} (${c.defaultCluster ? 'default' : 'non-default'})`,
+          }))}
+          bind:value={moveTargetClusterId}
+        />
+      </div>
+    {/if}
+    <Dialog.Footer class="gap-2">
+      <Button
+        variant="outline"
+        disabled={moveClusterSubmitting}
+        onclick={() => { moveClusterOpen = false; moveTargetClusterId = '' }}
+      >Cancel</Button>
+      <Button variant="primary" disabled={!moveTargetClusterId || moveClusterSubmitting} onclick={submitMoveCluster}>
+        {moveClusterSubmitting ? 'Moving…' : 'Move'}
+      </Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>
 
 <Dialog.Root bind:open={deleteForkOpen}>
   <Dialog.Content class="sm:max-w-md">

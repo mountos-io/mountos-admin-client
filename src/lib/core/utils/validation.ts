@@ -13,8 +13,26 @@ export function usernameErrorMessage(username: string): string {
   return ''
 }
 
-// Fork name rules — mirror dataserv internal/utils/fork_name.go.
-// Must match S3 bucket naming since forks back S3 buckets.
+// Cluster name rules mirror region name rules: lowercase letters/digits/hyphens,
+// must start with a letter, min 2 chars. Kept here so create and rename flows
+// share one source of truth.
+const clusterNameRe = /^[a-z][a-z0-9-]+$/
+
+export function isClusterNameValid(name: string): boolean {
+  return clusterNameRe.test(name)
+}
+
+export function clusterNameErrorMessage(name: string): string {
+  if (!name) return ''
+  if (/[A-Z]/.test(name)) return 'Lowercase only'
+  if (/\s/.test(name)) return 'Spaces not allowed'
+  if (!/^[a-z]/.test(name)) return 'Must start with a letter'
+  if (/[^a-z0-9-]/.test(name)) return 'Only lowercase letters, digits and hyphens'
+  if (name.length < 2) return 'At least 2 characters'
+  return ''
+}
+
+// Fork name rules — must match S3 bucket naming since forks back S3 buckets.
 const FORK_NAME_MIN = 3
 const FORK_NAME_MAX = 63
 const FORK_NAME_RESERVED = new Set(['main', 'auto'])

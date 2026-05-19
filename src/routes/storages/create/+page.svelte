@@ -152,8 +152,7 @@
   const secretKeyPlaceholder = $derived(getProvider(providerType)?.secretKeyPlaceholder ?? 'Secret key')
   const accessKeyReadonly = $derived(!!getProvider(providerType)?.regionDrivesAccessKey)
 
-  // Azure is now a valid backing store for both object and hybrid storage
-  // (blockserv's BlobClientCache dispatches on provider_type).
+  // Azure is now a valid backing store for both object and hybrid storage.
   const providerOptionsForContext = $derived(PROVIDER_OPTIONS)
 
   const objectStoreReady = $derived(
