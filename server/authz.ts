@@ -1,6 +1,6 @@
 import type { MiddlewareHandler } from 'hono'
 import { dashboardAuth } from './auth'
-import { Cap } from './types'
+import { Cap, ROLE } from './types'
 
 const SLUG_TO_RESOURCE: Record<string, string> = {
   accounts: 'accounts',
@@ -58,7 +58,7 @@ export const authz: MiddlewareHandler = async (c, next) => {
   const cap = resource ? requiredCap(c.req.method, c.req.path) : 0
   if (!resource || !cap) return c.json({ status: 'failure', message: 'forbidden' }, 403)
 
-  if (user.role === 'user') {
+  if (user.role === ROLE.user) {
     if (!USER_ROLE_RESOURCES.has(resource)) {
       return c.json({ status: 'failure', message: 'forbidden' }, 403)
     }
@@ -84,7 +84,7 @@ export const authz: MiddlewareHandler = async (c, next) => {
   const caps = dashboardAuth.resolveCapabilities(user.role)
   if (((caps[resource] ?? 0) & cap) === 0) {
     // Allow user role to access volume API key endpoints (generate/revoke)
-    if (user.role === 'user' && resource === 'volumes' && cap === Cap.U && API_KEY_PATH.test(c.req.path)) {
+    if (user.role === ROLE.user && resource === 'volumes' && cap === Cap.U && API_KEY_PATH.test(c.req.path)) {
       await next()
       return
     }

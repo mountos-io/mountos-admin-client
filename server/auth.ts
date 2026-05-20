@@ -1,7 +1,7 @@
 import * as jose from 'jose'
 import Redis from 'ioredis'
 import { createServerClient, MountOSError, type AdminClient } from '@mountos-io/admin-sdk'
-import type { AdminUser, Capabilities, DashboardAuthConfig } from './types'
+import { ROLE, type AdminUser, type Capabilities, type DashboardAuthConfig } from './types'
 import { providerAuthConfig } from '../src/provider/server/config'
 
 const AUD_DASHBOARD = 'mountos/dashboard'
@@ -17,10 +17,10 @@ const defaults: DashboardAuthConfig = {
   sessionTTL: 24 * 60 * 60,    // 24h
   refreshTTL: 7 * 24 * 60 * 60, // 7d
   roles: {
-    superadmin: allCaps(15), // CRUD
-    l1admin: { ...allCaps(14), vault: 0 },    // CRU, no delete; vault: superadmin-only
-    l2admin: { ...allCaps(4), vault: 0 },     // read-only; vault: superadmin-only
-    user: { volumes: 4, auditLogs: 4, dashboard: 4 }, // R-only volumes + audit + dashboard
+    [ROLE.superadmin]: allCaps(15), // CRUD
+    [ROLE.l1admin]: { ...allCaps(14), vault: 0 },    // CRU, no delete; vault: superadmin-only
+    [ROLE.l2admin]: { ...allCaps(4), vault: 0 },     // read-only; vault: superadmin-only
+    [ROLE.user]: { volumes: 4, auditLogs: 4, dashboard: 4 }, // R-only volumes + audit + dashboard
   },
 }
 
@@ -45,6 +45,12 @@ function ed25519Pkcs8PemFromRaw(seed: Buffer): string {
   return `-----BEGIN PRIVATE KEY-----\n${der.toString('base64')}\n-----END PRIVATE KEY-----`
 }
 
+function requireEnv(name: string): string {
+  const v = process.env[name]
+  if (!v) throw new Error(`${name} is not set`)
+  return v
+}
+
 function assertEd25519Key(name: string, b64: string) {
   if (b64.length !== 44) throw new Error(`${name}: expected 44-char base64 (32 bytes), got ${b64.length}`)
   const bytes = Buffer.from(b64, 'base64')
@@ -63,7 +69,7 @@ function importEd25519PrivateKey(name: string, b64: string) {
 }
 
 function adminUserFromPayload(payload: jose.JWTPayload): AdminUser {
-  const role = (payload.role as string) ?? 'l2admin'
+  const role = (payload.role as string) ?? ROLE.l2admin
   const user: AdminUser = {
     id: payload.sub!,
     name: payload.name as string,
@@ -103,14 +109,14 @@ class DashboardAuth {
   get redisClient() { return this.redis }
 
   async init() {
-    this.providerPub = await importEd25519PublicKey('PROVIDER2DASHBOARD_VERIFICATION_KEY', process.env.PROVIDER2DASHBOARD_VERIFICATION_KEY!)
-    this.sessionKey = await importEd25519PrivateKey('DASHBOARD_SIGNING_KEY', process.env.DASHBOARD_SIGNING_KEY!)
-    this.sessionPub = await importEd25519PublicKey('DASHBOARD_VERIFICATION_KEY', process.env.DASHBOARD_VERIFICATION_KEY!)
-    this.redis = new Redis(process.env.REDIS_URL!)
+    this.providerPub = await importEd25519PublicKey('PROVIDER2DASHBOARD_VERIFICATION_KEY', requireEnv('PROVIDER2DASHBOARD_VERIFICATION_KEY'))
+    this.sessionKey = await importEd25519PrivateKey('DASHBOARD_SIGNING_KEY', requireEnv('DASHBOARD_SIGNING_KEY'))
+    this.sessionPub = await importEd25519PublicKey('DASHBOARD_VERIFICATION_KEY', requireEnv('DASHBOARD_VERIFICATION_KEY'))
+    this.redis = new Redis(requireEnv('REDIS_URL'))
     await this.redis.ping()
     this.sdk = createServerClient({
-      baseUrl: process.env.MOUNTOS_APPSERV_URL ?? 'http://localhost:8080',
-      privateKey: process.env.MOUNTOS_SDK_SIGNING_KEY!,
+      baseUrl: requireEnv('MOUNTOS_APPSERV_URL'),
+      privateKey: requireEnv('MOUNTOS_SDK_SIGNING_KEY'),
     })
     console.log('Auth: keys loaded, Redis connected')
   }
@@ -123,7 +129,7 @@ class DashboardAuth {
     })
     const user = adminUserFromPayload(payload)
     if (user.username) {
-      if (user.role === 'user') {
+      if (user.role === ROLE.user) {
         if (user.accountId == null) throw new Error('user role requires account_id claim')
         const match = await this.findActiveUser(user.accountId, user.username)
         if (!match) throw new Error('no active user found for account')
@@ -132,7 +138,7 @@ class DashboardAuth {
         const match = await this.findOrCreateSystemUser(user)
         user.userId = match.id
       }
-    } else if (user.role === 'user') {
+    } else if (user.role === ROLE.user) {
       throw new Error('user role requires username claim')
     }
     return user
@@ -188,7 +194,7 @@ class DashboardAuth {
   }
 
   resolveCapabilities(role: string): Capabilities {
-    return this.config.roles[role] ?? this.config.roles['l2admin'] ?? allCaps(4)
+    return this.config.roles[role] ?? this.config.roles[ROLE.l2admin] ?? allCaps(4)
   }
 
   private async findActiveUser(accountId: number, username: string) {

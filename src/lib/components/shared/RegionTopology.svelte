@@ -10,6 +10,7 @@
   import { SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
   import { severityBadgeVariant, severityIcon, severityOptions, categoryOptions, timeOptions, handleTabKeydown } from '$lib/core/utils/alert'
   import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { ROLE } from '$lib/core/auth/adapter'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
@@ -59,7 +60,7 @@
   const auth = useAuth()
 
   const dialog = useConfirmDialog()
-  const isSuperAdmin = $derived(auth.user?.role === 'superadmin')
+  const isSuperAdmin = $derived(auth.user?.role === ROLE.superadmin)
   const canEditRegion = $derived(auth.can('regions', 'update'))
   let resyncInFlight = $state(false)
   let regionMenuOpen = $state(false)
@@ -232,17 +233,24 @@
 
   // Fetch nodes whenever region or selected cluster changes; passes the
   // cluster filter through so the server returns scoped data when a cluster
-  // is selected.
+  // is selected. The store calls inside must be untracked: clearFilters
+  // writes the same $state that fetchNodes reads, which would otherwise
+  // loop via effect_update_depth_exceeded.
   $effect(() => {
     if (!regionId) return
-    nodeStore.clearFilters()
-    nodeStore.fetchNodes(regionId, { regionClusterId: selectedCluster ?? undefined })
+    const cluster = selectedCluster
+    untrack(() => {
+      nodeStore.clearFilters()
+      nodeStore.fetchNodes(regionId, { regionClusterId: cluster ?? undefined })
+    })
   })
 
   // Hub regions have no clusters; skip the fetch entirely.
   $effect(() => {
     if (regionId && !isHubRegion) {
-      clusterStore.fetchClusters(regionId).catch(() => { /* non-fatal; picker stays hidden */ })
+      untrack(() => {
+        clusterStore.fetchClusters(regionId).catch(() => { /* non-fatal; picker stays hidden */ })
+      })
     }
   })
 
@@ -253,22 +261,27 @@
   const clustersReady = $derived(isHubRegion || !clusterStore.isLoading(regionId))
 
   $effect(() => {
+    const cluster = selectedCluster
     if (regionId && canReadAudit && hasRegionalDB && clustersReady) {
-      regionAudit.fetchLogs(regionId, {
-        limit: 200,
-        reset: true,
-        regionClusterId: selectedCluster ?? undefined,
+      untrack(() => {
+        regionAudit.fetchLogs(regionId, {
+          limit: 200,
+          reset: true,
+          regionClusterId: cluster ?? undefined,
+        })
       })
     } else if (!clustersReady) {
       // hold; effect will re-run when clusters land
     } else {
-      regionAudit.reset()
+      untrack(() => regionAudit.reset())
     }
-    return () => regionAudit.reset()
+    return () => untrack(() => regionAudit.reset())
   })
 
-  // Alerts lifecycle
-  let lastAlertCluster: number | null = $state(null)
+  // Alerts lifecycle. lastAlertCluster is a plain (non-reactive) gate so
+  // writing it inside the effect below cannot retrigger that effect — using
+  // $state here would loop with effect_update_depth_exceeded.
+  let lastAlertCluster: number | null = null
   $effect(() => {
     const s = alertStore
     if (auth.loading || !canReadAlerts) return
@@ -282,13 +295,18 @@
     return () => s.reset()
   })
 
-  // Refetch alerts when cluster filter changes (initial fetch is handled
-  // above; this branch reacts only to subsequent selectedCluster changes).
+  // Refetch alerts + count when cluster filter changes (initial fetch is
+  // handled above; this branch reacts only to subsequent selectedCluster
+  // changes). The Alerts-tab badge derives from activeCount so it must
+  // refresh in lockstep.
   $effect(() => {
     if (auth.loading || !canReadAlerts) return
     if (selectedCluster === lastAlertCluster) return
     lastAlertCluster = selectedCluster
-    untrack(() => alertStore.fetchAlerts())
+    untrack(() => {
+      alertStore.fetchAlerts()
+      alertStore.fetchCount()
+    })
   })
 
   const sevFilterStr = $derived(alertStore.severityFilter !== undefined ? String(alertStore.severityFilter) : '')

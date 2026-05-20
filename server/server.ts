@@ -8,7 +8,7 @@ import type { Context } from 'hono'
 import { bootstrap } from '../src/provider/server/bootstrap'
 import { providerCsrfConfig, providerCspConfig, providerStepUpRules, providerWebAuthnConfig, providerRateLimitRules, providerThrottleConfig } from '../src/provider/server/config'
 import { providerAuthzMiddleware } from '../src/provider/server/middleware'
-import type { CsrfConfig, ContentSecurityPolicy, WebAuthnConfig } from './types'
+import { ROLE, type CsrfConfig, type ContentSecurityPolicy, type WebAuthnConfig } from './types'
 import { dashboardAuth } from './auth'
 import { auth } from './middleware'
 import { authz } from './authz'
@@ -145,7 +145,7 @@ async function enrichUserResponse(user: AdminUser, extra: Record<string, unknown
   const capabilities = dashboardAuth.resolveCapabilities(user.role)
   const webauthn = await webauthnState(user.id)
   const result: Record<string, unknown> = { user, capabilities, webauthn, ...extra }
-  if (user.role === 'user' && user.accountId != null) {
+  if (user.role === ROLE.user && user.accountId != null) {
     result.account = await dashboardAuth.fetchAccountForUser(user.accountId).catch(() => undefined)
   }
   return result
@@ -296,7 +296,7 @@ app.use('/api/*', stepUpMiddleware)
 
 app.post('/api/auth/revoke-user', async (c) => {
   const caller = c.get('mountosUser')
-  if (caller.role !== 'superadmin') {
+  if (caller.role !== ROLE.superadmin) {
     return c.json({ status: 'failure', message: 'forbidden' }, 403)
   }
   const { username } = await c.req.json<{ username: string }>()

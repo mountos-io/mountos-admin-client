@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation'
   import { useUsers } from '$lib/core/stores/users.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { ROLE } from '$lib/core/auth/adapter'
   import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
   import { Button } from '$lib/components/ui/button'
   import Input from '$lib/components/ui/input/input.svelte'
@@ -175,7 +176,7 @@
               {#if user.isActive}
                 <Button variant="destructive" size="sm" onclick={() => dialog.confirm('Deactivate', `Permanently deactivate "${user!.username}"?`, () => act(() => store.deactivateUser(id)), 'destructive')}>Deactivate</Button>
               {/if}
-              {#if auth.user?.role === 'superadmin' && user.username}
+              {#if auth.user?.role === ROLE.superadmin && user.username}
                 <Button variant="outline" size="sm" onclick={() => dialog.confirm(
                   'Revoke Admin Sessions',
                   `Revoke all admin dashboard sessions for "${user!.username}"? They will be signed out immediately.`,

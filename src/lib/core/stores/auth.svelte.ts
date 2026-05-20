@@ -1,4 +1,4 @@
-import type { Capabilities, UserInfo } from '$lib/core/auth/adapter'
+import { ROLE, type Capabilities, type UserInfo } from '$lib/core/auth/adapter'
 import { authorize, type Action } from '$lib/core/auth/authorize'
 import { authAdapter } from '$lib/config/auth'
 import { showErrorToast } from '$lib/core/utils/toast'
@@ -12,7 +12,7 @@ let initialized = $state(false)
 
 const authenticated = $derived(user !== null)
 const capabilities = $derived<Capabilities>(user?.capabilities ?? {})
-const isUserRole = $derived(user?.role === 'user')
+const isUserRole = $derived(user?.role === ROLE.user)
 const username = $derived(user?.username ?? null)
 const userAccountId = $derived(user?.accountId ?? null)
 const userMountosUserId = $derived(user?.userId ?? null)

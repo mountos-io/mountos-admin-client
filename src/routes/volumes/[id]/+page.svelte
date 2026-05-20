@@ -735,6 +735,24 @@
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Encryption</span>
               <div class="mt-1"><Badge variant={volume.encryption ? 'default' : 'outline'}>{volume.encryption ? 'Enabled' : 'Disabled'}</Badge></div>
             </div>
+            {#if volume.region?.id}
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Region</span>
+                <div class="mt-1 text-sm">{volume.region.name}</div>
+              </div>
+            {/if}
+            {#if volume.regionCluster?.id}
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Cluster</span>
+                <div class="mt-1">
+                  <a
+                    href="/regions/{volume.region.id}?cluster={volume.regionCluster.id}"
+                    aria-label="View region {volume.region.name} scoped to cluster {volume.regionCluster.name}"
+                    class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >{volume.regionCluster.name}</a>
+                </div>
+              </div>
+            {/if}
           </div>
           {#if editing}
             <div class="grid gap-4 md:grid-cols-2">

@@ -1,3 +1,6 @@
+import { ROLE } from '../../../../server/types'
+export { ROLE, isAdmin, type Role } from '../../../../server/types'
+
 export type Capabilities = Record<string, number>
 
 export interface WebAuthnState {
@@ -26,7 +29,7 @@ export function toUserInfo(data: Record<string, unknown>): UserInfo {
     name: u.name as string,
     email: u.email as string | undefined,
     avatar: u.avatar as string | undefined,
-    role: (u.role as string) ?? 'l2admin',
+    role: (u.role as string) ?? ROLE.l2admin,
     username: u.username as string | undefined,
     capabilities: (data.capabilities ?? {}) as Capabilities,
     webauthn: data.webauthn as WebAuthnState | undefined,

@@ -2,6 +2,17 @@
 export const Cap = { C: 8, R: 4, U: 2, D: 1 } as const
 export type Capabilities = Record<string, number>
 
+export const ROLE = {
+  superadmin: 'superadmin',
+  l1admin: 'l1admin',
+  l2admin: 'l2admin',
+  user: 'user',
+} as const
+export type Role = typeof ROLE[keyof typeof ROLE]
+
+// user is the only role that hub understands, rest of them are admins
+export const isAdmin = (role: string): boolean => role !== ROLE.user
+
 export interface AdminUser {
   id: string
   name: string
@@ -13,10 +24,11 @@ export interface AdminUser {
   volumeId?: number
 }
 
+// Built-in roles are required; providers may add extra string-keyed entries.
 export interface DashboardAuthConfig {
   sessionTTL: number  // seconds
   refreshTTL: number  // seconds
-  roles: Record<string, Capabilities>
+  roles: Record<Role, Capabilities> & Record<string, Capabilities>
 }
 
 export interface CsrfConfig {

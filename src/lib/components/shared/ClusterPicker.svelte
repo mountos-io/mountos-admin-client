@@ -75,11 +75,15 @@
     >All</button>
 
     {#each partitioned.visible as c (c.id)}
+      {@const unselectable = !c.isReady || !c.isActive}
       <button
         type="button"
         aria-pressed={value === c.id}
         aria-label={pillAria(c)}
-        class="min-h-[44px] sm:min-h-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {value === c.id ? 'border-primary bg-primary/15 text-foreground' : !c.isActive ? 'border-border/40 text-muted-foreground/60 hover:text-foreground' : 'border-border/60 text-muted-foreground hover:text-foreground hover:border-border'}"
+        aria-disabled={unselectable}
+        title={unselectable ? (c.isActive ? 'Cluster is not ready; no nodes heartbeat here yet' : 'Cluster is deactivated') : undefined}
+        disabled={unselectable}
+        class="min-h-[44px] sm:min-h-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 {value === c.id ? 'border-primary bg-primary/15 text-foreground' : unselectable ? 'border-border/40 text-muted-foreground/60' : 'border-border/60 text-muted-foreground hover:text-foreground hover:border-border'}"
         onclick={() => select(c.id)}
       >
         <span class="truncate max-w-[160px]">{c.name}</span>
@@ -109,11 +113,15 @@
           <div role="menu" aria-label="Other clusters">
             <div class="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground" aria-hidden="true">Other clusters</div>
             {#each partitioned.overflow as c (c.id)}
+              {@const unselectable = !c.isReady || !c.isActive}
               <button
                 type="button"
                 role="menuitem"
                 aria-label={pillAria(c)}
-                class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none {value === c.id ? 'bg-accent/50' : ''}"
+                aria-disabled={unselectable}
+                title={unselectable ? (c.isActive ? 'Cluster is not ready; no nodes heartbeat here yet' : 'Cluster is deactivated') : undefined}
+                disabled={unselectable}
+                class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 {value === c.id ? 'bg-accent/50' : ''}"
                 onclick={() => select(c.id)}
               >
                 <span class="flex-1 truncate text-left">{c.name}</span>

@@ -40,7 +40,7 @@
   <Card cornerBrackets>
     <CardHeader>
       <CardTitle>Create region cluster</CardTitle>
-      <CardDescription>Clusters group instances inside a region. New clusters start non-default and not-ready.</CardDescription>
+      <CardDescription>Clusters group instances inside a region. New clusters start not-ready.</CardDescription>
     </CardHeader>
     <CardContent>
       <form onsubmit={handleSubmit} class="space-y-4">

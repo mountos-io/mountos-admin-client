@@ -45,7 +45,8 @@ export function useRegionAlerts(
     const regionId = getRegionId()
     if (!regionId) return
     try {
-      const res = await api.regionAlerts.count(regionId, signal)
+      const clusterId = getRegionClusterId?.() ?? 0
+      const res = await api.regionAlerts.count(regionId, clusterId, signal)
       if (activeCount !== res.active) activeCount = res.active
       if (recentCount !== res.recent) recentCount = res.recent
       if (infoCount !== res.infoCount) infoCount = res.infoCount

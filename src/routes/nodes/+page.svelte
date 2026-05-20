@@ -3,6 +3,8 @@
   import { goto } from '$app/navigation'
   import { useRegions } from '$lib/core/stores/regions.svelte'
   import { useNodes } from '$lib/core/stores/nodes.svelte'
+  import { useClusters } from '$lib/core/stores/clusters.svelte'
+  import { HUB_REGION_NAME } from '$lib/core/constants'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
@@ -40,6 +42,7 @@
 
   const regionStore = useRegions()
   const nodeStore = useNodes()
+  const clusterStore = useClusters()
   const auth = useAuth()
   const prefs = usePreferences()
 
@@ -55,6 +58,25 @@
   const regionNameMap = $derived(
     new Map(regionStore.regions.map(r => [r.id, r.name]))
   )
+
+  // Cluster names are region-scoped (cluster id 2 in region A is not
+  // cluster id 2 in region B), so the lookup key has to include both.
+  // Pre-fetched for every non-hub region so the column resolves names in
+  // both scoped and cross-region views.
+  const clusterNameMap = $derived.by(() => {
+    const m = new Map<string, string>()
+    for (const r of regionStore.regions) {
+      if (r.name === HUB_REGION_NAME) continue
+      for (const c of clusterStore.clustersFor(r.id)) {
+        m.set(`${r.id}:${c.id}`, c.name)
+      }
+    }
+    return m
+  })
+
+  function isHubRegion(regionId: number): boolean {
+    return regionNameMap.get(regionId) === HUB_REGION_NAME
+  }
 
   const SERVICE_TYPE_OPTIONS = [
     { value: '', label: 'All Types' },
@@ -115,6 +137,17 @@
       return
     }
     regionStore.fetchRegions()
+  })
+
+  // Fetch clusters for every non-hub region so the Cluster column can
+  // resolve names in both scoped and cross-region views. Each fetch is
+  // independently cached by clusterStore and small, so this is acceptable
+  // at the region counts an admin console deals with.
+  $effect(() => {
+    for (const r of regionStore.regions) {
+      if (r.name === HUB_REGION_NAME) continue
+      clusterStore.fetchClusters(r.id).catch(() => { /* non-fatal */ })
+    }
   })
 
   $effect(() => {
@@ -196,6 +229,7 @@
       {#if !selectedRegionId}
         <TableHead class="th-cyber">Region</TableHead>
       {/if}
+      <TableHead class="th-cyber hidden lg:table-cell">Cluster</TableHead>
       <TableHead class="th-cyber">Type</TableHead>
       <TableHead class="th-cyber hidden md:table-cell">Address</TableHead>
       <TableHead class="th-cyber">Status</TableHead>
@@ -212,6 +246,7 @@
       cells={selectedRegionId
         ? [
             { width: 'w-32' },
+            { width: 'w-20', class: 'hidden lg:table-cell' },
             { width: 'w-20', height: 'h-5' },
             { width: 'w-32', class: 'hidden md:table-cell' },
             { width: 'w-16', height: 'h-5' },
@@ -222,6 +257,7 @@
         : [
             { width: 'w-32' },
             { width: 'w-20' },
+            { width: 'w-20', class: 'hidden lg:table-cell' },
             { width: 'w-20', height: 'h-5' },
             { width: 'w-32', class: 'hidden md:table-cell' },
             { width: 'w-16', height: 'h-5' },
@@ -261,6 +297,22 @@
                 </button>
               </TableCell>
             {/if}
+            <TableCell class="hidden lg:table-cell">
+              {#if isHubRegion(node.regionId)}
+                <span class="text-muted-foreground text-sm font-mono">{HUB_REGION_NAME}</span>
+              {:else if node.regionClusterId}
+                <button
+                  type="button"
+                  class="text-sm font-mono hover:underline"
+                  onclick={(e: MouseEvent) => { e.stopPropagation(); goto(`/regions/${node.regionId}?cluster=${node.regionClusterId}`) }}
+                  onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); goto(`/regions/${node.regionId}?cluster=${node.regionClusterId}`) } }}
+                >
+                  {clusterNameMap.get(`${node.regionId}:${node.regionClusterId}`) ?? `#${node.regionClusterId}`}
+                </button>
+              {:else}
+                <span class="text-muted-foreground text-sm">N/A</span>
+              {/if}
+            </TableCell>
             <TableCell>
               <Badge variant="outline" class="font-mono text-xs" style="color: {SERVICE_COLORS[node.serviceType] ?? 'inherit'}; border-color: {SERVICE_COLORS[node.serviceType] ?? 'var(--border)'};">{node.serviceType}</Badge>
             </TableCell>

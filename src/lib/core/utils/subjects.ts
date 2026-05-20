@@ -11,6 +11,7 @@ import ScrollIcon from '@lucide/svelte/icons/scroll'
 import ChartBarIcon from '@lucide/svelte/icons/chart-bar'
 import GitForkIcon from '@lucide/svelte/icons/git-fork'
 import GaugeIcon from '@lucide/svelte/icons/gauge'
+import LayersIcon from '@lucide/svelte/icons/layers'
 
 export type SubjectMeta = { color: string; icon: typeof UserIcon }
 
@@ -23,6 +24,7 @@ export const subjectMeta: Record<string, SubjectMeta> = {
   storage:        { color: 'var(--pastel-storage)',       icon: HardDriveIcon },
   role:           { color: 'var(--pastel-role)',          icon: ShieldIcon },
   region:         { color: 'var(--pastel-region)',        icon: GlobeIcon },
+  'region.cluster': { color: 'var(--pastel-region)',      icon: LayersIcon },
   mount:          { color: 'var(--pastel-mount)',         icon: HardDriveIcon },
   'volume.key':   { color: 'var(--pastel-volume-key)',    icon: KeyIcon },
   session:        { color: 'var(--pastel-session)',       icon: MonitorIcon },
