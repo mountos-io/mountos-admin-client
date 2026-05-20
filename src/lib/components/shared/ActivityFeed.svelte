@@ -11,11 +11,13 @@
     loading = false,
     hasMore = false,
     onLoadMore,
+    clusterNameById,
   }: {
     logs: AuditLog[]
     loading: boolean
     hasMore: boolean
     onLoadMore?: () => void
+    clusterNameById?: Record<number, string>
   } = $props()
 
   let expanded = $state<Set<number>>(new Set())
@@ -90,6 +92,13 @@
                 {/if}
                 {#if log.createdBy}
                   <span>&middot; {log.createdBy}</span>
+                {/if}
+                {#if clusterNameById && log.regionClusterId != null && clusterNameById[log.regionClusterId]}
+                  <span class="inline-flex items-center gap-1">
+                    <span aria-hidden="true">&middot;</span>
+                    <span class="sr-only">cluster </span>
+                    <span class="font-mono text-[11px] uppercase tracking-wider rounded-sm border border-border/50 px-1 py-px">{clusterNameById[log.regionClusterId]}</span>
+                  </span>
                 {/if}
               </div>
               {#if isOpen && hasData}

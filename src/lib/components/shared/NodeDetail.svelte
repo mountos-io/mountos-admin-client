@@ -2,6 +2,7 @@
   import { goto } from '$app/navigation'
   import { onDestroy } from 'svelte'
   import { useNodes } from '$lib/core/stores/nodes.svelte'
+  import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { useRegionAlerts } from '$lib/core/stores/regionAlerts.svelte'
   import { useRegionAuditLogs } from '$lib/core/stores/regionAudit.svelte'
   import { SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
@@ -25,6 +26,7 @@
   let { regionId, nodeId, basePath }: { regionId: number; nodeId: string; basePath: string } = $props()
 
   const nodeStore = useNodes()
+  const clusterStore = useClusters()
   const alertStore = useRegionAlerts(() => regionId, () => nodeId)
   const auditStore = useRegionAuditLogs()
   const auth = useAuth()
@@ -32,6 +34,11 @@
   const canReadAuditLogs = $derived(auth.can('auditLogs', 'read'))
 
   const node = $derived<ServiceNode | undefined>(nodeStore.nodes.find(n => n.nodeId === nodeId))
+  const clusterLabel = $derived.by(() => {
+    if (!node?.regionClusterId) return null
+    const c = clusterStore.clustersFor(regionId).find(x => x.id === node.regionClusterId)
+    return c?.name ?? `#${node.regionClusterId}`
+  })
 
   let pollValue = $state('')
 
@@ -81,6 +88,14 @@
       auditStore.fetchLogs(regionId, { node: nodeId, reset: true })
     }
     return () => auditStore.reset()
+  })
+
+  // Cluster list is needed to translate node.regionClusterId → name.
+  // Hub regions don't carry clusters; this is a no-op for them.
+  $effect(() => {
+    if (regionId && node && node.serviceType !== 'hub') {
+      clusterStore.fetchClusters(regionId).catch(() => { /* non-fatal; falls back to numeric id */ })
+    }
   })
 
   onDestroy(() => nodeStore.resetStats())
@@ -154,6 +169,18 @@
             <dt class="text-muted-foreground text-sm">Service Type</dt>
             <dd class="mt-0.5">{node.serviceType}</dd>
           </div>
+          {#if clusterLabel}
+            <div>
+              <dt class="text-muted-foreground text-sm">Cluster</dt>
+              <dd class="mt-0.5">
+                <a
+                  href={`/regions/${regionId}/clusters/${node.regionClusterId}`}
+                  aria-label="View cluster {clusterLabel} details"
+                  class="inline-flex items-center font-mono text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                >{clusterLabel}</a>
+              </dd>
+            </div>
+          {/if}
           <div>
             <dt class="text-muted-foreground text-sm">Status</dt>
             <dd class="mt-0.5"><Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge></dd>

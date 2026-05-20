@@ -1,8 +1,10 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
+  import { page } from '$app/stores'
   import { untrack } from 'svelte'
   import { useNodes } from '$lib/core/stores/nodes.svelte'
   import { useRegions } from '$lib/core/stores/regions.svelte'
+  import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { useRegionAuditLogs } from '$lib/core/stores/regionAudit.svelte'
   import { useRegionAlerts } from '$lib/core/stores/regionAlerts.svelte'
   import { SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
@@ -22,11 +24,16 @@
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import RegionNodeList from '$lib/components/shared/RegionNodeList.svelte'
+  import ClusterPicker from '$lib/components/shared/ClusterPicker.svelte'
   import { showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import { formatRelative } from '$lib/core/utils/format'
   import type { Region, ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import MoreVertical from '@lucide/svelte/icons/more-vertical'
+  import Pencil from '@lucide/svelte/icons/pencil'
+  import PowerOff from '@lucide/svelte/icons/power-off'
+  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
   import Shield from '@lucide/svelte/icons/shield'
   import Database from '@lucide/svelte/icons/database'
   import Trash2 from '@lucide/svelte/icons/trash-2'
@@ -47,12 +54,15 @@
 
   const nodeStore = useNodes()
   const regionStore = useRegions()
+  const clusterStore = useClusters()
   const regionAudit = useRegionAuditLogs()
   const auth = useAuth()
 
   const dialog = useConfirmDialog()
   const isSuperAdmin = $derived(auth.user?.role === 'superadmin')
+  const canEditRegion = $derived(auth.can('regions', 'update'))
   let resyncInFlight = $state(false)
+  let regionMenuOpen = $state(false)
 
   let activeTab = $state<'overview' | 'activity' | 'alerts'>(untrack(() => initialTab) ?? 'overview')
   $effect(() => { if (initialTab) activeTab = initialTab })
@@ -66,7 +76,7 @@
   let activityDays = $state<7 | 15 | 30 | 'auto'>('auto')
 
   // Alerts tab state
-  const alertStore = useRegionAlerts(() => regionId)
+  const alertStore = useRegionAlerts(() => regionId, undefined, () => selectedCluster)
   let resolvingId = $state<string | null>(null)
 
   const COLLAPSE_THRESHOLD = 8
@@ -109,11 +119,36 @@
   const canReadAudit = $derived(auth.can('auditLogs', 'read'))
   const canReadAlerts = $derived(auth.can('alerts', 'read'))
 
-  const tierData = $derived.by(() => {
-    const byType = nodeStore.nodesByType
-    const relevant = isHubRegion
-      ? TIERS.filter(t => t.id === 'control')
-      : TIERS.filter(t => t.id !== 'control')
+  const clusters = $derived(clusterStore.clustersFor(regionId))
+  const clusterNameById = $derived.by(() => {
+    const m: Record<number, string> = {}
+    for (const c of clusters) m[c.id] = c.name
+    return m
+  })
+  const selectedCluster = $derived.by<number | null>(() => {
+    const raw = $page.url.searchParams.get('cluster')
+    if (!raw) return null
+    const n = Number(raw)
+    return Number.isFinite(n) && clusters.some(c => c.id === n) ? n : null
+  })
+
+  function setSelectedCluster(v: number | null) {
+    const url = new URL($page.url)
+    if (v == null) url.searchParams.delete('cluster')
+    else url.searchParams.set('cluster', String(v))
+    goto(url, { replaceState: true, noScroll: true, keepFocus: true })
+  }
+
+  function buildTierData(forNodes: ServiceNode[]) {
+    const byType = new Map<string, ServiceNode[]>()
+    for (const n of forNodes) {
+      const key = n.serviceType === 'mfuse' ? 'fuseserv' : n.serviceType
+      const list = byType.get(key) ?? []
+      list.push(n)
+      byType.set(key, list)
+    }
+    const hub = byType.has('hub')
+    const relevant = hub ? TIERS.filter(t => t.id === 'control') : TIERS.filter(t => t.id !== 'control')
     return relevant.map(tier => ({
       ...tier,
       groups: tier.types
@@ -121,6 +156,21 @@
         .filter(g => g.nodes.length > 0),
       nodeCount: tier.types.reduce((sum, t) => sum + (byType.get(t)?.length ?? 0), 0),
     }))
+  }
+
+  const tierData = $derived(buildTierData(nodeStore.nodes))
+
+  // When viewing "All clusters" in a multi-cluster region, render one tier
+  // grid per cluster instead of one merged grid; preserves cluster cohesion.
+  const showPerClusterGrouping = $derived(selectedCluster === null && clusters.length >= 2 && !isHubRegion)
+  const clusterTierGroups = $derived.by(() => {
+    if (!showPerClusterGrouping) return []
+    return clusters
+      .map(c => {
+        const cn = nodeStore.nodes.filter(n => n.regionClusterId === c.id)
+        return { cluster: c, tierData: buildTierData(cn), nodeCount: cn.length }
+      })
+      .filter(g => g.nodeCount > 0)
   })
 
   const legendEntries = $derived.by(() => {
@@ -177,14 +227,40 @@
   $effect(() => {
     if (regionId) {
       regionStore.getRegion(regionId).then(r => region = r).catch(() => showErrorToast('Failed to load region details'))
-      nodeStore.clearFilters()
-      nodeStore.fetchNodes(regionId)
     }
   })
 
+  // Fetch nodes whenever region or selected cluster changes; passes the
+  // cluster filter through so the server returns scoped data when a cluster
+  // is selected.
   $effect(() => {
-    if (regionId && canReadAudit && hasRegionalDB) {
-      regionAudit.fetchLogs(regionId, { limit: 200, reset: true })
+    if (!regionId) return
+    nodeStore.clearFilters()
+    nodeStore.fetchNodes(regionId, { regionClusterId: selectedCluster ?? undefined })
+  })
+
+  // Hub regions have no clusters; skip the fetch entirely.
+  $effect(() => {
+    if (regionId && !isHubRegion) {
+      clusterStore.fetchClusters(regionId).catch(() => { /* non-fatal; picker stays hidden */ })
+    }
+  })
+
+  // Wait for cluster list before fetching audit logs: a deep-link like
+  // ?cluster=2 cannot validate against the cluster list until it has loaded,
+  // so without this gate the first fetch goes out unfiltered and is then
+  // discarded once clusters arrive. Hub regions skip clusters entirely.
+  const clustersReady = $derived(isHubRegion || !clusterStore.isLoading(regionId))
+
+  $effect(() => {
+    if (regionId && canReadAudit && hasRegionalDB && clustersReady) {
+      regionAudit.fetchLogs(regionId, {
+        limit: 200,
+        reset: true,
+        regionClusterId: selectedCluster ?? undefined,
+      })
+    } else if (!clustersReady) {
+      // hold; effect will re-run when clusters land
     } else {
       regionAudit.reset()
     }
@@ -192,14 +268,27 @@
   })
 
   // Alerts lifecycle
+  let lastAlertCluster: number | null = $state(null)
   $effect(() => {
     const s = alertStore
     if (auth.loading || !canReadAlerts) return
     untrack(() => {
+      // Seed the cluster gate so the cluster-change effect below doesn't
+      // double-fetch on initial mount when the URL already pins a cluster.
+      lastAlertCluster = selectedCluster
       s.fetchAlerts()
       s.startPolling()
     })
     return () => s.reset()
+  })
+
+  // Refetch alerts when cluster filter changes (initial fetch is handled
+  // above; this branch reacts only to subsequent selectedCluster changes).
+  $effect(() => {
+    if (auth.loading || !canReadAlerts) return
+    if (selectedCluster === lastAlertCluster) return
+    lastAlertCluster = selectedCluster
+    untrack(() => alertStore.fetchAlerts())
   })
 
   const sevFilterStr = $derived(alertStore.severityFilter !== undefined ? String(alertStore.severityFilter) : '')
@@ -233,6 +322,13 @@
         {region.isActive ? 'Active' : 'Inactive'}
       </Badge>
     {/if}
+    {#if !isHubRegion}
+      <ClusterPicker
+        clusters={clusters}
+        value={selectedCluster}
+        onchange={setSelectedCluster}
+      />
+    {/if}
     <div class="ml-auto flex items-center gap-2">
       <Button variant="outline" size="sm" onclick={() => goto(`${basePath}/${regionId}/clusters`)}>
         Clusters
@@ -254,6 +350,59 @@
           </Button>
           <InfoTip text="When vault secrets change (master keys, service verifier keys), resync forces all services to drop cached values and fetch fresh copies. Use only when needed; services auto-refresh periodically." />
         </span>
+      {/if}
+      {#if canEditRegion}
+        <Popover bind:open={regionMenuOpen}>
+          <PopoverTrigger>
+            {#snippet child({ props })}
+              <button {...props}
+                type="button"
+                aria-label="Region actions"
+                aria-haspopup="menu"
+                aria-expanded={regionMenuOpen}
+                class="inline-flex h-9 w-9 min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center rounded-sm border border-border/60 text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <MoreVertical class="h-4 w-4" />
+              </button>
+            {/snippet}
+          </PopoverTrigger>
+          <PopoverContent class="w-56 p-1" align="end">
+            <div role="menu" aria-label="Region actions">
+              <button
+                type="button"
+                role="menuitem"
+                class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                onclick={() => { regionMenuOpen = false; goto(`${basePath}/${regionId}/edit`) }}
+              >
+                <Pencil class="h-4 w-4" aria-hidden="true" /> Edit region
+              </button>
+              {#if region?.isActive}
+                <div class="my-1 h-px bg-border/50" role="separator"></div>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:outline-none"
+                  onclick={() => {
+                    regionMenuOpen = false
+                    if (!region) return
+                    dialog.confirm(
+                      'Deactivate Region',
+                      `Permanently deactivate "${region.name}"? All nodes must be stopped and all storages and volumes deactivated first.`,
+                      async () => {
+                        await regionStore.deactivateRegion(regionId)
+                        showSuccessToast('Region deactivated')
+                        goto(basePath)
+                      },
+                      'destructive',
+                    )
+                  }}
+                >
+                  <PowerOff class="h-4 w-4" aria-hidden="true" /> Deactivate region
+                </button>
+              {/if}
+            </div>
+          </PopoverContent>
+        </Popover>
       {/if}
     </div>
   </div>
@@ -389,11 +538,37 @@
       </div>
     {:else if nodeStore.nodes.length === 0}
       <EmptyState title="No nodes" description="No nodes registered in this region." />
+    {:else if showPerClusterGrouping}
+      <div class="space-y-6">
+        {#each clusterTierGroups as g (g.cluster.id)}
+          <div class="space-y-3">
+            <div class="flex items-center gap-2 border-b border-border/40 pb-1.5">
+              <span class="font-semibold text-sm">{g.cluster.name}</span>
+              {#if g.cluster.defaultCluster}
+                <Badge variant="outline" class="h-4 text-[9px] uppercase tracking-wider">default</Badge>
+              {/if}
+              {#if !g.cluster.isReady}
+                <Badge variant="warning" class="h-4 text-[9px] uppercase tracking-wider">not ready</Badge>
+              {/if}
+              <span class="ml-auto font-mono text-xs text-muted-foreground tabular-nums">{g.nodeCount} nodes</span>
+            </div>
+            {#if topoView === 'list'}
+              <RegionNodeList tierData={g.tierData} {basePath} {regionId} />
+            {:else}
+              {@render graphicalGrid(g.tierData)}
+            {/if}
+          </div>
+        {/each}
+      </div>
     {:else if topoView === 'list'}
       <RegionNodeList {tierData} {basePath} {regionId} />
     {:else}
+      {@render graphicalGrid(tierData)}
+    {/if}
+
+    {#snippet graphicalGrid(td: ReturnType<typeof buildTierData>)}
       <div class="topo-grid scanlines relative flex flex-wrap gap-5" style="contain: layout;">
-        {#each tierData as tier}
+        {#each td as tier}
           {@const tierColor = TIER_COLORS[tier.id]}
           <div class="monitor-frame flex flex-col items-center w-full md:w-auto">
             <section class="tier-column corner-brackets flex flex-col gap-3 w-full border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
@@ -503,7 +678,7 @@
           </div>
         {/each}
       </div>
-    {/if}
+    {/snippet}
 
     <!-- Audit log card -->
     {#if canReadAudit}
@@ -542,7 +717,7 @@
                   <div class="flex items-center justify-center gap-2 py-16 text-sm text-destructive">
                     <span>Failed to load audit logs</span>
                     <Button variant="ghost" size="sm" class="h-7 px-2 min-h-[44px] sm:min-h-0 text-xs"
-                      onclick={() => regionAudit.fetchLogs(regionId, { limit: 200, reset: true })}>Retry</Button>
+                      onclick={() => regionAudit.fetchLogs(regionId, { limit: 200, reset: true, regionClusterId: selectedCluster ?? undefined })}>Retry</Button>
                   </div>
                 {:else if regionAudit.logs.length === 0}
                   <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No regional audit activity</div>
@@ -561,7 +736,8 @@
                     logs={regionAudit.logs}
                     loading={regionAudit.loading}
                     hasMore={regionAudit.hasMore}
-                    onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200 })}
+                    {clusterNameById}
+                    onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200, regionClusterId: selectedCluster ?? undefined })}
                   />
                 {/if}
               </div>
@@ -593,7 +769,8 @@
           logs={regionAudit.logs}
           loading={regionAudit.loading}
           hasMore={regionAudit.hasMore}
-          onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200 })}
+          {clusterNameById}
+          onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200, regionClusterId: selectedCluster ?? undefined })}
         />
       {/if}
     </div>
@@ -720,7 +897,12 @@
                     </div>
                   </TableCell>
                   <TableCell class="hidden lg:table-cell">
-                    <Badge variant="outline" class="font-mono">{alert.source}</Badge>
+                    <div class="flex flex-wrap items-center gap-1">
+                      <Badge variant="outline" class="font-mono">{alert.source}</Badge>
+                      {#if selectedCluster === null && alert.regionClusterId != null && clusterNameById[alert.regionClusterId]}
+                        <Badge variant="outline" class="font-mono text-[10px] uppercase tracking-wider">{clusterNameById[alert.regionClusterId]}</Badge>
+                      {/if}
+                    </div>
                   </TableCell>
                   <TableCell class="hidden xl:table-cell">
                     {#if alert.nodeId}

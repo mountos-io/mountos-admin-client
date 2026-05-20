@@ -108,7 +108,7 @@
       <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
       <svg viewBox="0 0 {W} {H}" class="w-full h-auto select-none" onmousemove={onMove} onmouseleave={onLeave} role="img" aria-label="Volume size over time">
         {#each yTicks as t}
-          <line x1={PAD_L} y1={t.y} x2={W - PAD_R} y2={t.y} stroke="currentColor" opacity="0.08" />
+          <line x1={PAD_L} y1={t.y} x2={W - PAD_R} y2={t.y} stroke="currentColor" opacity="0.25" stroke-dasharray="2 4" />
           <text x={PAD_L - 6} y={t.y} text-anchor="end" dominant-baseline="central" font-size="7" font-family="monospace" fill="currentColor" opacity="0.6">{t.label}</text>
         {/each}
         {#each xTicks as t}

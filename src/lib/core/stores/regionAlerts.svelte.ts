@@ -15,7 +15,11 @@ function sinceToISO(value: string): string | undefined {
   return new Date(Date.now() - range.ms).toISOString()
 }
 
-export function useRegionAlerts(getRegionId: () => number, getNodeId?: () => string | undefined) {
+export function useRegionAlerts(
+  getRegionId: () => number,
+  getNodeId?: () => string | undefined,
+  getRegionClusterId?: () => number | null,
+) {
   let activeCount = $state(0)
   let recentCount = $state(0)
   let infoCount = $state(0)
@@ -77,11 +81,13 @@ export function useRegionAlerts(getRegionId: () => number, getNodeId?: () => str
     loading = true
     error = null
 
+    const clusterId = getRegionClusterId?.()
     const opts: RegionAlertListOptions = {
       active: activeFilter,
       severity: severityFilter,
       category: categoryFilter || undefined,
       nodeId: getNodeId?.(),
+      regionClusterId: clusterId ?? undefined,
       since: sinceToISO(sinceFilter),
       page,
       limit: DISPLAY_PAGE_SIZE,
