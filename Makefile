@@ -1,4 +1,4 @@
-TS_RUNTIME ?= bun
+TS_RUNTIME ?= node
 TS_EXEC_bun   := bun run
 TS_EXEC_deno  := deno run -A
 TS_EXEC_node  := npx tsx
