@@ -1,4 +1,4 @@
-import type { ClientSession, ClientSessionListOptions, SessionSummary } from '$lib/core/api/types'
+import type { ClientSession, ClientSessionListOptions, ClientSessionStatus, SessionSummary } from '$lib/core/api/types'
 import { api } from './client.svelte'
 
 const PAGE_SIZE = 20
@@ -45,13 +45,20 @@ let expanded = $state<Set<number>>(new Set())
 
 // Stable option lists (static; previously derived from full dataset client-side).
 // Keeping these static avoids an unfiltered round-trip just to populate dropdowns.
+// Filter values match the ClientSessionStatus enum exposed by the SDK.
+// Internal numeric codes stay server-side. "connected" is omitted: the
+// register handler writes status=1 (active) directly, so it almost never
+// appears on the wire and offering it as a filter would create dead
+// dropdown entries. SDK type also includes "unknown" which is a fallback
+// for unrecognized DB codes and not user-selectable.
 const statusOptions = [
   { value: '', label: 'All Status' },
   { value: 'active', label: 'active' },
-  { value: 'idle', label: 'idle' },
+  { value: 'unhealthy', label: 'unhealthy' },
   { value: 'disconnected', label: 'disconnected' },
-  { value: 'error', label: 'error' },
+  { value: 'expired', label: 'expired' },
 ]
+const statusOptionValues = new Set(statusOptions.map(o => o.value).filter(Boolean))
 const platformOptions = [
   { value: '', label: 'All Platforms' },
   { value: 'fuse', label: 'fuse' },
@@ -133,7 +140,12 @@ function buildListOptions(accountId: number): ClientSessionListOptions {
     page: displayPage,
     limit: PAGE_SIZE,
   }
-  if (statusFilter) opts.status = statusFilter
+  // Defensive: validate against the dropdown allowlist before casting,
+  // so any future URL-deserialization path can't smuggle a non-label
+  // value (e.g. legacy numeric codes) into a typed SDK call.
+  if (statusFilter && statusOptionValues.has(statusFilter)) {
+    opts.status = statusFilter as ClientSessionStatus
+  }
   if (platformFilter) opts.platform = platformFilter
   if (osFilter) opts.osName = osFilter
   if (regionFilter !== undefined) opts.regionId = regionFilter
@@ -150,7 +162,15 @@ function cancelSearchDebounce() {
 
 async function fetchSummary(accountId: number) {
   try {
-    globalSummary = await api.clientSessions.summary(accountId, volumeIdFilter as number)
+    // Mirror the list filters so the summary strip and the filtered list
+    // stay consistent. Generator promotes all query params to positional
+    // args; 0 / undefined ⇒ no filter, both honored server-side.
+    globalSummary = await api.clientSessions.summary(
+      accountId,
+      regionFilter ?? 0,
+      0,
+      volumeIdFilter ?? 0,
+    )
   } catch {
     // Summary is best-effort; leave previous value in place on failure.
   }

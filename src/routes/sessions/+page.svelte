@@ -17,7 +17,8 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
-  import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
+  import InfoTip from '$lib/components/shared/InfoTip.svelte'
+  import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
   import { SESSION_POLL_OPTIONS } from '$lib/core/utils/options'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
   import { showErrorToast } from '$lib/core/utils/toast'
@@ -73,6 +74,15 @@
   function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
   function clearVolumeFilter() { goto('/sessions') }
 
+  // Duration covers both flavours: a still-active session shows wall-clock
+  // age, a closed session shows total lifetime. Without an end we fall back
+  // to last heartbeat so a swept-unhealthy row doesn't keep ticking forever.
+  function sessionDuration(s: ClientSession): string {
+    if (!s.connectedAt) return '·'
+    const end = s.disconnectedAt ?? (s.isActive ? undefined : s.lastHeartbeat)
+    return formatDuration(s.connectedAt, end)
+  }
+
   const hasFilters = $derived(store.statusFilter || store.platformFilter || store.regionFilter || store.osFilter || store.searchQuery || store.volumeIdFilter)
 </script>
 
@@ -84,7 +94,7 @@
     {#if store.volumeIdFilter}
       <Badge variant="outline" class="gap-1">
         Volume #{store.volumeIdFilter}
-        <button type="button" class="ml-1 p-2 -m-1 hover:text-destructive" onclick={clearVolumeFilter} aria-label="Clear volume filter">&times;</button>
+        <button type="button" class="ml-1 inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-2 -m-1 hover:text-destructive" onclick={clearVolumeFilter} aria-label="Clear volume filter">&times;</button>
       </Badge>
     {/if}
   </div>
@@ -139,8 +149,10 @@
         <TableHead class="th-cyber">Platform</TableHead>
         <TableHead class="th-cyber">Volume</TableHead>
         <TableHead class="th-cyber">Region</TableHead>
+        <TableHead class="th-cyber hidden lg:table-cell">Cluster</TableHead>
         <TableHead class="th-cyber">Status</TableHead>
         <TableHead class="th-cyber hidden md:table-cell">Mode</TableHead>
+        <TableHead class="th-cyber hidden md:table-cell">Session Age</TableHead>
         <TableHead class="th-cyber hidden lg:table-cell">Heartbeat</TableHead>
       </TableRow>
     {/snippet}
@@ -155,8 +167,10 @@
           { width: 'w-40', height: 'h-5' },
           { width: 'w-24' },
           { width: 'w-24', height: 'h-5' },
+          { width: 'w-24', height: 'h-5', class: 'hidden lg:table-cell' },
           { width: 'w-16', height: 'h-5' },
           { width: 'w-16', height: 'h-5', class: 'hidden md:table-cell' },
+          { width: 'w-16', class: 'hidden md:table-cell' },
           { width: 'w-20', class: 'hidden lg:table-cell' },
         ]}
       />
@@ -165,9 +179,9 @@
     {:else if store.filtered.length === 0}
       <EmptyState title="No sessions" description={hasFilters ? 'No sessions match filters.' : 'No client sessions found for this account.'} />
     {:else}
-      <div role="status" aria-live="polite" class="sr-only">
-        {#if store.loading && store.allSessions.length > 0}Loading page {store.displayPage} of {store.totalDisplayPages}{/if}
-      </div>
+      {#if store.loading && store.allSessions.length > 0}
+        <div role="status" aria-live="polite" class="sr-only">Loading page {store.displayPage} of {store.totalDisplayPages}</div>
+      {/if}
       <div
         inert={store.loading || undefined}
         class:opacity-60={store.loading}
@@ -180,16 +194,23 @@
         </TableHeader>
         <TableBody>
           {#each store.displaySessions as session (session.id)}
+            <!-- Row is intentionally NOT a button: it holds links and a chevron
+                 button. The chevron is the canonical AT-accessible expansion
+                 control (carries aria-expanded). The row onclick is a sighted-
+                 user convenience for click-anywhere expansion; keyboard users
+                 reach expansion through the chevron in normal tab order. -->
             <TableRow
-              class="cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
-              role="button"
-              tabindex={0}
-              aria-expanded={store.expanded.has(session.id)}
-              aria-label="Session {session.hostname || session.ipAddr}"
-              onclick={() => store.toggleExpanded(session.id)}
-              onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); store.toggleExpanded(session.id) } }}>
+              class="cursor-pointer hover:bg-muted/50"
+              onclick={() => store.toggleExpanded(session.id)}>
               <TableCell class="text-muted-foreground">
-                <button type="button" tabindex={-1} class="inline-flex items-center justify-center p-2 -m-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-label="Toggle session details" onclick={(e: MouseEvent) => e.stopPropagation()}>{#if store.expanded.has(session.id)}<ChevronDown class="h-4 w-4" aria-hidden="true" />{:else}<ChevronRight class="h-4 w-4" aria-hidden="true" />{/if}</button>
+                <button
+                  type="button"
+                  class="inline-flex items-center justify-center p-2 -m-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  aria-label="{store.expanded.has(session.id) ? 'Collapse' : 'Expand'} session {session.hostname || session.ipAddr}"
+                  aria-expanded={store.expanded.has(session.id)}
+                  onclick={(e: MouseEvent) => { e.stopPropagation(); store.toggleExpanded(session.id) }}>
+                  {#if store.expanded.has(session.id)}<ChevronDown class="h-4 w-4" aria-hidden="true" />{:else}<ChevronRight class="h-4 w-4" aria-hidden="true" />{/if}
+                </button>
               </TableCell>
               <TableCell>
                 <div>
@@ -205,17 +226,25 @@
               </TableCell>
               <TableCell class="text-sm max-w-[120px] truncate" title={session.volume.name || String(session.volume.id)}>{session.volume.name || `#${session.volume.id}`}</TableCell>
               <TableCell><span class="session-region">{session.region.name}</span></TableCell>
+              <TableCell class="hidden lg:table-cell max-w-[140px]">
+                {#if session.regionCluster}
+                  <a href="/regions/{session.region.id}?cluster={session.regionCluster.id}" class="session-cluster truncate max-w-full" onclick={(e: MouseEvent) => e.stopPropagation()} aria-label="View region {session.region.name} scoped to cluster {session.regionCluster.name}" title={session.regionCluster.name}>{session.regionCluster.name}</a>
+                {:else}
+                  <span class="text-muted-foreground text-sm">·</span>
+                {/if}
+              </TableCell>
               <TableCell><Badge variant={statusVariant(session.status)}>{session.status}</Badge></TableCell>
               <TableCell class="hidden md:table-cell">
                 {#if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)}>{session.mountMode}</Badge>{:else}·{/if}
               </TableCell>
+              <TableCell class="text-sm tabular-nums hidden md:table-cell">{sessionDuration(session)}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</TableCell>
             </TableRow>
             {#if store.expanded.has(session.id)}
               {@const m = getMetrics(session)}
               <TableRow>
                 <TableCell></TableCell>
-                <TableCell colspan={7}>
+                <TableCell colspan={9}>
                   <div class="space-y-4 py-3">
                     <a href="/sessions/{session.id}" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-sm border border-primary/30 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 transition-colors" onclick={(e: MouseEvent) => e.stopPropagation()}>
                       <ExternalLink class="h-4 w-4" />
@@ -225,8 +254,20 @@
                         <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm" onclick={(e: MouseEvent) => e.stopPropagation()}>{session.account.name}</a></div>
                         <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p></div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
-                        <div><p class="detail-label">Uptime</p><p class="text-sm">{formatUptime(m.uptimeSeconds ?? 0)}</p></div>
+                        <div>
+                          <div class="detail-label flex items-center gap-0.5">
+                            Process Uptime
+                            <span onclick={(e: MouseEvent) => e.stopPropagation()} role="presentation">
+                              <InfoTip text={"**Process Uptime:** client-reported, how long this mount's process has been running.\n**Session Age:** server-tracked, how long the session row has been alive.\n\n**Drift signals:**\n• Uptime < Age → process restarted, session reused\n• Uptime > Age → late mount, warm process\n• Age frozen, Uptime advancing → heartbeats lost"} />
+                            </span>
+                          </div>
+                          <p class="text-sm">{m.uptimeSeconds != null ? formatUptime(m.uptimeSeconds) : '·'}</p>
+                        </div>
+                        <div><p class="detail-label">Session Age</p><p class="text-sm tabular-nums">{sessionDuration(session)}</p></div>
                         <div class="min-w-0"><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate" title={session.volume.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volume.name || `#${session.volume.id}`}</a></div>
+                      {#if session.regionCluster}
+                        <div class="min-w-0"><p class="detail-label">Cluster</p><a href="/regions/{session.region.id}?cluster={session.regionCluster.id}" class="detail-link text-sm font-mono truncate inline-block max-w-full" aria-label="View region {session.region.name} scoped to cluster {session.regionCluster.name}" title={session.regionCluster.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.regionCluster.name}</a></div>
+                      {/if}
                         <div class="min-w-0"><p class="detail-label">User</p>{#if session.user}<a href="/users/{session.user.id}" class="detail-link text-sm font-mono truncate" title={session.user.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.user.name || `#${session.user.id}`}</a>{:else}<p class="text-sm font-mono">·</p>{/if}</div>
                         <div><p class="detail-label">Client Type</p><Badge variant="outline">{session.clientType}</Badge></div>
                         {#if session.forkName}
@@ -283,7 +324,7 @@
 </div>
 
 <style>
-  .session-platform, .session-os, .session-region {
+  .session-platform, .session-os, .session-region, .session-cluster {
     display: inline-block;
     font-family: var(--font-mono);
     font-size: 0.875rem;
@@ -296,6 +337,18 @@
   :global(.dark) .session-platform { color: var(--primary); background: color-mix(in oklch, var(--primary) 10%, transparent); }
   .session-os { border: 1px solid var(--foreground); color: var(--foreground); opacity: 0.75; }
   .session-region { border: 1px solid var(--border); color: var(--muted-foreground); }
+  .session-cluster {
+    border: 1px solid color-mix(in oklch, var(--pastel-region) 50%, var(--border));
+    color: color-mix(in oklch, var(--pastel-region) 80%, var(--foreground));
+    text-decoration: none;
+    transition: background 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .session-cluster:hover { background: color-mix(in oklch, var(--pastel-region) 10%, transparent); }
+  .session-cluster:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  :global(.dark) .session-cluster { color: color-mix(in oklch, var(--pastel-region) 90%, var(--foreground)); }
 
   .count-tag {
     display: inline-flex;
@@ -310,7 +363,7 @@
     border-radius: 1px;
     color: color-mix(in oklch, var(--tc) 85%, var(--foreground));
   }
-  :global(.dark) .count-tag { color: color-mix(in oklch, var(--tc) 90%, white); }
+  :global(.dark) .count-tag { color: color-mix(in oklch, var(--tc) 90%, var(--foreground)); }
 
   .count-pill {
     display: inline-flex;

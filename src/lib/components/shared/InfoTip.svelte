@@ -5,18 +5,36 @@
 <script lang="ts">
   import Lightbulb from '@lucide/svelte/icons/lightbulb'
 
-  let { text }: { text: string } = $props()
+  let { text, width = 360 }: { text: string; width?: number } = $props()
 
   let show = $state(false)
   let pos = $state({ left: '0px', top: '0px', transform: 'translate(-50%, -100%)' })
   let el: HTMLButtonElement | undefined = $state()
   const tipId = `infotip-${++_counter}`
 
+  // Minimal **bold** parser so consumers can mark section headers without
+  // pulling in a markdown lib. Splits on `**…**` runs; even indices are
+  // plain spans, odd indices are bold. Newlines preserved by the
+  // `whitespace-pre-line` class on the container.
+  const segments = $derived.by(() => {
+    const out: { bold: boolean; value: string }[] = []
+    const re = /\*\*([^*]+)\*\*/g
+    let last = 0
+    let m: RegExpExecArray | null
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) out.push({ bold: false, value: text.slice(last, m.index) })
+      out.push({ bold: true, value: m[1] })
+      last = m.index + m[0].length
+    }
+    if (last < text.length) out.push({ bold: false, value: text.slice(last) })
+    return out
+  })
+
   function open(e: PointerEvent | FocusEvent) {
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
     const vw = window.innerWidth
     const pad = 12
-    const pw = Math.min(260, vw - pad * 2)
+    const pw = Math.min(width, vw - pad * 2)
     let left = r.left + r.width / 2
     let top = r.top - 8
     let transform = 'translate(-50%, -100%)'
@@ -80,8 +98,8 @@
     style:left={pos.left}
     style:top={pos.top}
     style:transform={pos.transform}
-    style:max-width="min(260px, calc(100vw - 1.5rem))"
+    style:max-width="min({width}px, calc(100vw - 1.5rem))"
   >
-    <p class="text-sm leading-relaxed text-foreground whitespace-pre-line">{text}</p>
+    <p class="text-sm leading-relaxed text-foreground whitespace-pre-line">{#each segments as seg}{#if seg.bold}<strong class="font-semibold text-foreground">{seg.value}</strong>{:else}{seg.value}{/if}{/each}</p>
   </div>
 {/if}

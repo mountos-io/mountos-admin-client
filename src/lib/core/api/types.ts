@@ -44,6 +44,7 @@ export type {
   RegionAuditLogListOptions,
   ClientSession,
   ClientSessionListOptions,
+  ClientSessionStatus,
   SessionSummary,
   StandardResponse,
   LicenseDetails,

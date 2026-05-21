@@ -331,7 +331,7 @@
                   <Badge variant={licenseStore.badgeVariant ?? 'default'}>{licenseStore.statusLabel(lic.status)}</Badge>
                   {#if lic.quota}
                     <Badge
-                      variant={lic.quota.state === 'exceeded' ? 'destructive' : (lic.quota.state === 'unknown' ? 'secondary' : 'default')}
+                      variant={lic.quota.state === 'exceeded' ? 'destructive' : 'default'}
                       title="Global storage usage across all active volumes vs. license cap"
                     >
                       Quota: {lic.quota.state}
@@ -411,7 +411,7 @@
                   <dt class="text-muted-foreground">Max Storage</dt>
                   <dd>{licenseStore.formatLimit(lic.maxStorageBytes, 'bytes')}</dd>
                 </div>
-                {#if lic.quota && lic.quota.state !== 'unknown'}
+                {#if lic.quota}
                   <hr class="border-border" aria-hidden="true" />
                   <div class="flex justify-between gap-2">
                     <dt class="text-muted-foreground">Total Used</dt>

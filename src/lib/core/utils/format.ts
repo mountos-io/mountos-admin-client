@@ -155,13 +155,18 @@ export function formatDuration(from: string | number | Date, to?: string | numbe
   const start = parseDate(from)
   const end = to ? parseDate(to) : new Date()
   const ms = end.getTime() - start.getTime()
-  if (!Number.isFinite(ms) || ms < 60_000) return '< 1m'
-  const mins = Math.floor(ms / 60_000)
+  if (!Number.isFinite(ms) || ms < 0) return '·'
+  // Surface sub-minute lifetimes literally: short-lived sessions (mount/unmount
+  // within the heartbeat interval) are exactly what operators want to spot.
+  if (ms < 1000) return '< 1s'
+  const secs = Math.floor(ms / 1000)
+  if (secs < 60) return `${secs}s`
+  const mins = Math.floor(secs / 60)
   const hours = Math.floor(mins / 60)
   const days = Math.floor(hours / 24)
   if (days > 0) return `${days}d ${hours % 24}h`
   if (hours > 0) return `${hours}h ${mins % 60}m`
-  return `${mins}m`
+  return `${mins}m ${secs % 60}s`
 }
 
 type StatusVariant = 'success' | 'secondary' | 'warning' | 'destructive' | 'outline'
@@ -171,6 +176,10 @@ const SESSION_STATUS_MAP: Record<string, { label: string; variant: StatusVariant
   active: { label: 'Active', variant: 'success' },
   unhealthy: { label: 'Unhealthy', variant: 'destructive' },
   disconnected: { label: 'Disconnected', variant: 'secondary' },
+  // expired: dead-sweep gave up after 15m of silence with no explicit
+  // disconnect. Terminal state, no longer recoverable; muted so it stops
+  // pulling attention like the live unhealthy alarm does.
+  expired: { label: 'Expired', variant: 'secondary' },
   idle: { label: 'Idle', variant: 'warning' },
   error: { label: 'Error', variant: 'destructive' },
 }

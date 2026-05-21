@@ -10,7 +10,7 @@
   import { api } from '$lib/core/stores/client.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import { formatRelative, formatUptime, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
+  import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
   import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, cvVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
@@ -21,6 +21,8 @@
   import { getPlatform } from '$lib/core/stores/sessions.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
+  import Layers from '@lucide/svelte/icons/layers'
+  import InfoTip from '$lib/components/shared/InfoTip.svelte'
 
   const auth = useAuth()
   const id = $derived(Number($page.params.id))
@@ -83,6 +85,15 @@
     return m && typeof m === 'object' ? m as Record<string, any> : {}
   }
 
+  // Wall-clock lifetime, mirroring the list view: still-active rows tick from
+  // connectedAt to now; closed rows freeze at disconnectedAt (or last heartbeat
+  // for sessions swept-unhealthy without ever sending disconnect).
+  function sessionDuration(s: ClientSession): string {
+    if (!s.connectedAt) return '·'
+    const end = s.disconnectedAt ?? (s.isActive ? undefined : s.lastHeartbeat)
+    return formatDuration(s.connectedAt, end)
+  }
+
   function getMetaProp(s: ClientSession, key: string): unknown {
     const m = s.metadata
     return m != null && typeof m === 'object' ? (m as Record<string, unknown>)[key] : undefined
@@ -93,6 +104,15 @@
     const rl = m.rpcLatency as Record<string, RpcMethodLatency> | undefined
     if (!rl) return []
     return Object.entries(rl).sort((a, b) => b[1].count - a[1].count)
+  }
+  // FUSE syscall handler latency (mfuse only). Same wire shape as
+  // rpcLatency so the breakdown snippet renders both. Diagnostically
+  // complementary: rpcLatency is network round-trip to dataserv; FUSE
+  // latency adds cache hits and kernel-boundary time on top.
+  function getFuseLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
+    const fl = m.fuseLatency as Record<string, RpcMethodLatency> | undefined
+    if (!fl) return []
+    return Object.entries(fl).sort((a, b) => b[1].count - a[1].count)
   }
 
   // Embedded gateway counters reported by the client when the per-volume
@@ -120,11 +140,32 @@
 
   let rpcExpanded = $state<Set<string>>(new Set())
   let rpcMetricMode = $state<'minMax' | 'percentiles'>('percentiles')
+  let fuseExpanded = $state<Set<string>>(new Set())
+  let fuseMetricMode = $state<'minMax' | 'percentiles'>('percentiles')
 
   function toggleRpcExpand(method: string) {
     const next = new Set(rpcExpanded)
     next.has(method) ? next.delete(method) : next.add(method)
     rpcExpanded = next
+  }
+  function toggleFuseExpand(method: string) {
+    const next = new Set(fuseExpanded)
+    next.has(method) ? next.delete(method) : next.add(method)
+    fuseExpanded = next
+  }
+
+  // Group entries into latency bands for the header summary chips.
+  // Pure derivation; replaces a forEach-into-mutable-const pattern that
+  // Svelte 5 hoisting could legally re-order in the future.
+  interface LatencyBands { sub1ms: number; sub10ms: number; sub100ms: number; over100ms: number }
+  function latencyBands(entries: [string, RpcMethodLatency][]): LatencyBands {
+    return entries.reduce<LatencyBands>((b, [, l]) => {
+      if (l.avgUs < 1000) b.sub1ms++
+      else if (l.avgUs < 10000) b.sub10ms++
+      else if (l.avgUs < 100000) b.sub100ms++
+      else b.over100ms++
+      return b
+    }, { sub1ms: 0, sub10ms: 0, sub100ms: 0, over100ms: 0 })
   }
 </script>
 
@@ -139,6 +180,17 @@
     <h1 class="text-2xl font-bold tracking-tight">Session #{isNaN(id) ? 'Invalid' : id}</h1>
     {#if session}
       <Badge variant={statusVariant(session.status)}>{session.status}</Badge>
+      {#if session.regionCluster}
+        <a
+          href="/regions/{session.region.id}?cluster={session.regionCluster.id}"
+          class="session-cluster-chip"
+          aria-label="View region {session.region.name} scoped to cluster {session.regionCluster.name}"
+          title="Cluster {session.regionCluster.name} in region {session.region.name}"
+        >
+          <Layers class="h-3.5 w-3.5" aria-hidden="true" />
+          <span class="font-mono">{session.regionCluster.name}</span>
+        </a>
+      {/if}
     {/if}
     {#if !session || session.isActive}
       <div class="flex items-center gap-2 ml-auto">
@@ -193,7 +245,14 @@
           {#if session.forkName}
             <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
           {/if}
-          <div><p class="detail-label">Uptime</p><p class="text-sm">{formatUptime(m.uptimeSeconds ?? 0)}</p></div>
+          <div>
+            <div class="detail-label flex items-center gap-0.5">
+              Process Uptime
+              <InfoTip text={"**Process Uptime:** client-reported, how long this mount's process has been running.\n**Session Age:** server-tracked, how long the session row has been alive.\n\n**Drift signals:**\n• Uptime < Age → process restarted, session reused\n• Uptime > Age → late mount, warm process\n• Age frozen, Uptime advancing → heartbeats lost"} />
+            </div>
+            <p class="text-sm">{m.uptimeSeconds != null ? formatUptime(m.uptimeSeconds) : '·'}</p>
+          </div>
+          <div><p class="detail-label">Session Age</p><p class="text-sm tabular-nums">{sessionDuration(session)}</p></div>
           <div><p class="detail-label">Connected</p><p class="text-sm">{session.connectedAt ? formatRelative(session.connectedAt) : '·'}</p></div>
           <div><p class="detail-label">Last Heartbeat</p><p class="text-sm">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</p></div>
           {#if session.disconnectedAt}
@@ -203,7 +262,6 @@
 
         <!-- IDs -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3">
-          <div class="min-w-0"><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate">{session.volume.name || `#${session.volume.id}`}</a></div>
           <div class="min-w-0"><p class="detail-label">User</p>{#if session.user}<a href="/users/{session.user.id}" class="detail-link text-sm font-mono truncate" title={session.user.name}>{session.user.name || `#${session.user.id}`}</a>{:else}<p class="text-sm font-mono">·</p>{/if}</div>
           {#if session.appVersion}
             <div><p class="detail-label">App Version</p><p class="text-sm font-mono">{session.appVersion}</p></div>
@@ -285,10 +343,15 @@
           </div>
         </div>
       </div>
+    {/if}
 
-      <!-- Gateway Activity (embedded per-volume S3 / WebHDFS gateway). -->
-      <!-- Present only when the client reported gateway counters; mount-only sessions skip. -->
-      {@const gw = getGatewayMetrics(m)}
+    <!-- Gateway and Latency sections each self-gate on metric presence;
+         previously they were nested under the {#if m.reads !== undefined}
+         metrics gate, which would hide an RPC/FUSE latency table if a
+         heartbeat shipped without the bulk I/O counters. -->
+    <!-- Gateway Activity (embedded per-volume S3 / WebHDFS gateway). -->
+    <!-- Present only when the client reported gateway counters; mount-only sessions skip. -->
+    {@const gw = getGatewayMetrics(m)}
       {#if gw}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
           <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
@@ -325,20 +388,17 @@
         </div>
       {/if}
 
-      <!-- RPC Latency Breakdown -->
-      {@const rpcEntries = getRpcLatency(m)}
-      {#if rpcEntries.length > 0}
-        {@const totalHits = rpcEntries.reduce((s, [, l]) => s + l.count, 0)}
-        {@const totalTimeSec = rpcEntries.reduce((s, [, l]) => s + (l.durationNs != null ? l.durationNs / 1e9 : (l.count * l.avgUs) / 1e6), 0)}
-        {@const bands = { sub1ms: 0, sub10ms: 0, sub100ms: 0, over100ms: 0 }}
-        {@const _ = rpcEntries.forEach(([, l]) => { if (l.avgUs < 1000) bands.sub1ms++; else if (l.avgUs < 10000) bands.sub10ms++; else if (l.avgUs < 100000) bands.sub100ms++; else bands.over100ms++ })}
-        {@const hasBuckets = rpcEntries.some(([, l]) => l.buckets?.some(c => c > 0))}
+      {#snippet latencyBreakdown(title: string, ariaLabel: string, entries: [string, RpcMethodLatency][], expanded: Set<string>, toggleExpand: (m: string) => void, metricMode: 'minMax' | 'percentiles', setMode: (m: 'minMax' | 'percentiles') => void)}
+        {@const totalHits = entries.reduce((s, [, l]) => s + l.count, 0)}
+        {@const totalTimeSec = entries.reduce((s, [, l]) => s + (l.durationNs != null ? l.durationNs / 1e9 : (l.count * l.avgUs) / 1e6), 0)}
+        {@const bands = latencyBands(entries)}
+        {@const hasBuckets = entries.some(([, l]) => l.buckets?.some(c => c > 0))}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
           <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
           <div class="relative p-5">
             <div class="flex flex-wrap items-center gap-3 mb-4">
-              <h2 class="text-lg font-semibold">RPC Latency</h2>
-              <span class="text-sm text-muted-foreground font-mono">{rpcEntries.length} methods</span>
+              <h2 class="text-lg font-semibold">{title}</h2>
+              <span class="text-sm text-muted-foreground font-mono">{entries.length} methods</span>
               <span class="text-sm text-muted-foreground font-mono">{formatNum(totalHits)} hits</span>
               <span class="text-sm text-muted-foreground font-mono">{formatTotalTime(totalTimeSec)} total</span>
               <div class="flex items-center gap-1.5 ml-auto">
@@ -347,18 +407,18 @@
                 {#if bands.sub100ms}<Badge variant="warning" class="font-mono text-xs">10-100ms: {bands.sub100ms}</Badge>{/if}
                 {#if bands.over100ms}<Badge variant="destructive" class="font-mono text-xs">&gt;100ms: {bands.over100ms}</Badge>{/if}
                 {#if hasBuckets}
-                  <div class="rpc-toggle-group flex items-center font-mono overflow-hidden ml-2">
-                    <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'minMax'} aria-pressed={rpcMetricMode === 'minMax'} onclick={() => rpcMetricMode = 'minMax'}>Min/Max</button>
-                    <span class="text-border/40">|</span>
-                    <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={rpcMetricMode === 'percentiles'} aria-pressed={rpcMetricMode === 'percentiles'} onclick={() => rpcMetricMode = 'percentiles'}>Percentiles</button>
+                  <div class="rpc-toggle-group flex items-center font-mono overflow-hidden ml-2" role="group" aria-label="{title} display mode">
+                    <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={metricMode === 'minMax'} aria-pressed={metricMode === 'minMax'} onclick={() => setMode('minMax')}>Min/Max</button>
+                    <span class="text-border/40" aria-hidden="true">|</span>
+                    <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={metricMode === 'percentiles'} aria-pressed={metricMode === 'percentiles'} onclick={() => setMode('percentiles')}>Percentiles</button>
                   </div>
                 {/if}
               </div>
             </div>
             <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-            <div class="overflow-x-auto rpc-scroll-hint" tabindex="0" role="region" aria-label="RPC latency data">
+            <div class="overflow-x-auto rpc-scroll-hint" tabindex="0" role="region" aria-label={ariaLabel}>
               <table class="rpc-table">
-                <caption class="sr-only">RPC method latency breakdown</caption>
+                <caption class="sr-only">{title} breakdown</caption>
                 <thead>
                   <tr>
                     {#if hasBuckets}<th scope="col" class="w-6"></th>{/if}
@@ -368,7 +428,7 @@
                     <th scope="col" class="text-right">Total</th>
                     <th scope="col" class="text-right">Avg</th>
                     {#if hasBuckets}<th scope="col" class="text-right">σ/μ</th>{/if}
-                    {#if rpcMetricMode === 'minMax'}
+                    {#if metricMode === 'minMax'}
                       <th scope="col" class="text-right">Min</th>
                       <th scope="col" class="text-right">Max</th>
                     {:else}
@@ -379,11 +439,11 @@
                   </tr>
                 </thead>
                 <tbody>
-                  {#each rpcEntries as [method, lat], i}
+                  {#each entries as [method, lat], i}
                     {@const bkts = toBuckets(lat.buckets)}
-                    {@const isOpen = rpcExpanded.has(method)}
+                    {@const isOpen = expanded.has(method)}
                     {@const cv = bkts.length > 0 ? estimateCV(bkts, lat.avgUs) : -1}
-                    <tr class="cursor-pointer hover:bg-muted/50 transition-colors {isOpen ? 'bg-muted/30' : ''}" class:rpc-zebra={!isOpen && i % 2 === 1} onclick={() => bkts.length > 0 && toggleRpcExpand(method)} onkeydown={(e: KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && bkts.length > 0) { e.preventDefault(); toggleRpcExpand(method) } }} tabindex={bkts.length > 0 ? 0 : undefined} role={bkts.length > 0 ? 'button' : undefined} aria-expanded={bkts.length > 0 ? isOpen : undefined}>
+                    <tr class="cursor-pointer hover:bg-muted/50 transition-colors {isOpen ? 'bg-muted/30' : ''}" class:rpc-zebra={!isOpen && i % 2 === 1} onclick={() => bkts.length > 0 && toggleExpand(method)} onkeydown={(e: KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && bkts.length > 0) { e.preventDefault(); toggleExpand(method) } }} tabindex={bkts.length > 0 ? 0 : undefined} role={bkts.length > 0 ? 'button' : undefined} aria-expanded={bkts.length > 0 ? isOpen : undefined}>
                       {#if hasBuckets}
                         <td class="w-6">
                           {#if bkts.length > 0}
@@ -401,7 +461,7 @@
                           {#if cv >= 0}<Badge variant={cvVariant(cv)} class="font-mono text-xs px-1 py-0">{cv.toFixed(2)}</Badge>{/if}
                         </td>
                       {/if}
-                      {#if rpcMetricMode === 'minMax'}
+                      {#if metricMode === 'minMax'}
                         <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.minUs)}">{formatUs(lat.minUs)}</td>
                         <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.maxUs)}">{formatUs(lat.maxUs)}</td>
                       {:else}
@@ -412,7 +472,7 @@
                     </tr>
                     {#if isOpen && bkts.length > 0}
                       {@const totalCount = bkts.reduce((s, b) => s + b.count, 0)}
-                      {@const bktColspan = rpcMetricMode === 'minMax' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)}
+                      {@const bktColspan = metricMode === 'minMax' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)}
                       <tr>
                         <td colspan={bktColspan} class="p-0">
                           <div class="py-2 px-4 space-y-1 ml-6">
@@ -439,8 +499,17 @@
             </div>
           </div>
         </div>
+      {/snippet}
+
+      {@const rpcEntries = getRpcLatency(m)}
+      {#if rpcEntries.length > 0}
+        {@render latencyBreakdown('RPC Latency', 'RPC latency data', rpcEntries, rpcExpanded, toggleRpcExpand, rpcMetricMode, (v) => rpcMetricMode = v)}
       {/if}
-    {/if}
+
+      {@const fuseEntries = getFuseLatency(m)}
+      {#if fuseEntries.length > 0}
+        {@render latencyBreakdown('FUSE Latency', 'FUSE syscall latency data', fuseEntries, fuseExpanded, toggleFuseExpand, fuseMetricMode, (v) => fuseMetricMode = v)}
+      {/if}
   {/if}
 </div>
 
@@ -458,7 +527,7 @@
   @media (min-width: 640px) { .rpc-scroll-hint { mask-image: none; -webkit-mask-image: none; } }
   .rpc-toggle-group {
     clip-path: polygon(0 3px, 3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%);
-    background: oklch(0.4 0.002 200 / 0.06);
+    background: color-mix(in oklch, var(--muted) 60%, transparent);
   }
   .rpc-toggle-btn {
     text-transform: uppercase;
@@ -473,12 +542,30 @@
   }
   .rpc-toggle-active {
     color: var(--foreground);
-    background: oklch(0.45 0.08 200 / 0.12);
+    background: color-mix(in oklch, var(--accent) 70%, transparent);
   }
   .rpc-toggle-btn:focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: -1px;
   }
-  :global(.dark) .rpc-toggle-group { background: oklch(0.35 0.002 200 / 0.12); }
-  :global(.dark) .rpc-toggle-active { background: oklch(0.5 0.08 200 / 0.15); }
+  :global(.dark) .rpc-toggle-group { background: color-mix(in oklch, var(--muted) 80%, transparent); }
+  :global(.dark) .rpc-toggle-active { background: color-mix(in oklch, var(--accent) 60%, transparent); }
+
+  /* Cluster chip sits next to the page title — label-first, link-second.
+     Quiet by default so it doesn't compete with the status badge; the
+     Layers icon carries the semantic, the name carries the identity. */
+  .session-cluster-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.125rem 0.5rem 0.125rem 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--muted-foreground);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: color 120ms cubic-bezier(0.16, 1, 0.3, 1), border-color 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .session-cluster-chip:hover { color: var(--foreground); border-color: color-mix(in oklch, var(--foreground) 40%, var(--border)); }
+  .session-cluster-chip:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 </style>
