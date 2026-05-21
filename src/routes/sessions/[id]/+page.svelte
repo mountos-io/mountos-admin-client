@@ -311,6 +311,47 @@
       </div>
     </div>
 
+    {@const cacheCfg = getMetaProp(session, 'cache') as Record<string, unknown> | undefined}
+    {#if cacheCfg}
+      <!-- Cache configuration (operator-facing knobs at mount time) -->
+      <div class="corner-brackets relative border border-border/30 rounded-sm">
+        <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+        <div class="relative p-5">
+          <h2 class="text-lg font-semibold mb-4">Cache Configuration</h2>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+            {#if cacheCfg.bufferSize}
+              <div><p class="detail-label">Buffer Size</p><p class="text-sm font-mono">{cacheCfg.bufferSize}</p></div>
+            {/if}
+            {#if cacheCfg.bufferSlack}
+              <div><p class="detail-label">Buffer Slack</p><p class="text-sm font-mono">{cacheCfg.bufferSlack}</p></div>
+            {/if}
+            {#if cacheCfg.maxDirtyBytes}
+              <div><p class="detail-label">Max Dirty Bytes</p><p class="text-sm font-mono">{cacheCfg.maxDirtyBytes}</p></div>
+            {/if}
+            {#if cacheCfg.evictionPolicy}
+              <div><p class="detail-label">Eviction Policy</p><p class="text-sm font-mono">{cacheCfg.evictionPolicy}</p></div>
+            {/if}
+            {#if cacheCfg.disableCacheDir}
+              <div><p class="detail-label">Disk Cache</p><p class="text-sm">disabled</p></div>
+            {:else}
+              {#if cacheCfg.diskCacheDir}
+                <div class="md:col-span-2"><p class="detail-label">Cache Dir</p><p class="text-sm font-mono truncate" title={String(cacheCfg.diskCacheDir)}>{cacheCfg.diskCacheDir}</p></div>
+              {/if}
+              {#if cacheCfg.diskCacheSize}
+                <div><p class="detail-label">Disk Cache Size</p><p class="text-sm font-mono">{cacheCfg.diskCacheSize}</p></div>
+              {/if}
+            {/if}
+            {#if cacheCfg.memArena}
+              <div><p class="detail-label">Meta Arena</p><p class="text-sm font-mono">{cacheCfg.memArena}</p></div>
+            {/if}
+            {#if cacheCfg.memLimit}
+              <div><p class="detail-label">Memory Limit</p><p class="text-sm font-mono">{cacheCfg.memLimit}</p></div>
+            {/if}
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <!-- Metrics -->
     {#if m.reads !== undefined}
       <div class="corner-brackets relative border border-border/30 rounded-sm">
@@ -351,6 +392,23 @@
                 <div class="metric-row"><span>Full List</span><span>{formatNum(m.metaFullFetches ?? 0)}</span></div>
               </div>
             {/if}
+            {#if m.bufArenaCapacityBytes != null}
+              {@const blocked = Number(m.bufArenaBlockedAcquires ?? 0)}
+              {@const peakPct = Number(m.bufArenaPeakPct ?? 0)}
+              {@const pressureColor = blocked > 0 || peakPct >= 95 ? 'text-destructive' : peakPct >= 80 ? 'text-amber-500' : ''}
+              <div class="metric-group">
+                <p class="detail-label">Dirty Buffer Arena</p>
+                <div class="metric-row"><span>Capacity</span><span>{formatBytes(m.bufArenaCapacityBytes ?? 0)}</span></div>
+                <div class="metric-row"><span>In Use</span><span>{formatBytes(m.bufArenaInUseBytes ?? 0)} ({(m.bufArenaInUsePct ?? 0).toFixed(1)}%)</span></div>
+                <div class="metric-row {pressureColor}"><span>Peak</span><span>{formatBytes(m.bufArenaPeakBytes ?? 0)} ({peakPct.toFixed(1)}%)</span></div>
+                <div class="metric-row"><span>Acquires</span><span>{formatNum(m.bufArenaAcquires ?? 0)}</span></div>
+                <div class="metric-row {blocked > 0 ? 'text-destructive' : ''}"><span>Blocked</span><span>{formatNum(blocked)}</span></div>
+                <div class="metric-row"><span>Waiting</span><span>{formatNum(m.bufArenaWaiting ?? 0)}</span></div>
+                {#if blocked > 0}
+                  <p class="text-xs text-muted-foreground mt-1">Writes throttled; consider raising <code class="font-mono">--buffer-size</code>.</p>
+                {/if}
+              </div>
+            {/if}
             <div class="metric-group">
               <p class="detail-label">Object Store</p>
               <div class="metric-row"><span>GET Count</span><span>{formatNum(m.objectGetCount ?? 0)}</span></div>
@@ -368,7 +426,7 @@
                 <span class="inline-flex items-baseline gap-1">
                   {#if cd.concern > 0}<span class="text-destructive font-mono">{formatNum(cd.concern)}</span>{/if}
                   {#if cd.concern > 0 && cd.benign > 0}<span class="text-muted-foreground" aria-hidden="true">/</span>{/if}
-                  {#if cd.benign > 0}<span class="text-muted-foreground font-mono" title="Pool cycling (parked + overflow shrink) — not a failure">{formatNum(cd.benign)}</span>{/if}
+                  {#if cd.benign > 0}<span class="text-muted-foreground font-mono" title="Pool cycling (parked + overflow shrink), not a failure">{formatNum(cd.benign)}</span>{/if}
                   {#if cd.concern === 0 && cd.benign === 0}<span>0</span>{/if}
                 </span>
               </div>
