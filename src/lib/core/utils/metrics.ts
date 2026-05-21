@@ -232,6 +232,22 @@ export function poolUtilColor(pct: number): string {
   if (pct < 80) return 'var(--warning)'
   return 'var(--destructive)'
 }
+
+// Client process resident-memory pressure bands. Calibrated for FUSE
+// clients (mfuse, fuseserv, hdfs-sdk) which legitimately hold large
+// page caches and may balloon under write back-pressure when the
+// upstream object store is slow — a 2 GB footprint alone is not a bug:
+//   < 512 MB  healthy        - light mounts, cold cache
+//   < 2   GB  active         - normal hot mount, expected during heavy use
+//   < 4   GB  warning        - large, plausibly write back-pressure; watch
+//   >= 4  GB  destructive    - rare in steady state; pair with rpcErrors /
+//                              connDropped to confirm a real problem
+export function memAllocColor(bytes: number): string {
+  if (bytes < 512 * 1024 * 1024) return 'var(--success)'
+  if (bytes < 2 * 1024 * 1024 * 1024) return 'var(--primary)'
+  if (bytes < 4 * 1024 * 1024 * 1024) return 'var(--warning)'
+  return 'var(--destructive)'
+}
 export function bucketBarColor(leUs: number): string {
   if (leUs <= 1000) return 'var(--success)'
   if (leUs <= 10000) return 'var(--primary)'

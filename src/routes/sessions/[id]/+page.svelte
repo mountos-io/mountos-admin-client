@@ -11,7 +11,7 @@
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
-  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, cvVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
+  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, memAllocColor, cvVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
@@ -154,6 +154,42 @@
     fuseExpanded = next
   }
 
+  // TCP connection-drop breakdown. mfuse splits drops into benign pool
+  // cycling (parked timeouts, overflow shrink) and concerning failures
+  // (remote close, transport error, healthcheck-marked unhealthy). The
+  // breakdown is only sent when nonzero; we fall back to the aggregate
+  // count with no split for older clients or non-mfuse sessions.
+  interface ConnDroppedReasons { parked?: number; overflow?: number; unhealthy?: number; remote?: number; transportErr?: number; shutdown?: number; unknown?: number }
+  interface ConnDroppedView { total: number; concern: number; benign: number; tooltip: string }
+  function getConnDropped(m: Record<string, any>): ConnDroppedView {
+    const total = Number(m.connDropped ?? 0)
+    const r = m.connDroppedReasons as ConnDroppedReasons | undefined
+    if (!r) return { total, concern: total, benign: 0, tooltip: total > 0 ? 'Pool-drop breakdown not reported by this client' : '' }
+    const parked = Number(r.parked ?? 0)
+    const overflow = Number(r.overflow ?? 0)
+    const unhealthy = Number(r.unhealthy ?? 0)
+    const remote = Number(r.remote ?? 0)
+    const transportErr = Number(r.transportErr ?? 0)
+    const shutdown = Number(r.shutdown ?? 0)
+    const unknown = Number(r.unknown ?? 0)
+    // Shutdown is benign (graceful) per the TUI's classification; unknown
+    // is back-compat for older drop sites that never tagged a reason.
+    const benign = parked + overflow + shutdown
+    const concern = unhealthy + remote + transportErr + unknown
+    const parts: string[] = []
+    if (parked) parts.push(`${parked} parked`)
+    if (overflow) parts.push(`${overflow} overflow`)
+    if (shutdown) parts.push(`${shutdown} shutdown`)
+    if (unhealthy) parts.push(`${unhealthy} unhealthy`)
+    if (remote) parts.push(`${remote} remote-close`)
+    if (transportErr) parts.push(`${transportErr} transport-err`)
+    if (unknown) parts.push(`${unknown} unknown`)
+    const tooltip = parts.length > 0
+      ? `Concerning: ${concern}, benign pool cycling: ${benign}\n${parts.join(', ')}`
+      : ''
+    return { total, concern, benign, tooltip }
+  }
+
   // Group entries into latency bands for the header summary chips.
   // Pure derivation; replaces a forEach-into-mutable-const pattern that
   // Svelte 5 hoisting could legally re-order in the future.
@@ -209,6 +245,7 @@
   {:else if session}
     {@const m = getMetrics(session)}
     {@const pid = getMetaProp(session, 'processId')}
+    {@const cd = getConnDropped(m)}
 
     {#if error}
       <div class="rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive" role="alert">Refresh failed: {error}</div>
@@ -326,7 +363,15 @@
               <p class="detail-label">Network</p>
               <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '·'}</span></div>
               <div class="metric-row {(m.connFailures ?? 0) ? 'text-destructive' : ''}"><span>Conn Failures</span><span>{formatNum(m.connFailures ?? 0)}</span></div>
-              <div class="metric-row {(m.connDropped ?? 0) ? 'text-destructive' : ''}"><span>Conn Dropped</span><span>{formatNum(m.connDropped ?? 0)}</span></div>
+              <div class="metric-row" title={cd.tooltip}>
+                <span>Conn Dropped</span>
+                <span class="inline-flex items-baseline gap-1">
+                  {#if cd.concern > 0}<span class="text-destructive font-mono">{formatNum(cd.concern)}</span>{/if}
+                  {#if cd.concern > 0 && cd.benign > 0}<span class="text-muted-foreground" aria-hidden="true">/</span>{/if}
+                  {#if cd.benign > 0}<span class="text-muted-foreground font-mono" title="Pool cycling (parked + overflow shrink) — not a failure">{formatNum(cd.benign)}</span>{/if}
+                  {#if cd.concern === 0 && cd.benign === 0}<span>0</span>{/if}
+                </span>
+              </div>
               <div class="metric-row"><span>TCP Conns</span><span>{formatNum(m.tcpActiveConns ?? 0)}</span></div>
               <div class="metric-row"><span>TCP Recv</span><span>{formatBytes(m.tcpBytesRecv ?? 0)}</span></div>
               <div class="metric-row"><span>TCP Sent</span><span>{formatBytes(m.tcpBytesSent ?? 0)}</span></div>
@@ -336,7 +381,7 @@
             <div class="metric-group">
               <p class="detail-label">Runtime</p>
               <div class="metric-row"><span>Goroutines</span><span>{formatNum(m.goroutines ?? 0)}</span></div>
-              <div class="metric-row"><span>Mem Alloc</span><span>{formatBytes(m.memAlloc ?? 0)}</span></div>
+              <div class="metric-row"><span>Mem Alloc</span><span style="color: {memAllocColor(m.memAlloc ?? 0)}">{formatBytes(m.memAlloc ?? 0)}</span></div>
               <div class="metric-row"><span>RPC Count</span><span>{formatNum(m.rpcCount ?? 0)}</span></div>
               <div class="metric-row {(m.rpcErrors ?? 0) ? 'text-destructive' : ''}"><span>RPC Errors</span><span>{formatNum(m.rpcErrors ?? 0)}</span></div>
             </div>
