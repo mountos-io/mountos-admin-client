@@ -404,11 +404,6 @@
                 <div class="metric-row"><span>Acquires</span><span>{formatNum(m.bufArenaAcquires ?? 0)}</span></div>
                 <div class="metric-row {blocked > 0 ? 'text-destructive' : ''}"><span>Blocked</span><span>{formatNum(blocked)}</span></div>
                 <div class="metric-row"><span>Waiting</span><span>{formatNum(m.bufArenaWaiting ?? 0)}</span></div>
-                {#if m.bufArenaWarmCapacityBytes != null && Number(m.bufArenaWarmCapacityBytes) > 0}
-                  <div class="metric-row"><span>Warm Pool</span><span>{formatBytes(m.bufArenaWarmBytes ?? 0)} / {formatBytes(m.bufArenaWarmCapacityBytes ?? 0)} ({(m.bufArenaWarmPct ?? 0).toFixed(1)}%)</span></div>
-                  <div class="metric-row"><span>Warm Reused</span><span>{formatNum(m.bufArenaWarmHits ?? 0)}</span></div>
-                  <div class="metric-row"><span>Warm Dropped</span><span>{formatNum(m.bufArenaWarmDrops ?? 0)}</span></div>
-                {/if}
                 {#if blocked > 0}
                   <p class="text-xs text-muted-foreground mt-1">Writes throttled; consider raising <code class="font-mono">--buffer-size</code>.</p>
                 {/if}
