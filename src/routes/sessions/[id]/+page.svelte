@@ -22,6 +22,7 @@
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
   import Layers from '@lucide/svelte/icons/layers'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
 
   const auth = useAuth()
@@ -405,7 +406,14 @@
                 <div class="metric-row {blocked > 0 ? 'text-destructive' : ''}"><span>Blocked</span><span>{formatNum(blocked)}</span></div>
                 <div class="metric-row"><span>Waiting</span><span>{formatNum(m.bufArenaWaiting ?? 0)}</span></div>
                 {#if blocked > 0}
-                  <p class="text-xs text-muted-foreground mt-1">Writes throttled; consider raising <code class="font-mono">--buffer-size</code>.</p>
+                  <div
+                    role="note"
+                    class="mt-2 flex items-start gap-2 px-2.5 py-1.5 rounded-sm border text-xs"
+                    style="border-color: color-mix(in oklab, var(--color-warning) 35%, transparent); background: color-mix(in oklab, var(--color-warning) 8%, transparent); color: var(--color-warning);"
+                  >
+                    <TriangleAlert size={13} class="mt-0.5 shrink-0" aria-hidden="true" />
+                    <span>Writes throttled; consider raising <code class="font-mono font-medium">--buffer-size</code>.</span>
+                  </div>
                 {/if}
               </div>
             {/if}
