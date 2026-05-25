@@ -23,7 +23,7 @@
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import { formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes, formatClientType, formatSessionStatus, formatDuration, formatRelative } from '$lib/core/utils/format'
-  import { toDatetimeTz, parseDatetimeTz, forkAsOfMin, forkAsOfMax } from '$lib/core/utils/forkRetention'
+  import { toDatetimeTz, parseDatetimeTz, forkAsOfMin, forkAsOfMax, gcFloorMs } from '$lib/core/utils/forkRetention'
   import { tz } from '$lib/core/stores/tz.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
@@ -43,6 +43,7 @@
   import Copy from '@lucide/svelte/icons/copy'
   import Plus from '@lucide/svelte/icons/plus'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert'
+  import GitFork from '@lucide/svelte/icons/git-fork'
   import ForkPicker from '$lib/components/volume-tree/ForkPicker.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import { Checkbox } from '$lib/components/ui/checkbox'
@@ -174,10 +175,22 @@
 
   const createForkSanitized = $derived(sanitizeForkName(createForkName.trim()))
   const createForkNameError = $derived.by(() => {
-    const err = forkNameErrorMessage(createForkSanitized)
-    if (err) return err
-    if (createForkSanitized && forks.some(f => f.name === createForkSanitized)) {
-      return `Fork "${createForkSanitized}" already exists`
+    const raw = createForkName.trim()
+    if (!raw) return ''
+    const sanitized = createForkSanitized
+    const sanitizedClean = !!sanitized && !forkNameErrorMessage(sanitized)
+    const sanitizedExists = sanitizedClean && forks.some(f => f.name === sanitized)
+    const rawErr = forkNameErrorMessage(raw)
+    if (rawErr) {
+      // Defer to the "Use <sanitized>" suggestion when sanitization yields
+      // a clean, non-colliding name; otherwise surface the raw error so
+      // issues like a trailing '-' aren't masked by a duplicate check
+      // against the silently-sanitized form.
+      if (sanitizedClean && sanitized !== raw && !sanitizedExists) return ''
+      return rawErr
+    }
+    if (forks.some(f => f.name === sanitized)) {
+      return `Fork "${sanitized}" already exists`
     }
     return ''
   })
@@ -332,12 +345,13 @@
     if (!volume) return
     editSaving = true
     try {
-      const quotaChanged = editQuota !== String(bytesToGb(volume.quotaLimit))
+      const isAdmin = !auth.isUserRole
+      const quotaChanged = isAdmin && editQuota !== String(bytesToGb(volume.quotaLimit))
       await store.editVolume(id, {
         description: editDesc.trim() || undefined,
         retentionPeriod: editRetention ? Number(editRetention) : undefined,
-        gracePeriod: editGrace ? Number(editGrace) : undefined,
-        restrictByLiveVolume: editRestrictByLive,
+        gracePeriod: isAdmin && editGrace ? Number(editGrace) : undefined,
+        restrictByLiveVolume: isAdmin ? editRestrictByLive : undefined,
       })
       if (quotaChanged) {
         const gb = Number(editQuota)
@@ -755,29 +769,44 @@
             {/if}
           </div>
           {#if editing}
-            <div class="grid gap-4 md:grid-cols-2">
+            <div class="grid gap-4 {auth.isUserRole ? '' : 'md:grid-cols-2'}">
               <div class="space-y-1.5">
-                <FieldLabel for="edit-retention" tooltip="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
-                  Snapshot Window (days)
+                <FieldLabel for="edit-retention" tooltip="Number of days back snapshot traversal can reach. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                  Day Retention Window (days)
                 </FieldLabel>
                 <Input id="edit-retention" type="number" bind:value={editRetention} placeholder="30" min="0" max="366" />
               </div>
-              <div class="space-y-1.5">
-                <FieldLabel for="edit-grace" tooltip="How long data stays before cleanup after deactivation" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
-                  Grace Period (days)
-                </FieldLabel>
-                <Input id="edit-grace" type="number" bind:value={editGrace} placeholder="14" min="0" max="91" />
-              </div>
+              {#if !auth.isUserRole}
+                <div class="space-y-1.5">
+                  <FieldLabel for="edit-grace" tooltip="After deactivation, this is the window to reactivate the volume. Once it expires, data is purged according to the cleanup options chosen at deactivation." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                    Grace Period (days)
+                  </FieldLabel>
+                  <Input id="edit-grace" type="number" bind:value={editGrace} placeholder="14" min="0" max="91" />
+                </div>
+              {/if}
             </div>
           {:else}
-            <div class="flex gap-4">
+            <div class="flex flex-wrap gap-x-6 gap-y-2">
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Snapshot Window</span>
-                <p class="mt-1 text-sm">{volume.retentionPeriod} days</p>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Day Retention Window
+                  <InfoTip text={"Number of days back snapshot traversal can reach.\n\nAn active fork pinning older data may force the effective retention beyond the configured window."} />
+                </span>
+                <p class="text-sm">{volume.retentionPeriod} days</p>
               </div>
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Grace Period</span>
-                <p class="mt-1 text-sm">{volume.gracePeriod} days</p>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Grace Period
+                  <InfoTip text={"After deactivation, this is the window to reactivate the volume.\n\nOnce it expires, data is purged according to the cleanup options chosen at deactivation."} />
+                </span>
+                <p class="text-sm">{volume.gracePeriod} days</p>
+              </div>
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Retention up to
+                  <InfoTip text={"Earliest snapshot reachable: today minus the retention window, or the oldest active fork's snapshot, whichever is older."} />
+                </span>
+                <p class="text-sm">{formatTimestamp(gcFloorMs(volume, forks))}</p>
               </div>
             </div>
           {/if}
@@ -794,7 +823,7 @@
               </div>
             </div>
           {/if}
-          {#if editing}
+          {#if editing && !auth.isUserRole}
             <div class="space-y-1.5">
               <Label for="edit-quota" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota Limit (GB)</Label>
               <Input id="edit-quota" type="number" bind:value={editQuota} placeholder="0 = unlimited" min="0" step="0.01" />
@@ -808,12 +837,12 @@
                 </Label>
               </div>
             {/if}
-          {:else}
+          {:else if !editing}
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                 Quota
                 {#if volume.restrictByLiveVolume}
-                  <Badge variant="outline" class="text-sm px-1.5 py-0 font-normal normal-case tracking-normal">live-restricted</Badge>
+                  <Badge variant="outline">Live restricted</Badge>
                 {/if}
               </span>
               <p class="mt-1 text-sm">{formatQuota(volume.totalVolume, volume.quotaLimit)}</p>
@@ -844,14 +873,14 @@
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Total
-                  <InfoTip text={"Object / block storage space used.\n\nIncludes all versions, pending, and yet-to-be-discarded file segments."} />
+                  <InfoTip text={"Object / block storage space used.\n\nIncludes all versions and yet-to-be-discarded file segments, plus in-flight multipart uploads."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.totalVolume)}</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Pending
-                  <InfoTip text={"Pending or yet-to-be-discarded file segments.\n\nThese segments are scheduled for cleanup after the retention window expires."} />
+                  <InfoTip text={"In-flight multipart uploads not yet completed or aborted."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.pendingVolume)}</p>
               </div>
@@ -965,7 +994,12 @@
                     <Badge variant="outline" class="text-sm px-1.5 py-0 font-mono">{formatBytes(node.size)}</Badge>
                   {/if}
                   {#if node.childrenCount > 0}
-                    <Badge variant="secondary" class="text-sm px-1.5 py-0">{node.childrenCount}</Badge>
+                    <Badge variant="secondary" class="text-sm px-1.5 py-0 inline-flex items-center gap-1"
+                      aria-label="{node.childrenCount} child fork{node.childrenCount === 1 ? '' : 's'}"
+                      title="{node.childrenCount} child fork{node.childrenCount === 1 ? '' : 's'}">
+                      <GitFork class="size-3" aria-hidden="true" />
+                      {node.childrenCount}
+                    </Badge>
                   {/if}
                 </div>
                 {#if node.fid !== 0}

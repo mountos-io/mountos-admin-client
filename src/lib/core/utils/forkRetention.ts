@@ -97,16 +97,25 @@ export function ceilDatetimeTz(d: Date, tz: string): string {
   return toDatetimeTz(new Date((Math.floor(ms / 60_000) + 1) * 60_000), tz)
 }
 
-// gcThreshold = min(now - retention, min over all forks of snapshot_ts).
-// Must stay aligned with the server-side retention threshold.
+// gcThreshold = min(now - retention, min over snapshot-pinned forks of snapshot_ts),
+// then clamped above the volume's root creation: nothing exists before the main
+// fork's bootstrap (root inode born_at), so retention can never reach earlier.
+// The main fork has no snapshot pin — its createdAt acts as the absolute floor.
 export function gcFloorMs(volume: Pick<Volume, 'retentionPeriod'> | null | undefined, forks: Fork[]): number {
   if (!volume) return 0
   const days = volume.retentionPeriod > 0 ? volume.retentionPeriod : DEFAULT_RETENTION_DAYS
   let floor = Date.now() - days * 86400_000
+  let volumeFloor = 0
   for (const f of forks) {
+    if (f.name === MAIN_FORK) {
+      if (f.createdAt > 0) volumeFloor = Math.floor(f.createdAt / 1000)
+      continue
+    }
+    if (!(f.snapshotTs > 0)) continue
     const snapMs = Math.floor(f.snapshotTs / 1000)
     if (snapMs < floor) floor = snapMs
   }
+  if (volumeFloor > 0 && floor < volumeFloor) floor = volumeFloor
   return floor
 }
 

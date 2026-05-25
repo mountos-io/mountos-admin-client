@@ -87,8 +87,8 @@
         encryption: encryption ? true : undefined,
         encryptionKey: (encryption && encryptionKey.trim()) ? encryptionKey.trim() : undefined,
         retentionPeriod: retentionPeriod ? Number(retentionPeriod) : undefined,
-        gracePeriod: gracePeriod ? Number(gracePeriod) : undefined,
-        quotaLimit: quotaLimit ? gbToBytes(Number(quotaLimit)) : undefined,
+        gracePeriod: !auth.isUserRole && gracePeriod ? Number(gracePeriod) : undefined,
+        quotaLimit: !auth.isUserRole && quotaLimit ? gbToBytes(Number(quotaLimit)) : undefined,
       })
       showSuccessToast('Volume created')
       if (result.encryptionKey) {
@@ -192,29 +192,33 @@
             <legend class="text-sm font-medium">Retention & Lifecycle</legend>
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-2">
-                <FieldLabel for="retentionPeriod" tooltip="How long deleted items and old versions are retained before cleanup. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data.">
-                  Snapshot Window (days)
+                <FieldLabel for="retentionPeriod" tooltip="Number of days back snapshot traversal can reach. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window.">
+                  Day Retention Window (days)
                 </FieldLabel>
                 <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="30" min="0" max="366" aria-describedby="retentionPeriod-hint" />
-                <p id="retentionPeriod-hint" class="sr-only">How long deleted items and old versions are retained before cleanup, in days</p>
+                <p id="retentionPeriod-hint" class="sr-only">Number of days back snapshot traversal can reach</p>
               </div>
-              <div class="space-y-2">
-                <FieldLabel for="gracePeriod" tooltip="How long data stays before cleanup after deactivation">
-                  Grace Period (days)
-                </FieldLabel>
-                <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" max="91" aria-describedby="gracePeriod-hint" />
-                <p id="gracePeriod-hint" class="sr-only">How long data stays before cleanup after deactivation, in days</p>
-              </div>
+              {#if !auth.isUserRole}
+                <div class="space-y-2">
+                  <FieldLabel for="gracePeriod" tooltip="After deactivation, this is the window to reactivate the volume. Once it expires, data is purged according to the cleanup options chosen at deactivation.">
+                    Grace Period (days)
+                  </FieldLabel>
+                  <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" max="91" aria-describedby="gracePeriod-hint" />
+                  <p id="gracePeriod-hint" class="sr-only">After deactivation, this is the window to reactivate the volume</p>
+                </div>
+              {/if}
             </div>
           </fieldset>
 
-          <Separator />
+          {#if !auth.isUserRole}
+            <Separator />
 
-          <div class="space-y-2">
-            <Label for="quotaLimit">Quota Limit (GB)</Label>
-            <Input id="quotaLimit" type="number" bind:value={quotaLimit} placeholder="0" min="0" step="0.01" aria-describedby="quotaLimit-hint" />
-            <p id="quotaLimit-hint" class="text-xs text-muted-foreground">0 means unlimited.</p>
-          </div>
+            <div class="space-y-2">
+              <Label for="quotaLimit">Quota Limit (GB)</Label>
+              <Input id="quotaLimit" type="number" bind:value={quotaLimit} placeholder="0" min="0" step="0.01" aria-describedby="quotaLimit-hint" />
+              <p id="quotaLimit-hint" class="text-xs text-muted-foreground">0 means unlimited.</p>
+            </div>
+          {/if}
 
           <div class="flex flex-wrap gap-3 pt-2">
             <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !canSubmit}>
