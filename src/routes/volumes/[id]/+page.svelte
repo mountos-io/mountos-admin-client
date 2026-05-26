@@ -44,6 +44,7 @@
   import Plus from '@lucide/svelte/icons/plus'
   import KeyRound from '@lucide/svelte/icons/key-round'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import X from '@lucide/svelte/icons/x'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert'
   import GitFork from '@lucide/svelte/icons/git-fork'
   import ForkPicker from '$lib/components/volume-tree/ForkPicker.svelte'
@@ -1352,9 +1353,22 @@
       {/if}
     </Dialog.Header>
     {#if deleteForkTarget && deleteForkForce}
-      <div class="flex items-center gap-2 p-2 rounded-md bg-destructive/10 text-destructive text-sm">
-        <ShieldAlert class="h-4 w-4 shrink-0" />
-        <span>Force delete: also removes {deleteForkTarget.children.length} child fork{deleteForkTarget.children.length !== 1 ? 's' : ''}: <strong>{deleteForkTarget.children.map(c => c.name).join(', ')}</strong></span>
+      <div class="flex items-start gap-2 p-2 rounded-md bg-destructive/10 text-destructive text-sm">
+        <ShieldAlert class="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+        <div class="space-y-1.5">
+          <p>
+            Force delete will also remove
+            {deleteForkTarget.children.length === 1 ? '1 child fork' : `${deleteForkTarget.children.length} child forks`}.
+          </p>
+          <ul class="space-y-1" aria-label="Child forks that will be removed">
+            {#each deleteForkTarget.children as child}
+              <li class="flex items-center gap-1.5">
+                <X class="size-3.5 shrink-0" aria-hidden="true" />
+                <span class="font-semibold font-mono">{child.name}</span>
+              </li>
+            {/each}
+          </ul>
+        </div>
       </div>
     {/if}
     <Dialog.Footer>
