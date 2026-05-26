@@ -42,6 +42,8 @@
   import * as Dialog from '$lib/components/ui/dialog'
   import Copy from '@lucide/svelte/icons/copy'
   import Plus from '@lucide/svelte/icons/plus'
+  import KeyRound from '@lucide/svelte/icons/key-round'
+  import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert'
   import GitFork from '@lucide/svelte/icons/git-fork'
   import ForkPicker from '$lib/components/volume-tree/ForkPicker.svelte'
@@ -365,14 +367,18 @@
   }
 
   function generateKeys() {
-    const uid = auth.userMountosUserId
-    if (uid == null) return
-    dialog.confirm('Generate API Keys', 'Any existing key pair for this user will be revoked.', async () => {
-      try {
-        genResult = await store.generateApiKeys(id, { userId: uid })
-        credentialsOpen = true
-      } catch (e: unknown) { handleApiError(e, 'Failed to generate keys') }
-    })
+    dialog.confirm(
+      'Generate API Token',
+      'Your existing API token for this volume will be revoked and replaced. Anything currently mounted with the old credentials will lose access.',
+      async () => {
+        try {
+          // userId is filled by the admin-client proxy from the logged-in
+          // session; the placeholder here is ignored by the backend.
+          genResult = await store.generateApiKeys(id, { userId: 0 })
+          credentialsOpen = true
+        } catch (e: unknown) { handleApiError(e, 'Failed to generate token') }
+      },
+    )
   }
 
   function closeCredentials() {
@@ -435,17 +441,21 @@
   const createForkAsOfMin = $derived(forkAsOfMin(volume, forks, createForkParent, tz.value))
   const createForkAsOfMax = $derived(forkAsOfMax(tz.value))
 
-  const activeTab = $derived($page.url.searchParams.get('tab') === 'tree' ? 'tree' : 'overview')
-  const TAB_IDS: ReadonlyArray<'overview' | 'tree'> = ['overview', 'tree']
-  function setTab(t: 'overview' | 'tree') {
+  type VolumeTabId = 'overview' | 'browse' | 'forks' | 'sessions' | 'apikeys'
+  const TAB_IDS: ReadonlyArray<VolumeTabId> = ['overview', 'browse', 'forks', 'sessions', 'apikeys']
+  const activeTab = $derived.by<VolumeTabId>(() => {
+    const v = $page.url.searchParams.get('tab') ?? ''
+    return (TAB_IDS as ReadonlyArray<string>).includes(v) ? (v as VolumeTabId) : 'overview'
+  })
+  function setTab(t: VolumeTabId) {
     const sp = new URLSearchParams($page.url.searchParams)
     if (t === 'overview') sp.delete('tab')
-    else sp.set('tab', 'tree')
+    else sp.set('tab', t)
     const qs = sp.toString()
     goto(qs ? `?${qs}` : window.location.pathname, { replaceState: true, noScroll: true, keepFocus: true })
   }
-  function handleTabKey(e: KeyboardEvent, current: 'overview' | 'tree') {
-    let next: 'overview' | 'tree' | null = null
+  function handleTabKey(e: KeyboardEvent, current: VolumeTabId) {
+    let next: VolumeTabId | null = null
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
       next = TAB_IDS[(TAB_IDS.indexOf(current) + 1) % TAB_IDS.length]
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
@@ -643,45 +653,60 @@
   </div>
   {#if volume}
     <div class="flex items-center justify-between gap-2 flex-wrap">
-      <div role="tablist" aria-label="Volume sections" class="relative border border-border/30 rounded-sm px-2 py-1 w-fit">
+      <div role="tablist" aria-label="Volume sections" class="relative border border-border/30 rounded-sm px-2 py-1 max-w-full overflow-x-auto">
         <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-        <div class="relative flex items-center gap-1">
-          <Button variant={activeTab === 'overview' ? 'primary' : 'ghost'} size="sm"
-            class="h-7 min-h-[44px] sm:min-h-7 px-3 text-xs font-mono justify-center"
-            id="volume-tab-overview" role="tab"
-            aria-selected={activeTab === 'overview'}
-            aria-controls="volume-tabpanel-overview"
-            tabindex={activeTab === 'overview' ? 0 : -1}
-            onkeydown={(e: KeyboardEvent) => handleTabKey(e, 'overview')}
-            onclick={() => setTab('overview')}>Overview</Button>
-          <Button variant={activeTab === 'tree' ? 'primary' : 'ghost'} size="sm"
-            class="h-7 min-h-[44px] sm:min-h-7 px-3 text-xs font-mono justify-center"
-            id="volume-tab-tree" role="tab"
-            aria-selected={activeTab === 'tree'}
-            aria-controls="volume-tabpanel-tree"
-            tabindex={activeTab === 'tree' ? 0 : -1}
-            onkeydown={(e: KeyboardEvent) => handleTabKey(e, 'tree')}
-            onclick={() => setTab('tree')}>Tree</Button>
+        <div class="relative flex items-center gap-1 whitespace-nowrap">
+          {#each [
+            ['overview', 'Overview', 'Overview'],
+            ['browse', 'Browse', 'Browse'],
+            ['forks', 'Forks', 'Forks'],
+            ['sessions', 'Active Sessions', 'Sessions'],
+            ['apikeys', 'API Keys', 'Keys'],
+          ] as [id, label, shortLabel]}
+            <Button variant={activeTab === id ? 'primary' : 'ghost'} size="sm"
+              class="h-7 min-h-[44px] sm:min-h-7 px-3 text-xs font-mono justify-center"
+              id="volume-tab-{id}" role="tab"
+              aria-selected={activeTab === id}
+              aria-controls="volume-tabpanel-{id}"
+              aria-label={label}
+              tabindex={activeTab === id ? 0 : -1}
+              onkeydown={(e: KeyboardEvent) => handleTabKey(e, id as VolumeTabId)}
+              onclick={() => setTab(id as VolumeTabId)}>
+              <span class="hidden sm:inline">{label}</span>
+              <span class="sm:hidden">{shortLabel}</span>
+            </Button>
+          {/each}
         </div>
       </div>
-      {#if canEdit}
-        <button type="button"
-          onclick={openCreateFork}
-          title="Create a new fork from this volume"
-          class="cyberpunk-skewed-sm group inline-flex items-center gap-2 h-9 min-h-[44px] sm:min-h-9 px-4 bg-warning/10 text-warning font-mono text-xs uppercase tracking-[0.18em] transition-colors hover:bg-warning/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-          <Plus class="h-3.5 w-3.5" aria-hidden="true" />
-          <span>New Fork</span>
-        </button>
-      {/if}
+      <div class="flex items-center gap-2 flex-wrap">
+        {#if volume?.isActive}
+          <Button variant="outline" size="sm"
+            onclick={generateKeys}
+            title="Generate an API token for your account on this volume"
+            class="gap-1.5 min-h-[44px] sm:min-h-9">
+            <KeyRound class="size-3.5" aria-hidden="true" />
+            <span>Generate API token</span>
+          </Button>
+        {/if}
+        {#if canEdit}
+          <button type="button"
+            onclick={openCreateFork}
+            title="Create a new fork from this volume"
+            class="cyberpunk-skewed-sm group inline-flex items-center gap-2 h-9 min-h-[44px] sm:min-h-9 px-4 bg-warning/10 text-warning font-mono text-xs uppercase tracking-[0.18em] transition-colors hover:bg-warning/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            <Plus class="h-3.5 w-3.5" aria-hidden="true" />
+            <span>New Fork</span>
+          </button>
+        {/if}
+      </div>
     </div>
   {/if}
   {#if loading}
     <DetailSkeleton cards={[{ rows: 5, cols: 1 }]} />
-  {:else if volume && activeTab === 'tree'}
-    <div role="tabpanel" id="volume-tabpanel-tree" aria-labelledby="volume-tab-tree" tabindex={0}>
+  {:else if volume && activeTab === 'browse'}
+    <div role="tabpanel" id="volume-tabpanel-browse" aria-labelledby="volume-tab-browse" tabindex={0}>
       <TreeTab volumeId={id} {volume} {forks} />
     </div>
-  {:else if volume}
+  {:else if volume && activeTab === 'overview'}
     <div role="tabpanel" id="volume-tabpanel-overview" aria-labelledby="volume-tab-overview" tabindex={0} class="space-y-6">
     {#if !volume.isActive}
       <section
@@ -934,7 +959,9 @@
         {/if}
       </CardContent>
     </Card>
-
+    </div>
+  {:else if volume && activeTab === 'forks'}
+    <div role="tabpanel" id="volume-tabpanel-forks" aria-labelledby="volume-tab-forks" tabindex={0}>
     <Card cornerBrackets>
       <CardHeader>
         <div class="flex items-center justify-between flex-wrap gap-2">
@@ -1106,7 +1133,9 @@
         {/if}
       </CardContent>
     </Card>
-
+    </div>
+  {:else if volume && activeTab === 'sessions'}
+    <div role="tabpanel" id="volume-tabpanel-sessions" aria-labelledby="volume-tab-sessions" tabindex={0}>
     {#if auth.can('clientSessions', 'read')}
       <Card>
         <CardHeader>
@@ -1172,28 +1201,29 @@
           {/if}
         </CardContent>
       </Card>
+    {:else}
+      <EmptyState title="Sessions restricted" description="Your role does not allow viewing client sessions for this volume." />
     {/if}
-
-    {#if volume.isActive && (auth.can('volumes', 'update') || auth.userMountosUserId != null)}
-      <Separator />
-
+    </div>
+  {:else if volume && activeTab === 'apikeys'}
+    <div role="tabpanel" id="volume-tabpanel-apikeys" aria-labelledby="volume-tab-apikeys" tabindex={0}>
+    {#if volume.isActive}
       <Card>
         <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
         <CardContent class="space-y-4">
-          {#if auth.userMountosUserId != null}
-            <fieldset class="space-y-3">
-              <legend class="text-sm font-semibold">Generate API Keys</legend>
-              <div class="flex items-end gap-3">
-                <div class="w-full max-w-64 space-y-1">
-                  <Label for="api-key-user">User</Label>
-                  <Input id="api-key-user" value={auth.username ?? `User #${auth.userMountosUserId}`} readonly />
-                </div>
-                <Button size="sm" class="shrink-0" aria-describedby="api-key-user" onclick={generateKeys}>Generate</Button>
+          <fieldset class="space-y-3">
+            <legend class="text-sm font-semibold">Generate your API token</legend>
+            <div class="flex items-end gap-3">
+              <div class="w-full max-w-64 space-y-1">
+                <Label for="api-key-user">User</Label>
+                <Input id="api-key-user" value={auth.username ?? auth.user?.name ?? 'current session'} readonly />
               </div>
-            </fieldset>
-          {/if}
+              <Button size="sm" class="shrink-0" aria-describedby="api-key-user" onclick={generateKeys}>Generate</Button>
+            </div>
+            <p class="text-xs text-muted-foreground">Mints an access key and secret pair bound to your logged-in account. The previous token for your account (if any) is revoked.</p>
+          </fieldset>
           {#if auth.can('volumes', 'update')}
-            {#if auth.userMountosUserId != null}<Separator />{/if}
+            <Separator />
             <div class="space-y-4 rounded-md bg-destructive/5 p-3">
               <fieldset class="space-y-3">
                 <legend class="text-sm font-semibold">Revoke by User</legend>
@@ -1252,7 +1282,15 @@
           {/if}
         </CardContent>
       </Card>
+    {:else if !volume.isActive}
+      <EmptyState title="Volume deactivated" description="API tokens cannot be generated or rotated while the volume is deactivated." />
+    {:else}
+      <EmptyState title="API tokens restricted" description="Your role does not allow managing API tokens for this volume." />
     {/if}
+    </div>
+  {:else if volume}
+    <div role="tabpanel" id="volume-tabpanel-overview" aria-labelledby="volume-tab-overview" tabindex={0}>
+      <p class="text-sm text-muted-foreground">Unknown tab.</p>
     </div>
   {:else}
     <p class="text-muted-foreground">Volume not found.</p>

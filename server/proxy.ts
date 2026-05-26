@@ -20,6 +20,22 @@ const USER_ROLE_FORBIDDEN_VOLUME_FIELDS = ['gracePeriod', 'restrictByLiveVolume'
 const VOLUME_EDIT_PATH = /^\/api\/v1\/volumes\/\d+\/edit$/
 const VOLUME_QUOTA_PATH = /^\/api\/v1\/volumes\/\d+\/quota$/
 const VOLUME_CREATE_PATH = '/api/v1/volumes/create'
+const VOLUME_API_KEYS_GENERATE_PATH = /^\/api\/v1\/volumes\/\d+\/api-keys\/generate$/
+
+// Self-service token generation: the frontend never sends a userId — this
+// proxy injects it from the logged-in session before forwarding to appserv.
+// Appserv enforces that the user can only generate keys for their own user,
+// so blindly trusting the body would let a tampered client mint keys for
+// someone else. Overwrite, don't merge.
+function injectGenerateApiKeysUserId(body: string | undefined, adminUser: AdminUser | undefined): { body: string; error?: undefined } | { body?: undefined; error: string } {
+  if (!adminUser?.userId) return { error: 'no linked user id on this account; cannot generate API token' }
+  let parsed: Record<string, unknown> = {}
+  if (body) {
+    try { parsed = JSON.parse(body) as Record<string, unknown> } catch { parsed = {} }
+  }
+  parsed.userId = adminUser.userId
+  return { body: JSON.stringify(parsed) }
+}
 
 function rejectUserRoleVolumeFields(path: string, method: string, body: string | undefined): string | null {
   if (!body) return null
@@ -43,7 +59,7 @@ proxy.all('/api/v1/*', async (c) => {
   const url = new URL(c.req.url)
 
   const method = c.req.method
-  const body = ['GET', 'HEAD'].includes(method) ? undefined : await c.req.text()
+  let body = ['GET', 'HEAD'].includes(method) ? undefined : await c.req.text()
 
   const adminUser = c.get('mountosUser') as AdminUser | undefined
   if (adminUser?.role === ROLE.user) {
@@ -51,6 +67,14 @@ proxy.all('/api/v1/*', async (c) => {
     if (blocked) {
       return c.json({ status: 'failure', message: `field not permitted for this role: ${blocked}` }, 403)
     }
+  }
+
+  if (method === 'POST' && VOLUME_API_KEYS_GENERATE_PATH.test(upstreamPath)) {
+    const r = injectGenerateApiKeysUserId(body, adminUser)
+    if (r.error) {
+      return c.json({ status: 'failure', message: r.error }, 400)
+    }
+    body = r.body
   }
 
   try {
