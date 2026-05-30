@@ -39,6 +39,7 @@
     type SortCol,
     type SortDir,
   } from "$lib/core/utils/metrics";
+  import InfoTip from "$lib/components/shared/InfoTip.svelte";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ChevronsDownUp from "@lucide/svelte/icons/chevrons-down-up";
   import ChevronsUpDown from "@lucide/svelte/icons/chevrons-up-down";
@@ -209,6 +210,13 @@
 
   function fmtNum(n: number): string { return n.toLocaleString() }
   function fmtRatio(n: number): string { return `${(n * 100).toFixed(1)}%` }
+
+  // Raft quorum: 3 instances is ideal; fewer warns, more is over-provisioned.
+  const RAFT_NODES_IDEAL = 3;
+  function raftNodesColor(n: number): string {
+    if (n === RAFT_NODES_IDEAL) return 'var(--success)';
+    return n < RAFT_NODES_IDEAL ? 'var(--warning)' : 'var(--destructive)';
+  }
 
   // Sections rendered inline in the new Process/System cards
   const inlineSections = new Set([
@@ -604,9 +612,18 @@
     <CardContent class="pt-0">
       <div class="grid grid-cols-1 gap-y-1.5 text-sm font-mono">
         {#each sec.scalars as entry}
+          {@const isRaftNodes = sec.name === 'Raft' && entry.name === 'raft_cluster_nodes' && typeof entry.value === 'number'}
           <div class="flex justify-between gap-2">
-            <span class="text-muted-foreground shrink-0 scalar-label">{entry.name.replaceAll('_', ' ')}</span>
-            <span class="tabular-nums font-medium text-right truncate">{fmtScalar(entry.name, entry.value)}</span>
+            <span class="text-muted-foreground shrink-0 scalar-label inline-flex items-center gap-1">
+              {entry.name.replaceAll('_', ' ')}
+              {#if isRaftNodes}
+                <InfoTip text="Ideal Raft cluster size is **3 instances** for quorum. Fewer than 3 reduces fault tolerance; more than 3 adds coordination overhead or signals nodes joined under a wrong cluster ID." />
+              {/if}
+            </span>
+            <span
+              class="tabular-nums font-medium text-right truncate"
+              style={isRaftNodes ? `color: ${raftNodesColor(entry.value as number)}` : ''}
+            >{fmtScalar(entry.name, entry.value)}</span>
           </div>
         {/each}
       </div>
