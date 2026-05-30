@@ -776,7 +776,7 @@
           {@render sortableHead("opsPerSec", "Ops/s")}
           {@render sortableHead("durationSec", "Total")}
           {@render sortableHead("avgLatencyUs", "Avg")}
-          {@render sortableHead("cv", "\u03B2")}
+          {@render sortableHead("cv", "\u03C3/\u03BC")}
           {#if metricMode === "minMax"}
             {@render sortableHead("minUs", "Min")}
             {@render sortableHead("maxUs", "Max")}
