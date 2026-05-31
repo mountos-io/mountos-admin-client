@@ -174,7 +174,7 @@
     return id == null ? null : clusters.find(c => c.id === id) ?? null
   }
   function clusterName(id: number | null) {
-    if (id == null) return '—'
+    if (id == null) return '-'
     return multiClusters.find(c => c.id === id)?.name ?? `#${id}`
   }
   function statusDot(s: MockNode['status']) {
@@ -184,7 +184,7 @@
 
 <div class="mx-auto max-w-7xl space-y-10 p-8">
   <header class="border-b border-border/40 pb-4">
-    <h1 class="text-2xl font-bold tracking-tight">Region Clusters — design preview</h1>
+    <h1 class="text-2xl font-bold tracking-tight">Region Clusters (design preview)</h1>
     <p class="mt-1 text-sm text-muted-foreground">
       Mock data. Pills cluster picker + List/Graphical topology toggle from the current design, both cluster-aware.
     </p>
@@ -227,7 +227,7 @@
         </div>
       </div>
 
-      <!-- Cluster picker — Pills -->
+      <!-- Cluster picker (Pills) -->
       <div class="flex flex-wrap items-center gap-1.5">
         <Layers class="h-3.5 w-3.5 text-muted-foreground" />
         <span class="mr-1 text-[10px] uppercase tracking-wider text-muted-foreground">cluster</span>
@@ -485,7 +485,7 @@
         </div>
       </div>
 
-      <!-- Cluster picker — Pills with overflow -->
+      <!-- Cluster picker (Pills with overflow) -->
       <div class="flex flex-wrap items-center gap-1.5">
         <Layers class="h-3.5 w-3.5 text-muted-foreground" />
         <span class="mr-1 text-[10px] uppercase tracking-wider text-muted-foreground">cluster</span>

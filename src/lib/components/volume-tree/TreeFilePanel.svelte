@@ -2,7 +2,7 @@
   // Side-drawer dialog. Uses bits-ui DialogPrimitive directly (not the
   // project's $lib/components/ui/dialog wrapper) because the wrapper centers
   // its Content and we need a right-side drawer. Focus trap, Esc, portal,
-  // and inert are still delegated to bits-ui — the divergence is positioning
+  // and inert are still delegated to bits-ui; the divergence is positioning
   // only. The Versions modal (centered) uses the wrapper.
   import type { ForkEntryDetail } from '$lib/core/api/types'
   import { Dialog as DialogPrimitive } from 'bits-ui'

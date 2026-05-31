@@ -1,8 +1,8 @@
 import { api } from '$lib/core/stores/client.svelte'
 import { ApiError } from '$lib/core/api/errors'
 
-// Minimum record kept per id — enough to render a badge without exposing
-// email / accountId. Persisted across page navigations in localStorage;
+// Minimum record kept per id (enough to render a badge without exposing
+// email / accountId). Persisted across page navigations in localStorage;
 // user names are stable so a 24h TTL is generous and a "missing" marker
 // (`v: null`) shaves the request rate for ids the admin DB doesn't
 // recognise (deleted users, system actions).
@@ -58,13 +58,13 @@ async function flushPending() {
       got.add(u.id)
       cache.set(u.id, { v: { id: u.id, username: u.username, name: u.name }, t: now })
     }
-    // Ids the server didn't return are treated as "unresolvable" — cache
+    // Ids the server didn't return are treated as "unresolvable"; cache
     // a null sentinel so we don't re-request them every render.
     for (const id of batch) if (!got.has(id)) cache.set(id, { v: null, t: now })
     writeCache(cache)
     cacheState.rev++
   } catch (e) {
-    // Swallow — a transient failure shouldn't poison the cache. Leave the
+    // Swallow; a transient failure shouldn't poison the cache. Leave the
     // ids out so the next render schedules another attempt.
     if (!(e instanceof ApiError)) console.warn('[users.bulk] failed:', e)
   } finally {
@@ -83,7 +83,7 @@ function scheduleFlush() {
 }
 
 export const userCache = {
-  // Reactive read — touch this in $derived/$effect to re-render when
+  // Reactive read; touch this in $derived/$effect to re-render when
   // resolved names arrive.
   get rev() { return cacheState.rev },
 
@@ -108,11 +108,11 @@ export const userCache = {
     if (added > 0) scheduleFlush()
   },
 
-  // UI helper — returns a display string for a user id. Schedules a fetch
+  // UI helper returning a display string for a user id. Schedules a fetch
   // for unknown ids and returns "user#<id>" until one resolves; returns
-  // "—" for empty/zero ids and "user#<id> (gone)" for unresolvable ones.
+  // "-" for empty/zero ids and "user#<id> (gone)" for unresolvable ones.
   display(id: number): string {
-    if (!id || id <= 0) return '—'
+    if (!id || id <= 0) return '-'
     const e = cache.get(id)
     if (e === undefined) {
       this.ensure([id])

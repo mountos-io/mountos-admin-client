@@ -32,7 +32,7 @@ export function clusterNameErrorMessage(name: string): string {
   return ''
 }
 
-// Fork name rules — must match S3 bucket naming since forks back S3 buckets.
+// Fork name rules; must match S3 bucket naming since forks back S3 buckets.
 const FORK_NAME_MIN = 3
 const FORK_NAME_MAX = 63
 const FORK_NAME_RESERVED = new Set(['main', 'auto'])
@@ -66,7 +66,7 @@ export function isForkNameValid(name: string): boolean {
 
 // Mirrors Go SanitizeForkName: lowercase, strip invalid chars,
 // collapse adjacent dots/hyphens, trim non-alnum edges, truncate.
-// Does not enforce reserved-name or IP-shape rules — validate after.
+// Does not enforce reserved-name or IP-shape rules; validate after.
 export function sanitizeForkName(name: string, maxLen = FORK_NAME_MAX): string {
   let out = ''
   let prev = ''

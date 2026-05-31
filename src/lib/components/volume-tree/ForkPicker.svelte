@@ -33,7 +33,7 @@
 
   // Position the portalled panel under (or above) the trigger. We compute
   // viewport-relative coordinates from the trigger, then subtract the
-  // dialog's own offset when the panel is portalled into a dialog —
+  // dialog's own offset when the panel is portalled into a dialog;
   // bits-ui Dialog.Content uses `transform` for centering, which makes
   // `position: fixed` resolve against the dialog instead of the viewport.
   function computePanelPos() {
@@ -111,7 +111,7 @@
 
   // Portal action: hoists the panel out of clipped/scrolled ancestors so
   // it overlays cleanly. When the trigger lives inside a bits-ui Dialog,
-  // we keep the panel INSIDE the dialog content — moving it to body
+  // we keep the panel INSIDE the dialog content; moving it to body
   // would make bits-ui's outside-click detector dismiss the dialog the
   // moment the operator clicks an option. The trigger search ascends
   // until it finds a [role=dialog] or falls through to document.body.

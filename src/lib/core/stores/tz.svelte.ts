@@ -21,7 +21,7 @@ function read(): string {
   return v
 }
 
-// abbr() runs at module evaluation and after every `.set` — memoised so
+// abbr() runs at module evaluation and after every `.set`, memoised so
 // consumer reads (TreeContextChip, TreeFilePanel, listbox triggers) don't
 // reconstruct an Intl.DateTimeFormat on every render.
 function abbr(tz: string, now: Date = new Date()): string {

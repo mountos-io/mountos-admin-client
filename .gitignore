@@ -10,3 +10,4 @@ dist/
 *.local
 .certs/
 .github/hooks/context-mode.json
+.impeccable/

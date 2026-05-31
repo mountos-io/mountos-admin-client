@@ -143,7 +143,7 @@ export function formatTotalTime(secs: number): string {
   return `${(secs / 3600).toFixed(1)}hr`
 }
 export function formatOpsPerSec(avgUs: number): string {
-  if (avgUs <= 0) return '\u2014'
+  if (avgUs <= 0) return '-'
   const ops = 1e6 / avgUs
   if (ops >= 1000) return `${(ops / 1000).toFixed(1)}K`
   return ops.toFixed(1)
@@ -198,7 +198,7 @@ export function interpolatePercentile(buckets: HistBucket[], pct: number): numbe
   return buckets[buckets.length - 1]?.leUs ?? 0
 }
 export function fmtPercentile(buckets: HistBucket[], pct: number): string {
-  if (buckets.length === 0) return '\u2014'
+  if (buckets.length === 0) return '-'
   return formatUs(interpolatePercentile(buckets, pct))
 }
 
@@ -236,7 +236,7 @@ export function poolUtilColor(pct: number): string {
 // Client process resident-memory pressure bands. Calibrated for FUSE
 // clients (mfuse, fuseserv, hdfs-sdk) which legitimately hold large
 // page caches and may balloon under write back-pressure when the
-// upstream object store is slow — a 2 GB footprint alone is not a bug:
+// upstream object store is slow; a 2 GB footprint alone is not a bug:
 //   < 512 MB  healthy        - light mounts, cold cache
 //   < 2   GB  active         - normal hot mount, expected during heavy use
 //   < 4   GB  warning        - large, plausibly write back-pressure; watch

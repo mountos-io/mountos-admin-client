@@ -29,7 +29,7 @@ Provider ──[ephemeral JWT 30-60s]──► Dashboard ──[session JWT 24h]
 | `DASHBOARD_VERIFICATION_KEY` | Ed25519 public key (base64, 32 bytes) for verifying session/refresh tokens | Derive from signing key: `openssl pkey -in <private.pem> -pubout -outform DER \| tail -c 32 \| base64`. Store in vault. |
 | `MOUNTOS_APPSERV_URL` | Appserv base URL for API proxying | Deployment-specific (e.g., `https://appserv.example.com`) |
 
-All 4 are required — the server exits on startup if any are missing.
+All 4 are required; the server exits on startup if any are missing.
 
 Provider bootstrap (`src/provider/server/bootstrap.ts`) runs before env validation, allowing providers to load secrets from vault or other sources.
 

@@ -22,7 +22,7 @@ const VOLUME_QUOTA_PATH = /^\/api\/v1\/volumes\/\d+\/quota$/
 const VOLUME_CREATE_PATH = '/api/v1/volumes/create'
 const VOLUME_API_KEYS_GENERATE_PATH = /^\/api\/v1\/volumes\/\d+\/api-keys\/generate$/
 
-// Self-service token generation: the frontend never sends a userId — this
+// Self-service token generation: the frontend never sends a userId;
 // proxy injects it from the logged-in session before forwarding to appserv.
 // Appserv enforces that the user can only generate keys for their own user,
 // so blindly trusting the body would let a tampered client mint keys for

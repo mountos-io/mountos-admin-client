@@ -50,14 +50,14 @@
 
   const minBound = $derived(forkAsOfMin(volume, forks, forkName, tz.value))
   const maxBound = $derived.by(() => {
-    // `void nowTick` is a deliberate dependency marker — Svelte 5 tracks
+    // `void nowTick` is a deliberate dependency marker; Svelte 5 tracks
     // every $state read inside $derived.by, including those discarded by
     // the void operator. Re-derives on minute tick.
     void nowTick
     return forkAsOfMax(tz.value)
   })
 
-  // Floor of valid range (ms) — for clamping preset selections so we never
+  // Floor of valid range (ms), for clamping preset selections so we never
   // fall outside the retention window.
   const minMs = $derived(volume ? Math.max(gcFloorMs(volume, forks), forkAnchorFloorMs(forks, forkName)) : 0)
   const maxMs = $derived(Math.floor(nowTick / 60_000) * 60_000)
@@ -103,12 +103,12 @@
 
   // Compact echo: full tz-stamped wall clock so the operator never has to
   // mentally translate the input. Always shows even when the input mirrors
-  // the same zone — keeps the affordance consistent across zones.
+  // the same zone, keeps the affordance consistent across zones.
   const tzEcho = $derived(asOf == null ? '' : formatTzShort(asOf / 1000, tz.value))
 
   // Quick presets (most-recent first). Labelled with a leading "-" so the
   // chip reads "now minus N". Disabled when they would fall outside the
-  // volume's retention window — surfaces the bound without a 4xx round-trip.
+  // volume's retention window; surfaces the bound without a 4xx round-trip.
   const PRESETS: { label: string; offsetMs: number }[] = [
     { label: '-5m', offsetMs: 5  * 60_000 },
     { label: '-1h', offsetMs: 60 * 60_000 },
@@ -157,7 +157,7 @@
 
   <!-- Quick presets: visible whether you're in Live or At-time so an operator
        can jump straight into the snapshot view with one click. -->
-  <div class="flex items-center gap-1 flex-wrap justify-end" role="group" aria-label="Quick presets — offsets from now">
+  <div class="flex items-center gap-1 flex-wrap justify-end" role="group" aria-label="Quick presets - offsets from now">
     {#each PRESETS as p (p.label)}
       {@const disabled = presetDisabled(p.offsetMs)}
       {@const active = presetActive(p.offsetMs)}

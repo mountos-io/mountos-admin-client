@@ -118,7 +118,7 @@ app.get('/metrics', async (c) => {
   return c.text(metrics, 200, { 'Content-Type': registry.contentType })
 })
 
-// Provider token exchange — token in body, not URL
+// Provider token exchange (token in body, not URL)
 app.post('/api/auth/exchange', async (c) => {
   try {
     const { token: providerToken } = await c.req.json<{ token: string }>()
@@ -151,7 +151,7 @@ async function enrichUserResponse(user: AdminUser, extra: Record<string, unknown
   return result
 }
 
-// Session verification & cookie recovery — before auth middleware
+// Session verification & cookie recovery, before auth middleware
 app.get('/api/me', async (c) => {
   const authHeader = c.req.header('authorization')
   const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
@@ -234,7 +234,7 @@ app.use('/api/*', auth)
 app.use('/api/*', createThrottle(providerThrottleConfig))
 app.use('/api/v1/*', authz)
 
-// WebAuthn ceremony endpoints (before step-up — chicken-and-egg)
+// WebAuthn ceremony endpoints (before step-up; chicken-and-egg)
 app.post('/api/webauthn/register/options', async (c) => {
   const user = c.get('mountosUser')
   const existing = await webauthnManager.listCredentials(user.id)

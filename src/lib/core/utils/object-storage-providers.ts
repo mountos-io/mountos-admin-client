@@ -6,7 +6,7 @@ export interface ObjectStorageProvider {
   regionPlaceholder: string
   // Per-provider field-label overrides. Azure uses different terminology
   // (container vs bucket, account name vs access key, account key vs secret key)
-  // — the form picks these up to keep the UI accurate without renaming the
+  // the form picks these up to keep the UI accurate without renaming the
   // underlying storage payload fields.
   bucketLabel?: string
   bucketPlaceholder?: string

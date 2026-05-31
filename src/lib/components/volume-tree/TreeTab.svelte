@@ -192,7 +192,7 @@
   function submitSearch() {
     const trimmed = searchDraft.trim()
     if (!trimmed) return
-    // Searching is an exploration step — keep it in history so Back unwinds.
+    // Searching is an exploration step; keep it in history so Back unwinds.
     updateUrl({ q: trimmed, exact: searchExact ? '1' : null })
   }
   function clearSearch() {
@@ -207,7 +207,7 @@
       const parent = m.path.replace(/\/[^/]+$/, '') || '/'
       updateUrl({ path: parent, q: null, exact: null })
       searchOpen = false
-      // Use inode for the detail lookup — search results may carry a path
+      // Use inode for the detail lookup; search results may carry a path
       // built from a partial parent walk (orphan rows), so a path-based
       // re-resolve would 404. Inode is the stable identifier.
       void openDetailByInode(m.inode, m.path)
@@ -275,7 +275,7 @@
   let detailError = $state<string | null>(null)
   let detailCtrl: AbortController | null = null
 
-  // Last identifier used to open the detail panel — retry replays whichever
+  // Last identifier used to open the detail panel; retry replays whichever
   // mode opened the panel (path for breadcrumb nav, inode for search picks).
   let panelInode = $state(0)
 
@@ -291,7 +291,7 @@
     detailError = null
     try {
       detail = await api.volumeForkEntries.get(volumeId, forkName, p, inode, asOfMicros() ?? 0, detailCtrl.signal)
-      // Backend reconstructs path from inode walk when path is empty — sync
+      // Backend reconstructs path from inode walk when path is empty; sync
       // panelPath so breadcrumbs/version-modal use the resolved value.
       if (!p && detail?.path) panelPath = detail.path
     } catch (e) {

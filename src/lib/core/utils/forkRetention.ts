@@ -34,7 +34,7 @@ export function toDatetimeTz(d: Date, tz: string): string {
 // Returns ms since epoch (UTC), or NaN if `tz` is invalid or the wall clock
 // is non-existent (DST spring-forward gap). Converges in ≤2 iterations for
 // normal inputs; the third iteration acts as a convergence guard for the
-// fall-back-hour duplicate (two instants render to the same wall clock —
+// fall-back-hour duplicate (two instants render to the same wall clock,
 // we pick the later one, matching the browser datetime-local behaviour).
 export function parseDatetimeTz(value: string, tz: string): number {
   if (!value) return NaN
@@ -76,14 +76,14 @@ export function parseDatetimeTz(value: string, tz: string): number {
       // DST fall-back: the same wall clock maps to two UTC instants one
       // hour apart (e.g. 01:30 PDT = 08:30 UTC vs 01:30 PST = 09:30 UTC).
       // Match the browser's datetime-local convention and prefer the later
-      // (standard-time) instant — probe +1 h.
+      // (standard-time) instant; probe +1 h.
       const later = guess + 3_600_000
       if (render(later) === rendered) return later
       return guess
     }
     guess += delta
   }
-  // Did not converge — DST spring-forward gap. Caller should fall back to a
+  // Did not converge (DST spring-forward gap). Caller should fall back to a
   // valid bound (e.g. the input's `max`) rather than acting on a wrong ms.
   return NaN
 }
@@ -100,7 +100,7 @@ export function ceilDatetimeTz(d: Date, tz: string): string {
 // gcThreshold = min(now - retention, min over snapshot-pinned forks of snapshot_ts),
 // then clamped above the volume's root creation: nothing exists before the main
 // fork's bootstrap (root inode born_at), so retention can never reach earlier.
-// The main fork has no snapshot pin — its createdAt acts as the absolute floor.
+// The main fork has no snapshot pin; its createdAt acts as the absolute floor.
 export function gcFloorMs(volume: Pick<Volume, 'retentionPeriod'> | null | undefined, forks: Fork[]): number {
   if (!volume) return 0
   const days = volume.retentionPeriod > 0 ? volume.retentionPeriod : DEFAULT_RETENTION_DAYS

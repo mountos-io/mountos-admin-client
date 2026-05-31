@@ -279,7 +279,7 @@
   })
 
   // Alerts lifecycle. lastAlertCluster is a plain (non-reactive) gate so
-  // writing it inside the effect below cannot retrigger that effect — using
+  // writing it inside the effect below cannot retrigger that effect; using
   // $state here would loop with effect_update_depth_exceeded.
   let lastAlertCluster: number | null = null
   $effect(() => {

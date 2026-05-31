@@ -56,7 +56,7 @@ function formatLimit(value: number, unit?: string): string {
 
 // formatBytes renders a factual byte count. 0 → "0 B" (NOT ∞).
 function formatBytes(value: number): string {
-  if (value < 0) return '—'
+  if (value < 0) return '-'
   const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
   let i = 0
   let v = value

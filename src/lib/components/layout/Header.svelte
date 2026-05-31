@@ -136,7 +136,7 @@
         type="button"
         class="flex items-center gap-1.5 rounded-sm px-2 min-h-[44px] text-sm font-medium transition-colors hover:bg-accent/50"
         onclick={() => settingsModal.show('license')}
-        title="License storage quota exceeded — click for details"
+        title="License storage quota exceeded - click for details"
         aria-label="License storage quota exceeded. Total used: {licenseStore.formatBytes(q.totalVolume)}{cap > 0 ? `, cap: ${licenseStore.formatBytes(cap)}` : ''}"
       >
         <AlertOctagon class="size-3.5 text-destructive" aria-hidden="true" />
