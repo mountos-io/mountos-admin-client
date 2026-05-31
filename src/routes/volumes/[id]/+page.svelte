@@ -259,6 +259,8 @@
   let editDesc = $state('')
   let editRetention = $state('')
   let editGrace = $state('')
+  let editForkGrace = $state('')
+  let editEventLog = $state('')
   let editQuota = $state('')
   let editRestrictByLive = $state(false)
   let editSaving = $state(false)
@@ -268,6 +270,8 @@
       editDesc !== (volume.description ?? '') ||
       editRetention !== String(volume.retentionPeriod) ||
       editGrace !== String(volume.gracePeriod) ||
+      editForkGrace !== String(volume.forkGracePeriod) ||
+      editEventLog !== String(volume.eventLogRetentionPeriod) ||
       editQuota !== String(bytesToGb(volume.quotaLimit)) ||
       editRestrictByLive !== volume.restrictByLiveVolume
     )
@@ -277,6 +281,8 @@
     editDesc = v.description ?? ''
     editRetention = String(v.retentionPeriod)
     editGrace = String(v.gracePeriod)
+    editForkGrace = String(v.forkGracePeriod)
+    editEventLog = String(v.eventLogRetentionPeriod)
     editQuota = String(bytesToGb(v.quotaLimit))
     editRestrictByLive = v.restrictByLiveVolume
   }
@@ -353,6 +359,8 @@
       await store.editVolume(id, {
         description: editDesc.trim() || undefined,
         retentionPeriod: editRetention ? Number(editRetention) : undefined,
+        forkGracePeriod: editForkGrace ? Number(editForkGrace) : undefined,
+        eventLogRetentionPeriod: editEventLog ? Number(editEventLog) : undefined,
         gracePeriod: isAdmin && editGrace ? Number(editGrace) : undefined,
         restrictByLiveVolume: isAdmin ? editRestrictByLive : undefined,
       })
@@ -795,7 +803,7 @@
             {/if}
           </div>
           {#if editing}
-            <div class="grid gap-4 {auth.isUserRole ? '' : 'md:grid-cols-2'}">
+            <div class="grid gap-4 md:grid-cols-2">
               <div class="space-y-1.5">
                 <FieldLabel for="edit-retention" tooltip="Number of days back snapshot traversal can reach. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Day Retention Window (days)
@@ -810,6 +818,18 @@
                   <Input id="edit-grace" type="number" bind:value={editGrace} placeholder="14" min="0" max="91" />
                 </div>
               {/if}
+              <div class="space-y-1.5">
+                <FieldLabel for="edit-fork-grace" tooltip="After a named fork is deactivated, the window to restore it before its data is permanently cleaned up." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                  Fork Grace Period (days)
+                </FieldLabel>
+                <Input id="edit-fork-grace" type="number" bind:value={editForkGrace} placeholder="1" min="0" max="30" />
+              </div>
+              <div class="space-y-1.5">
+                <FieldLabel for="edit-event-log" tooltip="How many days of file/folder change events are kept for this volume. 0 disables change-event logging (saves resources)." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                  Event Log Retention (days)
+                </FieldLabel>
+                <Input id="edit-event-log" type="number" bind:value={editEventLog} placeholder="0" min="0" max="30" />
+              </div>
             </div>
           {:else}
             <div class="flex flex-wrap gap-x-6 gap-y-2">
@@ -826,6 +846,20 @@
                   <InfoTip text={"After deactivation, this is the window to reactivate the volume.\n\nOnce it expires, data is purged according to the cleanup options chosen at deactivation."} />
                 </span>
                 <p class="text-sm">{volume.gracePeriod} days</p>
+              </div>
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Fork Grace Period
+                  <InfoTip text="After a named fork is deactivated, the window to restore it before its data is permanently cleaned up." />
+                </span>
+                <p class="text-sm">{volume.forkGracePeriod} days</p>
+              </div>
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Event Log Retention
+                  <InfoTip text="How many days of file/folder change events are kept for this volume. 0 disables change-event logging (saves resources)." />
+                </span>
+                <p class="text-sm">{volume.eventLogRetentionPeriod} days</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">

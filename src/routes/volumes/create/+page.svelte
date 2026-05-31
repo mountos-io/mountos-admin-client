@@ -63,6 +63,8 @@
   let encryptionKeyRef = $state<HTMLInputElement | null>(null)
   let retentionPeriod = $state('30')
   let gracePeriod = $state('14')
+  let forkGracePeriod = $state('1')
+  let eventLogRetentionPeriod = $state('0')
   let quotaLimit = $state('')
   let submitting = $state(false)
   let createResult = $state<{ id: number; encryptionKey: string } | null>(null)
@@ -87,6 +89,8 @@
         encryption: encryption ? true : undefined,
         encryptionKey: (encryption && encryptionKey.trim()) ? encryptionKey.trim() : undefined,
         retentionPeriod: retentionPeriod ? Number(retentionPeriod) : undefined,
+        forkGracePeriod: forkGracePeriod ? Number(forkGracePeriod) : undefined,
+        eventLogRetentionPeriod: eventLogRetentionPeriod ? Number(eventLogRetentionPeriod) : undefined,
         gracePeriod: !auth.isUserRole && gracePeriod ? Number(gracePeriod) : undefined,
         quotaLimit: !auth.isUserRole && quotaLimit ? gbToBytes(Number(quotaLimit)) : undefined,
       })
@@ -207,6 +211,20 @@
                   <p id="gracePeriod-hint" class="sr-only">After deactivation, this is the window to reactivate the volume</p>
                 </div>
               {/if}
+              <div class="space-y-2">
+                <FieldLabel for="forkGracePeriod" tooltip="After a named fork is deactivated, the window to restore it before its data is permanently cleaned up.">
+                  Fork Grace Period (days)
+                </FieldLabel>
+                <Input id="forkGracePeriod" type="number" bind:value={forkGracePeriod} placeholder="1" min="0" max="30" aria-describedby="forkGracePeriod-hint" />
+                <p id="forkGracePeriod-hint" class="sr-only">After a named fork is deactivated, the window to restore it before its data is permanently cleaned up</p>
+              </div>
+              <div class="space-y-2">
+                <FieldLabel for="eventLogRetentionPeriod" tooltip="How many days of file/folder change events are kept for this volume. 0 disables change-event logging (saves resources).">
+                  Event Log Retention (days)
+                </FieldLabel>
+                <Input id="eventLogRetentionPeriod" type="number" bind:value={eventLogRetentionPeriod} placeholder="0" min="0" max="30" aria-describedby="eventLogRetentionPeriod-hint" />
+                <p id="eventLogRetentionPeriod-hint" class="sr-only">How many days of file/folder change events are kept for this volume. 0 disables change-event logging</p>
+              </div>
             </div>
           </fieldset>
 
