@@ -898,24 +898,24 @@
               </div>
             {/if}
           {:else if !editing}
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                Quota
-                {#if volume.restrictByLiveVolume}
-                  <Badge variant="outline">Live restricted</Badge>
+            <div class="flex flex-wrap gap-x-6 gap-y-2">
+              <div class="min-w-[16rem]">
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Quota
+                  {#if volume.restrictByLiveVolume}
+                    <Badge variant="outline">Live restricted</Badge>
+                  {/if}
+                </span>
+                <p class="mt-1 font-mono text-sm">{formatQuota(volume.totalVolume, volume.quotaLimit)}</p>
+                {#if volume.quotaLimit > 0}
+                  {@const pct = quotaPercent(volume.totalVolume, volume.quotaLimit)}
+                  <div class="mt-1.5 h-1.5 w-full rounded-sm bg-muted overflow-hidden" role="progressbar"
+                    aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
+                    aria-label="Quota usage {pct}%">
+                    <div class="h-full rounded-sm transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
+                  </div>
                 {/if}
-              </span>
-              <p class="mt-1 text-sm">{formatQuota(volume.totalVolume, volume.quotaLimit)}</p>
-              {#if volume.quotaLimit > 0}
-                {@const pct = quotaPercent(volume.totalVolume, volume.quotaLimit)}
-                <div class="mt-2 h-2 rounded-sm bg-muted overflow-hidden" role="progressbar"
-                  aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
-                  aria-label="Quota usage {pct}%">
-                  <div class="h-full rounded-sm transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
-                </div>
-              {/if}
-            </div>
-            <div class="flex flex-wrap gap-4">
+              </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Live
@@ -1392,7 +1392,7 @@
         <div class="space-y-1.5">
           <p>
             Force delete will also remove
-            {deleteForkTarget.children.length === 1 ? '1 child fork' : `${deleteForkTarget.children.length} child forks`}.
+            {deleteForkTarget.children.length === 1 ? '1 child fork' : `${deleteForkTarget.children.length} direct  child forks`}.
           </p>
           <ul class="space-y-1" aria-label="Child forks that will be removed">
             {#each deleteForkTarget.children as child}
