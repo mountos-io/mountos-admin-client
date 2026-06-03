@@ -14,6 +14,7 @@ export type {
   RegionVolumeMetrics,
   CreateAccountRequest,
   EditAccountRequest,
+  UpdateAccountQuotaRequest,
   AddUserRequest,
   EditUserRequest,
   CreateRegionRequest,

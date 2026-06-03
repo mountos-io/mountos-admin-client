@@ -15,7 +15,8 @@
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
-  import { formatDate, formatBytes } from '$lib/core/utils/format'
+  import { formatDate, formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes } from '$lib/core/utils/format'
+  import InfoTip from '$lib/components/shared/InfoTip.svelte'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import { debounce } from '$lib/utils'
@@ -123,6 +124,38 @@
     await fn()
     account = await store.getAccount(id)
   }
+
+  let editingQuota = $state(false)
+  let editQuotaGb = $state('')
+  let editExcessPct = $state('')
+  let quotaSubmitting = $state(false)
+
+  function startQuotaEdit() {
+    if (!account) return
+    editQuotaGb = String(bytesToGb(account.quotaLimit))
+    editExcessPct = String(account.quotaExcessPct)
+    editingQuota = true
+  }
+
+  async function handleQuotaUpdate(e: Event) {
+    e.preventDefault()
+    quotaSubmitting = true
+    try {
+      const gb = Number(editQuotaGb)
+      const pct = Number(editExcessPct)
+      await store.updateQuota(id, {
+        quotaLimit: isNaN(gb) || gb <= 0 ? 0 : gbToBytes(gb),
+        quotaExcessPct: isNaN(pct) || pct < 0 ? 0 : Math.round(pct),
+      })
+      account = await store.getAccount(id)
+      editingQuota = false
+      showSuccessToast('Account quota updated')
+    } catch (err: unknown) {
+      handleApiError(err, 'Failed to update account quota')
+    } finally {
+      quotaSubmitting = false
+    }
+  }
 </script>
 
 <svelte:head><title>{account?.name ?? 'Account'} · mountOS Admin</title></svelte:head>
@@ -227,6 +260,73 @@
               {/if}
             </CardFooter>
           {/if}
+        {/if}
+      </Card>
+
+      <Card cornerBrackets>
+        {#if editingQuota}
+          <form onsubmit={handleQuotaUpdate} class="flex flex-col gap-6">
+            <CardHeader><CardTitle>Edit Account Quota</CardTitle></CardHeader>
+            <CardContent class="space-y-5">
+              <div class="space-y-2">
+                <Label for="edit-quota-limit" class="inline-flex items-center gap-1">
+                  Quota Limit (GB)
+                  <InfoTip text="Account-wide hard cap in GB across all volumes. 0 = unlimited. Enforced on total volume, independent of per-volume quotas." />
+                </Label>
+                <Input id="edit-quota-limit" type="number" bind:value={editQuotaGb} placeholder="0 = unlimited" min="0" step="0.01" />
+              </div>
+              <div class="space-y-2">
+                <Label for="edit-excess-pct" class="inline-flex items-center gap-1">
+                  Excess Allowed (%)
+                  <InfoTip text="Whole-number percentage of headroom allowed above the limit before writes are blocked. 0 = no excess (hard cap exactly at limit)." />
+                </Label>
+                <Input id="edit-excess-pct" type="number" bind:value={editExcessPct} placeholder="0" min="0" max="1000" step="1" />
+              </div>
+            </CardContent>
+            <CardFooter class="gap-4">
+              <Button variant="primary" type="submit" size="sm" class="cyberpunk-skewed-sm" disabled={quotaSubmitting}>
+                {quotaSubmitting ? 'Updating...' : 'Update'}
+              </Button>
+              <Button variant="secondary" size="sm" type="button" onclick={() => editingQuota = false} disabled={quotaSubmitting}>Cancel</Button>
+            </CardFooter>
+          </form>
+        {:else}
+          <CardHeader>
+            <div class="flex items-center gap-3">
+              <CardTitle class="flex-1">Quota</CardTitle>
+              {#if auth.can('accounts', 'update') && account.isActive}
+                <button
+                  type="button"
+                  onclick={startQuotaEdit}
+                  class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-60 hover:opacity-100 hover:text-primary transition-[color,opacity] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+                  title="Edit quota" aria-label="Edit account quota"
+                >
+                  <PencilIcon class="size-4" aria-hidden="true" />
+                </button>
+              {/if}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <dl class="space-y-3">
+              <div>
+                <dt class="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
+                  Usage
+                  {#if account.quotaExcessPct > 0}
+                    <Badge variant="outline" class="text-xs">+{account.quotaExcessPct}% excess</Badge>
+                  {/if}
+                </dt>
+                <dd class="mt-1 font-mono text-sm">{formatQuota(account.totalVolume, account.quotaLimit)}</dd>
+                {#if account.quotaLimit > 0}
+                  {@const pct = quotaPercent(account.totalVolume, account.quotaLimit)}
+                  <div class="mt-2 h-1.5 w-full rounded-sm bg-muted overflow-hidden" role="progressbar"
+                    aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
+                    aria-label="Account quota usage {pct}%">
+                    <div class="h-full rounded-sm transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
+                  </div>
+                {/if}
+              </div>
+            </dl>
+          </CardContent>
         {/if}
       </Card>
 
