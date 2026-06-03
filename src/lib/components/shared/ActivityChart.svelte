@@ -101,6 +101,14 @@
     return hasData(subject ?? '') && !disabledSubjects.has(subject ?? '')
   }
 
+  // Partition plotted logs once instead of filtering twice in the template.
+  const split = $derived.by(() => {
+    const active: PlottedLog[] = []
+    const inactive: PlottedLog[] = []
+    for (const p of plottedLogs) (isActive(p.subject) ? active : inactive).push(p)
+    return { active, inactive }
+  })
+
   function toggleSubject(s: string) {
     if (!hasData(s)) return
     const next = new Set(disabledSubjects)
@@ -287,6 +295,17 @@
   function fmtTime(mins: number) {
     return `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
   }
+
+  // Portal the hover popup to document.body so `position: fixed` resolves to
+  // the viewport even when an ancestor has a transform.
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node)
+    return {
+      destroy() {
+        if (node.parentNode) node.parentNode.removeChild(node)
+      },
+    }
+  }
 </script>
 
 <div class="relative w-full">
@@ -324,7 +343,7 @@
       {/each}
 
       <!-- Inactive points (rendered first, behind) -->
-      {#each plottedLogs.filter(l => !isActive(l.subject)) as log}
+      {#each split.inactive as log}
         {@const m = meta(log.subject)}
         {@const Icon = m.icon}
         <div class="absolute pointer-events-none -translate-x-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-sm"
@@ -334,7 +353,7 @@
         </div>
       {/each}
       <!-- Active points: 44x44 transparent hit area, 28x28 visible bubble inside -->
-      {#each plottedLogs.filter(l => isActive(l.subject)) as log}
+      {#each split.active as log}
         {@const m = meta(log.subject)}
         {@const Icon = m.icon}
         <button type="button"
@@ -385,7 +404,7 @@
   <!-- Hover popup -->
   {#if hoveredLog}
     {@const m = meta(hoveredLog.subject)}
-    <div class="fixed z-50 w-[min(100vw-1.5rem,28rem)] rounded-sm border border-border bg-background p-4 space-y-2.5"
+    <div use:portal class="fixed z-50 w-[min(100vw-1.5rem,28rem)] rounded-sm border border-border bg-background p-4 space-y-2.5"
       style="left: {popupPosition.left}; top: {popupPosition.top}; transform: {popupPosition.transform};">
       <h4 class="text-[1rem] font-medium leading-snug break-words">{hoveredLog.title}</h4>
       <div class="flex items-center flex-wrap gap-2">
@@ -465,7 +484,6 @@
   .log-point:hover .log-point-bubble,
   .log-point:focus-visible .log-point-bubble {
     transform: scale(1.6);
-    will-change: transform;
   }
   .log-point:focus-visible .log-point-bubble {
     box-shadow: 0 0 0 2px var(--ring);

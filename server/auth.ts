@@ -20,7 +20,7 @@ const defaults: DashboardAuthConfig = {
     [ROLE.superadmin]: allCaps(15), // CRUD
     [ROLE.l1admin]: { ...allCaps(14), vault: 0 },    // CRU, no delete; vault: superadmin-only
     [ROLE.l2admin]: { ...allCaps(4), vault: 0 },     // read-only; vault: superadmin-only
-    [ROLE.user]: { volumes: 4, auditLogs: 4, dashboard: 4 }, // R-only volumes + audit + dashboard
+    [ROLE.user]: { volumes: 15, auditLogs: 4, dashboard: 4, clientSessions: 4, regions: 4, storages: 4 }, // volumes: CRUD; rest: R-only
   },
 }
 
@@ -77,9 +77,9 @@ function adminUserFromPayload(payload: jose.JWTPayload): AdminUser {
     role,
   }
   if (payload.username) user.username = payload.username as string
-  if (payload.account_id != null) user.accountId = payload.account_id as number
-  if (payload.user_id != null) user.userId = payload.user_id as number
-  if (payload.volume_id != null) user.volumeId = payload.volume_id as number
+  if (payload.account_id != null) user.accountId = Number(payload.account_id)
+  if (payload.user_id != null) user.userId = Number(payload.user_id)
+  if (payload.volume_id != null) user.volumeId = Number(payload.volume_id)
   return user
 }
 

@@ -262,7 +262,6 @@
   let editForkGrace = $state('')
   let editEventLog = $state('')
   let editQuota = $state('')
-  let editRestrictByLive = $state(false)
   let editSaving = $state(false)
 
   const editDirty = $derived(
@@ -272,8 +271,7 @@
       editGrace !== String(volume.gracePeriod) ||
       editForkGrace !== String(volume.forkGracePeriod) ||
       editEventLog !== String(volume.eventLogRetentionPeriod) ||
-      editQuota !== String(bytesToGb(volume.quotaLimit)) ||
-      editRestrictByLive !== volume.restrictByLiveVolume
+      editQuota !== String(bytesToGb(volume.quotaLimit))
     )
   )
 
@@ -284,7 +282,6 @@
     editForkGrace = String(v.forkGracePeriod)
     editEventLog = String(v.eventLogRetentionPeriod)
     editQuota = String(bytesToGb(v.quotaLimit))
-    editRestrictByLive = v.restrictByLiveVolume
   }
 
   let volFetchCtrl: AbortController | undefined
@@ -362,7 +359,6 @@
         forkGracePeriod: editForkGrace ? Number(editForkGrace) : undefined,
         eventLogRetentionPeriod: editEventLog ? Number(editEventLog) : undefined,
         gracePeriod: isAdmin && editGrace ? Number(editGrace) : undefined,
-        restrictByLiveVolume: isAdmin ? editRestrictByLive : undefined,
       })
       if (quotaChanged) {
         const gb = Number(editQuota)
@@ -430,6 +426,7 @@
       const res = await api.clientSessions.list({
         accountId: volume.account.id,
         volumeId: id,
+        userId: auth.isUserRole ? (auth.userMountosUserId ?? undefined) : undefined,
         page,
         limit: 10,
       }, ctrl.signal)
@@ -625,6 +622,9 @@
     return `M${bx},${py} L${bx},${cy - sign * r} Q${bx},${cy} ${bx + r},${cy}`
   }
 
+  const forkTree = $derived(buildForkTree(forks))
+  const forkGraph = $derived.by(() => computeGraph(forks))
+
   function handleRevokeKeysByUser() {
     const uid = Number(revokeUserId)
     if (!revokeUserId || Number.isNaN(uid)) return
@@ -712,11 +712,11 @@
   {#if loading}
     <DetailSkeleton cards={[{ rows: 5, cols: 1 }]} />
   {:else if volume && activeTab === 'browse'}
-    <div role="tabpanel" id="volume-tabpanel-browse" aria-labelledby="volume-tab-browse" tabindex={0}>
+    <div role="tabpanel" id="volume-tabpanel-browse" aria-labelledby="volume-tab-browse" tabindex={-1}>
       <TreeTab volumeId={id} {volume} {forks} />
     </div>
   {:else if volume && activeTab === 'overview'}
-    <div role="tabpanel" id="volume-tabpanel-overview" aria-labelledby="volume-tab-overview" tabindex={0} class="space-y-6">
+    <div role="tabpanel" id="volume-tabpanel-overview" aria-labelledby="volume-tab-overview" tabindex={-1} class="space-y-6">
     {#if !volume.isActive}
       <section
         aria-labelledby="volume-deactivated-heading"
@@ -888,23 +888,11 @@
               <Label for="edit-quota" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota Limit (GB)</Label>
               <Input id="edit-quota" type="number" bind:value={editQuota} placeholder="0 = unlimited" min="0" step="0.01" />
             </div>
-            {#if auth.can('volumes', 'update')}
-              <div class="flex items-center gap-2">
-                <Checkbox id="edit-restrict-live" bind:checked={editRestrictByLive} />
-                <Label for="edit-restrict-live" class="text-sm inline-flex items-center gap-1">
-                  Restrict quota by live volume
-                  <InfoTip text="When enabled, quota enforcement uses live volume instead of total volume" />
-                </Label>
-              </div>
-            {/if}
           {:else if !editing}
             <div class="flex flex-wrap gap-x-6 gap-y-2">
               <div class="min-w-[16rem]">
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Quota
-                  {#if volume.restrictByLiveVolume}
-                    <Badge variant="outline">Live restricted</Badge>
-                  {/if}
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatQuota(volume.totalVolume, volume.quotaLimit)}</p>
                 {#if volume.quotaLimit > 0}
@@ -996,7 +984,7 @@
     </Card>
     </div>
   {:else if volume && activeTab === 'forks'}
-    <div role="tabpanel" id="volume-tabpanel-forks" aria-labelledby="volume-tab-forks" tabindex={0}>
+    <div role="tabpanel" id="volume-tabpanel-forks" aria-labelledby="volume-tab-forks" tabindex={-1}>
     <Card cornerBrackets>
       <CardHeader>
         <div class="flex items-center justify-between flex-wrap gap-2">
@@ -1106,14 +1094,14 @@
               </div>
             {/if}
           {/snippet}
-          {@const tree = buildForkTree(forks)}
+          {@const tree = forkTree}
           <div role="tree" aria-label="Fork hierarchy">
             {#each tree as root, i}
               {@render forkNode(root, 0, i === tree.length - 1)}
             {/each}
           </div>
         {:else}
-          {@const g = computeGraph(forks)}
+          {@const g = forkGraph}
           {@const svgW = G_LEFT + G_LABEL + G_TIMELINE + G_RIGHT}
           {@const svgH = G_TOP + g.totalRows * G_ROW + 8}
           <div class="overflow-x-auto -mx-2">
@@ -1170,7 +1158,7 @@
     </Card>
     </div>
   {:else if volume && activeTab === 'sessions'}
-    <div role="tabpanel" id="volume-tabpanel-sessions" aria-labelledby="volume-tab-sessions" tabindex={0}>
+    <div role="tabpanel" id="volume-tabpanel-sessions" aria-labelledby="volume-tab-sessions" tabindex={-1}>
     {#if auth.can('clientSessions', 'read')}
       <Card>
         <CardHeader>
@@ -1241,7 +1229,7 @@
     {/if}
     </div>
   {:else if volume && activeTab === 'apikeys'}
-    <div role="tabpanel" id="volume-tabpanel-apikeys" aria-labelledby="volume-tab-apikeys" tabindex={0}>
+    <div role="tabpanel" id="volume-tabpanel-apikeys" aria-labelledby="volume-tab-apikeys" tabindex={-1}>
     {#if volume.isActive}
       <Card>
         <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
@@ -1324,7 +1312,7 @@
     {/if}
     </div>
   {:else if volume}
-    <div role="tabpanel" id="volume-tabpanel-overview" aria-labelledby="volume-tab-overview" tabindex={0}>
+    <div role="tabpanel" id="volume-tabpanel-overview" aria-labelledby="volume-tab-overview" tabindex={-1}>
       <p class="text-sm text-muted-foreground">Unknown tab.</p>
     </div>
   {:else}

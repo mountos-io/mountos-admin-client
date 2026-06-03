@@ -15,7 +15,6 @@
   import { Skeleton } from '$lib/components/ui/skeleton'
   import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import QuotaBar from '$lib/components/shared/QuotaBar.svelte'
   import UsersIcon from '@lucide/svelte/icons/users'
   import DatabaseIcon from '@lucide/svelte/icons/database'
   import GlobeIcon from '@lucide/svelte/icons/globe'
@@ -30,7 +29,7 @@
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
-  import { formatBytes, formatQuota } from '$lib/core/utils/format'
+  import { formatBytes } from '$lib/core/utils/format'
 
   const accountStore = useAccounts()
   const dashboard = useDashboard()
@@ -70,7 +69,10 @@
   $effect(() => {
     const acctId = accountId
     if (acctId && canReadSessions) {
-      untrack(() => sessionStore.fetchAllSessions(acctId))
+      untrack(() => {
+        sessionStore.setUserIdConstraint(auth.isUserRole ? (auth.userMountosUserId ?? undefined) : undefined)
+        sessionStore.fetchAllSessions(acctId)
+      })
     }
   })
 
@@ -134,7 +136,7 @@
         { label: 'Volumes', value: stats.volumeCount, href: '/volumes', icon: DatabaseIcon },
         { label: 'Regions', value: stats.regionCount, href: '/regions', icon: GlobeIcon },
         { label: 'Storages', value: stats.storageCount, href: '/storages', icon: HardDriveIcon },
-        { label: 'Usage', value: formatBytes(stats.totalVolumeUsed), subtitle: formatQuota(stats.totalVolumeUsed, stats.totalQuotaLimit), href: '/volumes', icon: DatabaseIcon },
+        { label: 'Usage', value: formatBytes(stats.totalVolumeUsed), href: '/volumes', icon: DatabaseIcon },
         ...(canReadNodes ? [{ label: 'Nodes', value: nodeStore.nodes.length, href: '/nodes', icon: ServerIcon }] : []),
         ...(canReadSessions ? [{ label: 'Sessions', value: sessionStore.summary.activeCount || stats.activeSessionCount, href: '/sessions', icon: MonitorDotIcon }] : []),
       ]}
@@ -152,9 +154,6 @@
               <div>
                 <p class="text-xl font-bold tabular-nums leading-none">{item.value}</p>
                 <p class="text-xs text-muted-foreground mt-0.5">{item.label}</p>
-                {#if item.subtitle}
-                  <p class="text-xs text-muted-foreground/60 leading-none mt-0.5">{item.subtitle}</p>
-                {/if}
               </div>
               <ChevronRightIcon class="size-3 invisible group-hover:visible text-muted-foreground transition-colors absolute right-2 top-1/2 -translate-y-1/2" />
             </a>
@@ -162,15 +161,7 @@
         </div>
       </div>
 
-      <!-- Quota Usage -->
-      {#if stats.totalQuotaLimit > 0}
-        <Card cornerPlus>
-          <CardHeader><CardTitle>Quota Usage</CardTitle></CardHeader>
-          <CardContent>
-            <QuotaBar used={stats.totalVolumeUsed} limit={stats.totalQuotaLimit} />
-          </CardContent>
-        </Card>
-      {/if}
+      <!-- Quota Usage: hidden until account-level quota is introduced -->
 
       <!-- Quick Actions -->
       {@const quickActions = [

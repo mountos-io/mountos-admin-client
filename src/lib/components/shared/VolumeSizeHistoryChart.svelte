@@ -83,6 +83,16 @@
     return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
   }
 
+  // Screen-reader text alternative: the SVG paths are invisible to AT, so
+  // summarise the series span and range from the actual data.
+  const srSummary = $derived.by(() => {
+    if (!sorted.length) return ''
+    const first = sorted[0], last = sorted[sorted.length - 1]
+    const vals = sorted.map(p => p.totalVolume)
+    const lo = Math.min(...vals), hi = Math.max(...vals)
+    return `Volume size from ${fmtDate(+new Date(first.bucketEnd))} to ${fmtDate(+new Date(last.bucketEnd))}, ${sorted.length} data points. Total volume ranges from ${formatBytes(lo)} to ${formatBytes(hi)}.`
+  })
+
   let hover = $state<{ idx: number; x: number } | null>(null)
   function onMove(e: MouseEvent) {
     if (!sorted.length) return
@@ -106,7 +116,8 @@
   {:else}
     <div class="relative border border-border rounded-sm overflow-hidden bg-background">
       <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-      <svg viewBox="0 0 {W} {H}" class="w-full h-auto select-none" onmousemove={onMove} onmouseleave={onLeave} role="img" aria-label="Volume size over time">
+      <p class="sr-only">{srSummary}</p>
+      <svg viewBox="0 0 {W} {H}" class="w-full h-auto select-none" onmousemove={onMove} onmouseleave={onLeave} role="img" aria-label="Volume size over time. {srSummary}">
         {#each yTicks as t}
           <line x1={PAD_L} y1={t.y} x2={W - PAD_R} y2={t.y} stroke="currentColor" opacity="0.25" stroke-dasharray="2 4" />
           <text x={PAD_L - 6} y={t.y} text-anchor="end" dominant-baseline="central" font-size="7" font-family="monospace" fill="currentColor" opacity="0.6">{t.label}</text>

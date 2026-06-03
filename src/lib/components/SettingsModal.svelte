@@ -236,7 +236,7 @@
                   value={prefs.brightness}
                   oninput={(e) => prefs.brightness = Number((e.target as HTMLInputElement).value)}
                   aria-label="Brightness"
-                  class="w-full h-1.5 rounded-full appearance-none bg-border accent-primary cursor-pointer"
+                  class="brightness-slider w-full cursor-pointer"
                 />
                 {#if prefs.brightness !== 100}
                   <button
@@ -498,5 +498,67 @@
     font-weight: 500;
     color: var(--sw-fg);
     white-space: nowrap;
+  }
+
+  .brightness-slider {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 6px;
+    border-radius: 4px;
+    background: var(--border);
+    outline: none;
+  }
+
+  .brightness-slider:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+  }
+
+  .brightness-slider::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: var(--primary);
+    border: 1px solid color-mix(in oklch, var(--primary) 70%, var(--foreground));
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .brightness-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+  }
+
+  .brightness-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    background: var(--primary);
+    border: 1px solid color-mix(in oklch, var(--primary) 70%, var(--foreground));
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .brightness-slider::-moz-range-thumb:hover {
+    transform: scale(1.1);
+  }
+
+  .brightness-slider::-moz-range-track {
+    height: 6px;
+    border-radius: 4px;
+    background: var(--border);
+  }
+
+  @media (pointer: coarse) {
+    .brightness-slider::-webkit-slider-thumb {
+      width: 24px;
+      height: 24px;
+    }
+
+    .brightness-slider::-moz-range-thumb {
+      width: 24px;
+      height: 24px;
+    }
   }
 </style>

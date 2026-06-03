@@ -20,8 +20,10 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
 
 const CREATE_SUFFIXES = ['/create', '/add']
 
-const USER_ROLE_RESOURCES = new Set(['volumes', 'auditLogs', 'dashboard'])
-const API_KEY_PATH = /^\/api\/v1\/volumes\/(\d+)\/api-keys\/(generate|revoke)$/
+const USER_ROLE_RESOURCES = new Set(['volumes', 'auditLogs', 'dashboard', 'clientSessions', 'regions', 'storages'])
+// Resources not scoped to an account — exempt from accountId-on-list requirement
+const GLOBAL_RESOURCES = new Set(['regions', 'storages'])
+const API_KEY_PATH = /^\/api\/v1\/volumes\/(\d+)\/api-keys\/(generate|revoke(?:-by-user)?)$/
 const VOLUME_ID_PATH = /^\/api\/v1\/volumes\/(\d+)/
 
 function extractResource(path: string): string | null {
@@ -67,8 +69,8 @@ export const authz: MiddlewareHandler = async (c, next) => {
       if (qAccountId && Number(qAccountId) !== user.accountId) {
         return c.json({ status: 'failure', message: 'forbidden' }, 403)
       }
-      // List endpoints require accountId for user role
-      if (!qAccountId && c.req.path.endsWith('/list')) {
+      // List endpoints require accountId unless the resource is globally scoped
+      if (!qAccountId && c.req.path.endsWith('/list') && !GLOBAL_RESOURCES.has(resource)) {
         return c.json({ status: 'failure', message: 'forbidden' }, 403)
       }
     }

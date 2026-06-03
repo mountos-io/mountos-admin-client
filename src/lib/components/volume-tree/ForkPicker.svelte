@@ -71,6 +71,7 @@
     open = false
     focused = -1
     filter = ''
+    if (reposRaf) { cancelAnimationFrame(reposRaf); reposRaf = 0 }
     if (returnFocus) trigger?.focus()
   }
   function pick(v: string) {
@@ -105,8 +106,11 @@
     closePanel(false)
   }
 
+  // rAF-throttle so scroll/resize don't force synchronous layout each tick.
+  let reposRaf = 0
   function handleViewportChange() {
-    if (open) computePanelPos()
+    if (!open || reposRaf) return
+    reposRaf = requestAnimationFrame(() => { reposRaf = 0; if (open) computePanelPos() })
   }
 
   // Portal action: hoists the panel out of clipped/scrolled ancestors so

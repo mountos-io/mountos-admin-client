@@ -157,24 +157,20 @@
       <TableBody>
         {#each storageStore.storages as storage}
           <TableRow
-            class={`cursor-pointer hover:bg-muted/50 ${storage.isActive ? '' : 'bg-muted/40'}`}
-            role="button"
-            onclick={() => goto(`/storages/${storage.id}`)}
-            onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/storages/${storage.id}`))}
-            tabindex={0}
-            aria-label="Storage {storage.name}{storage.isActive ? '' : ', deactivated'}"
+            class={`relative cursor-pointer hover:bg-muted/50 ${storage.isActive ? '' : 'bg-muted/40'}`}
           >
-            <TableCell class="font-medium max-w-[200px] truncate" title={storage.name}>{storage.name}</TableCell>
+            <TableCell class="font-medium max-w-[200px] truncate" title={storage.name}>
+              <a href="/storages/{storage.id}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Storage {storage.name}{storage.isActive ? '' : ', deactivated'}">{storage.name}</a>
+            </TableCell>
             <TableCell class="text-sm text-muted-foreground hidden sm:table-cell">{storage.regionInfo.name}</TableCell>
             <TableCell class="hidden md:table-cell"><Badge variant="outline">{storage.storageType}</Badge></TableCell>
             <TableCell class="hidden md:table-cell"><Badge variant="secondary">{storage.providerType}</Badge></TableCell>
             <TableCell><StatusBadge active={storage.isActive} /></TableCell>
             <TableCell>
               {#if auth.can('volumes', 'create')}
-                <Button variant="ghost" size="sm"
+                <Button variant="ghost" size="sm" class="relative z-10"
                   href="/volumes/create?storageId={storage.id}"
-                  title="Create Volume" aria-label="Create Volume"
-                  onclick={(e: MouseEvent) => e.stopPropagation()}>
+                  title="Create Volume" aria-label="Create Volume">
                   <DatabaseIcon class="size-3.5" aria-hidden="true" />
                 </Button>
               {/if}

@@ -27,8 +27,15 @@ dev-all: ## Run dev server with proxy
 gen: ## Generate browser client from SDK
 	$(TS_EXEC) gen/browser-client.ts
 
-generate-test-token: ## Generate test provider JWT for local dev
-	$(TS_EXEC) gen/test-token.ts
+TOKEN_SUB      ?= test-user
+TOKEN_NAME     ?= Test User
+TOKEN_EMAIL    ?= test@localhost
+TOKEN_ROLE     ?= superadmin
+TOKEN_USERNAME ?=
+TOKEN_ACCOUNT  ?=
+
+generate-test-token: ## Generate test provider JWT for local dev  (TOKEN_SUB= TOKEN_NAME= TOKEN_EMAIL= TOKEN_ROLE= TOKEN_USERNAME= TOKEN_ACCOUNT=)
+	$(TS_EXEC) gen/test-token.ts "$(TOKEN_SUB)" "$(TOKEN_NAME)" "$(TOKEN_EMAIL)" "$(TOKEN_ROLE)" "$(TOKEN_USERNAME)" "$(TOKEN_ACCOUNT)"
 
 OPEN_CMD_Darwin := open
 OPEN_CMD_Linux  := xdg-open

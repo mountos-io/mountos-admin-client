@@ -157,19 +157,21 @@
               {/if}
             </div>
           </CardHeader>
-          <CardContent class="space-y-3">
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
-              <div class="mt-1"><StatusBadge active={user.isActive} /></div>
-            </div>
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Email</span>
-              <p class="mt-1 text-sm">{user.email}</p>
-            </div>
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Display Name</span>
-              <p class="mt-1 text-sm">{user.name || '·'}</p>
-            </div>
+          <CardContent>
+            <dl class="space-y-3">
+              <div>
+                <dt class="text-sm font-medium text-muted-foreground">Status</dt>
+                <dd class="mt-1"><StatusBadge active={user.isActive} /></dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-muted-foreground">Email</dt>
+                <dd class="mt-1 text-sm">{user.email}</dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-muted-foreground">Display Name</dt>
+                <dd class="mt-1 text-sm">{user.name || '·'}</dd>
+              </div>
+            </dl>
           </CardContent>
           {#if auth.can('users', 'update')}
             <CardFooter class="gap-2">

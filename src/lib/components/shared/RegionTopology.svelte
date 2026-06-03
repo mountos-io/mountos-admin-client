@@ -326,6 +326,17 @@
       resolvingId = null
     }
   }
+
+  // Portal the node tooltip to document.body so `position: fixed` resolves to
+  // the viewport even when an ancestor has a transform (e.g. Dialog content).
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node)
+    return {
+      destroy() {
+        if (node.parentNode) node.parentNode.removeChild(node)
+      },
+    }
+  }
 </script>
 
 <div class="space-y-6">
@@ -508,7 +519,7 @@
                 </button>
               {:else}
                 <span class="legend-chip legend-inert" title="{entry.label}; no nodes">
-                  <span class="legend-dot" style="background: oklch(0.5 0 0 / 0.3);"></span>
+                  <span class="legend-dot" style="background: color-mix(in oklch, var(--muted-foreground) 30%, transparent);"></span>
                   <span class="legend-label">{entry.label}</span>
                 </span>
               {/if}
@@ -968,6 +979,7 @@
 
 {#if hoveredNode}
   <div
+    use:portal
     role="tooltip"
     class="tooltip-card fixed z-50 pointer-events-none rounded-sm border bg-card"
     style:left="{hoveredNode.x + 16}px"
@@ -1143,22 +1155,11 @@
 
   button.node-row {
     position: relative;
+    transition: background 0.15s;
   }
 
-  button.node-row::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 25%;
-    bottom: 25%;
-    width: 2px;
-    background: var(--svc-accent, var(--color-primary));
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-
-  button.node-row:hover::before {
-    opacity: 1;
+  button.node-row:hover {
+    background: color-mix(in oklch, var(--svc-accent, var(--color-primary)) 8%, transparent);
   }
 
   .legend-chip {
@@ -1166,7 +1167,7 @@
     align-items: center;
     gap: 6px;
     padding: 4px 10px;
-    border: 1px solid var(--chip-accent, oklch(0.5 0 0 / 0.2));
+    border: 1px solid var(--chip-accent, color-mix(in oklch, var(--muted-foreground) 20%, transparent));
     border-radius: 2px;
     font-size: 0.875rem;
     cursor: pointer;
@@ -1177,7 +1178,7 @@
   }
 
   .legend-chip:hover:not(.legend-inert) {
-    background: color-mix(in oklch, var(--chip-accent, oklch(0.5 0 0)) 6%, transparent);
+    background: color-mix(in oklch, var(--chip-accent, var(--muted-foreground)) 6%, transparent);
   }
 
   .legend-dot {
@@ -1202,7 +1203,7 @@
   .legend-dimmed {
     opacity: 0.35;
     filter: saturate(0.2);
-    border-color: oklch(0.5 0 0 / 0.15);
+    border-color: color-mix(in oklch, var(--muted-foreground) 15%, transparent);
   }
 
   .legend-dimmed:hover {
@@ -1217,7 +1218,7 @@
   .legend-inert {
     cursor: default;
     opacity: 0.25;
-    border-color: oklch(0.5 0 0 / 0.1);
+    border-color: color-mix(in oklch, var(--muted-foreground) 10%, transparent);
   }
 
   :global(.svc-dimmed[data-slot="card"]) {

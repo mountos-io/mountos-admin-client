@@ -197,19 +197,21 @@
               {/if}
             </div>
           </CardHeader>
-          <CardContent class="space-y-3">
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
-              <div class="mt-1"><StatusBadge active={account.isActive} locked={account.locked} /></div>
-            </div>
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
-              <p class="mt-1 text-sm">{account.description || '·'}</p>
-            </div>
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Created</span>
-              <p class="mt-1 text-sm">{formatDate(account.createdAt)}</p>
-            </div>
+          <CardContent>
+            <dl class="space-y-3">
+              <div>
+                <dt class="text-sm font-medium text-muted-foreground">Status</dt>
+                <dd class="mt-1"><StatusBadge active={account.isActive} locked={account.locked} /></dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-muted-foreground">Description</dt>
+                <dd class="mt-1 text-sm">{account.description || '·'}</dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-muted-foreground">Created</dt>
+                <dd class="mt-1 text-sm">{formatDate(account.createdAt)}</dd>
+              </div>
+            </dl>
           </CardContent>
           {#if auth.can('accounts', 'update')}
             <CardFooter class="gap-2">

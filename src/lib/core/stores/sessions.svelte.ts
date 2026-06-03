@@ -23,6 +23,9 @@ export function getPlatform(s: ClientSession): string {
   return md?.platform ?? ''
 }
 
+// Locked constraint for user role — scopes all fetches to a single user, not user-adjustable
+let userIdConstraint = $state<number | undefined>(undefined)
+
 // Page state (server-paginated + server-filtered)
 let pageSessions = $state<ClientSession[]>([])
 let totalCount = $state(0)
@@ -150,6 +153,7 @@ function buildListOptions(accountId: number): ClientSessionListOptions {
   if (osFilter) opts.osName = osFilter
   if (regionFilter !== undefined) opts.regionId = regionFilter
   if (volumeIdFilter !== undefined) opts.volumeId = volumeIdFilter
+  if (userIdConstraint !== undefined) opts.userId = userIdConstraint
   if (searchQuery.trim()) opts.search = searchQuery.trim()
   return opts
 }
@@ -162,14 +166,12 @@ function cancelSearchDebounce() {
 
 async function fetchSummary(accountId: number) {
   try {
-    // Mirror the list filters so the summary strip and the filtered list
-    // stay consistent. Generator promotes all query params to positional
-    // args; 0 / undefined ⇒ no filter, both honored server-side.
     globalSummary = await api.clientSessions.summary(
       accountId,
-      regionFilter ?? 0,
-      0,
-      volumeIdFilter ?? 0,
+      regionFilter,
+      undefined,
+      volumeIdFilter,
+      userIdConstraint,
     )
   } catch {
     // Summary is best-effort; leave previous value in place on failure.
@@ -239,6 +241,7 @@ function reset() {
   selectedRegionLabel = ''
   osFilter = ''
   volumeIdFilter = undefined
+  userIdConstraint = undefined
   searchQuery = ''
   showInactive = true
   displayPage = 1
@@ -315,6 +318,10 @@ export function useSessions() {
     clearFilters,
     getPlatform,
 
+    setUserIdConstraint(userId: number | undefined) {
+      if (userId === userIdConstraint) return
+      userIdConstraint = userId
+    },
     fetchAllSessions,
     refetch,
     getSession,

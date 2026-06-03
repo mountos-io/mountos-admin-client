@@ -11,6 +11,7 @@
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import { Input } from '$lib/components/ui/input'
+  import { Checkbox } from '$lib/components/ui/checkbox'
   import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
@@ -43,7 +44,10 @@
       return
     }
     const acctId = accountId
-    if (acctId) untrack(() => store.fetchAllSessions(acctId))
+    if (acctId) untrack(() => {
+      store.setUserIdConstraint(auth.isUserRole ? (auth.userMountosUserId ?? undefined) : undefined)
+      store.fetchAllSessions(acctId)
+    })
   })
 
   $effect(() => {
@@ -131,10 +135,13 @@
         <Button variant="ghost" size="sm" onclick={() => store.clearFilters()}>Clear</Button>
       {/if}
       <div class="flex items-center gap-2 ml-auto">
-        <label class="flex items-center gap-1.5 text-sm text-muted-foreground cursor-pointer select-none">
-          <input type="checkbox" checked={store.showInactive} onchange={() => store.setShowInactive(!store.showInactive)} class="accent-primary" />
-          Inactive
-        </label>
+        <Checkbox
+          name="show-inactive"
+          label="Inactive"
+          checked={store.showInactive}
+          onchange={() => store.setShowInactive(!store.showInactive)}
+          class="text-sm text-muted-foreground"
+        />
         <span class="text-sm text-muted-foreground">
           {#if store.loading && store.summary.total === 0}·{:else}{store.summary.total} result{store.summary.total !== 1 ? 's' : ''}{/if}
         </span>

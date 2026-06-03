@@ -62,9 +62,12 @@
           {@const Icon = m.icon}
           {@const isOpen = expanded.has(log.id)}
           {@const hasData = log.description || log.data}
+          {@const panelId = `feed-detail-${log.id}`}
           <button
             type="button"
-            class="feed-item group w-full text-left flex gap-3 py-2.5 px-3 rounded-sm transition-colors {isOpen ? 'bg-accent/50' : 'hover:bg-accent/30'}"
+            class="feed-item group w-full text-left flex gap-3 py-2.5 px-3 rounded-sm transition-colors {isOpen ? 'bg-accent/50' : 'hover:bg-accent/30'} {hasData ? '' : 'cursor-default'}"
+            aria-expanded={hasData ? isOpen : undefined}
+            aria-controls={hasData ? panelId : undefined}
             onclick={() => hasData && toggle(log.id)}
           >
             <!-- icon -->
@@ -72,7 +75,7 @@
               style="border-color: {m.color}; color: {m.color}">
               <Icon class="w-3 h-3" />
             </div>
-            <!-- content -->
+            <!-- summary -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-medium truncate">{log.title}</span>
@@ -101,22 +104,22 @@
                   </span>
                 {/if}
               </div>
-              {#if isOpen && hasData}
-                <div class="mt-2 space-y-2">
-                  {#if log.description}
-                    <p class="text-sm text-muted-foreground">{log.description}</p>
-                  {/if}
-                  {#if log.data}
-                    <pre class="text-xs font-mono bg-muted/50 rounded-sm p-2 overflow-x-auto max-h-48">{JSON.stringify(log.data, null, 2)}</pre>
-                  {/if}
-                </div>
-              {/if}
             </div>
             <!-- expand indicator -->
             {#if hasData}
               <ChevronDown class="w-3.5 h-3.5 text-muted-foreground shrink-0 mt-1 transition-transform duration-200 {isOpen ? 'rotate-180' : ''} opacity-0 group-hover:opacity-100" />
             {/if}
           </button>
+          {#if isOpen && hasData}
+            <div id={panelId} role="region" aria-label="{log.title} details" class="pl-12 pr-3 pb-2 space-y-2">
+              {#if log.description}
+                <p class="text-sm text-muted-foreground">{log.description}</p>
+              {/if}
+              {#if log.data}
+                <pre class="text-xs font-mono bg-muted/50 rounded-sm p-2 overflow-x-auto max-h-48">{JSON.stringify(log.data, null, 2)}</pre>
+              {/if}
+            </div>
+          {/if}
         {/each}
       </div>
     </div>

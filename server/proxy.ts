@@ -22,6 +22,17 @@ const VOLUME_QUOTA_PATH = /^\/api\/v1\/volumes\/\d+\/quota$/
 const VOLUME_CREATE_PATH = '/api/v1/volumes/create'
 const VOLUME_API_KEYS_GENERATE_PATH = /^\/api\/v1\/volumes\/\d+\/api-keys\/generate$/
 
+// Endpoints where userId must be enforced for user role via query param injection.
+// The proxy overwrites the userId query param with the value from the session token
+// regardless of what the client sent, so a tampered client cannot hijack another user's data.
+// Only list/aggregate endpoints are included — get-by-ID paths have no userId query param.
+const USER_SCOPED_QUERY_PATHS: RegExp[] = [
+  /^\/api\/v1\/client-sessions\/(list|summary)$/,
+]
+
+const VOLUME_API_KEYS_REVOKE_BY_USER_PATH = /^\/api\/v1\/volumes\/(\d+)\/api-keys\/revoke-by-user$/
+const CLIENT_SESSION_GET_PATH = /^\/api\/v1\/client-sessions\/(\d+)$/
+
 // Self-service token generation: the frontend never sends a userId;
 // proxy injects it from the logged-in session before forwarding to appserv.
 // Appserv enforces that the user can only generate keys for their own user,
@@ -77,6 +88,20 @@ proxy.all('/api/v1/*', async (c) => {
     body = r.body
   }
 
+  if (adminUser?.role === ROLE.user && method === 'POST' && VOLUME_API_KEYS_REVOKE_BY_USER_PATH.test(upstreamPath)) {
+    const r = injectGenerateApiKeysUserId(body, adminUser)
+    if (r.error) {
+      return c.json({ status: 'failure', message: r.error }, 400)
+    }
+    body = r.body
+  }
+
+  // For user role, enforce userId from the session token on scoped list/aggregate endpoints —
+  // overwrites whatever the client sent so a tampered client cannot read another user's data.
+  if (adminUser?.role === ROLE.user && adminUser.userId != null && USER_SCOPED_QUERY_PATHS.some(p => p.test(upstreamPath))) {
+    url.searchParams.set('userId', String(adminUser.userId))
+  }
+
   try {
     const token = await signer.getToken()
     const headers: Record<string, string> = {
@@ -99,6 +124,22 @@ proxy.all('/api/v1/*', async (c) => {
         { status: res.status === 401 ? 502 : res.status },
       )
     }
+
+    // Server-side ownership check for user role get-by-ID: verify the returned
+    // session belongs to the caller. Client-side checks are bypassable via direct
+    // proxy calls, so this enforcement must live here.
+    if (
+      adminUser?.role === ROLE.user &&
+      adminUser.userId != null &&
+      method === 'GET' &&
+      CLIENT_SESSION_GET_PATH.test(upstreamPath)
+    ) {
+      const session = json.data as { user?: { id?: number } } | undefined
+      if (session?.user?.id !== adminUser.userId) {
+        return c.json({ status: 'failure', message: 'forbidden' }, 403)
+      }
+    }
+
     return c.json({ status: 'success', message: 'ok', data: json.data })
   } catch (err: unknown) {
     const e = err as { message?: string; status?: number; errorCode?: number }

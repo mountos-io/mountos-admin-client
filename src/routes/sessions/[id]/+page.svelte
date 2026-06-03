@@ -45,7 +45,13 @@
     if (!session) loading = true
     error = null
     try {
-      session = await api.clientSessions.get(sessionId, ctrl.signal)
+      const s = await api.clientSessions.get(sessionId, ctrl.signal)
+      if (auth.isUserRole && s.user?.id !== auth.userMountosUserId) {
+        showErrorToast('Access denied')
+        goto('/sessions', { replaceState: true })
+        return
+      }
+      session = s
       if (!session.isActive && poll) setPoll('')
     } catch (e) {
       if ((e as Error).name === 'AbortError') return

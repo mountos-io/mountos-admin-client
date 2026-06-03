@@ -157,14 +157,11 @@
       <TableBody>
         {#each filteredRegions as region}
           <TableRow
-            class={`cursor-pointer hover:bg-muted/50 ${region.isActive ? '' : 'bg-muted/40'}`}
-            role="button"
-            onclick={() => goto(`/regions/${region.id}`)}
-            onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/regions/${region.id}`))}
-            tabindex={0}
-            aria-label="Region {region.name}{region.isActive ? '' : ', deactivated'}"
+            class={`relative cursor-pointer hover:bg-muted/50 ${region.isActive ? '' : 'bg-muted/40'}`}
           >
-            <TableCell class="font-medium max-w-[160px] truncate" title={region.name}>{region.name}</TableCell>
+            <TableCell class="font-medium max-w-[160px] truncate" title={region.name}>
+              <a href="/regions/{region.id}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Region {region.name}{region.isActive ? '' : ', deactivated'}">{region.name}</a>
+            </TableCell>
             <TableCell class="font-mono text-sm max-w-[200px] truncate" title={region.dns}>{region.dns}</TableCell>
             <TableCell class="hidden lg:table-cell">
               <span class="inline-flex items-center gap-1 font-mono text-sm">
@@ -172,8 +169,8 @@
                 <button
                   type="button"
                   title="Copy Export ID" aria-label="Copy Export ID"
-                  class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-1.5 -m-1.5 text-muted-foreground hover:text-foreground transition-colors"
-                  onclick={(e: MouseEvent) => { e.stopPropagation(); copyExportId(region.exportId) }}
+                  class="relative z-10 inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-1.5 -m-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onclick={() => copyExportId(region.exportId)}
                 >
                   <Copy class="size-3.5" aria-hidden="true" />
                 </button>
@@ -188,10 +185,9 @@
             <TableCell>
               <div class="flex justify-end gap-1">
               {#if region.name !== HUB_REGION_NAME && auth.can("storages", "create")}
-                <Button variant="ghost" size="sm"
+                <Button variant="ghost" size="sm" class="relative z-10"
                   href="/storages/create?regionId={region.id}"
-                  title="Create Storage" aria-label="Create Storage"
-                  onclick={(e: MouseEvent) => e.stopPropagation()}>
+                  title="Create Storage" aria-label="Create Storage">
                   <HardDriveIcon class="size-3.5" aria-hidden="true" />
                 </Button>
               {/if}
@@ -199,9 +195,10 @@
                 <Button
                   variant="ghost"
                   size="sm"
+                  class="relative z-10"
                   title="Deactivate {region.name}"
                   aria-label="Deactivate {region.name}"
-                  onclick={(e: MouseEvent) => { e.stopPropagation(); deactivate(region) }}
+                  onclick={() => deactivate(region)}
                 >
                   <Power
                     aria-hidden="true"

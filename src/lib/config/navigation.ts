@@ -9,6 +9,7 @@ export interface NavItem {
   icon: string
   iconComponent?: Component
   feature?: keyof FeatureFlags
+  adminOnly?: boolean
 }
 
 export type NavFilter = (item: NavItem, caps: Capabilities) => boolean
@@ -17,8 +18,8 @@ const defaults: NavItem[] = [
   { label: 'Dashboard', href: '/', icon: 'layout-dashboard' },
   { label: 'Accounts', href: '/accounts', icon: 'building-2', feature: 'accounts' },
   { label: 'Users', href: '/users', icon: 'users', feature: 'users' },
-  { label: 'Regions', href: '/regions', icon: 'globe', feature: 'regions' },
-  { label: 'Storages', href: '/storages', icon: 'hard-drive', feature: 'storages' },
+  { label: 'Regions', href: '/regions', icon: 'globe', feature: 'regions', adminOnly: true },
+  { label: 'Storages', href: '/storages', icon: 'hard-drive', feature: 'storages', adminOnly: true },
   { label: 'Volumes', href: '/volumes', icon: 'database', feature: 'volumes' },
   { label: 'Audit Log', href: '/audit', icon: 'scroll-text', feature: 'auditLogs' },
   { label: 'Sessions', href: '/sessions', icon: 'monitor-dot', feature: 'clientSessions' },

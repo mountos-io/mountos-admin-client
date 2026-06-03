@@ -4,6 +4,8 @@
   import { Button } from '$lib/components/ui/button'
   import { Separator } from '$lib/components/ui/separator'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
+  import { onMount } from 'svelte'
+  import { browser } from '$app/environment'
 
   type NodeStatus = 'active' | 'draining' | 'inactive'
   type ViewMode = 'rack' | 'matrix' | 'raft'
@@ -26,6 +28,18 @@
   let selectedRaft = $state<string | null>(null)
   let hoverRaft = $state<string | null>(null)
   let svgTip = $state<{ node: DemoNode; x: number; y: number } | null>(null)
+
+  // SMIL animations bypass the global `*`-selector reduced-motion reset, so
+  // gate the heartbeat pings on this flag explicitly.
+  let reduceMotion = $state(false)
+  onMount(() => {
+    if (!browser) return
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    reduceMotion = mq.matches
+    const onChange = (e: MediaQueryListEvent) => { reduceMotion = e.matches }
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  })
 
   function toggleRaft(name: string) {
     selectedRaft = selectedRaft === name ? null : name
@@ -474,8 +488,8 @@
             <!-- Main status circle -->
             <circle cx={x} cy={y} r={r} fill={STATUS_COLORS[node.status]} />
 
-            <!-- Active heartbeat ping -->
-            {#if node.status === 'active' && !dim}
+            <!-- Active heartbeat ping (omitted under reduced motion) -->
+            {#if node.status === 'active' && !dim && !reduceMotion}
               <circle cx={x} cy={y} r={r} fill="none"
                 stroke={STATUS_COLORS.active} stroke-width="1">
                 <animate attributeName="r" from="{r}" to="{r + 14}" dur="2.5s" repeatCount="indefinite" />

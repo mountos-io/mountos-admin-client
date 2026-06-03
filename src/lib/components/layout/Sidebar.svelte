@@ -39,6 +39,7 @@
   const visibleNav = $derived(
     navigation.filter(item => {
       if (!hasAccount && !accountFreeRoutes.has(item.href)) return false
+      if (item.adminOnly && auth.isUserRole) return false
       if (navFilter) return navFilter(item, auth.capabilities)
       if (item.feature && !features[item.feature]) return false
       if (item.feature && !auth.can(item.feature, 'read')) return false

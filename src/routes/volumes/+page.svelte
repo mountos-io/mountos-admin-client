@@ -267,14 +267,11 @@
         <TableBody>
           {#each volumeStore.volumes as volume}
             <TableRow
-              class={`cursor-pointer hover:bg-muted/50 ${volume.isActive ? '' : 'bg-muted/40'}`}
-              role="button"
-              onclick={() => goto(`/volumes/${volume.id}`)}
-              onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/volumes/${volume.id}`))}
-              tabindex={0}
-              aria-label="Volume {volume.name}{volume.isActive ? '' : ', deactivated'}"
+              class={`relative cursor-pointer hover:bg-muted/50 ${volume.isActive ? '' : 'bg-muted/40'}`}
             >
-              <TableCell class="font-medium max-w-[200px] truncate" title={volume.name}>{volume.name}</TableCell>
+              <TableCell class="font-medium max-w-[200px] truncate" title={volume.name}>
+                <a href="/volumes/{volume.id}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Volume {volume.name}{volume.isActive ? '' : ', deactivated'}">{volume.name}</a>
+              </TableCell>
               <TableCell>
                 <Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize">{volume.volumeType}</Badge>
               </TableCell>

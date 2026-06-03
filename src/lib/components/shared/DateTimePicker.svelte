@@ -227,7 +227,7 @@
           )}>
             <input
               type="text" inputmode="numeric" maxlength="2"
-              aria-label="Hour" aria-invalid={hourInvalid}
+              name="hour" aria-label="Hour" aria-invalid={hourInvalid}
               class="w-11 bg-transparent text-center tabular-nums font-mono text-sm py-1 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset aria-[invalid=true]:text-destructive"
               bind:value={hour}
               onblur={onTimeBlur}
@@ -252,7 +252,7 @@
           )}>
             <input
               type="text" inputmode="numeric" maxlength="2"
-              aria-label="Minute" aria-invalid={minuteInvalid}
+              name="minute" aria-label="Minute" aria-invalid={minuteInvalid}
               class="w-11 bg-transparent text-center tabular-nums font-mono text-sm py-1 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset aria-[invalid=true]:text-destructive"
               bind:value={minute}
               onblur={onTimeBlur}

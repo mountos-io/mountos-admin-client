@@ -276,39 +276,30 @@
       </TableHeader>
       <TableBody>
         {#each pagedNodes as node}
-          <TableRow
-            class="cursor-pointer hover:bg-muted/50"
-            role="button"
-            onclick={() => goto(`/nodes/${node.regionId}/${node.nodeId}`)}
-            onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/nodes/${node.regionId}/${node.nodeId}`))}
-            tabindex={0}
-            aria-label="Node {node.nodeId}"
-          >
-            <TableCell class="font-mono text-sm">{node.nodeId}</TableCell>
+          <TableRow class="relative cursor-pointer hover:bg-muted/50">
+            <TableCell class="font-mono text-sm">
+              <a href="/nodes/{node.regionId}/{node.nodeId}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Node {node.nodeId}">{node.nodeId}</a>
+            </TableCell>
             {#if !selectedRegionId}
               <TableCell>
-                <button
-                  type="button"
-                  class="text-sm hover:underline"
-                  onclick={(e: MouseEvent) => { e.stopPropagation(); goto(`/nodes/${node.regionId}`) }}
-                  onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); goto(`/nodes/${node.regionId}`) } }}
+                <a
+                  href="/nodes/{node.regionId}"
+                  class="relative z-10 text-sm hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {regionNameMap.get(node.regionId) ?? node.regionId}
-                </button>
+                </a>
               </TableCell>
             {/if}
             <TableCell class="hidden lg:table-cell">
               {#if isHubRegion(node.regionId)}
                 <span class="text-muted-foreground text-sm font-mono">{HUB_REGION_NAME}</span>
               {:else if node.regionClusterId}
-                <button
-                  type="button"
-                  class="text-sm font-mono hover:underline"
-                  onclick={(e: MouseEvent) => { e.stopPropagation(); goto(`/regions/${node.regionId}?cluster=${node.regionClusterId}`) }}
-                  onkeydown={(e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); goto(`/regions/${node.regionId}?cluster=${node.regionClusterId}`) } }}
+                <a
+                  href="/regions/{node.regionId}?cluster={node.regionClusterId}"
+                  class="relative z-10 text-sm font-mono hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {clusterNameMap.get(`${node.regionId}:${node.regionClusterId}`) ?? `#${node.regionClusterId}`}
-                </button>
+                </a>
               {:else}
                 <span class="text-muted-foreground text-sm">N/A</span>
               {/if}

@@ -115,8 +115,10 @@
       </TableHeader>
       <TableBody>
         {#each userStore.users as user}
-          <TableRow class={`cursor-pointer hover:bg-muted/50 ${user.isActive ? '' : 'bg-muted/40'}`} role="button" onclick={() => goto(`/users/${user.id}`)} onkeydown={(e: KeyboardEvent) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), goto(`/users/${user.id}`))} tabindex={0} aria-label="User {user.username}{user.isActive ? '' : ', deactivated'}">
-            <TableCell class="font-medium max-w-[160px] truncate" title={user.username}>{user.username}</TableCell>
+          <TableRow class={`relative cursor-pointer hover:bg-muted/50 ${user.isActive ? '' : 'bg-muted/40'}`}>
+            <TableCell class="font-medium max-w-[160px] truncate" title={user.username}>
+              <a href="/users/{user.id}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="User {user.username}{user.isActive ? '' : ', deactivated'}">{user.username}</a>
+            </TableCell>
             <TableCell class="max-w-[160px] truncate" title={user.name}>{user.name}</TableCell>
             <TableCell class="text-muted-foreground max-w-[200px] truncate" title={user.email}>{user.email}</TableCell>
             <TableCell><StatusBadge active={user.isActive} /></TableCell>
