@@ -324,6 +324,10 @@
 
   ::selection { background: var(--primary); color: var(--primary-foreground); }
 
+  .bg-non-doodle {
+    background: radial-gradient(at center, var(--muted), var(--background));
+  }
+  
   .bg-doodle {
     background: url('/bg.avif') repeat;
     filter: invert(1);

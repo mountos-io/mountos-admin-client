@@ -106,7 +106,7 @@
   <div class="flex flex-1 flex-col overflow-hidden min-w-0">
     <Header onOpenCommandPalette={() => commandOpen = true} onToggleSidebar={toggleSidebar} bind:sidebarToggleRef />
     <main id="main-content" class="relative flex-1 overflow-y-auto bg-background">
-      <div class="bg-doodle pointer-events-none absolute inset-0 z-0" aria-hidden="true"></div>
+      <div class="bg-non-doodle pointer-events-none absolute inset-0 z-0" aria-hidden="true"></div>
       <div class="relative z-[1] p-3 sm:p-4 md:p-6">
         {#if children}{@render children()}{/if}
       </div>
