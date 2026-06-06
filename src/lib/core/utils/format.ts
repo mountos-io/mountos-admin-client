@@ -135,7 +135,6 @@ export function quotaPercent(used: number, limit: number): number {
 const CLIENT_TYPE_NAMES: Record<string, string> = {
   'fuse': 'FUSE (Linux)',
   'macfuse': 'macFUSE',
-  'winfsp': 'WinFSP',
   'mountosio': 'mountOSIO (Windows)',
   'cloudfilter': 'CloudFilter (Windows)',
   'fskit': 'FSKit (macOS)',
@@ -239,7 +238,7 @@ export function parsePrometheusText(text: string): Map<string, PrometheusMetric[
 
 const PLATFORM_LABELS: Record<string, string> = {
   macfuse: 'macFUSE', nfs: 'NFS', fuse: 'FUSE', fskit: 'FSKit',
-  winfsp: 'WinFSP', mountosio: 'mountOSIO', cloudfilter: 'CloudFilter',
+  mountosio: 'mountOSIO', cloudfilter: 'CloudFilter',
   'fuse+iouring': 'FUSE io_uring', 'csi-driver': 'CSI Driver',
   cfapi: 'CloudFilter', fp: 'File Provider', hdfs: 'HDFS',
 }

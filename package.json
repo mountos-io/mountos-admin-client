@@ -2,6 +2,7 @@
   "name": "mountos-admin-client",
   "version": "0.1.0",
   "private": true,
+  "license": "Apache-2.0",
   "type": "module",
   "scripts": {
     "dev": "vite dev --host",
@@ -12,7 +13,7 @@
     "dev:all": "concurrently \"vite dev --host\" \"bun run server/server.ts\""
   },
   "dependencies": {
-    "@mountos-io/admin-sdk": "^0.74.0",
+    "@mountos-io/admin-sdk": "^0.75.0",
     "@simplewebauthn/server": "^13.3.0",
     "hono": "^4.12.15",
     "ioredis": "^5.10.1",

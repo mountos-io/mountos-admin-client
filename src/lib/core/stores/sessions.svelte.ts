@@ -70,7 +70,6 @@ const platformOptions = [
   { value: 'macfuse', label: 'macfuse' },
   { value: 'smb', label: 'smb' },
   { value: 'nfs', label: 'nfs' },
-  { value: 'winfsp', label: 'winfsp' },
   { value: 'mountosio', label: 'mountosio' },
   { value: 'cloudfilter', label: 'cloudfilter' },
   // Embedded gateway in mfuse: gateway-only sessions advertise the
