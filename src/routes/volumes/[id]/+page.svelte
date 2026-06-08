@@ -30,7 +30,6 @@
   import { api } from '$lib/core/stores/client.svelte'
   import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint } from '$lib/core/api/types'
   import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
-  import TreeTab from '$lib/components/volume-tree/TreeTab.svelte'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
@@ -713,7 +712,9 @@
     <DetailSkeleton cards={[{ rows: 5, cols: 1 }]} />
   {:else if volume && activeTab === 'browse'}
     <div role="tabpanel" id="volume-tabpanel-browse" aria-labelledby="volume-tab-browse" tabindex={-1}>
-      <TreeTab volumeId={id} {volume} {forks} />
+      {#await import('$lib/components/volume-tree/TreeTab.svelte') then { default: TreeTab }}
+        <TreeTab volumeId={id} {volume} {forks} />
+      {/await}
     </div>
   {:else if volume && activeTab === 'overview'}
     <div role="tabpanel" id="volume-tabpanel-overview" aria-labelledby="volume-tab-overview" tabindex={-1} class="space-y-6">

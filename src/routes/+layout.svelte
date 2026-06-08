@@ -1,5 +1,6 @@
 <script lang="ts">
   import '../app.css'
+  import { onMount, type Component } from 'svelte'
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { appConfig } from '$lib/config/app'
@@ -10,7 +11,13 @@
   import { TokenAuthAdapter } from '$lib/core/auth/token'
   import Shell from '$lib/components/layout/Shell.svelte'
   import { Skeleton } from '$lib/components/ui/skeleton'
-  import { Toaster } from '$lib/components/ui/sonner'
+
+  // Toaster carries the heaviest dep (svelte-sonner) but is idle until a toast
+  // fires; load it after mount to keep it out of the layout's critical chunk.
+  let Toaster = $state<Component | null>(null)
+  onMount(async () => {
+    Toaster = (await import('$lib/components/ui/sonner')).Toaster as Component
+  })
 
   const auth = useAuth()
   const accountStore = useAccounts()
@@ -162,4 +169,4 @@
     {#if children}{@render children()}{/if}
   </Shell>
 {/if}
-<Toaster />
+{#if Toaster}<Toaster />{/if}
