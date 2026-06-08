@@ -231,7 +231,12 @@
                   <span class="session-platform">{formatPlatform(store.getPlatform(session))}</span>
                 </div>
               </TableCell>
-              <TableCell class="text-sm max-w-[120px] truncate" title={session.volume.name || String(session.volume.id)}>{session.volume.name || `#${session.volume.id}`}</TableCell>
+              <TableCell class="text-sm max-w-[120px]">
+                <div class="flex flex-col gap-1 min-w-0">
+                  <span class="truncate" title={session.volume.name || String(session.volume.id)}>{session.volume.name || `#${session.volume.id}`}</span>
+                  {#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="w-fit capitalize">{session.volume.type}</Badge>{/if}
+                </div>
+              </TableCell>
               <TableCell><span class="session-region">{session.region.name}</span></TableCell>
               <TableCell class="hidden lg:table-cell max-w-[140px]">
                 {#if session.regionCluster}
@@ -271,7 +276,7 @@
                           <p class="text-sm">{m.uptimeSeconds != null ? formatUptime(m.uptimeSeconds) : '·'}</p>
                         </div>
                         <div><p class="detail-label">Session Age</p><p class="text-sm tabular-nums">{sessionDuration(session)}</p></div>
-                        <div class="min-w-0"><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate" title={session.volume.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volume.name || `#${session.volume.id}`}</a></div>
+                        <div class="min-w-0"><p class="detail-label">Volume</p><span class="inline-flex items-center gap-1.5 min-w-0"><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate" title={session.volume.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volume.name || `#${session.volume.id}`}</a>{#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="shrink-0 capitalize">{session.volume.type}</Badge>{/if}</span></div>
                       {#if session.regionCluster}
                         <div class="min-w-0"><p class="detail-label">Cluster</p><a href="/regions/{session.region.id}?cluster={session.regionCluster.id}" class="detail-link text-sm font-mono truncate inline-block max-w-full" aria-label="View region {session.region.name} scoped to cluster {session.regionCluster.name}" title={session.regionCluster.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.regionCluster.name}</a></div>
                       {/if}
