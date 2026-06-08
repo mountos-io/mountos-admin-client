@@ -3,21 +3,24 @@
 
 @layer base {
   :root {
-    --bracket-color: oklch(0.4 0.002 200);
-    --bracket-color-dark: oklch(0.35 0.002 200);
-    --bracket-hover: oklch(0.65 0.18 45);
-    --bracket-hover-dark: oklch(0.78 0.13 92);
-    --th-color: oklch(0.45 0.03 200);
-    --th-color-hover: oklch(0.55 0.08 200);
-    --th-color-dark: oklch(0.50 0.03 200);
-    --th-color-dark-hover: oklch(0.65 0.08 200);
-    --th-line: oklch(0.4 0.08 200);
-    --th-line-dark: oklch(0.55 0.08 200);
-    --surface-light: oklch(0.94 0.03 94.63);
-    --surface-dark: oklch(0.15 0 0);
+    /* Palette mapped onto theme tokens so brackets follow the active skin.
+       Tokens are already mode-aware, so the -dark variants (kept for the
+       existing .dark selectors below) resolve through the same tokens. */
+    --bracket-color: var(--muted-foreground);
+    --bracket-color-dark: var(--muted-foreground);
+    --bracket-hover: var(--primary);
+    --bracket-hover-dark: var(--primary);
+    --th-color: var(--muted-foreground);
+    --th-color-hover: var(--foreground);
+    --th-color-dark: var(--muted-foreground);
+    --th-color-dark-hover: var(--foreground);
+    --th-line: var(--primary);
+    --th-line-dark: var(--primary);
+    --surface-light: var(--card);
+    --surface-dark: var(--card);
     --grid-line: oklch(0.3 0.002 200);
-    --accent-glow: oklch(0.61 0.14 39);
-    --accent-glow-dark: oklch(0.78 0.13 92);
+    --accent-glow: var(--primary);
+    --accent-glow-dark: var(--primary);
   }
 }
 

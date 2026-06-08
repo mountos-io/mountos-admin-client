@@ -300,20 +300,15 @@ export function applySkin(colors: SkinColors, mode: SkinMode) {
     "--primary-foreground",
     mode === "dark" ? colors.background : WHITE,
   );
-  s.setProperty(
-    "--secondary",
-    mode === "dark" ? lift(colors.background, 0.08) : drop(colors.background, 0.06),
-  );
+  // Surface elevation ladder, mirrored per mode (lighten in dark, darken in light)
+  // so muted < accent < sidebar-accent < secondary stay visually distinct.
+  const elevate = (amount: number) =>
+    mode === "dark" ? lift(colors.background, amount) : drop(colors.background, amount);
+  s.setProperty("--secondary", elevate(0.09));
   s.setProperty("--secondary-foreground", colors.textPrimary);
-  s.setProperty(
-    "--muted",
-    mode === "dark" ? lift(colors.background, 0.02) : drop(colors.background, 0.03),
-  );
+  s.setProperty("--muted", elevate(0.03));
   s.setProperty("--muted-foreground", colors.textSecondary);
-  s.setProperty(
-    "--accent",
-    mode === "dark" ? lift(colors.background, 0.09) : drop(colors.background, 0.03),
-  );
+  s.setProperty("--accent", elevate(0.06));
   s.setProperty("--accent-foreground", colors.textPrimary);
   s.setProperty("--destructive", colors.dangerRed);
   s.setProperty(
@@ -340,10 +335,7 @@ export function applySkin(colors: SkinColors, mode: SkinMode) {
   s.setProperty("--sidebar-foreground", colors.textPrimary);
   s.setProperty("--sidebar-primary", colors.textPrimary);
   s.setProperty("--sidebar-primary-foreground", colors.background);
-  s.setProperty(
-    "--sidebar-accent",
-    mode === "dark" ? lift(colors.background, 0.09) : drop(colors.background, 0.05),
-  );
+  s.setProperty("--sidebar-accent", elevate(0.075));
   s.setProperty("--sidebar-accent-foreground", colors.textPrimary);
   s.setProperty("--sidebar-border", colors.border);
   s.setProperty("--sidebar-ring", colors.textPrimary);
