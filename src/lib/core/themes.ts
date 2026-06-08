@@ -326,6 +326,12 @@ export function applySkin(colors: SkinColors, mode: SkinMode) {
   s.setProperty("--secondary-foreground", colors.textPrimary);
   s.setProperty("--muted", elevate(0.03));
   s.setProperty("--muted-foreground", colors.textSecondary);
+  // Brighter sibling of muted for structural labels (column headers, field
+  // labels) so they stay legible while muted stays reserved for de-emphasis.
+  s.setProperty(
+    "--label-foreground",
+    deriveLabelForeground(colors.textSecondary, colors.textPrimary, colors.cardBg),
+  );
   s.setProperty("--accent", elevate(0.06));
   s.setProperty("--accent-foreground", colors.textPrimary);
   s.setProperty("--destructive", colors.dangerRed);
@@ -376,6 +382,7 @@ export function clearSkin() {
     "--secondary-foreground",
     "--muted",
     "--muted-foreground",
+    "--label-foreground",
     "--accent",
     "--accent-foreground",
     "--destructive",
@@ -402,6 +409,66 @@ export function clearSkin() {
 }
 
 const OKLCH_RE = /oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)/i;
+
+function parseOklch(color: string): [number, number, number] | null {
+  const m = color.match(OKLCH_RE);
+  return m ? [parseFloat(m[1]), parseFloat(m[2]), parseFloat(m[3])] : null;
+}
+
+// WCAG relative luminance for an OKLCH triplet (OKLab -> linear sRGB -> Y).
+function oklchLuminance(L: number, C: number, h: number): number {
+  const hr = (h * Math.PI) / 180;
+  const a = C * Math.cos(hr);
+  const b = C * Math.sin(hr);
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  const clamp = (x: number) => Math.max(0, Math.min(1, x));
+  const r = clamp(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s);
+  const g = clamp(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s);
+  const bl = clamp(-0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * bl;
+}
+
+function contrastRatio(
+  a: [number, number, number],
+  b: [number, number, number],
+): number {
+  const la = oklchLuminance(...a);
+  const lb = oklchLuminance(...b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+// Structural labels (column headers, field labels) demand AA contrast, but a
+// theme's secondary/"comment" tone is tuned to recede. Lift it toward the
+// primary text until it clears 4.5:1 on the card surface, preserving hue/chroma
+// for identity and never overshooting the primary lightness (themes like
+// Solarized run a deliberately low-contrast foreground).
+function deriveLabelForeground(
+  secondary: string,
+  primary: string,
+  surface: string,
+): string {
+  const sec = parseOklch(secondary);
+  const surf = parseOklch(surface);
+  const prim = parseOklch(primary);
+  if (!sec || !surf || !prim) return secondary;
+  const [, C, h] = sec;
+  const ceilingL = prim[0];
+  const towardLight = ceilingL >= sec[0];
+  const step = towardLight ? 0.02 : -0.02;
+  let L = sec[0];
+  for (let i = 0; i < 60; i++) {
+    if (contrastRatio([L, C, h], surf) >= 4.5) break;
+    const next = L + step;
+    if (towardLight ? next >= ceilingL : next <= ceilingL) {
+      L = ceilingL;
+      break;
+    }
+    L = next;
+  }
+  return `oklch(${L.toFixed(3)} ${C} ${h})`;
+}
 
 function adjustL(color: string, delta: number): string {
   const m = color.match(OKLCH_RE);

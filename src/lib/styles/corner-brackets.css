@@ -10,9 +10,9 @@
     --bracket-color-dark: var(--muted-foreground);
     --bracket-hover: var(--primary);
     --bracket-hover-dark: var(--primary);
-    --th-color: var(--muted-foreground);
+    --th-color: var(--label-foreground);
     --th-color-hover: var(--foreground);
-    --th-color-dark: var(--muted-foreground);
+    --th-color-dark: var(--label-foreground);
     --th-color-dark-hover: var(--foreground);
     --th-line: var(--primary);
     --th-line-dark: var(--primary);

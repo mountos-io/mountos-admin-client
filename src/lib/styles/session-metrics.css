@@ -3,7 +3,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-weight: 600;
-  color: var(--muted-foreground);
+  color: var(--label-foreground);
   margin-bottom: 0.25rem;
 }
 
@@ -43,7 +43,7 @@
 }
 
 .metric-row > span:first-child {
-  color: var(--muted-foreground);
+  color: var(--label-foreground);
 }
 
 .metric-row > span:last-child {
