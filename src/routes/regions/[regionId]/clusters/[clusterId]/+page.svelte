@@ -12,6 +12,7 @@
   import DeactivateClusterDialog from '$lib/components/shared/DeactivateClusterDialog.svelte'
   import { formatRelative } from '$lib/core/utils/format'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import { copyText } from '$lib/core/utils/clipboard'
   import Copy from '@lucide/svelte/icons/copy'
   import { isClusterNameValid, clusterNameErrorMessage } from '$lib/core/utils/validation'
   import type { RegionCluster } from '$lib/core/api/types'
@@ -177,8 +178,8 @@
                 title="Copy Export ID" aria-label="Copy Export ID {cluster.exportId}"
                 class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-1.5 -m-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onclick={async () => {
-                  try { await navigator.clipboard.writeText(cluster!.exportId); showSuccessToast('Copied to clipboard') }
-                  catch { showErrorToast('Failed to copy') }
+                  if (await copyText(cluster!.exportId)) showSuccessToast('Copied to clipboard')
+                  else showErrorToast('Failed to copy')
                 }}
               >
                 <Copy class="size-3.5" aria-hidden="true" />

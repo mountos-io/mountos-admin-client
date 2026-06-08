@@ -16,6 +16,7 @@
   import DeactivateClusterDialog from '$lib/components/shared/DeactivateClusterDialog.svelte'
   import { formatRelative } from '$lib/core/utils/format'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import { copyText } from '$lib/core/utils/clipboard'
   import { isClusterNameValid, clusterNameErrorMessage } from '$lib/core/utils/validation'
   import type { RegionCluster } from '$lib/core/api/types'
   import Copy from '@lucide/svelte/icons/copy'
@@ -41,10 +42,9 @@
   const renameUnchanged = $derived(!!renameTarget && renameDraft.trim() === renameTarget.name)
 
   async function copyExportId(exportId: string) {
-    try {
-      await navigator.clipboard.writeText(exportId)
+    if (await copyText(exportId)) {
       showSuccessToast('Copied to clipboard')
-    } catch {
+    } else {
       showErrorToast('Failed to copy')
     }
   }

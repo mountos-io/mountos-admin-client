@@ -18,6 +18,7 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import TreeContextChip from './TreeContextChip.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import { copyText } from '$lib/core/utils/clipboard'
 
   let {
     open = $bindable(false),
@@ -69,12 +70,11 @@
   let copiedTimer: ReturnType<typeof setTimeout> | null = null
   async function copyValue(key: string, value: string | number | undefined | null) {
     if (value == null || value === '') return
-    try {
-      await navigator.clipboard.writeText(String(value))
+    if (await copyText(String(value))) {
       copiedKey = key
       if (copiedTimer) clearTimeout(copiedTimer)
       copiedTimer = setTimeout(() => { copiedKey = null }, 1400)
-    } catch {
+    } else {
       showErrorToast('Copy failed: clipboard access blocked')
     }
   }

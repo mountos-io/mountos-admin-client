@@ -20,6 +20,7 @@
   import ConfirmDialog from "$lib/components/shared/ConfirmDialog.svelte";
   import { formatDate, formatBytes } from "$lib/core/utils/format";
   import { showErrorToast, showSuccessToast } from "$lib/core/utils/toast";
+  import { copyText } from "$lib/core/utils/clipboard";
   import { useConfirmDialog } from "$lib/stores/confirm-dialog.svelte";
   import { Input } from "$lib/components/ui/input";
   import { HUB_REGION_NAME } from "$lib/core/constants";
@@ -69,10 +70,9 @@
   });
 
   async function copyExportId(exportId: string) {
-    try {
-      await navigator.clipboard.writeText(exportId);
+    if (await copyText(exportId)) {
       showSuccessToast("Copied to clipboard");
-    } catch {
+    } else {
       showErrorToast("Failed to copy");
     }
   }

@@ -31,6 +31,7 @@
   import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint } from '$lib/core/api/types'
   import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
+  import { copyText } from '$lib/core/utils/clipboard'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
   import FieldLabel from '$lib/components/shared/FieldLabel.svelte'
@@ -392,11 +393,12 @@
 
   let copiedField = $state<string | null>(null)
   async function copyToClipboard(text: string, field: string) {
-    try {
-      await navigator.clipboard.writeText(text)
+    if (await copyText(text)) {
       copiedField = field
       setTimeout(() => { if (copiedField === field) copiedField = null }, 1500)
-    } catch { showErrorToast('Failed to copy') }
+    } else {
+      showErrorToast('Failed to copy')
+    }
   }
 
   function handleRevokeKey() {

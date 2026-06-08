@@ -17,6 +17,7 @@
   import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
   import FieldLabel from '$lib/components/shared/FieldLabel.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import { copyText } from '$lib/core/utils/clipboard'
   import { HUB_REGION_NAME } from '$lib/core/constants'
   import { gbToBytes } from '$lib/core/utils/format'
   import Copy from '@lucide/svelte/icons/copy'
@@ -109,10 +110,9 @@
 
   async function copyKey() {
     if (!createResult?.encryptionKey) return
-    try {
-      await navigator.clipboard.writeText(createResult.encryptionKey)
+    if (await copyText(createResult.encryptionKey)) {
       showSuccessToast('Copied to clipboard')
-    } catch {
+    } else {
       showErrorToast('Failed to copy')
     }
   }

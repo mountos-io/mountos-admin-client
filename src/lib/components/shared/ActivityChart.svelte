@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { AuditLog } from '$lib/core/api/types'
   import { getSubjectMeta, allSubjects as allSubjectKeys } from '$lib/core/utils/subjects'
+  import { copyText } from '$lib/core/utils/clipboard'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
   import ZoomOutIcon from '@lucide/svelte/icons/zoom-out'
@@ -37,7 +38,7 @@
     obj.time = fmtTime(log.timeMinutes)
     if (log.createdBy) obj.createdBy = log.createdBy
     if (log.data) obj.data = log.data
-    await navigator.clipboard.writeText(JSON.stringify(obj, null, 2))
+    await copyText(JSON.stringify(obj, null, 2))
     copiedId = log.id
     if (copyTimer) clearTimeout(copyTimer)
     copyTimer = setTimeout(() => { copiedId = null }, 2000)

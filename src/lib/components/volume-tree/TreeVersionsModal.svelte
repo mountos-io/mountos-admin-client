@@ -9,6 +9,7 @@
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import { copyText } from '$lib/core/utils/clipboard'
 
   let {
     open = $bindable(false),
@@ -40,12 +41,11 @@
   let copiedHash = $state<string | null>(null)
   let copiedTimer: ReturnType<typeof setTimeout> | null = null
   async function copyHash(hash: string) {
-    try {
-      await navigator.clipboard.writeText(hash)
+    if (await copyText(hash)) {
       copiedHash = hash
       if (copiedTimer) clearTimeout(copiedTimer)
       copiedTimer = setTimeout(() => { copiedHash = null }, 1400)
-    } catch {
+    } else {
       showErrorToast('Copy failed: clipboard access blocked')
     }
   }
