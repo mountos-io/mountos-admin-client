@@ -93,7 +93,7 @@ export const themePresets: ThemePreset[] = [
   },
   {
     name: "Dracula",
-    family: "",
+    family: "Dracula",
     mode: "dark",
     colors: {
       background: "oklch(0.288 0.022 277.5)",
@@ -106,6 +106,24 @@ export const themePresets: ThemePreset[] = [
       dangerRed: "oklch(0.682 0.206 24.4)",
       warningYellow: "oklch(0.955 0.134 112.8)",
       border: "oklch(0.403 0.032 277.8)",
+    },
+  },
+  {
+    // Alucard — official Dracula light variant (https://draculatheme.com)
+    name: "Alucard",
+    family: "Dracula",
+    mode: "light",
+    colors: {
+      background: "oklch(0.9869 0.0214 95.28)",
+      cardBg: "oklch(0.9649 0.0214 95.28)",
+      textPrimary: "oklch(0.2393 0.0000 89.88)",
+      textSecondary: "oklch(0.5084 0.0410 97.06)",
+      primary: "oklch(0.5091 0.1878 287.15)",
+      accentBlue: "oklch(0.4961 0.1061 236.17)",
+      accentGreen: "oklch(0.4784 0.1547 141.90)",
+      dangerRed: "oklch(0.5632 0.1844 30.08)",
+      warningYellow: "oklch(0.5440 0.1044 93.88)",
+      border: "oklch(0.8590 0.0206 285.96)",
     },
   },
   {
@@ -133,7 +151,7 @@ export const themePresets: ThemePreset[] = [
       background: "oklch(0.956 0.055 96.2)",
       cardBg: "oklch(0.922 0.055 92.5)",
       textPrimary: "oklch(0.344 0.007 48.5)",
-      textSecondary: "oklch(0.550 0.023 62.6)",
+      textSecondary: "oklch(0.619 0.029 67.3)",
       primary: "oklch(0.725 0.143 77.7)",
       accentBlue: "oklch(0.576 0.066 199.5)",
       accentGreen: "oklch(0.656 0.135 109.1)",
