@@ -43,12 +43,13 @@ function statusLabel(status: LicenseStatus): string {
   }
 }
 
-// formatLimit renders a license cap. value <= 0 is the "unlimited"
-// sentinel and renders as ∞. Use formatBytes for factual byte counts
-// (e.g. current usage) where 0 means literally zero, not unlimited.
+// formatLimit renders a license cap. For count caps, value <= 0 is the
+// "unlimited" sentinel and renders as ∞. The storage cap has no unlimited
+// sentinel: a non-positive value is enforced as zero allowance, so bytes
+// always render as a factual count (0 → "0 B", never ∞).
 function formatLimit(value: number, unit?: string): string {
+  if (unit === 'bytes') return formatBytes(Math.max(0, value))
   if (value <= 0) return '∞'
-  if (unit === 'bytes') return formatBytes(value)
   return value.toLocaleString()
 }
 
