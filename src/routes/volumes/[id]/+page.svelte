@@ -701,7 +701,7 @@
           <button type="button"
             onclick={openCreateFork}
             title="Create a new fork from this volume"
-            class="cyberpunk-skewed-sm group inline-flex items-center gap-2 h-9 min-h-[44px] sm:min-h-9 px-4 bg-warning/10 text-warning font-mono text-xs uppercase tracking-[0.18em] transition-colors hover:bg-warning/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+            class="cyberpunk-skewed-sm group inline-flex items-center gap-2 h-9 min-h-[44px] sm:min-h-9 px-4 bg-primary/10 text-primary font-mono text-xs uppercase tracking-[0.18em] transition-colors hover:bg-primary/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
             <Plus class="h-3.5 w-3.5" aria-hidden="true" />
             <span>New Fork</span>
           </button>

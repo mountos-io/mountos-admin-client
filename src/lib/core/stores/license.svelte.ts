@@ -4,8 +4,6 @@ import { api } from './client.svelte'
 let license = $state<LicenseDetails | null>(null)
 let loading = $state(false)
 let error = $state<string | null>(null)
-let terms = $state<string | null>(null)
-let termsLoading = $state(false)
 let fetchCtrl: AbortController | null = null
 
 const needsAttention = $derived<boolean>(
@@ -64,30 +62,14 @@ function formatBytes(value: number): string {
   return `${Math.round(v * 100) / 100} ${units[i]}`
 }
 
-async function fetchTerms() {
-  if (terms || termsLoading) return
-  termsLoading = true
-  try {
-    const res = await api.license.terms()
-    terms = res.terms
-  } catch {
-    terms = null
-  } finally {
-    termsLoading = false
-  }
-}
-
 export function useLicense() {
   return {
     get license() { return license },
     get loading() { return loading },
     get error() { return error },
-    get terms() { return terms },
-    get termsLoading() { return termsLoading },
     get needsAttention() { return needsAttention },
     get badgeVariant() { return badgeVariant },
     fetchLicense,
-    fetchTerms,
     statusLabel,
     formatLimit,
     formatBytes,
