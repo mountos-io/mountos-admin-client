@@ -101,7 +101,7 @@ export const themePresets: ThemePreset[] = [
       textPrimary: "oklch(0.977 0.008 106.5)",
       textSecondary: "oklch(0.560 0.080 270.1)",
       primary: "oklch(0.742 0.149 301.9)",
-      accentBlue: "oklch(0.883 0.093 212.8)",
+      accentBlue: "oklch(0.8826 0.0934 212.85)",
       accentGreen: "oklch(0.871 0.220 148.0)",
       dangerRed: "oklch(0.682 0.206 24.4)",
       warningYellow: "oklch(0.955 0.134 112.8)",
