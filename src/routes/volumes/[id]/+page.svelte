@@ -28,6 +28,7 @@
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import { api } from '$lib/core/stores/client.svelte'
+  import { userCache } from '$lib/core/stores/user-cache.svelte'
   import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint } from '$lib/core/api/types'
   import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
@@ -563,7 +564,7 @@
   interface BranchRow {
     fid: number; name: string; row: number; parentRow: number
     branchNorm: number; snapshotTs: number; createdAt: number
-    createdBy?: string; color: string; status: string; size: number
+    createdBy?: number; color: string; status: string; size: number
   }
 
   function computeGraph(items: Fork[]) {
@@ -1061,7 +1062,7 @@
                       <span>created <span class="font-mono">{formatRelative(node.createdAt / 1_000_000)}</span></span>
                     {/if}
                     {#if node.createdBy}
-                      <span>by {node.createdBy}</span>
+                      <span title={`user#${node.createdBy}`}>by {void userCache.rev, userCache.display(node.createdBy)}</span>
                     {/if}
                     {#if node.inactiveAt}
                       <span class="text-warning">
@@ -1147,7 +1148,7 @@
                 {#if br.fid !== 0}
                   <text x={gNowX + 14} y={y}
                     dominant-baseline="central"
-                    class="font-mono" style="font-size: 13px" fill="currentColor" opacity="0.55">{formatRelative(br.createdAt / 1_000_000)}{br.createdBy ? ` · ${br.createdBy}` : ''}{br.size > 0 ? ` · ${formatBytes(br.size)}` : ''}</text>
+                    class="font-mono" style="font-size: 13px" fill="currentColor" opacity="0.55">{formatRelative(br.createdAt / 1_000_000)}{br.createdBy ? ` · ${(void userCache.rev, userCache.display(br.createdBy))}` : ''}{br.size > 0 ? ` · ${formatBytes(br.size)}` : ''}</text>
                 {:else if br.size > 0}
                   <text x={gNowX + 14} y={y}
                     dominant-baseline="central"
