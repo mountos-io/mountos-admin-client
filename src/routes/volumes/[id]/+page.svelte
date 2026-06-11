@@ -954,7 +954,9 @@
               `${volume!.locked ? 'Unlock' : 'Lock'} "${volume!.name}"?`,
               () => volume!.locked ? store.unlockVolume(id) : store.lockVolume(id),
             )}>{volume.locked ? 'Unlock' : 'Lock'}</Button>
-            <Button variant="outline" size="sm" onclick={() => { moveClusterOpen = true }}>Move Cluster</Button>
+            {#if !auth.isUserRole}
+              <Button variant="outline" size="sm" onclick={() => { moveClusterOpen = true }}>Move Cluster</Button>
+            {/if}
           </CardFooter>
         {/if}
       </Card>

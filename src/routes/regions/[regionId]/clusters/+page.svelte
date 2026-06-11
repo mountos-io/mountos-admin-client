@@ -3,6 +3,7 @@
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { useClusters } from '$lib/core/stores/clusters.svelte'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
@@ -24,6 +25,7 @@
 
   const regionId = $derived(Number($page.params.regionId))
   const store = useClusters()
+  const auth = useAuth()
 
   $effect(() => { if (regionId) store.fetchClusters(regionId) })
 
@@ -117,7 +119,9 @@
           Volumes can only be assigned once the cluster is marked ready.
         </p>
       </div>
-      <Button variant="primary" onclick={() => goto(`/regions/${regionId}/clusters/create`)}>New cluster</Button>
+      {#if !auth.isUserRole}
+        <Button variant="primary" onclick={() => goto(`/regions/${regionId}/clusters/create`)}>New cluster</Button>
+      {/if}
     </CardHeader>
 
     <CardContent>
@@ -138,7 +142,7 @@
               </TableHead>
               <TableHead>State</TableHead>
               <TableHead>Updated</TableHead>
-              <TableHead class="w-12"></TableHead>
+              {#if !auth.isUserRole}<TableHead class="w-12"></TableHead>{/if}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -180,6 +184,7 @@
                   {/if}
                 </TableCell>
                 <TableCell>{formatRelative(c.updatedAt)}</TableCell>
+                {#if !auth.isUserRole}
                 <TableCell>
                   <Popover
                     open={openMenuId === c.id}
@@ -243,6 +248,7 @@
                     </PopoverContent>
                   </Popover>
                 </TableCell>
+                {/if}
               </TableRow>
             {/each}
           </TableBody>

@@ -3,6 +3,7 @@
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { useClusters } from '$lib/core/stores/clusters.svelte'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
@@ -20,6 +21,7 @@
   const regionId = $derived(Number($page.params.regionId))
   const clusterId = $derived(Number($page.params.clusterId))
   const store = useClusters()
+  const auth = useAuth()
 
   let cluster = $state<RegionCluster | null>(null)
   let loading = $state(false)
@@ -150,7 +152,9 @@
           {:else}
             <div class="flex items-center gap-2">
               <span>{cluster.name}</span>
-              <Button size="sm" variant="outline" onclick={startEdit}>Rename</Button>
+              {#if !auth.isUserRole}
+                <Button size="sm" variant="outline" onclick={startEdit}>Rename</Button>
+              {/if}
             </div>
           {/if}
         </CardTitle>
@@ -188,6 +192,7 @@
           </div>
         </div>
 
+        {#if !auth.isUserRole}
         <div class="flex flex-wrap gap-2 pt-2">
           {#if !cluster.defaultCluster && cluster.isActive}
             <Button size="sm" variant="outline" onclick={makeDefault}>Mark default</Button>
@@ -201,6 +206,7 @@
             <Button size="sm" variant="destructive" onclick={() => { deactivateOpen = true }}>Deactivate</Button>
           {/if}
         </div>
+        {/if}
       </CardContent>
     </Card>
 
