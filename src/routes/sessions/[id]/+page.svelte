@@ -387,6 +387,13 @@
               <div class="metric-row"><span>Hit Bytes</span><span>{formatBytes(m.cacheHitBytes ?? 0)}</span></div>
               <div class="metric-row"><span>Miss Bytes</span><span>{formatBytes(m.cacheMissBytes ?? 0)}</span></div>
               <div class="metric-row"><span>Size</span><span>{formatBytes(m.cacheSize ?? 0)}</span></div>
+              {#if m.prefetchFetchedBlocks != null}
+                {@const pf = Number(m.prefetchFetchedBlocks ?? 0)}
+                {@const pw = Number(m.prefetchWastedBlocks ?? 0)}
+                {@const wastePct = pf > 0 ? (pw / pf) * 100 : 0}
+                <div class="metric-row"><span>Prefetch Used</span><span>{formatNum(m.prefetchUsedBlocks ?? 0)}</span></div>
+                <div class="metric-row {wastePct >= 50 ? 'text-destructive' : wastePct >= 30 ? 'text-amber-500' : ''}"><span>Prefetch Wasted</span><span>{formatNum(pw)} ({wastePct.toFixed(1)}%)</span></div>
+              {/if}
             </div>
             {#if m.metaArenaCapacityBytes != null}
               <div class="metric-group">
@@ -431,6 +438,11 @@
               <div class="metric-row"><span>PUT Count</span><span>{formatNum(m.objectPutCount ?? 0)}</span></div>
               <div class="metric-row"><span>PUT Bytes</span><span>{formatBytes(m.objectPutBytes ?? 0)}</span></div>
               <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
+              {#if m.s3RetryAttempts != null}
+                <div class="metric-row"><span>Retries</span><span>{formatNum(m.s3RetryAttempts ?? 0)}</span></div>
+                <div class="metric-row {(m.s3RetryThrottled ?? 0) ? 'text-amber-500' : ''}"><span>Throttled</span><span>{formatNum(m.s3RetryThrottled ?? 0)}</span></div>
+                <div class="metric-row {(m.s3RetryExhausted ?? 0) ? 'text-destructive' : ''}"><span>Exhausted</span><span>{formatNum(m.s3RetryExhausted ?? 0)}</span></div>
+              {/if}
             </div>
             <div class="metric-group">
               <p class="detail-label">Network</p>
