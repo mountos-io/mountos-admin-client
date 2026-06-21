@@ -13,7 +13,7 @@
     "dev:all": "concurrently \"vite dev --host\" \"bun run server/server.ts\""
   },
   "dependencies": {
-    "@mountos-io/admin-sdk": "^0.79.0",
+    "@mountos-io/admin-sdk": "^0.80.0",
     "@simplewebauthn/server": "^13.3.0",
     "hono": "^4.12.15",
     "ioredis": "^5.10.1",

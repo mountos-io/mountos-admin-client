@@ -74,6 +74,11 @@
     { value: '8388608', label: '8 MiB' },
   ]
 
+  const STORAGE_MODES = [
+    { value: 'single', label: 'Single' },
+    { value: 'ha', label: 'High Availability (2 members)' },
+  ]
+
   let name = $state('')
   let description = $state('')
   let regionId = $state('')
@@ -89,6 +94,10 @@
   let secretKey = $state('')
   let submitting = $state(false)
   let bucketVerified = $state(false)
+  let storageMode = $state('single')
+  let member1Az = $state('')
+  let member2Az = $state('')
+  let createdBlockVolumeIds = $state<string[]>([])
 
   const isBlock = $derived(storageType === 'block')
   const isHybrid = $derived(isBlock && blockType === 'hybrid')
@@ -112,12 +121,14 @@
     storageType = v
     resetObjectStoreFields()
     blockType = ''
+    storageMode = 'single'; member1Az = ''; member2Az = ''
     if (v === 'block') providerType = 'mountOS'
   }
 
   function onBlockTypeChange(v: string) {
     blockType = v
     providerType = v === 'hybrid' ? '' : 'mountOS'
+    storageMode = 'single'; member1Az = ''; member2Az = ''
     endpoint = ''; region = ''; bucket = ''; base = ''
     accessKey = ''; secretKey = ''; bucketVerified = false
   }
@@ -172,7 +183,10 @@
     submitting = true
     try {
       const isStandard = isBlock && !isHybrid
-      await storageStore.createStorage({
+      const availabilityZones = isBlock
+        ? (storageMode === 'ha' ? [member1Az.trim(), member2Az.trim()] : (member1Az.trim() ? [member1Az.trim()] : undefined))
+        : undefined
+      const res = await storageStore.createStorage({
         accountId,
         regionId: Number(regionId),
         name: name.trim(),
@@ -185,11 +199,20 @@
         base: (!isStandard && base.trim()) ? base.trim() : undefined,
         blockType: isBlock ? blockType : undefined,
         blockSize: Number(blockSize),
+        storageMode: isBlock ? storageMode : undefined,
+        availabilityZones,
         accessKey: (!isStandard && accessKey.trim()) ? accessKey.trim() : undefined,
         secretKey: (!isStandard && secretKey.trim()) ? secretKey.trim() : undefined,
       })
-      showSuccessToast('Storage created')
-      goto('/storages')
+      // Block storage returns the per-member block-volume id(s); show them for the
+      // operator to copy into each blockserv's BLOCK_VOLUME_ID env before leaving.
+      if (res.blockVolumeIds?.length) {
+        createdBlockVolumeIds = res.blockVolumeIds
+        showSuccessToast('Storage created — copy the block-volume IDs below')
+      } else {
+        showSuccessToast('Storage created')
+        goto('/storages')
+      }
     } catch (err: unknown) {
       handleApiError(err, 'Failed to create storage')
     } finally {
@@ -260,6 +283,21 @@
                   <Select id="blockSize" bind:value={blockSize} options={BLOCK_SIZES} />
                 </div>
               </div>
+
+              <div class="space-y-2">
+                <Label for="storageMode">Mode</Label>
+                <Select id="storageMode" bind:value={storageMode} options={STORAGE_MODES} />
+              </div>
+              <div class="space-y-2">
+                <Label for="member1Az">Availability Zone{storageMode === 'ha' ? ' (Member 1)' : ''}</Label>
+                <Input id="member1Az" bind:value={member1Az} placeholder="e.g. us-east-1a" autocomplete="off" />
+              </div>
+              {#if storageMode === 'ha'}
+                <div class="space-y-2">
+                  <Label for="member2Az">Availability Zone (Member 2)</Label>
+                  <Input id="member2Az" bind:value={member2Az} placeholder="e.g. us-east-1b" autocomplete="off" />
+                </div>
+              {/if}
 
               {#if isHybrid}
                 <Separator />
@@ -341,14 +379,31 @@
             {/if}
           {/if}
 
-          <div class="flex gap-3 pt-2">
-            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !canSubmit}>
-              {submitting ? 'Creating...' : 'Create Storage'}
-            </Button>
-            <Button variant="outline" type="button" onclick={() => goto('/storages')}>
-              Cancel
-            </Button>
-          </div>
+          {#if createdBlockVolumeIds.length > 0}
+            <Separator />
+            <div class="space-y-2">
+              <p class="text-sm font-medium">Block Volume IDs</p>
+              <p class="text-sm text-muted-foreground">
+                Copy each id into the matching blockserv's <code>BLOCK_VOLUME_ID</code> env.{#if createdBlockVolumeIds.length === 2} First is member 1, second is member 2.{/if}
+              </p>
+              {#each createdBlockVolumeIds as id, i (id)}
+                <div class="flex items-center gap-2">
+                  {#if createdBlockVolumeIds.length === 2}<span class="w-16 text-xs text-muted-foreground">Member {i + 1}</span>{/if}
+                  <code class="flex-1 break-all rounded bg-muted px-2 py-1 font-mono text-xs">{id}</code>
+                </div>
+              {/each}
+              <Button variant="primary" type="button" class="cyberpunk-skewed-sm" onclick={() => goto('/storages')}>Done</Button>
+            </div>
+          {:else}
+            <div class="flex gap-3 pt-2">
+              <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !canSubmit}>
+                {submitting ? 'Creating...' : 'Create Storage'}
+              </Button>
+              <Button variant="outline" type="button" onclick={() => goto('/storages')}>
+                Cancel
+              </Button>
+            </div>
+          {/if}
         </form>
       </CardContent>
     </Card>
