@@ -61,11 +61,6 @@
     regionStore.regions.find(r => String(r.id) === regionId)
   )
 
-  const BLOCK_TYPES = [
-    { value: 'standard', label: 'Standard' },
-    { value: 'hybrid', label: 'Hybrid' },
-  ]
-
   const BLOCK_SIZES = [
     { value: '65536', label: '64 KiB' },
     { value: '131072', label: '128 KiB' },
@@ -96,7 +91,6 @@
   let region = $state('')
   let bucket = $state('')
   let base = $state('')
-  let blockType = $state('')
   let blockSize = $state('4194304')
   let accessKey = $state('')
   let secretKey = $state('')
@@ -112,8 +106,8 @@
   let copyTimer: ReturnType<typeof setTimeout> | undefined
 
   const isBlock = $derived(storageType === 'block')
-  const isHybrid = $derived(isBlock && blockType === 'hybrid')
-  const needsObjectStore = $derived(!isBlock || isHybrid)
+  // Every block storage is object-backed (durable S3 floor), so both object and block
+  // collect a backing object store; block additionally needs a resolvable block endpoint.
   const blockEndpoint = $derived(
     selectedRegion?.dns ? `https://block.${selectedRegion.dns}` : ''
   )
@@ -132,17 +126,7 @@
   function onStorageTypeChange(v: string) {
     storageType = v
     resetObjectStoreFields()
-    blockType = ''
     storageMode = 'single'; haMembers = '2'; member1Az = ''; member2Az = ''; member3Az = ''
-    if (v === 'block') providerType = 'mountOS'
-  }
-
-  function onBlockTypeChange(v: string) {
-    blockType = v
-    providerType = v === 'hybrid' ? '' : 'mountOS'
-    storageMode = 'single'; haMembers = '2'; member1Az = ''; member2Az = ''; member3Az = ''
-    endpoint = ''; region = ''; bucket = ''; base = ''
-    accessKey = ''; secretKey = ''; bucketVerified = false
   }
 
   function onProviderChange(v: string) {
@@ -152,7 +136,7 @@
 
   // auto-fill endpoint for known providers
   $effect(() => {
-    if (needsObjectStore && providerType && !isCustomEndpoint(providerType)) {
+    if (providerType && !isCustomEndpoint(providerType)) {
       endpoint = generateEndpoint(providerType, region)
     }
   })
@@ -160,7 +144,7 @@
   // Azure: storage-account name doubles as the auth identity, so mirror the
   // "Storage Account" field into accessKey to spare the user typing it twice.
   $effect(() => {
-    if (needsObjectStore && getProvider(providerType)?.regionDrivesAccessKey) {
+    if (getProvider(providerType)?.regionDrivesAccessKey) {
       accessKey = region
     }
   })
@@ -184,9 +168,8 @@
 
   const canSubmit = $derived(
     !!(name.trim() && regionId && storageType && providerType
-    && (isBlock
-      ? blockType && (isHybrid ? objectStoreReady && bucketVerified : !!blockEndpoint)
-      : objectStoreReady && bucketVerified))
+      && objectStoreReady && bucketVerified
+      && (!isBlock || !!blockEndpoint))
   )
 
   async function handleSubmit(e: Event) {
@@ -194,7 +177,6 @@
     if (!canSubmit || !accountId) return
     submitting = true
     try {
-      const isStandard = isBlock && !isHybrid
       const availabilityZones = isBlock
         ? (storageMode === 'ha'
             ? (haMembers === '3'
@@ -208,17 +190,16 @@
         name: name.trim(),
         description: description.trim() || undefined,
         storageType,
-        providerType: isStandard ? 'mountOS' : providerType,
-        endpoint: isStandard ? blockEndpoint : endpoint.trim(),
-        region: (!isStandard && region.trim()) ? region.trim() : undefined,
-        bucket: (!isStandard && bucket.trim()) ? bucket.trim() : undefined,
-        base: (!isStandard && base.trim()) ? base.trim() : undefined,
-        blockType: isBlock ? blockType : undefined,
-        blockSize: Number(blockSize),
+        providerType,
+        endpoint: endpoint.trim(),
+        region: region.trim() || undefined,
+        bucket: bucket.trim() || undefined,
+        base: base.trim() || undefined,
+        blockSize: isBlock ? Number(blockSize) : undefined,
         storageMode: isBlock ? storageMode : undefined,
         availabilityZones,
-        accessKey: (!isStandard && accessKey.trim()) ? accessKey.trim() : undefined,
-        secretKey: (!isStandard && secretKey.trim()) ? secretKey.trim() : undefined,
+        accessKey: accessKey.trim() || undefined,
+        secretKey: secretKey.trim() || undefined,
       })
       // Block storage returns the per-member block-volume id(s); show them for the
       // operator to copy into each blockserv's BLOCK_VOLUME_ID env before leaving.
@@ -288,10 +269,6 @@
 
             {#if isBlock}
               <div class="space-y-2">
-                <Label for="storage-provider">Provider</Label>
-                <Input id="storage-provider" value="mountOS" disabled />
-              </div>
-              <div class="space-y-2">
                 <Label for="block-endpoint">Block Endpoint</Label>
                 {#if blockEndpoint}
                   <Input id="block-endpoint" value={blockEndpoint} readonly class="font-mono text-sm text-muted-foreground" />
@@ -302,15 +279,9 @@
                   <p class="text-sm text-muted-foreground">Select a region to derive block endpoint.</p>
                 {/if}
               </div>
-              <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
-                <div class="space-y-2">
-                  <Label id="blockType-label" for="blockType">Block Type</Label>
-                  <Select id="blockType" ariaLabelledby="blockType-label" bind:value={blockType} placeholder="Select block type..." options={BLOCK_TYPES} onchange={onBlockTypeChange} />
-                </div>
-                <div class="space-y-2">
-                  <Label id="blockSize-label" for="blockSize">Block Size</Label>
-                  <Select id="blockSize" ariaLabelledby="blockSize-label" bind:value={blockSize} options={BLOCK_SIZES} />
-                </div>
+              <div class="space-y-2">
+                <Label id="blockSize-label" for="blockSize">Block Size</Label>
+                <Select id="blockSize" ariaLabelledby="blockSize-label" bind:value={blockSize} options={BLOCK_SIZES} />
               </div>
 
               <div class="space-y-2">
@@ -340,83 +311,72 @@
                 {/if}
               {/if}
 
-              {#if isHybrid}
-                <Separator />
-                <p class="text-sm font-medium">Backing Object Storage</p>
-              {/if}
+              <Separator />
+              <p class="text-sm font-medium">Backing Object Storage</p>
             {/if}
 
-            {#if needsObjectStore}
-              {#if !isBlock}
-                <div class="space-y-2">
-                  <Label id="providerType-label" for="providerType">Object Storage Provider</Label>
-                  <Select id="providerType" ariaLabelledby="providerType-label" bind:value={providerType} placeholder="Select provider..." options={providerOptionsForContext} onchange={onProviderChange} />
-                </div>
-              {:else if isHybrid}
-                <div class="space-y-2">
-                  <Label id="providerType-label" for="providerType">Backing Storage Provider</Label>
-                  <Select id="providerType" ariaLabelledby="providerType-label" bind:value={providerType} placeholder="Select provider..." options={providerOptionsForContext} onchange={onProviderChange} />
-                </div>
-              {/if}
+            <div class="space-y-2">
+              <Label id="providerType-label" for="providerType">{isBlock ? 'Backing Storage Provider' : 'Object Storage Provider'}</Label>
+              <Select id="providerType" ariaLabelledby="providerType-label" bind:value={providerType} placeholder="Select provider..." options={providerOptionsForContext} onchange={onProviderChange} />
+            </div>
 
-              {#if providerType && providerType !== 'mountOS'}
+            {#if providerType}
+              <div class="space-y-2">
+                <Label for="endpoint">Endpoint</Label>
+                {#if isCustomEndpoint(providerType)}
+                  <Input id="endpoint" bind:value={endpoint} placeholder="https://your-object-store-endpoint.com" required aria-required="true" />
+                {:else}
+                  <Input id="endpoint" value={endpoint} readonly class="font-mono text-sm text-muted-foreground" />
+                {/if}
+              </div>
+              <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
                 <div class="space-y-2">
-                  <Label for="endpoint">Endpoint</Label>
-                  {#if isCustomEndpoint(providerType)}
-                    <Input id="endpoint" bind:value={endpoint} placeholder="https://your-object-store-endpoint.com" required aria-required="true" />
-                  {:else}
-                    <Input id="endpoint" value={endpoint} readonly class="font-mono text-sm text-muted-foreground" />
-                  {/if}
+                  <Label for="region">{regionLabel}</Label>
+                  <Input id="region" bind:value={region} placeholder={regionPlaceholder} />
                 </div>
+                <div class="space-y-2">
+                  <Label for="bucket">{bucketLabel}</Label>
+                  <Input id="bucket" bind:value={bucket} placeholder={bucketPlaceholder} />
+                </div>
+              </div>
+              <div class="space-y-2">
+                <Label for="base">Base Path</Label>
+                <Input id="base" bind:value={base} placeholder="Path prefix" />
+              </div>
+
+              <Separator />
+
+              <p class="text-sm font-medium">Credentials</p>
+              {#if accessKeyReadonly}
+                <!-- Azure: storage account name above already drives accessKey;
+                     no second input needed. Just collect the account key. -->
+                <div class="space-y-2">
+                  <Label for="secretKey">{secretKeyLabel}</Label>
+                  <SecretInput id="secretKey" bind:value={secretKey} placeholder={secretKeyPlaceholder} />
+                </div>
+              {:else}
                 <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
                   <div class="space-y-2">
-                    <Label for="region">{regionLabel}</Label>
-                    <Input id="region" bind:value={region} placeholder={regionPlaceholder} />
+                    <Label for="accessKey">{accessKeyLabel}</Label>
+                    <Input id="accessKey" bind:value={accessKey} placeholder={accessKeyPlaceholder} />
                   </div>
-                  <div class="space-y-2">
-                    <Label for="bucket">{bucketLabel}</Label>
-                    <Input id="bucket" bind:value={bucket} placeholder={bucketPlaceholder} />
-                  </div>
-                </div>
-                <div class="space-y-2">
-                  <Label for="base">Base Path</Label>
-                  <Input id="base" bind:value={base} placeholder="Path prefix" />
-                </div>
-
-                <Separator />
-
-                <p class="text-sm font-medium">Credentials</p>
-                {#if accessKeyReadonly}
-                  <!-- Azure: storage account name above already drives accessKey;
-                       no second input needed. Just collect the account key. -->
                   <div class="space-y-2">
                     <Label for="secretKey">{secretKeyLabel}</Label>
                     <SecretInput id="secretKey" bind:value={secretKey} placeholder={secretKeyPlaceholder} />
                   </div>
-                {:else}
-                  <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
-                    <div class="space-y-2">
-                      <Label for="accessKey">{accessKeyLabel}</Label>
-                      <Input id="accessKey" bind:value={accessKey} placeholder={accessKeyPlaceholder} />
-                    </div>
-                    <div class="space-y-2">
-                      <Label for="secretKey">{secretKeyLabel}</Label>
-                      <SecretInput id="secretKey" bind:value={secretKey} placeholder={secretKeyPlaceholder} />
-                    </div>
-                  </div>
-                {/if}
-
-                <BucketTester
-                  {endpoint}
-                  {region}
-                  {bucket}
-                  {accessKey}
-                  {secretKey}
-                  {providerType}
-                  disabled={!objectStoreReady}
-                  onresult={(passed) => { bucketVerified = passed }}
-                />
+                </div>
               {/if}
+
+              <BucketTester
+                {endpoint}
+                {region}
+                {bucket}
+                {accessKey}
+                {secretKey}
+                {providerType}
+                disabled={!objectStoreReady}
+                onresult={(passed) => { bucketVerified = passed }}
+              />
             {/if}
           {/if}
 
