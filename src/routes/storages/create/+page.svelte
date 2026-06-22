@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte'
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { useStorages } from '$lib/core/stores/storages.svelte'
@@ -16,6 +17,8 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
+  import Copy from '@lucide/svelte/icons/copy'
+  import Check from '@lucide/svelte/icons/check'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import {
     PROVIDER_OPTIONS, generateEndpoint, isCustomEndpoint, getProvider, isAzureProvider,
@@ -76,7 +79,12 @@
 
   const STORAGE_MODES = [
     { value: 'single', label: 'Single' },
-    { value: 'ha', label: 'High Availability (2 members)' },
+    { value: 'ha', label: 'High Availability (2 or 3 members)' },
+  ]
+
+  const HA_MEMBER_COUNTS = [
+    { value: '2', label: '2 members' },
+    { value: '3', label: '3 members' },
   ]
 
   let name = $state('')
@@ -95,9 +103,13 @@
   let submitting = $state(false)
   let bucketVerified = $state(false)
   let storageMode = $state('single')
+  let haMembers = $state('2')
   let member1Az = $state('')
   let member2Az = $state('')
+  let member3Az = $state('')
   let createdBlockVolumeIds = $state<string[]>([])
+  let copiedIndex = $state(-1)
+  let copyTimer: ReturnType<typeof setTimeout> | undefined
 
   const isBlock = $derived(storageType === 'block')
   const isHybrid = $derived(isBlock && blockType === 'hybrid')
@@ -121,14 +133,14 @@
     storageType = v
     resetObjectStoreFields()
     blockType = ''
-    storageMode = 'single'; member1Az = ''; member2Az = ''
+    storageMode = 'single'; haMembers = '2'; member1Az = ''; member2Az = ''; member3Az = ''
     if (v === 'block') providerType = 'mountOS'
   }
 
   function onBlockTypeChange(v: string) {
     blockType = v
     providerType = v === 'hybrid' ? '' : 'mountOS'
-    storageMode = 'single'; member1Az = ''; member2Az = ''
+    storageMode = 'single'; haMembers = '2'; member1Az = ''; member2Az = ''; member3Az = ''
     endpoint = ''; region = ''; bucket = ''; base = ''
     accessKey = ''; secretKey = ''; bucketVerified = false
   }
@@ -184,7 +196,11 @@
     try {
       const isStandard = isBlock && !isHybrid
       const availabilityZones = isBlock
-        ? (storageMode === 'ha' ? [member1Az.trim(), member2Az.trim()] : (member1Az.trim() ? [member1Az.trim()] : undefined))
+        ? (storageMode === 'ha'
+            ? (haMembers === '3'
+              ? [member1Az.trim(), member2Az.trim(), member3Az.trim()]
+              : [member1Az.trim(), member2Az.trim()])
+            : (member1Az.trim() ? [member1Az.trim()] : undefined))
         : undefined
       const res = await storageStore.createStorage({
         accountId,
@@ -208,7 +224,7 @@
       // operator to copy into each blockserv's BLOCK_VOLUME_ID env before leaving.
       if (res.blockVolumeIds?.length) {
         createdBlockVolumeIds = res.blockVolumeIds
-        showSuccessToast('Storage created — copy the block-volume IDs below')
+        showSuccessToast('Storage created: copy the block-volume IDs below')
       } else {
         showSuccessToast('Storage created')
         goto('/storages')
@@ -219,6 +235,19 @@
       submitting = false
     }
   }
+
+  async function copyId(value: string, i: number) {
+    try {
+      await navigator.clipboard.writeText(value)
+      copiedIndex = i
+      clearTimeout(copyTimer)
+      copyTimer = setTimeout(() => { copiedIndex = -1 }, 1500)
+    } catch {
+      // Clipboard unavailable (insecure context / denied); the id stays selectable.
+    }
+  }
+
+  onDestroy(() => clearTimeout(copyTimer))
 </script>
 
 <svelte:head><title>Create Storage · mountOS Admin</title></svelte:head>
@@ -249,8 +278,8 @@
             <Combobox options={regionOptions} bind:value={regionId} placeholder="Select region..." emptyText="No regions found." aria-labelledby="region-label" />
           </div>
           <div class="space-y-2">
-            <Label for="storageType">Storage Type</Label>
-            <Select id="storageType" bind:value={storageType} placeholder="Select type..."
+            <Label id="storageType-label" for="storageType">Storage Type</Label>
+            <Select id="storageType" ariaLabelledby="storageType-label" bind:value={storageType} placeholder="Select type..."
               options={[{ value: 'object', label: 'Object' }, { value: 'block', label: 'Block' }]} onchange={onStorageTypeChange} />
           </div>
 
@@ -275,19 +304,25 @@
               </div>
               <div class="grid gap-3 sm:gap-4 sm:grid-cols-2">
                 <div class="space-y-2">
-                  <Label for="blockType">Block Type</Label>
-                  <Select id="blockType" bind:value={blockType} placeholder="Select block type..." options={BLOCK_TYPES} onchange={onBlockTypeChange} />
+                  <Label id="blockType-label" for="blockType">Block Type</Label>
+                  <Select id="blockType" ariaLabelledby="blockType-label" bind:value={blockType} placeholder="Select block type..." options={BLOCK_TYPES} onchange={onBlockTypeChange} />
                 </div>
                 <div class="space-y-2">
-                  <Label for="blockSize">Block Size</Label>
-                  <Select id="blockSize" bind:value={blockSize} options={BLOCK_SIZES} />
+                  <Label id="blockSize-label" for="blockSize">Block Size</Label>
+                  <Select id="blockSize" ariaLabelledby="blockSize-label" bind:value={blockSize} options={BLOCK_SIZES} />
                 </div>
               </div>
 
               <div class="space-y-2">
-                <Label for="storageMode">Mode</Label>
-                <Select id="storageMode" bind:value={storageMode} options={STORAGE_MODES} />
+                <Label id="storageMode-label" for="storageMode">Mode</Label>
+                <Select id="storageMode" ariaLabelledby="storageMode-label" bind:value={storageMode} options={STORAGE_MODES} />
               </div>
+              {#if storageMode === 'ha'}
+                <div class="space-y-2">
+                  <Label id="haMembers-label" for="haMembers">HA Members</Label>
+                  <Select id="haMembers" ariaLabelledby="haMembers-label" bind:value={haMembers} options={HA_MEMBER_COUNTS} />
+                </div>
+              {/if}
               <div class="space-y-2">
                 <Label for="member1Az">Availability Zone{storageMode === 'ha' ? ' (Member 1)' : ''}</Label>
                 <Input id="member1Az" bind:value={member1Az} placeholder="e.g. us-east-1a" autocomplete="off" />
@@ -297,6 +332,12 @@
                   <Label for="member2Az">Availability Zone (Member 2)</Label>
                   <Input id="member2Az" bind:value={member2Az} placeholder="e.g. us-east-1b" autocomplete="off" />
                 </div>
+                {#if haMembers === '3'}
+                  <div class="space-y-2">
+                    <Label for="member3Az">Availability Zone (Member 3)</Label>
+                    <Input id="member3Az" bind:value={member3Az} placeholder="e.g. us-east-1c" autocomplete="off" />
+                  </div>
+                {/if}
               {/if}
 
               {#if isHybrid}
@@ -308,13 +349,13 @@
             {#if needsObjectStore}
               {#if !isBlock}
                 <div class="space-y-2">
-                  <Label for="providerType">Object Storage Provider</Label>
-                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={providerOptionsForContext} onchange={onProviderChange} />
+                  <Label id="providerType-label" for="providerType">Object Storage Provider</Label>
+                  <Select id="providerType" ariaLabelledby="providerType-label" bind:value={providerType} placeholder="Select provider..." options={providerOptionsForContext} onchange={onProviderChange} />
                 </div>
               {:else if isHybrid}
                 <div class="space-y-2">
-                  <Label for="providerType">Backing Storage Provider</Label>
-                  <Select id="providerType" bind:value={providerType} placeholder="Select provider..." options={providerOptionsForContext} onchange={onProviderChange} />
+                  <Label id="providerType-label" for="providerType">Backing Storage Provider</Label>
+                  <Select id="providerType" ariaLabelledby="providerType-label" bind:value={providerType} placeholder="Select provider..." options={providerOptionsForContext} onchange={onProviderChange} />
                 </div>
               {/if}
 
@@ -384,14 +425,28 @@
             <div class="space-y-2">
               <p class="text-sm font-medium">Block Volume IDs</p>
               <p class="text-sm text-muted-foreground">
-                Copy each id into the matching blockserv's <code>BLOCK_VOLUME_ID</code> env.{#if createdBlockVolumeIds.length === 2} First is member 1, second is member 2.{/if}
+                Copy each id into the matching blockserv's <code>BLOCK_VOLUME_ID</code> env.{#if createdBlockVolumeIds.length > 1} They are listed in member order.{/if}
               </p>
               {#each createdBlockVolumeIds as id, i (id)}
                 <div class="flex items-center gap-2">
-                  {#if createdBlockVolumeIds.length === 2}<span class="w-16 text-xs text-muted-foreground">Member {i + 1}</span>{/if}
-                  <code class="flex-1 break-all rounded bg-muted px-2 py-1 font-mono text-xs">{id}</code>
+                  {#if createdBlockVolumeIds.length > 1}<span class="w-16 shrink-0 text-xs text-muted-foreground">Member {i + 1}</span>{/if}
+                  <code class="flex-1 min-w-0 break-all rounded-sm bg-muted px-2 py-1 font-mono text-xs">{id}</code>
+                  <Button
+                    variant="ghost" size="icon" type="button" class="shrink-0 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+                    aria-label={createdBlockVolumeIds.length > 1 ? `Copy member ${i + 1} id` : 'Copy block volume id'}
+                    onclick={() => copyId(id, i)}
+                  >
+                    {#if copiedIndex === i}
+                      <Check class="size-4 text-primary" aria-hidden="true" />
+                    {:else}
+                      <Copy class="size-4" aria-hidden="true" />
+                    {/if}
+                  </Button>
                 </div>
               {/each}
+              <span class="sr-only" role="status" aria-live="polite">
+                {copiedIndex >= 0 ? (createdBlockVolumeIds.length > 1 ? `Member ${copiedIndex + 1} id copied` : 'Block volume id copied') : ''}
+              </span>
               <Button variant="primary" type="button" class="cyberpunk-skewed-sm" onclick={() => goto('/storages')}>Done</Button>
             </div>
           {:else}

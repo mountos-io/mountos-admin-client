@@ -97,7 +97,7 @@
       })
       showSuccessToast('Volume created')
       if (result.encryptionKey) {
-        createResult = result
+        createResult = { id: result.id, encryptionKey: result.encryptionKey }
       } else {
         goto(`/volumes/${result.id}`, { replaceState: true })
       }
