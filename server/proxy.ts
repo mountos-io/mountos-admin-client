@@ -13,6 +13,14 @@ if (PRIVATE_KEY.length !== 44 || keyBytes.length !== 32) {
 
 const signer = new TokenSigner(PRIVATE_KEY)
 
+// Dedicated HMAC secret for the X-MountOS-Dashboard-User header. Must match the
+// appserv DASHBOARD_USER_HMAC_KEY; it is a separate secret from the admin
+// signing key (never the public verification key).
+const DASHBOARD_USER_HMAC_KEY = process.env.DASHBOARD_USER_HMAC_KEY
+if (!DASHBOARD_USER_HMAC_KEY) {
+  throw new Error('DASHBOARD_USER_HMAC_KEY is required to sign the X-MountOS-Dashboard-User header')
+}
+
 // Volume fields a regular user is not allowed to set on create/edit. Rejected
 // pre-proxy so a tampered client can't sneak past the UI gates. Appserv
 // enforces the same constraints based on the signed DashboardUser role.
@@ -111,7 +119,7 @@ proxy.all('/api/v1/*', async (c) => {
 
     if (adminUser) {
       headers['X-MountOS-Dashboard-User'] = await signDashboardUser(
-        adminUser as DashboardUser, PRIVATE_KEY
+        adminUser as DashboardUser, DASHBOARD_USER_HMAC_KEY
       )
     }
 
