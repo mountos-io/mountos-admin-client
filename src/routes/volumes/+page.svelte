@@ -218,7 +218,9 @@
       <TableRow>
         <TableHead class="th-cyber">Name</TableHead>
         <TableHead class="th-cyber">Type</TableHead>
+        <TableHead class="th-cyber hidden sm:table-cell">Kind</TableHead>
         <TableHead class="th-cyber hidden lg:table-cell">Region</TableHead>
+        <TableHead class="th-cyber hidden lg:table-cell">Cluster</TableHead>
         <TableHead class="th-cyber hidden lg:table-cell">Storage</TableHead>
         <TableHead class="th-cyber w-10"><span class="sr-only">Lock</span></TableHead>
         <TableHead class="th-cyber w-10"><span class="sr-only">Encryption</span></TableHead>
@@ -244,6 +246,8 @@
         cells={[
           { width: 'w-32' },
           { width: 'w-16' },
+          { width: 'w-16', class: 'hidden sm:table-cell' },
+          { width: 'w-20', class: 'hidden lg:table-cell' },
           { width: 'w-20', class: 'hidden lg:table-cell' },
           { width: 'w-24', class: 'hidden lg:table-cell' },
           { width: 'w-4' },
@@ -275,7 +279,11 @@
               <TableCell>
                 <Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize">{volume.volumeType}</Badge>
               </TableCell>
+              <TableCell class="hidden sm:table-cell">
+                {#if volume.storageType}<Badge variant="outline" class="capitalize">{volume.storageType}</Badge>{/if}
+              </TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.region.name}</TableCell>
+              <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.regionCluster?.name || '—'}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.storage.name}</TableCell>
               <TableCell>
                 {#if volume.locked}<Lock class="size-4 text-warning" aria-label="Locked" />{/if}

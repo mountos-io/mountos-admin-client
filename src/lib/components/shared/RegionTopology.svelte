@@ -30,6 +30,7 @@
   import { formatRelative } from '$lib/core/utils/format'
   import type { Region, ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
+  import Plus from '@lucide/svelte/icons/plus'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import MoreVertical from '@lucide/svelte/icons/more-vertical'
   import Pencil from '@lucide/svelte/icons/pencil'
@@ -201,6 +202,23 @@
     return SERVICE_PALETTE[type] ?? { accent: 'var(--muted-foreground)', bg: 'color-mix(in oklch, var(--muted-foreground) 8%, transparent)', label: type, icon: Box }
   }
 
+  // blockserv nodes serve a single storage each; group them by metadata.storage_id so
+  // operators see which members back which storage (insertion order preserved).
+  function groupByStorage(nodes: ServiceNode[]) {
+    const order: string[] = []
+    const map = new Map<string, ServiceNode[]>()
+    for (const n of nodes) {
+      const raw = n.metadata?.['storage_id']
+      const sid = typeof raw === 'string' && raw ? raw : 'unassigned'
+      if (!map.has(sid)) { map.set(sid, []); order.push(sid) }
+      map.get(sid)!.push(n)
+    }
+    return order.map(sid => ({ storageId: sid, nodes: map.get(sid)! }))
+  }
+  function shortStorageId(sid: string) {
+    return sid === 'unassigned' ? 'unassigned' : `storage ${sid.slice(0, 8)}`
+  }
+
   function toggleDim(type: string) {
     const next = new Set(dimmedServices)
     next.has(type) ? next.delete(type) : next.add(type)
@@ -245,7 +263,8 @@
     })
   })
 
-  // Hub regions have no clusters; skip the fetch entirely.
+  // Hub nodes aren't cluster-scoped (the hub's "uno" cluster exists only for
+  // consistency); skip the cluster fetch for the topology view.
   $effect(() => {
     if (regionId && !isHubRegion) {
       untrack(() => {
@@ -359,6 +378,17 @@
       />
     {/if}
     <div class="ml-auto flex items-center gap-2">
+      {#if !isHubRegion && !auth.isUserRole}
+        <Button
+          variant="primary"
+          size="sm"
+          class="cyberpunk-skewed-sm gap-1.5 shadow-[0_0_14px_-3px_var(--primary)] hover:shadow-[0_0_20px_-2px_var(--primary)] transition-shadow"
+          onclick={() => goto(`${basePath}/${regionId}/clusters/create`)}
+        >
+          <Plus class="size-3.5" aria-hidden="true" />
+          New cluster
+        </Button>
+      {/if}
       <Button variant="outline" size="sm" onclick={() => goto(`${basePath}/${regionId}/clusters`)}>
         Clusters
       </Button>
@@ -597,6 +627,28 @@
 
     {#snippet graphicalGrid(td: ReturnType<typeof buildTierData>)}
       <div class="topo-grid scanlines relative flex flex-wrap gap-5" style="contain: layout;">
+        {#snippet nodeRow(node: ServiceNode, isDataserv: boolean)}
+          <button
+            class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
+            aria-label="View node {node.nodeId}, status {node.status}"
+            onclick={() => goto(`${basePath}/${regionId}/${node.nodeId}`)}
+            onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
+            onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
+            onpointerleave={() => hoveredNode = null}
+            onfocus={(e: FocusEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); hoveredNode = { node, x: r.right, y: r.top } }}
+            onblur={() => hoveredNode = null}
+          >
+            <span
+              class="led-dot block h-2 w-2 shrink-0 rounded-full"
+              class:led-ping={node.status === 'healthy'}
+              class:led-raft={isDataserv}
+              style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
+              title={node.status}
+            ></span>
+            <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
+            <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
+          </button>
+        {/snippet}
         {#each td as tier}
           {@const tierColor = TIER_COLORS[tier.id]}
           <div class="monitor-frame flex flex-col items-center w-full md:w-auto">
@@ -662,31 +714,26 @@
                     </div>
 
                     <div role="list" aria-label="{p.label} nodes" class="divide-y divide-border/20">
-                      {#each visibleNodes as node}
-                        <button
-                          class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
-                          aria-label="View node {node.nodeId}, status {node.status}"
-                          onclick={() => goto(`${basePath}/${regionId}/${node.nodeId}`)}
-                          onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
-                          onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
-                          onpointerleave={() => hoveredNode = null}
-                          onfocus={(e: FocusEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); hoveredNode = { node, x: r.right, y: r.top } }}
-                          onblur={() => hoveredNode = null}
-                        >
-                          <span
-                            class="led-dot block h-2 w-2 shrink-0 rounded-full"
-                            class:led-ping={node.status === 'healthy'}
-                            class:led-raft={isDataserv}
-                            style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
-                            title={node.status}
-                          ></span>
-                          <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
-                          <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
-                        </button>
-                      {/each}
+                      {#if group.type === 'blockserv'}
+                        {#each groupByStorage(group.nodes) as sg (sg.storageId)}
+                          <div class="flex items-center gap-1.5 bg-foreground/[0.02] px-3 py-1">
+                            <Box class="size-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                            <span class="truncate font-mono text-[10px] text-muted-foreground"
+                              title={sg.storageId === 'unassigned' ? 'No storage_id in node metadata' : sg.storageId}>{shortStorageId(sg.storageId)}</span>
+                            <span class="ml-auto font-mono text-[10px] tabular-nums text-muted-foreground">{sg.nodes.length}</span>
+                          </div>
+                          {#each sg.nodes as node}
+                            {@render nodeRow(node, isDataserv)}
+                          {/each}
+                        {/each}
+                      {:else}
+                        {#each visibleNodes as node}
+                          {@render nodeRow(node, isDataserv)}
+                        {/each}
+                      {/if}
                     </div>
 
-                    {#if needsCollapse}
+                    {#if needsCollapse && group.type !== 'blockserv'}
                       <button
                         class="min-h-[44px] flex w-full items-center justify-center gap-1 border-t border-border/20 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground hover:bg-foreground/[0.03]"
                         aria-expanded={expanded}

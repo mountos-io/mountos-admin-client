@@ -4,6 +4,7 @@ export type {
   User,
   Region,
   Storage,
+  BlockVolume,
   Volume,
   Fork,
   AuditLog,

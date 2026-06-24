@@ -19,14 +19,12 @@
   import TableSkeleton from "$lib/components/shared/TableSkeleton.svelte";
   import ConfirmDialog from "$lib/components/shared/ConfirmDialog.svelte";
   import { formatDate, formatBytes } from "$lib/core/utils/format";
-  import { showErrorToast, showSuccessToast } from "$lib/core/utils/toast";
-  import { copyText } from "$lib/core/utils/clipboard";
+  import { showErrorToast } from "$lib/core/utils/toast";
   import { useConfirmDialog } from "$lib/stores/confirm-dialog.svelte";
   import { Input } from "$lib/components/ui/input";
   import { HUB_REGION_NAME } from "$lib/core/constants";
   import Plus from "@lucide/svelte/icons/plus";
   import Power from "@lucide/svelte/icons/power";
-  import Copy from "@lucide/svelte/icons/copy";
   import PageHeader from '$lib/components/shared/PageHeader.svelte';
   import FilterPanel from '$lib/components/shared/FilterPanel.svelte';
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte';
@@ -69,14 +67,6 @@
     });
   });
 
-  async function copyExportId(exportId: string) {
-    if (await copyText(exportId)) {
-      showSuccessToast("Copied to clipboard");
-    } else {
-      showErrorToast("Failed to copy");
-    }
-  }
-
   function deactivate(region: { id: number; name: string; isActive: boolean }) {
     if (!region.isActive || !auth.guard("regions", "update")) return;
     dialog.confirm(
@@ -107,12 +97,6 @@
     <TableRow>
       <TableHead class="th-cyber">Name</TableHead>
       <TableHead class="th-cyber">Base DNS</TableHead>
-      <TableHead class="th-cyber hidden lg:table-cell">
-        <span class="inline-flex items-center gap-1">
-          Export ID
-          <InfoTip text="Set as env on service instances to group them under one regional umbrella" />
-        </span>
-      </TableHead>
       <TableHead class="th-cyber hidden md:table-cell">
         <span class="inline-flex items-center gap-1">
           Live
@@ -138,7 +122,6 @@
       cells={[
         { width: 'w-32' },
         { width: 'w-40' },
-        { width: 'w-24', class: 'hidden lg:table-cell' },
         { width: 'w-16', class: 'hidden md:table-cell' },
         { width: 'w-16', class: 'hidden md:table-cell' },
         { width: 'w-16', height: 'h-5' },
@@ -163,19 +146,6 @@
               <a href="/regions/{region.id}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Region {region.name}{region.isActive ? '' : ', deactivated'}">{region.name}</a>
             </TableCell>
             <TableCell class="font-mono text-sm max-w-[200px] truncate" title={region.dns}>{region.dns}</TableCell>
-            <TableCell class="hidden lg:table-cell">
-              <span class="inline-flex items-center gap-1 font-mono text-sm">
-                {region.exportId}
-                <button
-                  type="button"
-                  title="Copy Export ID" aria-label="Copy Export ID"
-                  class="relative z-10 inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-1.5 -m-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  onclick={() => copyExportId(region.exportId)}
-                >
-                  <Copy class="size-3.5" aria-hidden="true" />
-                </button>
-              </span>
-            </TableCell>
             <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono">{formatBytes(region.liveVolume)}</TableCell>
             <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono">{formatBytes(region.totalVolume)}</TableCell>
             <TableCell><StatusBadge active={region.isActive} /></TableCell>

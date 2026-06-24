@@ -12,6 +12,7 @@
   import Label from '$lib/components/ui/label/label.svelte'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
+  import StorageMembers from '$lib/components/shared/StorageMembers.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
@@ -274,6 +275,10 @@
         </CardFooter>
       {/if}
     </Card>
+
+    {#if !isObject}
+      <StorageMembers storageId={storage.id} regionId={storage.regionInfo.id} />
+    {/if}
   {:else}
     <p class="text-muted-foreground">Storage not found.</p>
   {/if}

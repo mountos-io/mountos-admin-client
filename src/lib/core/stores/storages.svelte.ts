@@ -58,6 +58,10 @@ async function getStorage(id: number) {
   return api.storages.get(id)
 }
 
+async function listBlockVolumes(id: number, signal?: AbortSignal) {
+  return api.storages.listBlockVolumes(id, signal)
+}
+
 async function deactivateStorage(id: number) {
   await api.storages.deactivate(id)
 }
@@ -80,6 +84,7 @@ export function useStorages() {
     createStorage,
     editStorage,
     getStorage,
+    listBlockVolumes,
     deactivateStorage,
     testBucket,
     testStorageBucket,

@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation'
   import { useStorages } from '$lib/core/stores/storages.svelte'
   import { useRegions } from '$lib/core/stores/regions.svelte'
+  import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Button } from '$lib/components/ui/button'
@@ -19,6 +20,10 @@
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
   import Copy from '@lucide/svelte/icons/copy'
   import Check from '@lucide/svelte/icons/check'
+  import Plus from '@lucide/svelte/icons/plus'
+  import X from '@lucide/svelte/icons/x'
+  import Lightbulb from '@lucide/svelte/icons/lightbulb'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import {
     PROVIDER_OPTIONS, generateEndpoint, isCustomEndpoint, getProvider, isAzureProvider,
@@ -27,7 +32,9 @@
 
   const storageStore = useStorages()
   const regionStore = useRegions()
+  const clusterStore = useClusters()
   const accountStore = useAccounts()
+  const MAX_BLOCK_MEMBERS = 3
   const auth = useAuth()
   const accountId = $derived(accountStore.selectedAccountId)
 
@@ -72,16 +79,6 @@
     { value: '8388608', label: '8 MiB' },
   ]
 
-  const STORAGE_MODES = [
-    { value: 'single', label: 'Single' },
-    { value: 'ha', label: 'High Availability (2 or 3 members)' },
-  ]
-
-  const HA_MEMBER_COUNTS = [
-    { value: '2', label: '2 members' },
-    { value: '3', label: '3 members' },
-  ]
-
   let name = $state('')
   let description = $state('')
   let regionId = $state('')
@@ -96,11 +93,9 @@
   let secretKey = $state('')
   let submitting = $state(false)
   let bucketVerified = $state(false)
-  let storageMode = $state('single')
-  let haMembers = $state('2')
-  let member1Az = $state('')
-  let member2Az = $state('')
-  let member3Az = $state('')
+  type MemberDraft = { id: number; name: string; regionClusterId: string }
+  let memberSeq = 0
+  let members = $state<MemberDraft[]>([{ id: memberSeq++, name: '', regionClusterId: '' }])
   let createdBlockVolumeIds = $state<string[]>([])
   let copiedIndex = $state(-1)
   let copyTimer: ReturnType<typeof setTimeout> | undefined
@@ -126,7 +121,51 @@
   function onStorageTypeChange(v: string) {
     storageType = v
     resetObjectStoreFields()
-    storageMode = 'single'; haMembers = '2'; member1Az = ''; member2Az = ''; member3Az = ''
+    members = [{ id: memberSeq++, name: '', regionClusterId: '' }]
+  }
+
+  // Block members are placed per region cluster. Load the region's clusters when a block
+  // storage is being configured so each member can pick a placement.
+  $effect(() => {
+    if (isBlock && regionId) clusterStore.fetchClusters(Number(regionId), { isActive: true })
+  })
+
+  // Clusters are region-scoped: clear each member's placement when the region changes so a
+  // stale cluster id from a previous region can't be submitted (the backend would reject
+  // it, and the Select would silently show its placeholder while holding a non-empty value).
+  let lastClusterRegion = ''
+  $effect(() => {
+    const rid = regionId
+    if (rid === lastClusterRegion) return
+    lastClusterRegion = rid
+    for (const m of members) m.regionClusterId = ''
+  })
+
+  // Only ready+active clusters can host a member (the API rejects others). Each cluster is
+  // treated as an optional availability/placement boundary for HA.
+  const clusterOptions = $derived(
+    clusterStore.clustersFor(Number(regionId))
+      .filter(c => c.isActive && c.isReady)
+      .map(c => ({ value: String(c.id), label: c.defaultCluster ? `${c.name} (default)` : c.name }))
+  )
+  const hasReadyClusters = $derived(clusterOptions.length > 0)
+  const clustersLoading = $derived(!!regionId && clusterStore.isLoading(Number(regionId)))
+  const membersComplete = $derived(members.every(m => !!m.regionClusterId))
+  const duplicateClusterMembers = $derived.by(() => {
+    const seen = new Set<string>()
+    for (const m of members) {
+      if (!m.regionClusterId) continue
+      if (seen.has(m.regionClusterId)) return true
+      seen.add(m.regionClusterId)
+    }
+    return false
+  })
+
+  function addMember() {
+    if (members.length < MAX_BLOCK_MEMBERS) members = [...members, { id: memberSeq++, name: '', regionClusterId: '' }]
+  }
+  function removeMember(i: number) {
+    if (members.length > 1) members = members.filter((_, idx) => idx !== i)
   }
 
   function onProviderChange(v: string) {
@@ -169,7 +208,7 @@
   const canSubmit = $derived(
     !!(name.trim() && regionId && storageType && providerType
       && objectStoreReady && bucketVerified
-      && (!isBlock || !!blockEndpoint))
+      && (!isBlock || (!!blockEndpoint && membersComplete)))
   )
 
   async function handleSubmit(e: Event) {
@@ -177,13 +216,6 @@
     if (!canSubmit || !accountId) return
     submitting = true
     try {
-      const availabilityZones = isBlock
-        ? (storageMode === 'ha'
-            ? (haMembers === '3'
-              ? [member1Az.trim(), member2Az.trim(), member3Az.trim()]
-              : [member1Az.trim(), member2Az.trim()])
-            : (member1Az.trim() ? [member1Az.trim()] : undefined))
-        : undefined
       const res = await storageStore.createStorage({
         accountId,
         regionId: Number(regionId),
@@ -196,8 +228,9 @@
         bucket: bucket.trim() || undefined,
         base: base.trim() || undefined,
         blockSize: isBlock ? Number(blockSize) : undefined,
-        storageMode: isBlock ? storageMode : undefined,
-        availabilityZones,
+        members: isBlock
+          ? members.map(m => ({ name: m.name.trim() || undefined, regionClusterId: Number(m.regionClusterId) }))
+          : undefined,
         accessKey: accessKey.trim() || undefined,
         secretKey: secretKey.trim() || undefined,
       })
@@ -284,32 +317,62 @@
                 <Select id="blockSize" ariaLabelledby="blockSize-label" bind:value={blockSize} options={BLOCK_SIZES} />
               </div>
 
-              <div class="space-y-2">
-                <Label id="storageMode-label" for="storageMode">Mode</Label>
-                <Select id="storageMode" ariaLabelledby="storageMode-label" bind:value={storageMode} options={STORAGE_MODES} />
-              </div>
-              {#if storageMode === 'ha'}
-                <div class="space-y-2">
-                  <Label id="haMembers-label" for="haMembers">HA Members</Label>
-                  <Select id="haMembers" ariaLabelledby="haMembers-label" bind:value={haMembers} options={HA_MEMBER_COUNTS} />
-                </div>
-              {/if}
-              <div class="space-y-2">
-                <Label for="member1Az">Availability Zone{storageMode === 'ha' ? ' (Member 1)' : ''}</Label>
-                <Input id="member1Az" bind:value={member1Az} placeholder="e.g. us-east-1a" autocomplete="off" />
-              </div>
-              {#if storageMode === 'ha'}
-                <div class="space-y-2">
-                  <Label for="member2Az">Availability Zone (Member 2)</Label>
-                  <Input id="member2Az" bind:value={member2Az} placeholder="e.g. us-east-1b" autocomplete="off" />
-                </div>
-                {#if haMembers === '3'}
-                  <div class="space-y-2">
-                    <Label for="member3Az">Availability Zone (Member 3)</Label>
-                    <Input id="member3Az" bind:value={member3Az} placeholder="e.g. us-east-1c" autocomplete="off" />
+              <div class="space-y-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-medium">Block Volume Members</p>
+                    <p class="text-xs text-muted-foreground">One member per blockserv. Add members for high availability (up to {MAX_BLOCK_MEMBERS}).</p>
                   </div>
+                  <Button variant="outline" size="sm" type="button" class="gap-1.5 shrink-0"
+                    onclick={addMember} disabled={members.length >= MAX_BLOCK_MEMBERS || !hasReadyClusters}>
+                    <Plus class="size-4" aria-hidden="true" /> Add member
+                  </Button>
+                </div>
+
+                <div class="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
+                  <Lightbulb class="size-4 shrink-0 text-primary" aria-hidden="true" />
+                  <p>A cluster is a logical grouping, not necessarily a separate availability zone — but for HA we treat each cluster as a placement boundary. Put members in <span class="font-medium text-foreground">different clusters</span> for fault isolation.</p>
+                </div>
+
+                {#if clustersLoading}
+                  <p class="text-sm text-muted-foreground">Loading clusters…</p>
+                {:else if !hasReadyClusters}
+                  <p class="text-sm text-destructive">This region has no ready clusters. Mark a cluster ready before creating a block storage.</p>
+                {:else}
+                  {#each members as member, i (member.id)}
+                    <div class="rounded-lg border p-3 space-y-3">
+                      <div class="flex items-center gap-2">
+                        <span class="text-sm font-medium">{i === 0 ? 'Originator' : `HA Member ${i + 1}`}</span>
+                        {#if members.length > 1}
+                          <button type="button" onclick={() => removeMember(i)}
+                            class="ml-auto inline-flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 items-center justify-center opacity-60 hover:opacity-100 hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring rounded-sm transition-[color,opacity]"
+                            aria-label={`Remove HA member ${i + 1}`} title="Remove member">
+                            <X class="size-4" aria-hidden="true" />
+                          </button>
+                        {/if}
+                      </div>
+                      <div class="grid gap-3 sm:grid-cols-2">
+                        <div class="space-y-2">
+                          <Label for={`member-name-${i}`}>Name <span class="font-normal text-muted-foreground">(optional)</span></Label>
+                          <Input id={`member-name-${i}`} bind:value={member.name} placeholder="e.g. primary" autocomplete="off" />
+                        </div>
+                        <div class="space-y-2">
+                          <Label id={`member-cluster-label-${i}`} for={`member-cluster-${i}`}>Availability / placement</Label>
+                          <Select id={`member-cluster-${i}`} ariaLabelledby={`member-cluster-label-${i}`}
+                            bind:value={member.regionClusterId} placeholder="Select cluster..." options={clusterOptions} />
+                        </div>
+                      </div>
+                    </div>
+                  {/each}
+
+                  {#if duplicateClusterMembers}
+                    <div class="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-2.5 text-xs text-warning">
+                      <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
+                      <p>Two or more members share the same cluster (same availability boundary), which reduces fault isolation.</p>
+                    </div>
+                  {/if}
                 {/if}
-              {/if}
+              </div>
 
               <Separator />
               <p class="text-sm font-medium">Backing Object Storage</p>

@@ -113,10 +113,14 @@
   <Card cornerBrackets>
     <CardHeader class="flex flex-row items-center justify-between gap-4">
       <div>
-        <CardTitle>Region Clusters</CardTitle>
+        <CardTitle>
+            <span class="inline-flex items-center gap-1">
+              Region Clusters
+              <InfoTip text="Volumes can only be assigned once the cluster is marked ready." />
+            </span>
+        </CardTitle>
         <p class="text-muted-foreground text-base">
-          Logical grouping of in-region service nodes for tenant isolation or load balancing.
-          Volumes can only be assigned once the cluster is marked ready.
+          Logical grouping of in-region service nodes used for tenant isolation, load balancing, or availability and placement control.
         </p>
       </div>
       {#if !auth.isUserRole}
