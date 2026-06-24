@@ -4,6 +4,7 @@
   import { Badge } from '$lib/components/ui/badge'
   import { Separator } from '$lib/components/ui/separator'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
+  import BlockStorageHelpDialog from '$lib/components/shared/BlockStorageHelpDialog.svelte'
   import { nodeStatusVariant } from '$lib/core/utils/format'
   import { api } from '$lib/core/stores/client.svelte'
   import { copyText } from '$lib/core/utils/clipboard'
@@ -66,9 +67,8 @@
     }
   }
 
-  function memberLabel(m: BlockVolume, i: number): string {
-    if (m.name) return m.name
-    return i === 0 ? 'Originator' : `Member ${i + 1}`
+  function memberLabel(m: BlockVolume): string {
+    return m.name || 'Block Volume'
   }
 </script>
 
@@ -86,18 +86,21 @@
         <Badge variant="secondary" class="font-mono text-[10px]">{envVar}</Badge>
       </div>
     {:else}
-      <p class="text-sm text-muted-foreground">—</p>
+      <p class="text-sm text-muted-foreground">(not set)</p>
     {/if}
   </div>
 {/snippet}
 
 <Card cornerBrackets>
   <CardHeader>
-    <CardTitle class="flex items-center gap-2">
-      <ServerIcon class="size-4" aria-hidden="true" />
-      Block Volume Members
-      {#if !loading && !error}<Badge variant="outline">{members.length}</Badge>{/if}
-    </CardTitle>
+    <div class="flex items-center gap-2">
+      <CardTitle class="flex items-center gap-2">
+        <ServerIcon class="size-4" aria-hidden="true" />
+        Block Volume Members
+        {#if !loading && !error}<Badge variant="outline">{members.length}</Badge>{/if}
+      </CardTitle>
+      <BlockStorageHelpDialog class="ml-auto" />
+    </div>
   </CardHeader>
   <CardContent class="space-y-4">
     <div class="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
@@ -115,12 +118,11 @@
       <p class="text-sm text-muted-foreground">No block volume members provisioned for this storage.</p>
     {:else}
       <ul class="space-y-4">
-        {#each members as m, i (m.id)}
+        {#each members as m (m.id)}
           {@const servers = nodesByVolume.get(m.id) ?? []}
           <li class="rounded-lg border p-4 space-y-3">
             <div class="flex items-center gap-3">
-              <span class="font-medium">{memberLabel(m, i)}</span>
-              {#if i === 0}<Badge variant="outline">originator</Badge>{/if}
+              <span class="font-medium">{memberLabel(m)}</span>
               <span class="ml-auto"><StatusBadge active={m.isActive} /></span>
             </div>
 
@@ -131,7 +133,7 @@
 
             <div class="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span>Cluster:</span>
-              <span class="font-medium text-foreground">{m.clusterName || '—'}</span>
+              <span class="font-medium text-foreground">{m.clusterName || '(not set)'}</span>
               {#if m.clusterReady}
                 <Badge variant="outline" class="text-[10px]">ready</Badge>
               {:else if m.regionClusterId}
@@ -149,7 +151,7 @@
                 {#if servers.length > 1}
                   <div class="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
                     <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
-                    <p>{servers.length} blockserv processes are serving this member. Each member should have exactly one — verify you didn't start duplicates with the same <code class="font-mono">BLOCK_VOLUME_ID</code>.</p>
+                    <p>{servers.length} blockserv processes are serving this member. Each member should have exactly one; verify you didn't start duplicates with the same <code class="font-mono">BLOCK_VOLUME_ID</code>.</p>
                   </div>
                 {/if}
                 <ul class="flex flex-wrap gap-2">

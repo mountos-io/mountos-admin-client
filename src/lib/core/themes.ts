@@ -109,7 +109,7 @@ export const themePresets: ThemePreset[] = [
     },
   },
   {
-    // Alucard — official Dracula light variant (https://draculatheme.com)
+    // Alucard: official Dracula light variant (https://draculatheme.com)
     name: "Alucard",
     family: "Dracula",
     mode: "light",

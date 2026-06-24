@@ -23,7 +23,7 @@ export function getPlatform(s: ClientSession): string {
   return md?.platform ?? ''
 }
 
-// Locked constraint for user role — scopes all fetches to a single user, not user-adjustable
+// Locked constraint for user role: scopes all fetches to a single user, not user-adjustable
 let userIdConstraint = $state<number | undefined>(undefined)
 
 // Page state (server-paginated + server-filtered)

@@ -33,7 +33,7 @@ const VOLUME_API_KEYS_GENERATE_PATH = /^\/api\/v1\/volumes\/\d+\/api-keys\/gener
 // Endpoints where userId must be enforced for user role via query param injection.
 // The proxy overwrites the userId query param with the value from the session token
 // regardless of what the client sent, so a tampered client cannot hijack another user's data.
-// Only list/aggregate endpoints are included — get-by-ID paths have no userId query param.
+// Only list/aggregate endpoints are included; get-by-ID paths have no userId query param.
 const USER_SCOPED_QUERY_PATHS: RegExp[] = [
   /^\/api\/v1\/client-sessions\/(list|summary)$/,
 ]
@@ -104,7 +104,7 @@ proxy.all('/api/v1/*', async (c) => {
     body = r.body
   }
 
-  // For user role, enforce userId from the session token on scoped list/aggregate endpoints —
+  // For user role, enforce userId from the session token on scoped list/aggregate endpoints;
   // overwrites whatever the client sent so a tampered client cannot read another user's data.
   if (adminUser?.role === ROLE.user && adminUser.userId != null && USER_SCOPED_QUERY_PATHS.some(p => p.test(upstreamPath))) {
     url.searchParams.set('userId', String(adminUser.userId))

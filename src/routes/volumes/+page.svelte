@@ -283,7 +283,7 @@
                 {#if volume.storageType}<Badge variant="outline" class="capitalize">{volume.storageType}</Badge>{/if}
               </TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.region.name}</TableCell>
-              <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.regionCluster?.name || '—'}</TableCell>
+              <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.regionCluster?.name || '(not set)'}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.storage.name}</TableCell>
               <TableCell>
                 {#if volume.locked}<Lock class="size-4 text-warning" aria-label="Locked" />{/if}

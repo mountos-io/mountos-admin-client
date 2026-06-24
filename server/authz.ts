@@ -21,7 +21,7 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
 const CREATE_SUFFIXES = ['/create', '/add']
 
 const USER_ROLE_RESOURCES = new Set(['volumes', 'auditLogs', 'dashboard', 'clientSessions', 'regions', 'storages'])
-// Resources not scoped to an account — exempt from accountId-on-list requirement
+// Resources not scoped to an account: exempt from accountId-on-list requirement
 const GLOBAL_RESOURCES = new Set(['regions', 'storages'])
 const API_KEY_PATH = /^\/api\/v1\/volumes\/(\d+)\/api-keys\/(generate|revoke(?:-by-user)?)$/
 const VOLUME_ID_PATH = /^\/api\/v1\/volumes\/(\d+)/

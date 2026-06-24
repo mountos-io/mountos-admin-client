@@ -1,0 +1,91 @@
+/* Clean-SVG diagram tokens, mirrored from mountos-overview so block-storage
+   diagrams render identically in both repos. Admin-client lacks the --d-*
+   tokens globally, so they are defined here; in mountos-overview they already
+   live in app.css and this block is a harmless redefinition. */
+:root {
+  --d-stroke: oklch(0.42 0 0);
+  --d-stroke-muted: oklch(0.80 0 0);
+  --d-surface: #ffffff;
+  --d-surface-alt: oklch(0.975 0 0);
+  --d-node-client: oklch(0.95 0.03 230);
+  --d-node-provider: oklch(0.95 0.03 345);
+  --d-node-edge: oklch(0.95 0.03 160);
+  --d-node-gateway: oklch(0.96 0.04 95);
+  --d-node-core: oklch(0.95 0.035 40);
+  --d-node-storage: oklch(0.95 0.03 290);
+  --d-text: oklch(0.24 0 0);
+  --d-text-muted: oklch(0.45 0 0);
+  --d-accent: oklch(0.48 0.10 255);
+}
+
+.dark {
+  --d-stroke: oklch(0.78 0 0);
+  --d-stroke-muted: oklch(0.46 0 0);
+  --d-surface: oklch(0.16 0.008 200);
+  --d-surface-alt: oklch(0.22 0 0);
+  --d-node-client: oklch(0.31 0.045 230);
+  --d-node-provider: oklch(0.31 0.045 345);
+  --d-node-edge: oklch(0.31 0.045 160);
+  --d-node-gateway: oklch(0.32 0.05 95);
+  --d-node-core: oklch(0.31 0.05 40);
+  --d-node-storage: oklch(0.31 0.045 290);
+  --d-text: oklch(0.93 0 0);
+  --d-text-muted: oklch(0.72 0 0);
+  --d-accent: oklch(0.74 0.10 255);
+}
+
+.diagram-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.diagram-svg text {
+  fill: var(--d-text);
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+
+.diagram-svg .t-small { font-size: 11px; fill: var(--d-text-muted); }
+.diagram-svg .t-mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+.diagram-svg .t-title { font-weight: 600; font-size: 13px; }
+.diagram-svg .t-label { font-weight: 500; }
+.diagram-svg .t-muted { fill: var(--d-text-muted); }
+
+.diagram-svg .stroke-d { stroke: var(--d-stroke); }
+.diagram-svg .stroke-d-muted { stroke: var(--d-stroke-muted); }
+.diagram-svg .stroke-accent { stroke: var(--d-accent); }
+.diagram-svg .fill-surface { fill: var(--d-surface); }
+.diagram-svg .fill-surface-alt { fill: var(--d-surface-alt); }
+
+.diagram-svg .n-client  { fill: var(--d-node-client);   stroke: var(--d-stroke); stroke-width: 1; }
+.diagram-svg .n-provider { fill: var(--d-node-provider); stroke: var(--d-stroke); stroke-width: 1; }
+.diagram-svg .n-edge    { fill: var(--d-node-edge);     stroke: var(--d-stroke); stroke-width: 1; }
+.diagram-svg .n-gateway { fill: var(--d-node-gateway);  stroke: var(--d-stroke); stroke-width: 1; }
+.diagram-svg .n-core    { fill: var(--d-node-core);     stroke: var(--d-stroke); stroke-width: 1; }
+.diagram-svg .n-storage { fill: var(--d-node-storage);  stroke: var(--d-stroke); stroke-width: 1; }
+
+.diagram-svg .edge {
+  fill: none;
+  stroke: var(--d-stroke);
+  stroke-width: 1.25;
+}
+.diagram-svg .edge-muted {
+  fill: none;
+  stroke: var(--d-stroke-muted);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+.diagram-svg .edge-accent {
+  fill: none;
+  stroke: var(--d-accent);
+  stroke-width: 1.5;
+}
+
+.diagram-svg .region-frame {
+  fill: var(--d-surface);
+  stroke: var(--d-stroke-muted);
+  stroke-width: 1;
+}

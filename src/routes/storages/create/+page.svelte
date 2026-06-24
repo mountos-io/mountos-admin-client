@@ -18,6 +18,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
+  import BlockStorageHelpDialog from '$lib/components/shared/BlockStorageHelpDialog.svelte'
   import Copy from '@lucide/svelte/icons/copy'
   import Check from '@lucide/svelte/icons/check'
   import Plus from '@lucide/svelte/icons/plus'
@@ -64,10 +65,6 @@
       .filter(r => r.name !== HUB_REGION_NAME)
       .map(r => ({ value: String(r.id), label: r.name }))
   )
-  const selectedRegion = $derived(
-    regionStore.regions.find(r => String(r.id) === regionId)
-  )
-
   const BLOCK_SIZES = [
     { value: '65536', label: '64 KiB' },
     { value: '131072', label: '128 KiB' },
@@ -102,10 +99,8 @@
 
   const isBlock = $derived(storageType === 'block')
   // Every block storage is object-backed (durable S3 floor), so both object and block
-  // collect a backing object store; block additionally needs a resolvable block endpoint.
-  const blockEndpoint = $derived(
-    selectedRegion?.dns ? `https://block.${selectedRegion.dns}` : ''
-  )
+  // collect a backing object store. Clients discover the member nodes via appserv;
+  // blockserv needs no DNS endpoint.
 
   function resetObjectStoreFields() {
     providerType = ''
@@ -208,7 +203,7 @@
   const canSubmit = $derived(
     !!(name.trim() && regionId && storageType && providerType
       && objectStoreReady && bucketVerified
-      && (!isBlock || (!!blockEndpoint && membersComplete)))
+      && (!isBlock || membersComplete))
   )
 
   async function handleSubmit(e: Event) {
@@ -302,17 +297,6 @@
 
             {#if isBlock}
               <div class="space-y-2">
-                <Label for="block-endpoint">Block Endpoint</Label>
-                {#if blockEndpoint}
-                  <Input id="block-endpoint" value={blockEndpoint} readonly class="font-mono text-sm text-muted-foreground" />
-                  <p class="text-sm text-muted-foreground">Derived from region DNS (block.&lt;region-dns&gt;)</p>
-                {:else if regionId}
-                  <p class="text-sm text-destructive">Selected region has no DNS configured.</p>
-                {:else}
-                  <p class="text-sm text-muted-foreground">Select a region to derive block endpoint.</p>
-                {/if}
-              </div>
-              <div class="space-y-2">
                 <Label id="blockSize-label" for="blockSize">Block Size</Label>
                 <Select id="blockSize" ariaLabelledby="blockSize-label" bind:value={blockSize} options={BLOCK_SIZES} />
               </div>
@@ -321,17 +305,20 @@
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <p class="text-sm font-medium">Block Volume Members</p>
-                    <p class="text-xs text-muted-foreground">One member per blockserv. Add members for high availability (up to {MAX_BLOCK_MEMBERS}).</p>
+                    <p class="text-xs text-muted-foreground">Each member is a blockserv node with its own block volume; active-active peers. Add members for high availability (up to {MAX_BLOCK_MEMBERS}).</p>
                   </div>
-                  <Button variant="outline" size="sm" type="button" class="gap-1.5 shrink-0"
-                    onclick={addMember} disabled={members.length >= MAX_BLOCK_MEMBERS || !hasReadyClusters}>
-                    <Plus class="size-4" aria-hidden="true" /> Add member
-                  </Button>
+                  <div class="flex items-center gap-2 shrink-0">
+                    <BlockStorageHelpDialog />
+                    <Button variant="outline" size="sm" type="button" class="gap-1.5 shrink-0"
+                      onclick={addMember} disabled={members.length >= MAX_BLOCK_MEMBERS || !hasReadyClusters}>
+                      <Plus class="size-4" aria-hidden="true" /> Add member
+                    </Button>
+                  </div>
                 </div>
 
                 <div class="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
                   <Lightbulb class="size-4 shrink-0 text-primary" aria-hidden="true" />
-                  <p>A cluster is a logical grouping, not necessarily a separate availability zone — but for HA we treat each cluster as a placement boundary. Put members in <span class="font-medium text-foreground">different clusters</span> for fault isolation.</p>
+                  <p>Clusters must be in separate availability zones or placement boundaries. Placing them in the same AZ defeats the purpose.</p>
                 </div>
 
                 {#if clustersLoading}
@@ -342,11 +329,11 @@
                   {#each members as member, i (member.id)}
                     <div class="rounded-lg border p-3 space-y-3">
                       <div class="flex items-center gap-2">
-                        <span class="text-sm font-medium">{i === 0 ? 'Originator' : `HA Member ${i + 1}`}</span>
+                        <span class="text-sm font-medium">Block Volume</span>
                         {#if members.length > 1}
                           <button type="button" onclick={() => removeMember(i)}
                             class="ml-auto inline-flex min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 items-center justify-center opacity-60 hover:opacity-100 hover:text-destructive focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring rounded-sm transition-[color,opacity]"
-                            aria-label={`Remove HA member ${i + 1}`} title="Remove member">
+                            aria-label={`Remove member ${i + 1}`} title="Remove member">
                             <X class="size-4" aria-hidden="true" />
                           </button>
                         {/if}
@@ -354,7 +341,7 @@
                       <div class="grid gap-3 sm:grid-cols-2">
                         <div class="space-y-2">
                           <Label for={`member-name-${i}`}>Name <span class="font-normal text-muted-foreground">(optional)</span></Label>
-                          <Input id={`member-name-${i}`} bind:value={member.name} placeholder="e.g. primary" autocomplete="off" />
+                          <Input id={`member-name-${i}`} bind:value={member.name} placeholder="e.g. originator" autocomplete="off" />
                         </div>
                         <div class="space-y-2">
                           <Label id={`member-cluster-label-${i}`} for={`member-cluster-${i}`}>Availability / placement</Label>
