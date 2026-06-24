@@ -8,6 +8,7 @@
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
 
   const regionStore = useRegions()
@@ -62,7 +63,10 @@
   {:else}
     <Card cornerBrackets>
       <CardHeader>
-        <CardTitle>Create Region</CardTitle>
+        <div class="flex items-center gap-2">
+          <CardTitle>Create Region</CardTitle>
+          <HowItWorks topic="region" class="ml-auto" />
+        </div>
         <CardDescription>Add a new region to the current account.</CardDescription>
       </CardHeader>
       <CardContent>

@@ -4,7 +4,7 @@
   import { Badge } from '$lib/components/ui/badge'
   import { Separator } from '$lib/components/ui/separator'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
-  import BlockStorageHelpDialog from '$lib/components/shared/BlockStorageHelpDialog.svelte'
+  import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
   import { nodeStatusVariant } from '$lib/core/utils/format'
   import { api } from '$lib/core/stores/client.svelte'
   import { copyText } from '$lib/core/utils/clipboard'
@@ -99,7 +99,7 @@
         Block Volume Members
         {#if !loading && !error}<Badge variant="outline">{members.length}</Badge>{/if}
       </CardTitle>
-      <BlockStorageHelpDialog class="ml-auto" />
+      <HowItWorks topic="block-storage" class="ml-auto" />
     </div>
   </CardHeader>
   <CardContent class="space-y-4">

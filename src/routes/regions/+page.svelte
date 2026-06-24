@@ -26,6 +26,7 @@
   import Plus from "@lucide/svelte/icons/plus";
   import Power from "@lucide/svelte/icons/power";
   import PageHeader from '$lib/components/shared/PageHeader.svelte';
+  import HowItWorks from '$lib/components/shared/HowItWorks.svelte';
   import FilterPanel from '$lib/components/shared/FilterPanel.svelte';
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte';
   import InfoTip from '$lib/components/shared/InfoTip.svelte';
@@ -81,7 +82,9 @@
 <svelte:head><title>Regions · mountOS Admin</title></svelte:head>
 
 <div class="space-y-4">
-  <PageHeader title="Regions" action={accountId && auth.can("regions", "create") ? { label: 'Create Region', href: '/regions/create', icon: Plus } : undefined} />
+  <PageHeader title="Regions" action={accountId && auth.can("regions", "create") ? { label: 'Create Region', href: '/regions/create', icon: Plus } : undefined}>
+    <HowItWorks topic="region" />
+  </PageHeader>
   <FilterPanel class="max-w-full">
     <Input bind:value={nameFilter} placeholder="Filter by name..." aria-label="Filter by name" class="max-w-sm" />
     <FilterSelect

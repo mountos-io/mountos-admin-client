@@ -18,8 +18,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
-  import BlockStorageHelpDialog from '$lib/components/shared/BlockStorageHelpDialog.svelte'
-  import StorageTypeHelpDialog from '$lib/components/shared/StorageTypeHelpDialog.svelte'
+  import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
   import Copy from '@lucide/svelte/icons/copy'
   import Check from '@lucide/svelte/icons/check'
   import Plus from '@lucide/svelte/icons/plus'
@@ -290,7 +289,7 @@
           <div class="space-y-2">
             <div class="flex items-center gap-2">
               <Label id="storageType-label" for="storageType">Storage Type</Label>
-              <StorageTypeHelpDialog class="ml-auto" />
+              <HowItWorks topic="storage-type" variant="ghost" class="ml-auto" />
             </div>
             <Select id="storageType" ariaLabelledby="storageType-label" bind:value={storageType} placeholder="Select type..."
               options={[{ value: 'object', label: 'Object' }, { value: 'block', label: 'Block' }]} onchange={onStorageTypeChange} />
@@ -312,7 +311,7 @@
                     <p class="text-xs text-muted-foreground">Each member is a blockserv node with its own block volume, an active-active peer. Add members for high availability (up to {MAX_BLOCK_MEMBERS}).</p>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
-                    <BlockStorageHelpDialog />
+                    <HowItWorks topic="block-storage" />
                     <Button variant="outline" size="sm" type="button" class="gap-1.5 shrink-0"
                       onclick={addMember} disabled={members.length >= MAX_BLOCK_MEMBERS || !hasReadyClusters}>
                       <Plus class="size-4" aria-hidden="true" /> Add member

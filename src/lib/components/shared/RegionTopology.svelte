@@ -49,6 +49,7 @@
   import Loader2 from '@lucide/svelte/icons/loader-2'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
+  import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
   import { api } from '$lib/core/stores/client.svelte'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
 
@@ -378,6 +379,7 @@
       />
     {/if}
     <div class="ml-auto flex items-center gap-2">
+      <HowItWorks topic="region" />
       {#if !isHubRegion && !auth.isUserRole}
         <Button
           variant="primary"
