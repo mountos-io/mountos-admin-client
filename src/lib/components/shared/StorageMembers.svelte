@@ -151,7 +151,7 @@
                 {#if servers.length > 1}
                   <div class="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-2 text-xs text-destructive">
                     <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
-                    <p>{servers.length} blockserv processes are serving this member. Each member should have exactly one; verify you didn't start duplicates with the same <code class="font-mono">BLOCK_VOLUME_ID</code>.</p>
+                    <p>{servers.length} blockserv processes are serving this member. Each member should have exactly one. Verify you didn't start duplicates with the same <code class="font-mono">BLOCK_VOLUME_ID</code>.</p>
                   </div>
                 {/if}
                 <ul class="flex flex-wrap gap-2">

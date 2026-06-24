@@ -3,7 +3,7 @@
 
   // Three members in a peer mesh. Each member is a "Block Volume": a blockserv
   // node with its own attached volume, placed in a distinct cluster. Members are
-  // equal active-active peers (no primary / failover); 2 HA members means 3 volumes.
+  // equal active-active peers (no primary / failover). 2 HA members means 3 volumes.
   const members = [
     { key: 'A', tx: 350, ty: 150, cluster: 'A' },
     { key: 'B', tx: 70,  ty: 400, cluster: 'B' },
@@ -13,7 +13,7 @@
 
 <!-- HA mesh: one block storage = up to 3 active-active members, each a blockserv
      node + its own block volume, in distinct clusters, peer-to-peer replicated.
-     Discovery via appserv (no DNS); object storage is the durable floor. -->
+     Discovery via appserv (no DNS). Object storage is the durable floor. -->
 <svg
   class="diagram-svg"
   viewBox="0 0 1000 684"

@@ -19,6 +19,7 @@
   import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
   import BlockStorageHelpDialog from '$lib/components/shared/BlockStorageHelpDialog.svelte'
+  import StorageTypeHelpDialog from '$lib/components/shared/StorageTypeHelpDialog.svelte'
   import Copy from '@lucide/svelte/icons/copy'
   import Check from '@lucide/svelte/icons/check'
   import Plus from '@lucide/svelte/icons/plus'
@@ -99,7 +100,7 @@
 
   const isBlock = $derived(storageType === 'block')
   // Every block storage is object-backed (durable S3 floor), so both object and block
-  // collect a backing object store. Clients discover the member nodes via appserv;
+  // collect a backing object store. Clients discover the member nodes via appserv.
   // blockserv needs no DNS endpoint.
 
   function resetObjectStoreFields() {
@@ -287,7 +288,10 @@
             <Combobox options={regionOptions} bind:value={regionId} placeholder="Select region..." emptyText="No regions found." aria-labelledby="region-label" />
           </div>
           <div class="space-y-2">
-            <Label id="storageType-label" for="storageType">Storage Type</Label>
+            <div class="flex items-center gap-2">
+              <Label id="storageType-label" for="storageType">Storage Type</Label>
+              <StorageTypeHelpDialog class="ml-auto" />
+            </div>
             <Select id="storageType" ariaLabelledby="storageType-label" bind:value={storageType} placeholder="Select type..."
               options={[{ value: 'object', label: 'Object' }, { value: 'block', label: 'Block' }]} onchange={onStorageTypeChange} />
           </div>
@@ -305,7 +309,7 @@
                 <div class="flex items-center justify-between gap-3">
                   <div>
                     <p class="text-sm font-medium">Block Volume Members</p>
-                    <p class="text-xs text-muted-foreground">Each member is a blockserv node with its own block volume; active-active peers. Add members for high availability (up to {MAX_BLOCK_MEMBERS}).</p>
+                    <p class="text-xs text-muted-foreground">Each member is a blockserv node with its own block volume, an active-active peer. Add members for high availability (up to {MAX_BLOCK_MEMBERS}).</p>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
                     <BlockStorageHelpDialog />

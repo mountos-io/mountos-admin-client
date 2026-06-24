@@ -1,6 +1,6 @@
 /* Clean-SVG diagram tokens, mirrored from mountos-overview so block-storage
    diagrams render identically in both repos. Admin-client lacks the --d-*
-   tokens globally, so they are defined here; in mountos-overview they already
+   tokens globally, so they are defined here. In mountos-overview they already
    live in app.css and this block is a harmless redefinition. */
 :root {
   --d-stroke: oklch(0.42 0 0);
