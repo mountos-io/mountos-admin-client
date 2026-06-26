@@ -13,6 +13,7 @@
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
   import StorageMembers from '$lib/components/shared/StorageMembers.svelte'
+  import StorageVolumes from '$lib/components/shared/StorageVolumes.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
@@ -49,6 +50,8 @@
   const editSecretKeyLabel = $derived(getProvider(storage?.providerType ?? '')?.secretKeyLabel ?? 'Secret Key')
   const editBucketLabel = $derived(getProvider(storage?.providerType ?? '')?.bucketLabel ?? 'Bucket')
   const editRegionLabel = $derived(getProvider(storage?.providerType ?? '')?.regionLabel ?? 'Region')
+  // Disambiguate the provider's bucket region from the mountOS region field shown alongside it.
+  const providerRegionLabel = $derived(editRegionLabel === 'Region' ? 'Bucket Region' : editRegionLabel)
   let editSubmitting = $state(false)
   let credTestPassed = $state(false)
 
@@ -219,6 +222,16 @@
 
           <div class="grid gap-4 md:grid-cols-2">
             <div>
+              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Region</span>
+              <div class="mt-1 text-sm">
+                <a
+                  href="/regions/{storage.regionInfo.id}"
+                  aria-label="View region {storage.regionInfo.name}"
+                  class="hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                >{storage.regionInfo.name}</a>
+              </div>
+            </div>
+            <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Endpoint</span>
               <p class="mt-1 text-sm font-mono truncate" title={storage.endpoint}>{storage.endpoint}</p>
             </div>
@@ -230,7 +243,7 @@
             {/if}
             {#if storage.region}
               <div>
-                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">{editRegionLabel}</span>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">{providerRegionLabel}</span>
                 <p class="mt-1 text-sm font-mono">{storage.region}</p>
               </div>
             {/if}
@@ -275,6 +288,8 @@
         </CardFooter>
       {/if}
     </Card>
+
+    <StorageVolumes storageId={storage.id} accountId={storage.account.id} />
 
     {#if !isObject}
       <StorageMembers storageId={storage.id} regionId={storage.regionInfo.id} />

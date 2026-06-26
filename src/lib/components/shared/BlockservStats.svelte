@@ -7,7 +7,7 @@
 
   let { sections }: { sections: MetricSection[] } = $props()
 
-  // Durability SLA: objects acked locally must reach the S3 floor within ~5–10 min.
+  // Durability SLA: objects acked locally must reach the S3 floor within ~5-10 min.
   const DUR_WARN_SEC = 300
   const DUR_CRIT_SEC = 600
 
@@ -51,7 +51,7 @@
 
   function fmtNum(n: number): string { return n.toLocaleString() }
   function fmtRatio(r: number): string { return `${(r * 100).toFixed(1)}%` }
-  function fmtLatency(us: number): string { return us > 0 ? formatUs(us) : '—' }
+  function fmtLatency(us: number): string { return us > 0 ? formatUs(us) : '-' }
 </script>
 
 <Card cornerBrackets={false}>
@@ -67,7 +67,7 @@
       <div class="flex items-center justify-between gap-2">
         <span class="text-sm font-mono text-muted-foreground tracking-wider uppercase inline-flex items-center gap-1">
           Sync Backlog
-          <InfoTip text="Objects acked locally but not yet durable on the shared S3 floor. The oldest age is the durability lag — alert when it exceeds the ~5–10 min sync SLA. Held objects are replica-side copies awaiting the owner's S3 upload." />
+          <InfoTip text="Objects acked locally but not yet durable on the shared S3 floor. The oldest age is the durability lag; alert when it exceeds the ~5-10 min sync SLA. Held objects are replica-side copies awaiting the owner's S3 upload." />
         </span>
         <span class="text-sm font-mono tabular-nums font-medium" style="color: {durability.color}">
           {unsyncedObjects === 0 ? 'all synced' : `oldest ${formatUptime(oldestAgeSec)}`}

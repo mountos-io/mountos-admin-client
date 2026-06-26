@@ -366,7 +366,7 @@
         </CardHeader>
         <CardContent class="pt-0">
           <p class="text-sm text-muted-foreground mb-3">
-            HA members serving the same block storage{volumeGroup.length === 1 ? ' (single-node — no replica)' : ''}.
+            HA members serving the same block storage{volumeGroup.length === 1 ? ' (single-node, no replica)' : ''}.
           </p>
           <Table>
             <caption class="sr-only">Block volume group members</caption>

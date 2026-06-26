@@ -133,7 +133,12 @@
     const raw = $page.url.searchParams.get('cluster')
     if (!raw) return null
     const n = Number(raw)
-    return Number.isFinite(n) && clusters.some(c => c.id === n) ? n : null
+    if (!Number.isFinite(n)) return null
+    // Trust the URL until clusters load; only drop a stale/invalid id once the list is known.
+    // Returning null mid-load then flipping to the id double-fires the cluster-scoped
+    // nodes/alerts fetches (a deep-linked ?cluster=).
+    if (clusters.length > 0 && !clusters.some(c => c.id === n)) return null
+    return n
   })
 
   function setSelectedCluster(v: number | null) {
