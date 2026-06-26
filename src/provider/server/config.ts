@@ -29,5 +29,5 @@ export const providerWebAuthnConfig: Partial<WebAuthnConfig> = {}
 export const providerRateLimitRules: RateLimitRule[] = []
 
 // Token-level throttle: caps authenticated API requests per user.
-// Default: 25 requests per second. Override limit/window as needed.
+// Default: 100 requests per second. Override limit/window as needed.
 export const providerThrottleConfig: Partial<ThrottleConfig> = {}

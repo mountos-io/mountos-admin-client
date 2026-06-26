@@ -12,7 +12,37 @@ import { api } from './client.svelte'
 // aborted by a fetch for region B.
 let clustersByRegion = $state<Record<number, RegionCluster[]>>({})
 let loadingByRegion = $state<Record<number, boolean>>({})
+let allLoading = $state(false)
 const fetchCtrls: Record<number, AbortController | null> = {}
+let allCtrl: AbortController | null = null
+
+// Cross-region views (e.g. the nodes table cluster column) need names for every
+// region's clusters in the account. fetchAllClusters pulls them in a single
+// account-scoped call instead of fanning out one /regions/:id/clusters/list per
+// region, then rebuilds the per-region cache from the authoritative snapshot.
+// Paginated defensively in case an account ever exceeds one page of clusters.
+async function fetchAllClusters(accountId: number, opts: { isActive?: boolean } = {}) {
+  allCtrl?.abort()
+  const ctrl = new AbortController()
+  allCtrl = ctrl
+  allLoading = true
+  try {
+    const grouped: Record<number, RegionCluster[]> = {}
+    let page = 1
+    for (;;) {
+      const res = await api.clusters.list({ accountId, page, limit: 1000, isActive: opts.isActive }, ctrl.signal)
+      for (const c of res.items) (grouped[c.regionId] ??= []).push(c)
+      if (page >= res.pagination.totalPages) break
+      page++
+    }
+    clustersByRegion = grouped
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') return
+    throw e
+  } finally {
+    if (allCtrl === ctrl) allLoading = false
+  }
+}
 
 async function fetchClusters(regionId: number, opts: { page?: number; limit?: number; isActive?: boolean } = {}) {
   fetchCtrls[regionId]?.abort()
@@ -76,7 +106,11 @@ export function useClusters() {
     isLoading(regionId: number) {
       return loadingByRegion[regionId] ?? false
     },
+    isLoadingAll() {
+      return allLoading
+    },
     fetchClusters,
+    fetchAllClusters,
     createCluster,
     editCluster,
     getCluster,

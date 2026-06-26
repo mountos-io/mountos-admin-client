@@ -6,6 +6,9 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
   accounts: 'accounts',
   users: 'users',
   regions: 'regions',
+  // Clusters are sub-resources of regions; cross-region /clusters/list reads are
+  // gated by the same capability as region reads.
+  clusters: 'regions',
   storages: 'storages',
   volumes: 'volumes',
   'audit-logs': 'auditLogs',

@@ -231,7 +231,9 @@ app.post('/api/auth/logout', async (c) => {
 })
 
 app.use('/api/*', auth)
-app.use('/api/*', createThrottle(providerThrottleConfig))
+// Throttle only the data API; auth/me/webauthn have their own rate-limit rules
+// and must not share the per-user token bucket or page resource loads stall.
+app.use('/api/v1/*', createThrottle(providerThrottleConfig))
 app.use('/api/v1/*', authz)
 
 // WebAuthn ceremony endpoints (before step-up; chicken-and-egg)

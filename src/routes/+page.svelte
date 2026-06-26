@@ -63,7 +63,7 @@
   })
 
   $effect(() => {
-    if (canReadNodes) nodeStore.fetchAllNodes()
+    if (canReadNodes && accountId) nodeStore.fetchAllNodes(accountId)
   })
 
   $effect(() => {

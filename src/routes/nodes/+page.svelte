@@ -4,6 +4,7 @@
   import { useRegions } from '$lib/core/stores/regions.svelte'
   import { useNodes } from '$lib/core/stores/nodes.svelte'
   import { useClusters } from '$lib/core/stores/clusters.svelte'
+  import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { HUB_REGION_NAME } from '$lib/core/constants'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
@@ -43,6 +44,7 @@
   const regionStore = useRegions()
   const nodeStore = useNodes()
   const clusterStore = useClusters()
+  const accountStore = useAccounts()
   const auth = useAuth()
   const prefs = usePreferences()
 
@@ -139,22 +141,23 @@
     regionStore.fetchRegions()
   })
 
-  // Fetch clusters for every non-hub region so the Cluster column can
-  // resolve names in both scoped and cross-region views. Each fetch is
-  // independently cached by clusterStore and small, so this is acceptable
-  // at the region counts an admin console deals with.
+  // Resolve cluster names for the Cluster column in a single account-scoped call
+  // rather than fanning out one request per region. Refetches when the operator
+  // switches accounts.
   $effect(() => {
-    for (const r of regionStore.regions) {
-      if (r.name === HUB_REGION_NAME) continue
-      clusterStore.fetchClusters(r.id).catch(() => { /* non-fatal */ })
-    }
+    const accountId = accountStore.selectedAccountId
+    if (accountId == null) return
+    clusterStore.fetchAllClusters(accountId).catch(() => { /* non-fatal */ })
   })
 
+  // Load the cross-region node view, scoped to the selected account, and refetch
+  // when the operator switches accounts. A specific region selection is owned by
+  // onRegionChange instead.
   $effect(() => {
-    if (initialized || !regionStore.regions.length) return
-    initialized = true
-    nodeStore.clearFilters()
-    nodeStore.fetchAllNodes()
+    const accountId = accountStore.selectedAccountId
+    if (!regionStore.regions.length || accountId == null) return
+    if (!initialized) { initialized = true; nodeStore.clearFilters() }
+    if (!selectedRegionId) nodeStore.fetchAllNodes(accountId)
   })
 
   function onRegionChange(v: string) {
@@ -162,8 +165,9 @@
     selectedRegionId = v
     currentPage = 1
     nodeStore.clearFilters()
+    // Region selected → fetch that region; clearing it falls back to the
+    // account-scoped all-nodes effect above.
     if (v) nodeStore.fetchNodes(Number(v))
-    else nodeStore.fetchAllNodes()
   }
 
   function onTypeChange(v: string) {

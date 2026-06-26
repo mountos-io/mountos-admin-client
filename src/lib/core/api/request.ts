@@ -90,11 +90,15 @@ export function createBrowserRequest(cfg: BrowserClientConfig): RequestFn {
 }
 
 async function parseJson<T>(res: Response): Promise<T> {
+  const text = await res.text()
+  if (!text) {
+    throw new ApiError(`empty response body (${res.status})`, res.status)
+  }
   let json: StandardResponse<T>
   try {
-    json = await res.json() as StandardResponse<T>
+    json = JSON.parse(text) as StandardResponse<T>
   } catch {
-    throw new ApiError(res.statusText || 'request failed', res.status)
+    throw new ApiError(`malformed response body (${res.status})`, res.status)
   }
   if (json.status !== 'success') {
     throw new ApiError(json.message, res.status, json.errorCode)

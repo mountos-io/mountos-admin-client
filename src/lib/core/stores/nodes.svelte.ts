@@ -6,6 +6,9 @@ import { api } from './client.svelte'
 let nodes = $state<ServiceNode[]>([])
 let loading = $state(false)
 let selectedRegionId = $state<number | null>(null)
+// Account context for the cross-region (all-nodes) view; retained so refetch()
+// and polling re-issue the account-scoped request.
+let allNodesAccountId = $state<number | null>(null)
 let serviceType = $state('')
 let statusFilter = $state('')
 let inactiveHoursFilter = $state<number | undefined>(undefined)
@@ -56,13 +59,15 @@ async function fetchNodes(regionId: number, opts: { regionClusterId?: number } =
   }
 }
 
-async function fetchAllNodes() {
+async function fetchAllNodes(accountId: number) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   selectedRegionId = null
+  allNodesAccountId = accountId
   loading = true
   try {
     nodes = await api.nodes.listAll(
+      accountId,
       serviceType || undefined,
       statusFilter || undefined,
       inactiveHoursFilter,
@@ -122,7 +127,7 @@ function resetStats() {
 
 function refetch() {
   if (selectedRegionId) fetchNodes(selectedRegionId)
-  else fetchAllNodes()
+  else if (allNodesAccountId != null) fetchAllNodes(allNodesAccountId)
 }
 
 function setServiceType(type: string) {

@@ -7,7 +7,7 @@ interface Bucket {
   last: number
 }
 
-const DEFAULT_LIMIT = 25
+const DEFAULT_LIMIT = 100
 const DEFAULT_WINDOW = 1
 const SWEEP_INTERVAL = 60_000
 const IDLE_TTL = 30_000
