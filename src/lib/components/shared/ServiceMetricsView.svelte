@@ -40,6 +40,7 @@
     type SortDir,
   } from "$lib/core/utils/metrics";
   import InfoTip from "$lib/components/shared/InfoTip.svelte";
+  import BlockservStats from "$lib/components/shared/BlockservStats.svelte";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ChevronsDownUp from "@lucide/svelte/icons/chevrons-down-up";
   import ChevronsUpDown from "@lucide/svelte/icons/chevrons-up-down";
@@ -224,6 +225,13 @@
     'MetaEngine Arena', 'MetaEngine Name Pool', 'MetaEngine Cache',
   ]);
 
+  // blockserv data-plane sections get a dedicated, severity-aware card instead of the
+  // generic scalar cards, so they are excluded from extraSections below.
+  const blockSections = new Set([
+    'Block Cache', 'S3 Floor Latency', 'Sync Backlog', 'Storage Capacity',
+  ]);
+  const hasBlockStats = $derived(sections.some((s) => blockSections.has(s.name)));
+
   // Dynamic tabs: overview + one per histogram section
   const histogramSections = $derived(
     sections.filter(s => s.kind === 'histogram' && !overviewSections.has(s.name))
@@ -247,7 +255,7 @@
 
   <!-- Tab Panels -->
   {#if activeTab === "overview"}
-    {@const extraSections = sections.filter(s => s.kind === 'scalar' && !inlineSections.has(s.name) && s.scalars.length > 0)}
+    {@const extraSections = sections.filter(s => s.kind === 'scalar' && !inlineSections.has(s.name) && !blockSections.has(s.name) && s.scalars.length > 0)}
     {@const sysSection = sections.find(s => s.name === 'System' && s.kind === 'scalar' && s.scalars.length > 0)}
     <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
     <!-- Runtime Gauges; instrument panel -->
@@ -388,6 +396,9 @@
         {@render systemCard(sysSection)}
       {/if}
     </div>
+    {#if hasBlockStats}
+      <BlockservStats {sections} />
+    {/if}
     <!-- Extra scalar sections (TCP Connections, Raft, Semaphore, etc.) -->
     {#if extraSections.length > 0}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">

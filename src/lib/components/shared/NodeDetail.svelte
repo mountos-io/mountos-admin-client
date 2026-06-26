@@ -18,9 +18,12 @@
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import ServiceMetricsView from '$lib/components/shared/ServiceMetricsView.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import { copyText } from '$lib/core/utils/clipboard'
   import { formatRelative, nodeStatusVariant, formatDate } from '$lib/core/utils/format'
   import type { ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
+  import Copy from '@lucide/svelte/icons/copy'
+  import Check from '@lucide/svelte/icons/check'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
 
   let { regionId, nodeId, basePath }: { regionId: number; nodeId: string; basePath: string } = $props()
@@ -98,13 +101,74 @@
     }
   })
 
-  onDestroy(() => nodeStore.resetStats())
-
   const nodeProcessId = $derived(node?.metadata?.['processId'] ?? null)
-  const nodeFilteredMeta = $derived.by(() => {
-    if (!node?.metadata) return null
-    const entries = Object.entries(node.metadata).filter(([k]) => k !== 'processId')
-    return entries.length > 0 ? Object.fromEntries(entries) : null
+
+  // Node metadata is service-specific; render it as labeled fields (not raw JSON).
+  // Known keys (mostly blockserv) get friendly labels, ordering and typed rendering;
+  // unknown keys fall back to a humanized label so any service stays readable.
+  type MetaKind = 'badge' | 'mono' | 'text'
+  type BadgeVariant = 'success' | 'warning' | 'secondary'
+  type MetaEntry = {
+    key: string; label: string; kind: MetaKind; text: string
+    variant?: BadgeVariant; copy?: boolean; wide?: boolean
+  }
+
+  const META_LABELS: Record<string, string> = {
+    name: 'Block Volume',
+    block_volume_id: 'Block Volume ID',
+    storage_id: 'Storage ID',
+    block_data_port: 'Data Port',
+    block_peer_port: 'Peer Port',
+    ha_synced: 'HA Sync',
+    ready: 'Ready',
+  }
+  // Most operationally relevant first; everything else trails alphabetically.
+  const META_ORDER = ['name', 'ready', 'ha_synced', 'block_data_port', 'block_peer_port', 'block_volume_id', 'storage_id']
+
+  function humanizeKey(key: string): string {
+    return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  }
+
+  function toMetaEntry(key: string, value: unknown): MetaEntry {
+    const label = META_LABELS[key] ?? humanizeKey(key)
+    if (typeof value === 'boolean') {
+      if (key === 'ha_synced') return { key, label, kind: 'badge', text: value ? 'Synced' : 'Pending', variant: value ? 'success' : 'warning' }
+      if (key === 'ready') return { key, label, kind: 'badge', text: value ? 'Yes' : 'No', variant: value ? 'success' : 'warning' }
+      return { key, label, kind: 'badge', text: value ? 'Yes' : 'No', variant: value ? 'success' : 'secondary' }
+    }
+    const text = String(value)
+    if (key.endsWith('_id')) return { key, label, kind: 'mono', text, copy: true, wide: true }
+    if (key.endsWith('_port')) return { key, label, kind: 'mono', text }
+    return { key, label, kind: 'text', text }
+  }
+
+  const nodeMetaEntries = $derived.by<MetaEntry[]>(() => {
+    if (!node?.metadata) return []
+    const meta = node.metadata
+    return Object.keys(meta)
+      .filter((k) => k !== 'processId')
+      .sort((a, b) => {
+        const ia = META_ORDER.indexOf(a)
+        const ib = META_ORDER.indexOf(b)
+        if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib)
+        return a.localeCompare(b)
+      })
+      .map((k) => toMetaEntry(k, meta[k]))
+  })
+
+  let copiedKey = $state('')
+  let copyTimer: ReturnType<typeof setTimeout>
+  async function copyMeta(key: string, text: string) {
+    if (await copyText(text)) {
+      copiedKey = key
+      clearTimeout(copyTimer)
+      copyTimer = setTimeout(() => { copiedKey = '' }, 1500)
+    }
+  }
+
+  onDestroy(() => {
+    nodeStore.resetStats()
+    clearTimeout(copyTimer)
   })
 </script>
 
@@ -205,12 +269,35 @@
               <dd class="font-mono text-sm mt-0.5">{Number(nodeProcessId) || '·'}</dd>
             </div>
           {/if}
-          {#if nodeFilteredMeta}
-            <div class="col-span-full">
-              <dt class="text-muted-foreground text-sm">Metadata</dt>
-              <dd class="font-mono text-sm mt-0.5 whitespace-pre-wrap">{JSON.stringify(nodeFilteredMeta, null, 2)}</dd>
+          {#each nodeMetaEntries as m (m.key)}
+            <div class={m.wide ? 'col-span-full' : ''}>
+              <dt class="text-muted-foreground text-sm">{m.label}</dt>
+              <dd class="mt-0.5">
+                {#if m.kind === 'badge'}
+                  <Badge variant={m.variant}>{m.text}</Badge>
+                {:else if m.copy}
+                  <div class="flex items-center gap-1.5">
+                    <code class="font-mono text-sm break-all">{m.text}</code>
+                    <Button
+                      variant="ghost" size="icon" class="h-6 w-6 shrink-0"
+                      aria-label={copiedKey === m.key ? `${m.label} copied` : `Copy ${m.label}`}
+                      onclick={() => copyMeta(m.key, m.text)}
+                    >
+                      {#if copiedKey === m.key}
+                        <Check class="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                      {:else}
+                        <Copy class="h-3.5 w-3.5" aria-hidden="true" />
+                      {/if}
+                    </Button>
+                  </div>
+                {:else if m.kind === 'mono'}
+                  <span class="font-mono text-sm">{m.text}</span>
+                {:else}
+                  <span class="text-sm">{m.text}</span>
+                {/if}
+              </dd>
             </div>
-          {/if}
+          {/each}
         </dl>
       </CardContent>
     </Card>
