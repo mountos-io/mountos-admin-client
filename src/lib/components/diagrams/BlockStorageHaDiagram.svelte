@@ -1,9 +1,9 @@
 <script lang="ts">
   import './diagram.css'
 
-  // Three members in a peer mesh. Each member is a "Block Volume": a blockserv
-  // node with its own attached volume, placed in a distinct cluster. Members are
-  // equal active-active peers (no primary / failover). 2 HA members means 3 volumes.
+  // Up to three block volumes in a peer mesh. Each is a blockserv node with its
+  // own attached volume, placed in a distinct cluster. Block volumes are equal
+  // active-active peers (no primary / failover). 2 HA block volumes means 3 volumes.
   const members = [
     { key: 'A', tx: 350, ty: 150, cluster: 'A' },
     { key: 'B', tx: 70,  ty: 400, cluster: 'B' },
@@ -11,15 +11,15 @@
   ]
 </script>
 
-<!-- HA mesh: one block storage = up to 3 active-active members, each a blockserv
-     node + its own block volume, in distinct clusters, peer-to-peer replicated.
-     Discovery via appserv (no DNS). Object storage is the durable floor. -->
+<!-- HA mesh: one block storage = up to 3 active-active block volumes, each a
+     blockserv node + its own attached volume, in distinct clusters, peer-to-peer
+     replicated. Discovery via appserv. Object storage is the durable floor. -->
 <svg
   class="diagram-svg"
   viewBox="0 0 1000 684"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
-  aria-label="A block storage has up to three active-active members, each a blockserv node with its own attached block volume in a distinct region cluster. Members replicate peer-to-peer (so two HA members means three volumes). A client discovers the members via appserv and connects directly to any node. Every member is backed by the region's object storage."
+  aria-label="A block storage has up to three active-active block volumes, each a blockserv node with its own attached volume in a distinct region cluster. Block volumes replicate peer-to-peer. A client discovers them via appserv and connects directly to any node. Every block volume is backed by the region's object storage."
 >
   <defs>
     <marker id="ha-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -52,7 +52,7 @@
     <rect class="n-provider" x="0" y="0" width="320" height="86" rx="8" />
     <text x="18" y="30" class="t-title" style="font-size:14px">appserv · discovery endpoint</text>
     <text x="18" y="52" class="t-small">access key → owning region</text>
-    <text x="18" y="72" class="t-small">+ member node addresses (no DNS)</text>
+    <text x="18" y="72" class="t-small">+ block volume addresses</text>
   </g>
 
   <!-- Peer mesh links (active-active, bidirectional) -->
@@ -91,7 +91,7 @@
   <!-- Object storage -->
   <g transform="translate(70,580)">
     <rect class="n-storage" x="0" y="0" width="860" height="48" rx="8" />
-    <text x="20" y="20" class="t-title" style="font-size:12px">Backing object storage · the durable source of truth behind every member's cache</text>
+    <text x="20" y="20" class="t-title" style="font-size:12px">Backing object storage · the durable source of truth behind every block volume's cache</text>
     <text x="20" y="38" class="t-small" style="font-size:10px">S3 · GCS · B2 · Azure · MinIO · on-prem</text>
   </g>
 

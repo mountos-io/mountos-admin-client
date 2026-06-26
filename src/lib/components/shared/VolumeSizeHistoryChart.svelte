@@ -18,6 +18,10 @@
     disabled = next
   }
 
+  const Y_TICKS = 4
+  // Floor the axis to 1 KiB so an empty/all-zero series shows a realistic
+  // scale (0 B .. 1 KB) rather than collapsing to a few bytes.
+  const Y_MIN = 1024
   const W = 800, H = 240, PAD_L = 64, PAD_R = 16, PAD_T = 16, PAD_B = 28
   const innerW = W - PAD_L - PAD_R
   const innerH = H - PAD_T - PAD_B
@@ -29,7 +33,6 @@
     return [+new Date(sorted[0].bucketEnd), +new Date(sorted[sorted.length - 1].bucketEnd)]
   })
   const yMax = $derived.by(() => {
-    if (!sorted.length) return 1
     let m = 0
     for (const p of sorted) {
       for (const s of seriesDefs) {
@@ -37,7 +40,9 @@
         if (p[s.key] > m) m = p[s.key]
       }
     }
-    return Math.max(m, 1)
+    // Round up to a multiple of the tick count so every gridline lands on a
+    // whole-byte value (never fractional bytes), floored to a realistic scale.
+    return Math.max(Math.ceil(m / Y_TICKS) * Y_TICKS, Y_MIN)
   })
 
   function xScale(t: number) {
@@ -70,13 +75,12 @@
       return { x: xScale(t), label: fmtDate(t) }
     })
   })
-  const yTicks = $derived.by(() => {
-    const n = 4
-    return Array.from({ length: n + 1 }, (_, i) => {
-      const v = (yMax * i) / n
+  const yTicks = $derived.by(() =>
+    Array.from({ length: Y_TICKS + 1 }, (_, i) => {
+      const v = (yMax * i) / Y_TICKS
       return { y: yScale(v), label: formatBytes(v) }
     })
-  })
+  )
 
   function fmtDate(t: number): string {
     const d = new Date(t)
