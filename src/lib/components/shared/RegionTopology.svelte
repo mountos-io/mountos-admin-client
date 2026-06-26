@@ -32,6 +32,7 @@
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Plus from '@lucide/svelte/icons/plus'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import MoreVertical from '@lucide/svelte/icons/more-vertical'
   import Pencil from '@lucide/svelte/icons/pencil'
   import PowerOff from '@lucide/svelte/icons/power-off'
@@ -174,6 +175,98 @@
         return { cluster: c, tierData: buildTierData(cn), nodeCount: cn.length }
       })
       .filter(g => g.nodeCount > 0)
+  })
+
+  // Master rail: every active cluster (default first, then name) with its node
+  // counts; empties stay visible but unselectable so operators see the cluster
+  // exists yet has nothing to inspect.
+  const clusterRail = $derived.by(() => {
+    if (!showPerClusterGrouping) return []
+    return clusters
+      .filter(c => c.isActive)
+      .map(c => {
+        const cn = nodeStore.nodes.filter(n => n.regionClusterId === c.id)
+        return {
+          cluster: c,
+          nodeCount: cn.length,
+          healthyCount: cn.filter(n => n.status === 'healthy').length,
+          empty: cn.length === 0,
+        }
+      })
+      .sort((a, b) => {
+        if (a.cluster.defaultCluster !== b.cluster.defaultCluster) return a.cluster.defaultCluster ? -1 : 1
+        return a.cluster.name.localeCompare(b.cluster.name)
+      })
+  })
+
+  // Rail selection is local (not the ?cluster URL) so the top-level picker stays
+  // on "All" and the Stats HUD keeps aggregate totals while a single cluster is
+  // detailed on the right. Resolved purely (no effect) to dodge update loops.
+  let detailCluster = $state<number | null>(null)
+  const detailClusterId = $derived.by<number | null>(() => {
+    const rail = clusterRail
+    const selectable = rail.filter(r => !r.empty)
+    if (selectable.length === 0) return null
+    if (detailCluster != null && selectable.some(r => r.cluster.id === detailCluster)) return detailCluster
+    return selectable[0].cluster.id
+  })
+  const detailGroup = $derived(clusterTierGroups.find(g => g.cluster.id === detailClusterId) ?? null)
+
+  // Rail can group by cluster or by storage. A storage is the set of blockserv
+  // nodes sharing a storage_id; a live storage replicates one serving node into
+  // each cluster, so the storage detail surfaces per-cluster coverage and gaps.
+  let railMode = $state<'clusters' | 'storages'>('clusters')
+  let detailStorage = $state<string | null>(null)
+
+  const blockNodes = $derived(
+    showPerClusterGrouping ? nodeStore.nodes.filter(n => n.serviceType === 'blockserv') : [],
+  )
+  const hasStorages = $derived(blockNodes.length > 0)
+  const showStorages = $derived(railMode === 'storages' && hasStorages)
+
+  // Prefer the human storage name the node reports; fall back to the short
+  // storage UUID until the backend populates storage_name in node metadata.
+  function storageName(nodes: ServiceNode[], storageId: string): string {
+    for (const n of nodes) {
+      const raw = n.metadata?.['storage_name']
+      if (typeof raw === 'string' && raw) return raw
+    }
+    return shortStorageId(storageId)
+  }
+
+  const storageRail = $derived.by(() => {
+    if (!showPerClusterGrouping) return []
+    return groupByStorage(blockNodes).map(sg => ({
+      storageId: sg.storageId,
+      label: storageName(sg.nodes, sg.storageId),
+      nodes: sg.nodes,
+      nodeCount: sg.nodes.length,
+      healthyCount: sg.nodes.filter(n => n.status === 'healthy').length,
+      clusterCount: new Set(sg.nodes.map(n => n.regionClusterId)).size,
+    }))
+  })
+
+  const detailStorageId = $derived.by<string | null>(() => {
+    const rail = storageRail
+    if (rail.length === 0) return null
+    if (detailStorage != null && rail.some(s => s.storageId === detailStorage)) return detailStorage
+    return rail[0].storageId
+  })
+
+  const storageDetail = $derived.by(() => {
+    const group = storageRail.find(s => s.storageId === detailStorageId)
+    if (!group) return null
+    const activeClusters = clusters.filter(c => c.isActive)
+    const perCluster = activeClusters.map(c => ({
+      cluster: c,
+      nodes: group.nodes.filter(n => n.regionClusterId === c.id),
+    }))
+    return {
+      ...group,
+      perCluster,
+      clustersTotal: activeClusters.length,
+      clustersCovered: perCluster.filter(p => p.nodes.length > 0).length,
+    }
   })
 
   const legendEntries = $derived.by(() => {
@@ -378,7 +471,7 @@
         onchange={setSelectedCluster}
       />
     {/if}
-    <div class="ml-auto flex items-center gap-2">
+    <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
       <HowItWorks topic="region" />
       {#if !isHubRegion && !auth.isUserRole}
         <Button
@@ -511,7 +604,7 @@
 
   <!-- Tab content -->
   {#if activeTab === 'overview'}
-    <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
+    <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" class="space-y-6">
     <!-- Stats HUD -->
     <div class="corner-brackets relative border border-border/30 rounded-sm p-5 w-fit max-w-full">
       <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
@@ -561,27 +654,31 @@
       </div>
     </div>
 
-    <!-- View toggle -->
-    {#if !nodeStore.loading && nodeStore.nodes.length > 0}
+    {#snippet viewToggle()}
+      <div class="flex items-center rounded-md border border-border/50 p-0.5" role="tablist" aria-label="Topology view">
+        <button
+          role="tab"
+          aria-selected={topoView === 'list'}
+          tabindex={topoView === 'list' ? 0 : -1}
+          class="min-h-[44px] px-3 py-1 text-sm font-medium rounded transition-colors {topoView === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+          onclick={() => topoView = 'list'}
+          onkeydown={handleTabKeydown}
+        >List</button>
+        <button
+          role="tab"
+          aria-selected={topoView === 'graphical'}
+          tabindex={topoView === 'graphical' ? 0 : -1}
+          class="min-h-[44px] px-3 py-1 text-sm font-medium rounded transition-colors {topoView === 'graphical' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+          onclick={() => topoView = 'graphical'}
+          onkeydown={handleTabKeydown}
+        >Graphical</button>
+      </div>
+    {/snippet}
+
+    <!-- View toggle (master-detail moves it into the detail panel header) -->
+    {#if !nodeStore.loading && nodeStore.nodes.length > 0 && !showPerClusterGrouping}
       <div class="flex justify-end">
-        <div class="flex items-center rounded-md border border-border/50 p-0.5" role="tablist" aria-label="Topology view">
-          <button
-            role="tab"
-            aria-selected={topoView === 'list'}
-            tabindex={topoView === 'list' ? 0 : -1}
-            class="min-h-[44px] px-3 py-1 text-sm font-medium rounded transition-colors {topoView === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
-            onclick={() => topoView = 'list'}
-            onkeydown={handleTabKeydown}
-          >List</button>
-          <button
-            role="tab"
-            aria-selected={topoView === 'graphical'}
-            tabindex={topoView === 'graphical' ? 0 : -1}
-            class="min-h-[44px] px-3 py-1 text-sm font-medium rounded transition-colors {topoView === 'graphical' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
-            onclick={() => topoView = 'graphical'}
-            onkeydown={handleTabKeydown}
-          >Graphical</button>
-        </div>
+        {@render viewToggle()}
       </div>
     {/if}
 
@@ -600,26 +697,162 @@
     {:else if nodeStore.nodes.length === 0}
       <EmptyState title="No nodes" description="No nodes registered in this region." />
     {:else if showPerClusterGrouping}
-      <div class="space-y-6">
-        {#each clusterTierGroups as g (g.cluster.id)}
-          <div class="space-y-3">
-            <div class="flex items-center gap-2 border-b border-border/40 pb-1.5">
-              <span class="font-semibold text-sm">{g.cluster.name}</span>
-              {#if g.cluster.defaultCluster}
+      <div class="corner-brackets relative flex flex-col md:flex-row border border-border/60 rounded-sm overflow-hidden md:h-[56vh] md:min-h-[420px] md:max-h-[680px]">
+        <!-- Master rail: pick a cluster or storage -->
+        <aside class="md:w-60 shrink-0 md:border-r border-b md:border-b-0 border-border/60 bg-foreground/[0.02] flex flex-col min-h-0" aria-label="Clusters and storages">
+          {#if hasStorages}
+            <div class="p-2 border-b border-border/40">
+              <div class="flex items-center rounded-md border border-border/50 p-0.5" role="tablist" aria-label="Group rail by">
+                {#each [['clusters', 'Clusters'], ['storages', 'Storages']] as [mode, label]}
+                  <button
+                    role="tab"
+                    aria-selected={railMode === mode}
+                    aria-controls="topo-rail-list"
+                    tabindex={railMode === mode ? 0 : -1}
+                    class="flex-1 min-h-[36px] px-2 py-1 text-[11px] font-medium rounded transition-colors {railMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+                    onclick={() => railMode = mode as 'clusters' | 'storages'}
+                    onkeydown={handleTabKeydown}
+                  >{label}</button>
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <div class="px-3 py-2 border-b border-border/40 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Clusters</div>
+          {/if}
+          {#if showStorages}
+            <div id="topo-rail-list" class="flex flex-col gap-1 p-2 flex-1 overflow-y-auto" role="group" aria-label="Select storage to inspect">
+              {#each storageRail as s (s.storageId)}
+                {@const active = s.storageId === detailStorageId}
+                {@const dotColor = statusColor(s.healthyCount === s.nodeCount ? 'healthy' : 'draining')}
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  title={s.storageId}
+                  class="flex items-center gap-2 rounded-sm border px-2.5 py-2 text-left transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {active ? 'border-primary bg-primary/10' : 'border-transparent hover:border-border/60 hover:bg-foreground/[0.03]'}"
+                  onclick={() => detailStorage = s.storageId}
+                >
+                  <span
+                    class="led-dot block h-2 w-2 shrink-0 rounded-full"
+                    class:led-ping={s.healthyCount === s.nodeCount}
+                    style="background: {dotColor}; --led: {dotColor};"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="min-w-0 flex-1 truncate font-mono text-[13px] font-medium">{s.label}</span>
+                  <span class="shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground" aria-label="{s.clusterCount} clusters">{s.clusterCount}c</span>
+                  <span class="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground" aria-label="{s.healthyCount} healthy of {s.nodeCount} nodes">{s.healthyCount}/{s.nodeCount}</span>
+                </button>
+              {/each}
+            </div>
+          {:else}
+            <div id="topo-rail-list" class="flex flex-col gap-1 p-2 flex-1 overflow-y-auto" role="group" aria-label="Select cluster to inspect">
+              {#each clusterRail as r (r.cluster.id)}
+                {@const active = r.cluster.id === detailClusterId}
+                {@const dotColor = r.empty ? 'var(--muted-foreground)' : statusColor(r.healthyCount === r.nodeCount ? 'healthy' : 'draining')}
+                <button
+                  type="button"
+                  aria-pressed={active}
+                  disabled={r.empty}
+                  title={r.empty ? 'No nodes' : undefined}
+                  class="flex items-center gap-2 rounded-sm border px-2.5 py-2 text-left transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 {active ? 'border-primary bg-primary/10' : 'border-transparent hover:border-border/60 hover:bg-foreground/[0.03]'}"
+                  onclick={() => detailCluster = r.cluster.id}
+                >
+                  <span
+                    class="led-dot block h-2 w-2 shrink-0 rounded-full"
+                    class:led-ping={!r.empty && r.healthyCount === r.nodeCount}
+                    style="background: {dotColor}; --led: {dotColor};"
+                    aria-hidden="true"
+                  ></span>
+                  <span class="min-w-0 flex-1 truncate text-sm font-medium">{r.cluster.name}</span>
+                  {#if r.cluster.defaultCluster}<span aria-hidden="true" class="rounded-sm bg-muted px-1 text-[10px] uppercase tracking-wider opacity-80">def</span>{/if}
+                  {#if !r.cluster.isReady}<span aria-hidden="true" class="rounded-sm bg-warning/15 px-1 text-[10px] uppercase tracking-wider text-warning">prep</span>{/if}
+                  <span class="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground" aria-label="{r.healthyCount} healthy of {r.nodeCount} nodes">{r.healthyCount}/{r.nodeCount}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
+        </aside>
+
+        <!-- Detail panel -->
+        <div class="flex-1 min-w-0 flex flex-col min-h-0">
+          {#if showStorages}
+            {#if storageDetail}
+              <div class="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b border-border/40 shrink-0">
+                <Box class="size-4 shrink-0" style="color: var(--pastel-storage);" aria-hidden="true" />
+                <span class="font-semibold font-mono text-sm" title={storageDetail.storageId}>{storageDetail.label}</span>
+                <span class="font-mono text-xs text-muted-foreground tabular-nums">{storageDetail.nodeCount} {storageDetail.nodeCount === 1 ? 'node' : 'nodes'}</span>
+                {#if storageDetail.clustersCovered < storageDetail.clustersTotal}
+                  <Badge variant="warning" class="h-4 text-[9px] uppercase tracking-wider">{storageDetail.clustersCovered}/{storageDetail.clustersTotal} clusters</Badge>
+                {:else}
+                  <span class="font-mono text-xs text-muted-foreground tabular-nums">{storageDetail.clustersCovered}/{storageDetail.clustersTotal} clusters</span>
+                {/if}
+              </div>
+              <div class="flex-1 overflow-auto p-3 space-y-2.5">
+                {#each storageDetail.perCluster as pc (pc.cluster.id)}
+                  <div class="rounded-sm border border-border/50 overflow-hidden">
+                    <div class="flex items-center gap-2 px-3 py-1.5 border-b border-border/30 bg-foreground/[0.02]">
+                      <span class="text-sm font-medium">{pc.cluster.name}</span>
+                      {#if pc.cluster.defaultCluster}<Badge variant="outline" class="h-4 text-[9px] uppercase tracking-wider">default</Badge>{/if}
+                      <span class="ml-auto font-mono text-[11px] tabular-nums text-muted-foreground">{pc.nodes.length} {pc.nodes.length === 1 ? 'node' : 'nodes'}</span>
+                    </div>
+                    {#if pc.nodes.length === 0}
+                      <div class="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground/70">
+                        <ServerOff class="size-3.5 shrink-0" aria-hidden="true" />
+                        <span>not served in this cluster</span>
+                      </div>
+                    {:else}
+                      <div role="list" class="divide-y divide-border/20">
+                        {#each pc.nodes as node (node.id)}
+                          <button
+                            class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
+                            aria-label="View node {node.nodeId}, status {node.status}"
+                            onclick={() => goto(`${basePath}/${regionId}/${node.nodeId}`)}
+                            onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
+                            onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
+                            onpointerleave={() => hoveredNode = null}
+                            onfocus={(e: FocusEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); hoveredNode = { node, x: r.right, y: r.top } }}
+                            onblur={() => hoveredNode = null}
+                          >
+                            <span
+                              class="led-dot block h-2 w-2 shrink-0 rounded-full"
+                              class:led-ping={node.status === 'healthy'}
+                              style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
+                              title={node.status}
+                            ></span>
+                            <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
+                            <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
+                          </button>
+                        {/each}
+                      </div>
+                    {/if}
+                  </div>
+                {/each}
+              </div>
+            {:else}
+              <EmptyState title="No storages" description="No block storage nodes registered in this region." />
+            {/if}
+          {:else if detailGroup}
+            <div class="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b border-border/40 shrink-0">
+              <span class="font-semibold text-sm">{detailGroup.cluster.name}</span>
+              {#if detailGroup.cluster.defaultCluster}
                 <Badge variant="outline" class="h-4 text-[9px] uppercase tracking-wider">default</Badge>
               {/if}
-              {#if !g.cluster.isReady}
+              {#if !detailGroup.cluster.isReady}
                 <Badge variant="warning" class="h-4 text-[9px] uppercase tracking-wider">not ready</Badge>
               {/if}
-              <span class="ml-auto font-mono text-xs text-muted-foreground tabular-nums">{g.nodeCount} nodes</span>
+              <span class="font-mono text-xs text-muted-foreground tabular-nums">{detailGroup.nodeCount} nodes</span>
+              <div class="ml-auto">{@render viewToggle()}</div>
             </div>
-            {#if topoView === 'list'}
-              <RegionNodeList tierData={g.tierData} {basePath} {regionId} />
-            {:else}
-              {@render graphicalGrid(g.tierData)}
-            {/if}
-          </div>
-        {/each}
+            <div class="flex-1 overflow-auto p-3">
+              {#if topoView === 'list'}
+                <RegionNodeList tierData={detailGroup.tierData} {basePath} {regionId} embedded />
+              {:else}
+                {@render graphicalGrid(detailGroup.tierData)}
+              {/if}
+            </div>
+          {:else}
+            <EmptyState title="No nodes" description="No cluster in this region has registered nodes yet." />
+          {/if}
+        </div>
       </div>
     {:else if topoView === 'list'}
       <RegionNodeList {tierData} {basePath} {regionId} />
@@ -653,8 +886,7 @@
         {/snippet}
         {#each td as tier}
           {@const tierColor = TIER_COLORS[tier.id]}
-          <div class="monitor-frame flex flex-col items-center w-full md:w-auto">
-            <section class="tier-column corner-brackets flex flex-col gap-3 w-full border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
+          <section class="tier-column corner-brackets flex flex-col gap-3 w-full md:w-auto border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
               <div class="flex items-center gap-2">
                 <span
                   class="tier-label-glow text-xs font-bold uppercase tracking-wider whitespace-nowrap"
@@ -718,12 +950,21 @@
                     <div role="list" aria-label="{p.label} nodes" class="divide-y divide-border/20">
                       {#if group.type === 'blockserv'}
                         {#each groupByStorage(group.nodes) as sg (sg.storageId)}
-                          <div class="flex items-center gap-1.5 bg-foreground/[0.02] px-3 py-1">
+                          {@const linkable = showPerClusterGrouping && sg.storageId !== 'unassigned'}
+                          <svelte:element
+                            this={linkable ? 'button' : 'div'}
+                            role={linkable ? 'button' : undefined}
+                            type={linkable ? 'button' : undefined}
+                            title={sg.storageId === 'unassigned' ? 'No storage_id in node metadata' : sg.storageId}
+                            aria-label={linkable ? `View storage ${storageName(sg.nodes, sg.storageId)} across all clusters` : undefined}
+                            class="storage-head flex w-full items-center gap-1.5 bg-foreground/[0.02] px-3 py-1 text-left {linkable ? 'cursor-pointer transition-colors hover:bg-foreground/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring' : ''}"
+                            onclick={linkable ? () => { railMode = 'storages'; detailStorage = sg.storageId } : undefined}
+                          >
                             <Box class="size-3 shrink-0 text-muted-foreground" aria-hidden="true" />
-                            <span class="truncate font-mono text-[10px] text-muted-foreground"
-                              title={sg.storageId === 'unassigned' ? 'No storage_id in node metadata' : sg.storageId}>{shortStorageId(sg.storageId)}</span>
+                            <span class="truncate font-mono text-[10px] text-muted-foreground">{storageName(sg.nodes, sg.storageId)}</span>
                             <span class="ml-auto font-mono text-[10px] tabular-nums text-muted-foreground">{sg.nodes.length}</span>
-                          </div>
+                            {#if linkable}<ChevronRight class="size-3 shrink-0 text-muted-foreground/60" aria-hidden="true" />{/if}
+                          </svelte:element>
                           {#each sg.nodes as node}
                             {@render nodeRow(node, isDataserv)}
                           {/each}
@@ -751,9 +992,7 @@
                   </div>
                 </Card>
               {/each}
-            </section>
-            <div class="monitor-stand" style="--stand-color: {tierColor};"></div>
-          </div>
+          </section>
         {/each}
       </div>
     {/snippet}
@@ -764,25 +1003,29 @@
         {#if hasRegionalDB}
           <Card cornerPlus>
             <CardHeader>
-              <div class="flex items-center justify-between">
+              <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle>Region Audit Log</CardTitle>
-                <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
+                <div class="relative border border-border/30 rounded-sm px-3 py-2 w-full sm:w-fit">
                   <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
-                  <div class="relative flex items-center gap-1.5">
-                    <Button variant={activityDays === 'auto' ? 'primary' : 'ghost'} size="sm"
-                      class="h-7 w-12 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
-                      onclick={() => activityDays = 'auto'}>Auto</Button>
-                    {#each [7, 15, 30] as const as d}
-                      <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
-                        class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
-                        onclick={() => activityDays = d}>{d}d</Button>
-                    {/each}
-                    <span class="filter-divider"></span>
-                    {#each ['feed', 'chart'] as v}
-                      <Button variant={auditView === v ? 'primary' : 'ghost'} size="sm"
-                        class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono capitalize justify-center"
-                        onclick={() => auditView = v as 'chart' | 'feed'}>{v}</Button>
-                    {/each}
+                  <div class="relative flex flex-wrap items-center gap-1.5">
+                    <div class="flex items-center gap-1.5">
+                      <Button variant={activityDays === 'auto' ? 'primary' : 'ghost'} size="sm"
+                        class="h-7 w-12 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                        onclick={() => activityDays = 'auto'}>Auto</Button>
+                      {#each [7, 15, 30] as const as d}
+                        <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
+                          class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                          onclick={() => activityDays = d}>{d}d</Button>
+                      {/each}
+                    </div>
+                    <span class="filter-divider hidden sm:block"></span>
+                    <div class="flex items-center gap-1.5">
+                      {#each ['feed', 'chart'] as v}
+                        <Button variant={auditView === v ? 'primary' : 'ghost'} size="sm"
+                          class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono capitalize justify-center"
+                          onclick={() => auditView = v as 'chart' | 'feed'}>{v}</Button>
+                      {/each}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1122,29 +1365,6 @@
     position: absolute;
     inset: 0;
     background: color-mix(in oklch, var(--svc-bg) 35%, transparent);
-  }
-
-  .monitor-stand {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .monitor-stand::before {
-    content: '';
-    width: 2px;
-    height: 14px;
-    background: var(--stand-color, var(--color-border));
-    opacity: 0.5;
-  }
-
-  .monitor-stand::after {
-    content: '';
-    width: 48px;
-    height: 3px;
-    border-radius: 0 0 2px 2px;
-    background: var(--stand-color, var(--color-border));
-    opacity: 0.4;
   }
 
   .tier-infra-icon {

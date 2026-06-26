@@ -1,9 +1,11 @@
 <script lang="ts">
   import type { RegionCluster } from '$lib/core/api/types'
-  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
+  import * as Dialog from '$lib/components/ui/dialog'
+  import { Input } from '$lib/components/ui/input'
   import { Badge } from '$lib/components/ui/badge'
   import Layers from '@lucide/svelte/icons/layers'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import Check from '@lucide/svelte/icons/check'
 
   type Props = {
     clusters: RegionCluster[]
@@ -12,9 +14,19 @@
     pillLimit?: number
   }
 
-  let { clusters, value, onchange, pillLimit = 4 }: Props = $props()
+  let { clusters, value, onchange, pillLimit = 5 }: Props = $props()
 
   let overflowOpen = $state(false)
+  let modalQuery = $state('')
+
+  // Modal lists every cluster (not just the overflow pills) so any cluster is
+  // reachable regardless of which are pinned as pills.
+  const modalClusters = $derived.by(() => {
+    const q = modalQuery.trim().toLowerCase()
+    return q ? sorted.filter(c => c.name.toLowerCase().includes(q)) : sorted
+  })
+
+  $effect(() => { if (!overflowOpen) modalQuery = '' })
 
   // Active clusters first (default → name), then deactivated (name) at the end.
   const sorted = $derived.by(() => {
@@ -94,45 +106,61 @@
     {/each}
 
     {#if partitioned.overflow.length > 0}
-      <Popover bind:open={overflowOpen}>
-        <PopoverTrigger>
-          {#snippet child({ props })}
-            <button {...props}
+      <button
+        type="button"
+        class="min-h-[44px] sm:min-h-0 rounded-full border border-dashed border-border/60 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label="Show {partitioned.overflow.length} more clusters"
+        aria-haspopup="dialog"
+        aria-expanded={overflowOpen}
+        onclick={() => overflowOpen = true}
+      >
+        <span>+{partitioned.overflow.length} more</span>
+        <ChevronDown class="h-3 w-3 opacity-60" aria-hidden="true" />
+      </button>
+
+      <Dialog.Root bind:open={overflowOpen}>
+        <Dialog.Content class="sm:max-w-md">
+          <Dialog.Header>
+            <Dialog.Title>Select cluster</Dialog.Title>
+            <Dialog.Description>Filter to a single cluster, or choose All to see every cluster.</Dialog.Description>
+          </Dialog.Header>
+          <Input bind:value={modalQuery} placeholder="Search clusters…" aria-label="Search clusters" autocomplete="off" />
+          <div class="max-h-[60vh] overflow-y-auto -mx-1 px-1" role="listbox" aria-label="Clusters">
+            <button
               type="button"
-              class="min-h-[44px] sm:min-h-0 rounded-full border border-dashed border-border/60 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label="Show {partitioned.overflow.length} more clusters"
-              aria-haspopup="menu"
-              aria-expanded={overflowOpen}
+              role="option"
+              aria-selected={value === null}
+              class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 min-h-[44px] sm:min-h-0 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none {value === null ? 'bg-accent/50' : ''}"
+              onclick={() => select(null)}
             >
-              <span>+{partitioned.overflow.length} more</span>
-              <ChevronDown class="h-3 w-3 opacity-60" aria-hidden="true" />
+              <Check class="h-3.5 w-3.5 shrink-0 {value === null ? 'opacity-100' : 'opacity-0'}" aria-hidden="true" />
+              <span class="flex-1 truncate text-left">All clusters</span>
             </button>
-          {/snippet}
-        </PopoverTrigger>
-        <PopoverContent class="w-[min(16rem,calc(100vw-2rem))] max-h-[60vh] overflow-y-auto p-1" align="start">
-          <div role="menu" aria-label="Other clusters">
-            <div class="px-2 py-1.5 text-[10px] uppercase tracking-wider text-muted-foreground" aria-hidden="true">Other clusters</div>
-            {#each partitioned.overflow as c (c.id)}
+            {#each modalClusters as c (c.id)}
               {@const unselectable = !c.isReady || !c.isActive}
               <button
                 type="button"
-                role="menuitem"
+                role="option"
+                aria-selected={value === c.id}
                 aria-label={pillAria(c)}
                 aria-disabled={unselectable}
                 title={unselectable ? (c.isActive ? 'Cluster is not ready; no nodes heartbeat here yet' : 'Cluster is deactivated') : undefined}
                 disabled={unselectable}
-                class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 {value === c.id ? 'bg-accent/50' : ''}"
+                class="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 min-h-[44px] sm:min-h-0 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 {value === c.id ? 'bg-accent/50' : ''}"
                 onclick={() => select(c.id)}
               >
+                <Check class="h-3.5 w-3.5 shrink-0 {value === c.id ? 'opacity-100' : 'opacity-0'}" aria-hidden="true" />
                 <span class="flex-1 truncate text-left">{c.name}</span>
                 {#if c.defaultCluster}<Badge variant="secondary" class="h-4 text-[11px] uppercase tracking-wider" aria-hidden="true">default</Badge>{/if}
                 {#if !c.isReady && c.isActive}<Badge variant="warning" class="h-4 text-[11px] uppercase tracking-wider" aria-hidden="true">prep</Badge>{/if}
                 {#if !c.isActive}<Badge variant="destructive" class="h-4 text-[11px] uppercase tracking-wider" aria-hidden="true">off</Badge>{/if}
               </button>
+            {:else}
+              <p class="px-2 py-6 text-center text-sm text-muted-foreground">No clusters match “{modalQuery}”</p>
             {/each}
           </div>
-        </PopoverContent>
-      </Popover>
+        </Dialog.Content>
+      </Dialog.Root>
     {/if}
   </div>
 {/if}

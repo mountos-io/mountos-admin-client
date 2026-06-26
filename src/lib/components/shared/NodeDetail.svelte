@@ -3,6 +3,8 @@
   import { onDestroy } from 'svelte'
   import { useNodes } from '$lib/core/stores/nodes.svelte'
   import { useClusters } from '$lib/core/stores/clusters.svelte'
+  import { useStorages } from '$lib/core/stores/storages.svelte'
+  import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useRegionAlerts } from '$lib/core/stores/regionAlerts.svelte'
   import { useRegionAuditLogs } from '$lib/core/stores/regionAudit.svelte'
   import { SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
@@ -30,6 +32,8 @@
 
   const nodeStore = useNodes()
   const clusterStore = useClusters()
+  const storageStore = useStorages()
+  const accountStore = useAccounts()
   const alertStore = useRegionAlerts(() => regionId, () => nodeId)
   const auditStore = useRegionAuditLogs()
   const auth = useAuth()
@@ -156,6 +160,42 @@
       .map((k) => toMetaEntry(k, meta[k]))
   })
 
+  // Volume group: the HA members serving the same block storage. blockserv nodes carry a
+  // storage_id in metadata; siblings are the other region nodes sharing it. Built from the
+  // already-fetched region nodes, so no extra request.
+  const nodeStorageId = $derived(node?.metadata?.['storage_id'] ? String(node.metadata['storage_id']) : '')
+
+  // Resolve the blockserv node's storage (its metadata carries the storage UUID, not the
+  // numeric route id) so we can link back to the storage detail page.
+  $effect(() => {
+    const acct = accountStore.selectedAccountId
+    if (nodeStorageId && acct) {
+      storageStore.fetchStorages({ accountId: acct, page: 1, limit: 100, filters: { regionId } }).catch(() => { /* link just stays absent */ })
+    }
+  })
+  const storageRef = $derived.by<{ id: number; name: string } | null>(() => {
+    if (!nodeStorageId) return null
+    const s = storageStore.storages.find((x) => x.uuid === nodeStorageId)
+    return s ? { id: s.id, name: s.name } : null
+  })
+  function metaStr(n: ServiceNode, k: string): string { return String(n.metadata?.[k] ?? '') }
+  function metaBool(n: ServiceNode, k: string): boolean { return n.metadata?.[k] === true }
+  function memberClusterName(n: ServiceNode): string | null {
+    if (!n.regionClusterId) return null
+    const c = clusterStore.clustersFor(regionId).find((x) => x.id === n.regionClusterId)
+    return c?.name ?? `#${n.regionClusterId}`
+  }
+  const volumeGroup = $derived.by<ServiceNode[]>(() => {
+    if (!nodeStorageId) return []
+    return nodeStore.nodes
+      .filter((n) => metaStr(n, 'storage_id') === nodeStorageId)
+      .sort((a, b) => {
+        if (a.nodeId === nodeId) return -1
+        if (b.nodeId === nodeId) return 1
+        return metaStr(a, 'name').localeCompare(metaStr(b, 'name')) || a.nodeId.localeCompare(b.nodeId)
+      })
+  })
+
   let copiedKey = $state('')
   let copyTimer: ReturnType<typeof setTimeout>
   async function copyMeta(key: string, text: string) {
@@ -238,8 +278,8 @@
               <dt class="text-muted-foreground text-sm">Cluster</dt>
               <dd class="mt-0.5">
                 <a
-                  href={`/regions/${regionId}/clusters/${node.regionClusterId}`}
-                  aria-label="View cluster {clusterLabel} details"
+                  href={`/regions/${regionId}?cluster=${node.regionClusterId}`}
+                  aria-label="View region filtered by cluster {clusterLabel}"
                   class="inline-flex items-center font-mono text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                 >{clusterLabel}</a>
               </dd>
@@ -298,9 +338,98 @@
               </dd>
             </div>
           {/each}
+          {#if storageRef}
+            <div>
+              <dt class="text-muted-foreground text-sm">Storage</dt>
+              <dd class="mt-0.5">
+                <a
+                  href={`/storages/${storageRef.id}`}
+                  aria-label="View storage {storageRef.name} details"
+                  class="inline-flex items-center font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                >{storageRef.name}</a>
+              </dd>
+            </div>
+          {/if}
         </dl>
       </CardContent>
     </Card>
+
+    {#if nodeStorageId && volumeGroup.length > 0}
+      <Card>
+        <CardHeader>
+          <div class="flex items-center justify-between gap-2">
+            <CardTitle class="text-base">Volume Group</CardTitle>
+            <Badge variant={volumeGroup.length > 1 ? 'outline' : 'secondary'}>
+              {volumeGroup.length} member{volumeGroup.length > 1 ? 's' : ''}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent class="pt-0">
+          <p class="text-sm text-muted-foreground mb-3">
+            HA members serving the same block storage{volumeGroup.length === 1 ? ' (single-node — no replica)' : ''}.
+          </p>
+          <Table>
+            <caption class="sr-only">Block volume group members</caption>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Member</TableHead>
+                <TableHead class="hidden sm:table-cell w-32">Cluster</TableHead>
+                <TableHead class="w-40">Replication</TableHead>
+                <TableHead class="hidden md:table-cell w-20">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {#each volumeGroup as m (m.nodeId)}
+                {@const isCurrent = m.nodeId === nodeId}
+                {@const memberName = metaStr(m, 'name') || m.nodeId}
+                {@const cluster = memberClusterName(m)}
+                <TableRow class={isCurrent ? 'bg-muted/40' : ''}>
+                  <TableCell>
+                    <div class="flex items-center gap-2">
+                      {#if isCurrent}
+                        <span class="font-medium">{memberName}</span>
+                        <Badge variant="outline" class="text-[0.65rem]">this node</Badge>
+                      {:else}
+                        <a href={`${basePath}/${regionId}/${m.nodeId}`}
+                          class="font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                        >{memberName}</a>
+                      {/if}
+                    </div>
+                    {#if metaStr(m, 'block_volume_id')}
+                      <div class="font-mono text-xs text-muted-foreground truncate">{metaStr(m, 'block_volume_id')}</div>
+                    {/if}
+                  </TableCell>
+                  <TableCell class="hidden sm:table-cell">
+                    {#if cluster && m.regionClusterId}
+                      <a
+                        href={`/regions/${regionId}?cluster=${m.regionClusterId}`}
+                        aria-label="View region filtered by cluster {cluster}"
+                        class="font-mono text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                      >{cluster}</a>
+                    {:else}
+                      <span class="font-mono text-sm text-muted-foreground">·</span>
+                    {/if}
+                  </TableCell>
+                  <TableCell>
+                    <div class="flex flex-wrap gap-1">
+                      <Badge variant={metaBool(m, 'ready') ? 'success' : 'warning'}>
+                        {metaBool(m, 'ready') ? 'Ready' : 'Not ready'}
+                      </Badge>
+                      <Badge variant={metaBool(m, 'ha_synced') ? 'success' : 'secondary'}>
+                        {metaBool(m, 'ha_synced') ? 'Synced' : 'Unsynced'}
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell class="hidden md:table-cell">
+                    <Badge variant={nodeStatusVariant(m.status)}>{m.status}</Badge>
+                  </TableCell>
+                </TableRow>
+              {/each}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    {/if}
   {/if}
 
   {#if node && (node.status !== 'healthy' || !node.isActive)}

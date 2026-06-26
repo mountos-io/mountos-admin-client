@@ -45,15 +45,20 @@
       storageId = ''
       storagesLoaded = false
       storageStore.fetchStorages({ accountId, page: 1, limit: 100 }).finally(() => {
-        if (preselectedStorageId) storageId = preselectedStorageId
+        // Only honor the preselection when that storage is active and attachable.
+        if (preselectedStorageId && storageStore.storages.some(s => String(s.id) === preselectedStorageId && s.isActive)) {
+          storageId = preselectedStorageId
+        }
         storagesLoaded = true
       })
     }
   })
 
+  // A volume can only attach to an active storage (the API rejects inactive ones), so the
+  // picker lists active, non-hub storages only.
   const storageOptions = $derived(
     storageStore.storages
-      .filter(s => s.regionInfo.name !== HUB_REGION_NAME)
+      .filter(s => s.isActive && s.regionInfo.name !== HUB_REGION_NAME)
       .map(s => ({ value: String(s.id), label: s.name }))
   )
 
