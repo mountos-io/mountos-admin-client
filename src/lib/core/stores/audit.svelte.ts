@@ -7,19 +7,19 @@ let nextCursor = $state<number | null>(null)
 let hasMore = $derived(nextCursor !== null)
 let fetchCtrl: AbortController | null = null
 
-async function fetchLogs(opts?: { accountId?: number; subject?: string; limit?: number; reset?: boolean }) {
+async function fetchLogs(opts: { accountId: number; subject?: string; limit?: number; reset?: boolean }) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
-    const cursor = opts?.reset ? undefined : nextCursor ?? undefined
+    const cursor = opts.reset ? undefined : nextCursor ?? undefined
     const res = await api.auditLogs.list({
-      accountId: opts?.accountId,
-      subject: opts?.subject,
+      accountId: opts.accountId,
+      subject: opts.subject,
       cursor,
-      limit: opts?.limit ?? 20,
+      limit: opts.limit ?? 20,
     }, ctrl.signal)
-    if (opts?.reset || !cursor) {
+    if (opts.reset || !cursor) {
       logs = res.items
     } else {
       logs = [...logs, ...res.items]

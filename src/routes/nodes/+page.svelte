@@ -138,7 +138,7 @@
       goto('/', { replaceState: true })
       return
     }
-    regionStore.fetchRegions()
+    if (accountStore.selectedAccountId != null) regionStore.fetchRegions(accountStore.selectedAccountId)
   })
 
   // Resolve cluster names for the Cluster column in a single account-scoped call

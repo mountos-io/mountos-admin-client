@@ -31,8 +31,8 @@
       goto('/', { replaceState: true })
       return
     }
-    const acctId = accountId ?? undefined
-    store.fetchLogs({ accountId: acctId, subject: appliedSubject || undefined, reset: true })
+    if (accountId == null) return
+    store.fetchLogs({ accountId, subject: appliedSubject || undefined, reset: true })
   })
 
   function toggleRow(id: number) {
@@ -46,7 +46,8 @@
   }
 
   function loadMore() {
-    store.fetchLogs({ accountId: accountId ?? undefined, subject: appliedSubject || undefined })
+    if (accountId == null) return
+    store.fetchLogs({ accountId, subject: appliedSubject || undefined })
   }
 </script>
 

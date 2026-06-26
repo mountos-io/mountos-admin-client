@@ -61,7 +61,8 @@
       return;
     }
     void statusFilter;
-    store.fetchRegions({
+    if (accountId == null) return;
+    store.fetchRegions(accountId, {
       page: 1,
       limit: prefs.pageSize,
       isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
@@ -188,11 +189,11 @@
     <Pagination
       currentPage={store.currentPage}
       totalPages={store.totalPages}
-      onPageChange={(p) => store.fetchRegions({
+      onPageChange={(p) => { if (accountId != null) store.fetchRegions(accountId, {
         page: p,
         limit: prefs.pageSize,
         isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
-      })}
+      }); }}
     />
   {/if}
 </div>

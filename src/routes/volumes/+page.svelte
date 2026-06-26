@@ -145,7 +145,7 @@
     }
     if (accountId) {
       if (filtersLoadedFor !== accountId) {
-        regionStore.fetchRegions({ page: 1, limit: 100 })
+        regionStore.fetchRegions(accountId, { page: 1, limit: 100 })
         storageStore.fetchStorages({ accountId, page: 1, limit: 100 })
         filtersLoadedFor = accountId
       }
