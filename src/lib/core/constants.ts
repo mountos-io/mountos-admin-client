@@ -1,5 +1,6 @@
 export const SYSTEM_ACCOUNT_ID = 0
 export const HUB_REGION_NAME = '(hub)'
+export const HUB_SERVICE_TYPE = 'hub'
 
 export const HISTOGRAM_BOUNDS: readonly number[] = [
   1, 2, 3, 5, 7, 10, 15, 20, 30, 50, 75, 100, 150, 200, 300, 500, 750,

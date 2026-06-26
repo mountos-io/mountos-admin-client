@@ -24,10 +24,20 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
 const CREATE_SUFFIXES = ['/create', '/add']
 
 const USER_ROLE_RESOURCES = new Set(['volumes', 'auditLogs', 'dashboard', 'clientSessions', 'regions', 'storages'])
-// Resources not scoped to an account: exempt from accountId-on-list requirement
-const GLOBAL_RESOURCES = new Set(['regions', 'storages'])
+// Resources not scoped to an account: exempt from the accountId-on-list
+// requirement. Regions, storages and clusters are now account-scoped (appserv
+// requires accountId), so nothing is exempt.
+const GLOBAL_RESOURCES = new Set<string>([])
 const API_KEY_PATH = /^\/api\/v1\/volumes\/(\d+)\/api-keys\/(generate|revoke(?:-by-user)?)$/
 const VOLUME_ID_PATH = /^\/api\/v1\/volumes\/(\d+)/
+
+// A top-level account-resource list is `/api/v1/<slug>/list`. Region-scoped
+// sub-resource lists (e.g. /regions/:id/clusters/list, /regions/:id/audit-logs)
+// are path-scoped by the region and do not carry an accountId.
+function isTopLevelList(path: string): boolean {
+  const segments = path.slice('/api/v1/'.length).split('/')
+  return segments.length === 2 && segments[1] === 'list'
+}
 
 function extractResource(path: string): string | null {
   const segments = path.slice('/api/v1/'.length).split('/')
@@ -72,8 +82,9 @@ export const authz: MiddlewareHandler = async (c, next) => {
       if (qAccountId && Number(qAccountId) !== user.accountId) {
         return c.json({ status: 'failure', message: 'forbidden' }, 403)
       }
-      // List endpoints require accountId unless the resource is globally scoped
-      if (!qAccountId && c.req.path.endsWith('/list') && !GLOBAL_RESOURCES.has(resource)) {
+      // Top-level account lists require accountId unless globally scoped;
+      // region-scoped sub-resource lists are exempt (scoped by the region path).
+      if (!qAccountId && isTopLevelList(c.req.path) && !GLOBAL_RESOURCES.has(resource)) {
         return c.json({ status: 'failure', message: 'forbidden' }, 403)
       }
     }

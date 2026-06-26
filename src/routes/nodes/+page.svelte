@@ -5,7 +5,7 @@
   import { useNodes } from '$lib/core/stores/nodes.svelte'
   import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { HUB_REGION_NAME } from '$lib/core/constants'
+  import { HUB_REGION_NAME, HUB_SERVICE_TYPE } from '$lib/core/constants'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
@@ -60,6 +60,16 @@
   const regionNameMap = $derived(
     new Map(regionStore.regions.map(r => [r.id, r.name]))
   )
+
+  // Hub nodes are cross-account; the hub (system-account) region is absent from
+  // the account-scoped region list, so resolve a hub-type node's region by name
+  // rather than showing its raw id.
+  function regionLabel(node: { regionId: number; serviceType: string }): string {
+    const name = regionNameMap.get(node.regionId)
+    if (name) return name
+    if (node.serviceType === HUB_SERVICE_TYPE) return HUB_REGION_NAME
+    return String(node.regionId)
+  }
 
   // Cluster names are region-scoped (cluster id 2 in region A is not
   // cluster id 2 in region B), so the lookup key has to include both.
@@ -157,7 +167,7 @@
     const accountId = accountStore.selectedAccountId
     if (!regionStore.regions.length || accountId == null) return
     if (!initialized) { initialized = true; nodeStore.clearFilters() }
-    if (!selectedRegionId) nodeStore.fetchAllNodes(accountId)
+    if (!selectedRegionId) nodeStore.fetchAllNodes(accountId).catch(() => { /* non-fatal */ })
   })
 
   function onRegionChange(v: string) {
@@ -290,7 +300,7 @@
                   href="/nodes/{node.regionId}"
                   class="relative z-10 text-sm hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  {regionNameMap.get(node.regionId) ?? node.regionId}
+                  {regionLabel(node)}
                 </a>
               </TableCell>
             {/if}

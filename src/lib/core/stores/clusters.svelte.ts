@@ -32,7 +32,7 @@ async function fetchAllClusters(accountId: number, opts: { isActive?: boolean } 
     for (;;) {
       const res = await api.clusters.list({ accountId, page, limit: 1000, isActive: opts.isActive }, ctrl.signal)
       for (const c of res.items) (grouped[c.regionId] ??= []).push(c)
-      if (page >= res.pagination.totalPages) break
+      if (page >= (res.pagination?.totalPages ?? 1)) break
       page++
     }
     clustersByRegion = grouped

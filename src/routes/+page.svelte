@@ -63,7 +63,7 @@
   })
 
   $effect(() => {
-    if (canReadNodes && accountId) nodeStore.fetchAllNodes(accountId)
+    if (canReadNodes && accountId) nodeStore.fetchAllNodes(accountId).catch(() => { /* non-fatal */ })
   })
 
   $effect(() => {
