@@ -33,6 +33,8 @@ const inflightGets = new Map<string, Inflight>()
 
 function dedupedGet<T>(path: string, run: (signal: AbortSignal) => Promise<T>, signal?: AbortSignal): Promise<T> {
   let entry = inflightGets.get(path)
+  // Never join a share whose controller is already aborted — it can only reject.
+  if (entry?.controller.signal.aborted) entry = undefined
   if (!entry) {
     const controller = new AbortController()
     const promise = run(controller.signal).finally(() => {
@@ -47,7 +49,14 @@ function dedupedGet<T>(path: string, run: (signal: AbortSignal) => Promise<T>, s
     const cleanup = () => signal?.removeEventListener('abort', onAbort)
     const onAbort = () => {
       cleanup()
-      if (--shared.refs <= 0) shared.controller.abort()
+      if (--shared.refs <= 0) {
+        shared.controller.abort()
+        // Evict synchronously so an immediately-following refetch starts a fresh
+        // request instead of joining this aborted share (the run().finally
+        // cleanup only runs on the next microtask). Fixes intermittent empty
+        // lists when an effect re-fires and aborts the prior in-flight GET.
+        if (inflightGets.get(path) === shared) inflightGets.delete(path)
+      }
       reject(signal?.reason ?? new DOMException('Aborted', 'AbortError'))
     }
     if (signal) {
