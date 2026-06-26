@@ -1328,7 +1328,7 @@
   }
 
   .hud-value {
-    text-shadow: 0 0 12px var(--hud-glow, oklch(0.5 0 0 / 0.15));
+    text-shadow: 0 0 12px var(--hud-glow, color-mix(in oklch, var(--foreground) 15%, transparent));
   }
 
   .hud-divider {
@@ -1437,7 +1437,7 @@
     gap: 6px;
     padding: 4px 10px;
     border: 1px solid var(--chip-accent, color-mix(in oklch, var(--muted-foreground) 20%, transparent));
-    border-radius: 2px;
+    border-radius: var(--radius-md);
     font-size: 0.875rem;
     cursor: pointer;
     transition: opacity 0.2s, filter 0.2s, border-color 0.2s;
