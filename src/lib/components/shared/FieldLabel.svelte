@@ -4,8 +4,9 @@
   import type { Snippet } from 'svelte'
 
   let {
-    for: forId, tooltip, class: className, children,
+    id, for: forId, tooltip, class: className, children,
   }: {
+    id?: string
     for?: string
     tooltip?: string
     class?: string
@@ -13,7 +14,7 @@
   } = $props()
 </script>
 
-<Label for={forId} class={className}>
+<Label {id} for={forId} class={className}>
   {#if tooltip}
     <span class="inline-flex items-center gap-1">
       {@render children()}

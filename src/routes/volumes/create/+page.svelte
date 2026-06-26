@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation'
   import { useVolumes } from '$lib/core/stores/volumes.svelte'
   import { useStorages } from '$lib/core/stores/storages.svelte'
+  import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Button } from '$lib/components/ui/button'
@@ -24,6 +25,7 @@
 
   const volumeStore = useVolumes()
   const storageStore = useStorages()
+  const clusterStore = useClusters()
   const accountStore = useAccounts()
   const auth = useAuth()
   const accountId = $derived(accountStore.selectedAccountId)
@@ -55,9 +57,39 @@
       .map(s => ({ value: String(s.id), label: s.name }))
   )
 
+  // Volumes are placed on a region cluster. Resolve the selected storage's region and load
+  // its clusters so the operator can pick the availability/placement boundary explicitly.
+  const selectedStorage = $derived(storageStore.storages.find(s => String(s.id) === storageId))
+  const storageRegionId = $derived(selectedStorage?.regionInfo.id ?? 0)
+
+  let lastClusterRegion = $state(0)
+  $effect(() => {
+    const rid = storageRegionId
+    if (rid === lastClusterRegion) return
+    lastClusterRegion = rid
+    regionClusterId = ''
+    if (rid) clusterStore.fetchClusters(rid, { isActive: true })
+  })
+
+  // Only ready+active clusters can host a volume; each is an availability/placement boundary.
+  const clusterOptions = $derived(
+    clusterStore.clustersFor(storageRegionId)
+      .filter(c => c.isActive && c.isReady)
+      .map(c => ({ value: String(c.id), label: c.defaultCluster ? `${c.name} (default)` : c.name }))
+  )
+  const clustersLoading = $derived(!!storageRegionId && clusterStore.isLoading(storageRegionId))
+
+  // Preselect the region's default cluster so the prior default-only behaviour is preserved.
+  $effect(() => {
+    if (regionClusterId || !clusterOptions.length) return
+    const def = clusterStore.clustersFor(storageRegionId).find(c => c.defaultCluster && c.isActive && c.isReady)
+    regionClusterId = String(def?.id ?? clusterOptions[0].value)
+  })
+
   let name = $state('')
   let description = $state('')
   let storageId = $state('')
+  let regionClusterId = $state('')
   let volumeType = $state('general')
   let encryption = $state(false)
   let encryptionKey = $state('')
@@ -84,6 +116,7 @@
       const result = await volumeStore.createVolume({
         accountId,
         storageId: Number(storageId),
+        regionClusterId: regionClusterId ? Number(regionClusterId) : undefined,
         name: name.trim(),
         description: description.trim() || undefined,
         volumeType,
@@ -165,6 +198,21 @@
           <div class="space-y-2">
             <Label id="storage-label">Storage</Label>
             <Combobox options={storageOptions} bind:value={storageId} placeholder="Select storage..." emptyText="No storages found." aria-labelledby="storage-label" />
+          </div>
+          <div class="space-y-2">
+            <FieldLabel id="cluster-label" tooltip="The availability/placement cluster that hosts this volume's metadata. Defaults to the region's default cluster.">
+              Availability / placement
+            </FieldLabel>
+            {#if !storageId}
+              <p class="text-sm text-muted-foreground">Select a storage first.</p>
+            {:else if clustersLoading}
+              <p class="text-sm text-muted-foreground">Loading clusters…</p>
+            {:else if clusterOptions.length === 0}
+              <p class="text-sm text-muted-foreground">No ready clusters in this region; the default placement is used.</p>
+            {:else}
+              <Select id="cluster" ariaLabelledby="cluster-label" bind:value={regionClusterId}
+                placeholder="Select cluster..." options={clusterOptions} />
+            {/if}
           </div>
           <div class="space-y-2">
             <FieldLabel for="volumeType" tooltip={"General: POSIX filesystem volume.\nIceberg: lake catalog for query engines."}>

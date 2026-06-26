@@ -156,6 +156,16 @@
     return false
   })
 
+  // Block-volume IDs are returned in member order. Label each with its block volume name,
+  // falling back to the placement cluster's name when the member was left unnamed.
+  const blockVolumeRows = $derived.by(() =>
+    createdBlockVolumeIds.map((id, i) => {
+      const m = members[i]
+      const cluster = clusterStore.clustersFor(Number(regionId)).find(c => String(c.id) === m?.regionClusterId)
+      return { id, label: m?.name.trim() || cluster?.name || `Member ${i + 1}` }
+    })
+  )
+
   function addMember() {
     if (members.length < MAX_BLOCK_MEMBERS) members = [...members, { id: memberSeq++, name: '', regionClusterId: '' }]
   }
@@ -438,27 +448,29 @@
             <div class="space-y-2">
               <p class="text-sm font-medium">Block Volume IDs</p>
               <p class="text-sm text-muted-foreground">
-                Copy each id into the matching blockserv's <code>BLOCK_VOLUME_ID</code> env.{#if createdBlockVolumeIds.length > 1} They are listed in member order.{/if}
+                Copy each id into the matching blockserv's <code>BLOCK_VOLUME_ID</code> env.
               </p>
-              {#each createdBlockVolumeIds as id, i (id)}
-                <div class="flex items-center gap-2">
-                  {#if createdBlockVolumeIds.length > 1}<span class="w-16 shrink-0 text-xs text-muted-foreground">Member {i + 1}</span>{/if}
-                  <code class="flex-1 min-w-0 break-all rounded-sm bg-muted px-2 py-1 font-mono text-xs">{id}</code>
-                  <Button
-                    variant="ghost" size="icon" type="button" class="shrink-0 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
-                    aria-label={createdBlockVolumeIds.length > 1 ? `Copy member ${i + 1} id` : 'Copy block volume id'}
-                    onclick={() => copyId(id, i)}
-                  >
-                    {#if copiedIndex === i}
-                      <Check class="size-4 text-primary" aria-hidden="true" />
-                    {:else}
-                      <Copy class="size-4" aria-hidden="true" />
-                    {/if}
-                  </Button>
+              {#each blockVolumeRows as row, i (row.id)}
+                <div class="space-y-1">
+                  <span class="block text-xs text-muted-foreground">{row.label}</span>
+                  <div class="flex items-center gap-2">
+                    <code class="flex-1 min-w-0 break-all rounded-sm bg-muted px-2 py-1 font-mono text-xs">{row.id}</code>
+                    <Button
+                      variant="ghost" size="icon" type="button" class="shrink-0 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+                      aria-label={`Copy ${row.label} id`}
+                      onclick={() => copyId(row.id, i)}
+                    >
+                      {#if copiedIndex === i}
+                        <Check class="size-4 text-primary" aria-hidden="true" />
+                      {:else}
+                        <Copy class="size-4" aria-hidden="true" />
+                      {/if}
+                    </Button>
+                  </div>
                 </div>
               {/each}
               <span class="sr-only" role="status" aria-live="polite">
-                {copiedIndex >= 0 ? (createdBlockVolumeIds.length > 1 ? `Member ${copiedIndex + 1} id copied` : 'Block volume id copied') : ''}
+                {copiedIndex >= 0 && blockVolumeRows[copiedIndex] ? `${blockVolumeRows[copiedIndex].label} id copied` : ''}
               </span>
               <Button variant="primary" type="button" class="cyberpunk-skewed-sm" onclick={() => goto('/storages')}>Done</Button>
             </div>
