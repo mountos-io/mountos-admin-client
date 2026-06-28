@@ -228,7 +228,7 @@
   // blockserv data-plane sections get a dedicated, severity-aware card instead of the
   // generic scalar cards, so they are excluded from extraSections below.
   const blockSections = new Set([
-    'Block Cache', 'S3 Floor Latency', 'Sync Backlog', 'Storage Capacity',
+    'Block Cache', 'S3 Floor Latency', 'Sync Backlog', 'Storage Capacity', 'HA State',
   ]);
   const hasBlockStats = $derived(sections.some((s) => blockSections.has(s.name)));
 

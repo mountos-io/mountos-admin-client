@@ -34,7 +34,22 @@
   const capFree = $derived(sv(sections, 'Storage Capacity', 'storage_free_bytes'))
   const capPct = $derived(capTotal > 0 ? Math.round((capUsed / capTotal) * 100) : 0)
 
+  // HA / replication health (the "HA State" section is present only once the block data plane is up)
+  const hasHA = $derived(sections.some((s) => s.name === 'HA State'))
+  const memberReady = $derived(sv(sections, 'HA State', 'member_ready') === 1)
+  const haSynced = $derived(sv(sections, 'HA State', 'ha_synced') === 1)
+  const peerCount = $derived(sv(sections, 'HA State', 'peer_count'))
+  const replDegraded = $derived(sv(sections, 'HA State', 'replication_degraded') === 1)
+  // Overload backpressure: connections refused pre-handshake because the accept-concurrency bound was full.
+  const acceptDropped = $derived(sv(sections, 'Block Auth', 'accept_dropped_total'))
+
   type Sev = { color: string; variant: 'success' | 'warning' | 'destructive'; label: string }
+
+  const replication = $derived.by<Sev>(() => {
+    if (replDegraded) return { color: 'var(--destructive)', variant: 'destructive', label: 'Degraded' }
+    if (peerCount === 0) return { color: 'var(--warning)', variant: 'warning', label: 'Single-node' }
+    return { color: 'var(--success)', variant: 'success', label: `Replicating ×${peerCount}` }
+  })
 
   const durability = $derived.by<Sev>(() => {
     if (oldestAgeSec >= DUR_CRIT_SEC) return { color: 'var(--destructive)', variant: 'destructive', label: 'At risk' }
@@ -142,6 +157,34 @@
         {@render latencyTile('PUT', s3Put)}
       </div>
     </div>
+
+    {#if hasHA}
+      <div class="h-px bg-border/60"></div>
+
+      <!-- HA / replication health: ready-to-serve, S3-history-synced, and whether sibling links are up -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-sm font-mono text-muted-foreground tracking-wider uppercase inline-flex items-center gap-1">
+            Replication
+            <InfoTip text="Active-active HA health. Member ready = discovery routes client reads here. HA synced = this member's history is on the shared S3 floor. Degraded = a sibling replication link is down, so writes for its keys fall back to the S3 floor (one durable domain until it recovers)." />
+          </span>
+          <Badge variant={replication.variant}>{replication.label}</Badge>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm font-mono text-muted-foreground">
+          <span>Member <span class="tabular-nums" style="color: {memberReady ? 'var(--success)' : 'var(--warning)'}">{memberReady ? 'ready' : 'not ready'}</span></span>
+          <span class="text-border">·</span>
+          <span>HA sync <span style="color: {haSynced ? 'var(--success)' : 'var(--muted-foreground)'}">{haSynced ? 'yes' : 'no'}</span></span>
+          {#if peerCount > 0}
+            <span class="text-border">·</span>
+            <span>Peers <span class="text-foreground tabular-nums">{peerCount}</span></span>
+          {/if}
+          {#if acceptDropped > 0}
+            <span class="text-border">|</span>
+            <span style="color: var(--destructive)">Conns dropped <span class="tabular-nums">{fmtNum(acceptDropped)}</span></span>
+          {/if}
+        </div>
+      </div>
+    {/if}
   </CardContent>
 </Card>
 

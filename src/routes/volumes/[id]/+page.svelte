@@ -790,7 +790,13 @@
             {#if volume.region?.id}
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Region</span>
-                <div class="mt-1 text-sm">{volume.region.name}</div>
+                <div class="mt-1">
+                  <a
+                    href="/regions/{volume.region.id}"
+                    aria-label="View region {volume.region.name} details"
+                    class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >{volume.region.name}</a>
+                </div>
               </div>
             {/if}
             {#if volume.regionCluster?.id}
@@ -802,6 +808,18 @@
                     aria-label="View region {volume.region.name} scoped to cluster {volume.regionCluster.name}"
                     class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                   >{volume.regionCluster.name}</a>
+                </div>
+              </div>
+            {/if}
+            {#if volume.storage?.id}
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Storage</span>
+                <div class="mt-1">
+                  <a
+                    href="/storages/{volume.storage.id}"
+                    aria-label="View storage {volume.storage.name} details"
+                    class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >{volume.storage.name}</a>
                 </div>
               </div>
             {/if}
