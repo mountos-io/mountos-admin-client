@@ -43,8 +43,13 @@
   // Overload backpressure: connections refused pre-handshake because the accept-concurrency bound was full.
   const acceptDropped = $derived(sv(sections, 'Block Auth', 'accept_dropped_total'))
   // Inline degraded/bypass S3-floor PUTs in flight (peer-down fallback or disk-full bypass). Non-zero
-  // means a write is going straight to S3; a sustained value above the upload gate width is queueing.
+  // means a write is going straight to S3; a sustained value above the gate limit is queueing.
   const s3Inflight = $derived(sv(sections, 'Block S3 Floor', 's3_degraded_inflight'))
+  // Adaptive inline-PUT gate: the live limit regears below the advisory ceiling when S3 pushes back
+  // (errors/timeouts/throttle), so limit < ceiling means S3 backpressure is actively in effect.
+  const s3Limit = $derived(sv(sections, 'Block S3 Floor', 's3_degraded_limit'))
+  const s3Ceiling = $derived(sv(sections, 'Block S3 Floor', 's3_degraded_limit_max'))
+  const s3Throttled = $derived(s3Ceiling > 0 && s3Limit > 0 && s3Limit < s3Ceiling)
 
   type Sev = { color: string; variant: 'success' | 'warning' | 'destructive'; label: string }
 
@@ -188,6 +193,10 @@
           {#if s3Inflight > 0}
             <span class="text-border">|</span>
             <span style="color: var(--warning)">S3 inflight <span class="tabular-nums">{fmtNum(s3Inflight)}</span></span>
+          {/if}
+          {#if s3Throttled}
+            <span class="text-border">|</span>
+            <span style="color: var(--destructive)">S3 gate <span class="tabular-nums">{fmtNum(s3Limit)}/{fmtNum(s3Ceiling)}</span></span>
           {/if}
         </div>
       </div>
