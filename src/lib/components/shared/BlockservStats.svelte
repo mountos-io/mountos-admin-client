@@ -42,6 +42,9 @@
   const replDegraded = $derived(sv(sections, 'HA State', 'replication_degraded') === 1)
   // Overload backpressure: connections refused pre-handshake because the accept-concurrency bound was full.
   const acceptDropped = $derived(sv(sections, 'Block Auth', 'accept_dropped_total'))
+  // Inline degraded/bypass S3-floor PUTs in flight (peer-down fallback or disk-full bypass). Non-zero
+  // means a write is going straight to S3; a sustained value above the upload gate width is queueing.
+  const s3Inflight = $derived(sv(sections, 'Block S3 Floor', 's3_degraded_inflight'))
 
   type Sev = { color: string; variant: 'success' | 'warning' | 'destructive'; label: string }
 
@@ -181,6 +184,10 @@
           {#if acceptDropped > 0}
             <span class="text-border">|</span>
             <span style="color: var(--destructive)">Conns dropped <span class="tabular-nums">{fmtNum(acceptDropped)}</span></span>
+          {/if}
+          {#if s3Inflight > 0}
+            <span class="text-border">|</span>
+            <span style="color: var(--warning)">S3 inflight <span class="tabular-nums">{fmtNum(s3Inflight)}</span></span>
           {/if}
         </div>
       </div>
