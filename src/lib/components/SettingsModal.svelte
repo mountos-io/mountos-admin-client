@@ -6,6 +6,7 @@
   import { providerSettingsTabs, providerSettingsModalSize } from '$provider/config/settings'
   import * as Dialog from '$lib/components/ui/dialog'
   import { Button } from '$lib/components/ui/button'
+  import { Input } from '$lib/components/ui/input'
   import { cn } from '$lib/utils'
   import Sun from '@lucide/svelte/icons/sun'
   import Moon from '@lucide/svelte/icons/moon'
@@ -24,6 +25,28 @@
   const accountStore = useAccounts()
   const auth = useAuth()
   const licenseStore = useLicense()
+
+  // Load-license (admin-only; the License tab is already gated by !auth.isUserRole)
+  let licenseFiles = $state<FileList | undefined>(undefined)
+  let uploadingLicense = $state(false)
+  let licenseUploadError = $state<string | null>(null)
+  let licenseUploaded = $state(false)
+
+  async function handleLicenseUpload() {
+    if (!licenseFiles?.length) return
+    uploadingLicense = true
+    licenseUploadError = null
+    licenseUploaded = false
+    try {
+      await licenseStore.uploadLicense(licenseFiles)
+      licenseUploaded = true
+      licenseFiles = undefined
+    } catch (e) {
+      licenseUploadError = (e as Error).message || 'Failed to load license'
+    } finally {
+      uploadingLicense = false
+    }
+  }
 
   const maxWidth = providerSettingsModalSize?.maxWidth ?? '800px'
   const minHeight = providerSettingsModalSize?.minHeight ?? '480px'
@@ -439,6 +462,24 @@
           {:else}
             <p class="text-sm text-muted-foreground">No license information available.</p>
           {/if}
+
+          <div class="space-y-3 border-t border-border pt-5 mt-5">
+            <div>
+              <h3 class="text-sm font-medium">Load License</h3>
+              <p class="text-xs text-muted-foreground mt-1">Upload a signed license file to add or extend capacity. Stacked licenses sum.</p>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <Input type="file" multiple class="max-w-xs" aria-label="License file(s)" bind:files={licenseFiles} disabled={uploadingLicense} />
+              <Button onclick={handleLicenseUpload} disabled={uploadingLicense || !licenseFiles?.length}>
+                {uploadingLicense ? 'Uploading…' : 'Upload'}
+              </Button>
+            </div>
+            {#if licenseUploadError}
+              <p class="text-sm text-destructive" role="alert">{licenseUploadError}</p>
+            {:else if licenseUploaded}
+              <p class="text-sm text-success" role="status">License loaded.</p>
+            {/if}
+          </div>
 
         {:else if activeProviderTab}
           {@const ProviderComponent = activeProviderTab.component}

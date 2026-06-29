@@ -24,6 +24,14 @@ export interface AdminUser {
   volumeId?: number
 }
 
+// Typed Hono context variables: middleware stashes the authenticated user
+// under 'mountosUser', and every handler/middleware reads it back typed.
+declare module 'hono' {
+  interface ContextVariableMap {
+    mountosUser: AdminUser
+  }
+}
+
 // Built-in roles are required; providers may add extra string-keyed entries.
 export interface DashboardAuthConfig {
   sessionTTL: number  // seconds

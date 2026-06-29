@@ -10,7 +10,7 @@ help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
 
 dev: ## Run dev server
-	npm run dev
+	NODE_OPTIONS=--disable-warning=DEP0205 npm run dev
 
 build: ## Build for production
 	npm run build
@@ -18,11 +18,11 @@ build: ## Build for production
 check: ## Type-check
 	npm run check
 
-proxy: ## Run proxy server
-	npm run proxy
+proxy: ## Run proxy server (TS_RUNTIME=node|bun|deno)
+	$(TS_EXEC) server/server.ts
 
-dev-all: ## Run dev server with proxy
-	NODE_EXTRA_CA_CERTS="$(shell mkcert -CAROOT)/rootCA.pem" npm run dev:all
+dev-all: ## Run dev server with proxy (TS_RUNTIME=node|bun|deno)
+	NODE_EXTRA_CA_CERTS="$(shell mkcert -CAROOT)/rootCA.pem" NODE_OPTIONS=--disable-warning=DEP0205 npx concurrently "vite dev --host" "$(TS_EXEC) server/server.ts"
 
 gen: ## Generate browser client from SDK
 	$(TS_EXEC) gen/browser-client.ts

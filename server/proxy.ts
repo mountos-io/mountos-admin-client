@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { TokenSigner, signDashboardUser } from '@mountos-io/admin-sdk'
 import type { DashboardUser } from '@mountos-io/admin-sdk'
 import type { AdminUser } from './types'
@@ -132,7 +133,7 @@ proxy.all('/api/v1/*', async (c) => {
       const text = (await res.text()).trim()
       return c.json(
         { status: 'failure', message: text.slice(0, 300) || `upstream returned ${res.status} with no body` },
-        { status: res.status === 401 ? 502 : res.status },
+        (res.status === 401 ? 502 : res.status) as ContentfulStatusCode,
       )
     }
 
@@ -141,7 +142,7 @@ proxy.all('/api/v1/*', async (c) => {
     if (json.status !== 'success') {
       return c.json(
         { status: 'failure', message: json.message ?? 'proxy error', errorCode: json.errorCode },
-        { status: res.status === 401 ? 502 : res.status },
+        (res.status === 401 ? 502 : res.status) as ContentfulStatusCode,
       )
     }
 
@@ -166,7 +167,7 @@ proxy.all('/api/v1/*', async (c) => {
     const upstream = e.status ?? 502
     return c.json(
       { status: 'failure', message: e.message ?? 'proxy error', errorCode: e.errorCode },
-      { status: upstream === 401 ? 502 : upstream },
+      (upstream === 401 ? 502 : upstream) as ContentfulStatusCode,
     )
   }
 })

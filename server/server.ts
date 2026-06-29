@@ -1,5 +1,7 @@
 import { Hono } from 'hono'
-import { serveStatic } from 'hono/bun'
+import { serve } from '@hono/node-server'
+import { serveStatic } from '@hono/node-server/serve-static'
+import { existsSync } from 'node:fs'
 import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
 import { csrf } from 'hono/csrf'
@@ -8,7 +10,7 @@ import type { Context } from 'hono'
 import { bootstrap } from '../src/provider/server/bootstrap'
 import { providerCsrfConfig, providerCspConfig, providerStepUpRules, providerWebAuthnConfig, providerRateLimitRules, providerThrottleConfig } from '../src/provider/server/config'
 import { providerAuthzMiddleware } from '../src/provider/server/middleware'
-import { ROLE, type CsrfConfig, type ContentSecurityPolicy, type WebAuthnConfig } from './types'
+import { ROLE, type AdminUser, type CsrfConfig, type ContentSecurityPolicy, type WebAuthnConfig } from './types'
 import { dashboardAuth } from './auth'
 import { auth } from './middleware'
 import { authz } from './authz'
@@ -28,9 +30,19 @@ if (missing.length) {
   process.exit(1)
 }
 
+// HTTP/2 to appserv. undici (Node fetch) defaults to HTTP/1.1, so enable ALPN
+// h2 when the upstream is TLS (falls back to h1 if the server does not offer
+// h2). Bun negotiates h2 over TLS natively, so Node only. undici has no h2c,
+// hence the https gate (a cleartext appserv URL stays HTTP/1.1). Covers both
+// the SDK client and the proxy, which share the global fetch dispatcher.
+if (!('Bun' in globalThis) && process.env.MOUNTOS_APPSERV_URL!.startsWith('https:')) {
+  const { setGlobalDispatcher, Agent } = await import('undici')
+  setGlobalDispatcher(new Agent({ allowH2: true }))
+}
+
 await dashboardAuth.init()
 
-const hasLocalCerts = await Bun.file('.certs/cert.pem').exists()
+const hasLocalCerts = existsSync('.certs/cert.pem')
 const rpId = process.env.WEBAUTHN_RP_ID ?? (hasLocalCerts ? 'local.mountos.io' : 'localhost')
 const webauthnConfig: WebAuthnConfig = {
   rpId,
@@ -323,7 +335,4 @@ app.get('*', serveStatic({ path: './build/index.html' }))
 const port = Number(process.env.PORT ?? 3001)
 console.log(`Admin server listening on :${port} → ${process.env.MOUNTOS_APPSERV_URL}`)
 
-export default {
-  port,
-  fetch: app.fetch,
-}
+serve({ fetch: app.fetch, port })

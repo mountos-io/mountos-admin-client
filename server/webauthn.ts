@@ -5,6 +5,7 @@ import {
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
 } from '@simplewebauthn/server'
+import type { AuthenticatorTransportFuture } from '@simplewebauthn/server'
 import type { WebAuthnConfig, StoredCredential } from './types'
 
 const KEY_CREDS = (uid: string) => `mountos:webauthn:creds:${uid}`
@@ -109,7 +110,7 @@ export class WebAuthnManager {
       userName,
       excludeCredentials: existing.map(c => ({
         id: c.id,
-        transports: c.transports as AuthenticatorTransport[],
+        transports: c.transports as AuthenticatorTransportFuture[],
       })),
       authenticatorSelection: {
         authenticatorAttachment: 'platform',
@@ -166,7 +167,7 @@ export class WebAuthnManager {
       rpID: this.config.rpId,
       allowCredentials: creds.map(c => ({
         id: c.id,
-        transports: c.transports as AuthenticatorTransport[],
+        transports: c.transports as AuthenticatorTransportFuture[],
       })),
       userVerification: 'preferred',
     })
@@ -200,7 +201,7 @@ export class WebAuthnManager {
         id: cred.id,
         publicKey: Buffer.from(cred.publicKey, 'base64url'),
         counter: cred.counter,
-        transports: cred.transports as AuthenticatorTransport[],
+        transports: cred.transports as AuthenticatorTransportFuture[],
       },
     })
     if (!verification.verified) throw new Error('authentication verification failed')

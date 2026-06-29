@@ -1,5 +1,5 @@
 import type { LicenseDetails, LicenseStatus } from '$lib/core/api/types'
-import { api } from './client.svelte'
+import { api, request } from './client.svelte'
 
 let license = $state<LicenseDetails | null>(null)
 let loading = $state(false)
@@ -31,6 +31,22 @@ async function fetchLicense() {
   } finally {
     if (fetchCtrl === ctrl) loading = false
   }
+}
+
+// uploadLicense sends one or more signed (JWT-like) license payloads to the HUB as an
+// array; the HUB verifies each and returns an error if any is invalid. Payloads are
+// deduped by content hash server-side. Refreshes the active license on success.
+async function uploadLicense(files: FileList | File[]) {
+  const licenses: string[] = []
+  for (const f of Array.from(files)) {
+    for (const line of (await f.text()).split(/\r?\n/)) {
+      const t = line.trim()
+      if (t) licenses.push(t)
+    }
+  }
+  if (!licenses.length) throw new Error('No license payloads found in the selected file(s)')
+  await request('POST', '/api/v1/license/load', { payloads: licenses })
+  await fetchLicense()
 }
 
 function statusLabel(status: LicenseStatus): string {
@@ -71,6 +87,7 @@ export function useLicense() {
     get needsAttention() { return needsAttention },
     get badgeVariant() { return badgeVariant },
     fetchLicense,
+    uploadLicense,
     statusLabel,
     formatLimit,
     formatBytes,

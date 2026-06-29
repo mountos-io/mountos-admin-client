@@ -93,9 +93,9 @@ function userRoleClaims(user: AdminUser): Record<string, unknown> {
 }
 
 class DashboardAuth {
-  private sessionKey!: jose.KeyLike
-  private sessionPub!: jose.KeyLike
-  private providerPub!: jose.KeyLike
+  private sessionKey!: CryptoKey
+  private sessionPub!: CryptoKey
+  private providerPub!: CryptoKey
   private redis!: Redis
   private sdk!: AdminClient
   private config: DashboardAuthConfig

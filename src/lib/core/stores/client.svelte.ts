@@ -76,3 +76,7 @@ const dedupedRequest: RequestFn = <T>(method: string, path: string, body?: unkno
 }
 
 export const api: AdminClient = createClient(dedupedRequest)
+
+// Raw authenticated request for endpoints not yet in the typed SDK (e.g. license upload).
+// Shares the SDK's auth refresh / step-up / toast pipeline.
+export const request: RequestFn = dedupedRequest
