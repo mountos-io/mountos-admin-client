@@ -7,6 +7,7 @@
   import * as Dialog from '$lib/components/ui/dialog'
   import { Button } from '$lib/components/ui/button'
   import { Input } from '$lib/components/ui/input'
+  import { Textarea } from '$lib/components/ui/textarea'
   import { cn } from '$lib/utils'
   import Sun from '@lucide/svelte/icons/sun'
   import Moon from '@lucide/svelte/icons/moon'
@@ -31,6 +32,8 @@
   let uploadingLicense = $state(false)
   let licenseUploadError = $state<string | null>(null)
   let licenseUploaded = $state(false)
+  let licenseText = $state('')
+  let pastingLicense = $state(false)
 
   async function handleLicenseUpload() {
     if (!licenseFiles?.length) return
@@ -45,6 +48,22 @@
       licenseUploadError = (e as Error).message || 'Failed to load license'
     } finally {
       uploadingLicense = false
+    }
+  }
+
+  async function handleLicensePaste() {
+    if (!licenseText.trim()) return
+    pastingLicense = true
+    licenseUploadError = null
+    licenseUploaded = false
+    try {
+      await licenseStore.pasteLicense(licenseText)
+      licenseUploaded = true
+      licenseText = ''
+    } catch (e) {
+      licenseUploadError = (e as Error).message || 'Failed to load license'
+    } finally {
+      pastingLicense = false
     }
   }
 
@@ -463,14 +482,35 @@
             <p class="text-sm text-muted-foreground">No license information available.</p>
           {/if}
 
-          <div class="space-y-3 border-t border-border pt-5 mt-5">
+          <div class="space-y-4 border-t border-border pt-5 mt-5">
             <div>
               <h3 class="text-sm font-medium">Load License</h3>
-              <p class="text-xs text-muted-foreground mt-1">Upload a signed license file to add or extend capacity. Stacked licenses sum.</p>
+              <p class="text-xs text-muted-foreground mt-1">Paste a signed license payload, or upload a license file. Stacked licenses sum; separate multiple payloads with newlines.</p>
+            </div>
+            <div class="space-y-2">
+              <Textarea
+                bind:value={licenseText}
+                rows={4}
+                spellcheck={false}
+                placeholder="Paste signed license payload(s) here, one per line…"
+                aria-label="License payload"
+                class="font-mono text-xs resize-y"
+                disabled={pastingLicense}
+              />
+              <div class="flex justify-end">
+                <Button onclick={handleLicensePaste} disabled={pastingLicense || !licenseText.trim()}>
+                  {pastingLicense ? 'Loading…' : 'Load'}
+                </Button>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
+              <span class="h-px flex-1 bg-border"></span>
+              or upload a file
+              <span class="h-px flex-1 bg-border"></span>
             </div>
             <div class="flex items-center gap-2 flex-wrap">
               <Input type="file" multiple class="max-w-xs" aria-label="License file(s)" bind:files={licenseFiles} disabled={uploadingLicense} />
-              <Button onclick={handleLicenseUpload} disabled={uploadingLicense || !licenseFiles?.length}>
+              <Button variant="outline" onclick={handleLicenseUpload} disabled={uploadingLicense || !licenseFiles?.length}>
                 {uploadingLicense ? 'Uploading…' : 'Upload'}
               </Button>
             </div>

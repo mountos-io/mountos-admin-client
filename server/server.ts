@@ -30,14 +30,20 @@ if (missing.length) {
   process.exit(1)
 }
 
-// HTTP/2 to appserv. undici (Node fetch) defaults to HTTP/1.1, so enable ALPN
-// h2 when the upstream is TLS (falls back to h1 if the server does not offer
-// h2). Bun negotiates h2 over TLS natively, so Node only. undici has no h2c,
-// hence the https gate (a cleartext appserv URL stays HTTP/1.1). Covers both
-// the SDK client and the proxy, which share the global fetch dispatcher.
-if (!('Bun' in globalThis) && process.env.MOUNTOS_APPSERV_URL!.startsWith('https:')) {
-  const { setGlobalDispatcher, Agent } = await import('undici')
+// HTTP/2 to appserv. Node's built-in fetch defaults to HTTP/1.1 and, worse,
+// loses every response header (so it skips content-encoding decompression)
+// when driven by a userland undici h2 dispatcher. So on Node only: enable ALPN
+// h2 via undici and swap global fetch to undici's own, which reads h2 responses
+// correctly. undici has no h2c, hence the https gate (a cleartext appserv URL
+// stays HTTP/1.1). Bun and Deno negotiate h2 over TLS natively with correct
+// header/decompression handling, so they need no workaround. Covers both the
+// SDK client and the proxy.
+const isBun = 'Bun' in globalThis
+const isDeno = 'Deno' in globalThis
+if (!isBun && !isDeno && process.env.MOUNTOS_APPSERV_URL!.startsWith('https:')) {
+  const { setGlobalDispatcher, Agent, fetch: undiciFetch } = await import('undici')
   setGlobalDispatcher(new Agent({ allowH2: true }))
+  globalThis.fetch = undiciFetch as typeof globalThis.fetch
 }
 
 await dashboardAuth.init()

@@ -127,17 +127,19 @@ proxy.all('/api/v1/*', async (c) => {
     const res = await fetch(`${APPSERV_URL}${upstreamPath}${url.search}`, { method, headers, body })
 
     // appserv always replies JSON; a non-JSON body means an infra-level error
-    // (gateway 502/504 HTML, plaintext). Surface its real status + trimmed body
-    // instead of letting res.json() throw into the generic catch.
-    if (!(res.headers.get('content-type') ?? '').includes('application/json')) {
-      const text = (await res.text()).trim()
+    // (gateway 502/504 HTML, plaintext). Detect JSON by parsing the body, not by
+    // content-type: the h2 dispatcher can drop response headers, which would
+    // otherwise misflag every reply as a non-JSON error.
+    const text = await res.text()
+    let json: { status?: string; message?: string; data?: unknown; errorCode?: number } | undefined
+    try { json = JSON.parse(text) } catch { json = undefined }
+
+    if (!json || typeof json !== 'object') {
       return c.json(
-        { status: 'failure', message: text.slice(0, 300) || `upstream returned ${res.status} with no body` },
+        { status: 'failure', message: text.trim().slice(0, 300) || `upstream returned ${res.status} with no body` },
         (res.status === 401 ? 502 : res.status) as ContentfulStatusCode,
       )
     }
-
-    const json = await res.json() as { status: string; message?: string; data?: unknown; errorCode?: number }
 
     if (json.status !== 'success') {
       return c.json(

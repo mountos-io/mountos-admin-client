@@ -13,6 +13,7 @@ export interface HistogramGroup {
   maxUs: number
   count: number
   sumSec: number
+  rollbacks: number
   buckets: HistBucket[]
 }
 export interface MetricSection {
@@ -89,7 +90,7 @@ export function parseMetrics(text: string): MetricSection[] {
         if (metricName!.includes('_bucket') && labels.le != null) {
           g.buckets.push({ le: labels.le, leUs: parseLeValue(labels.le), count: value })
         } else {
-          const suffixes = ['total', 'duration_seconds', 'avg_latency_us', 'stddev_us', 'histogram_min_us', 'histogram_max_us', 'histogram_count', 'histogram_sum_seconds']
+          const suffixes = ['total', 'duration_seconds', 'avg_latency_us', 'stddev_us', 'histogram_min_us', 'histogram_max_us', 'histogram_count', 'histogram_sum_seconds', 'rollbacks']
           let key = metricName!
           for (const s of suffixes) {
             if (metricName!.endsWith('_' + s)) { key = s; break }
@@ -110,6 +111,7 @@ export function parseMetrics(text: string): MetricSection[] {
           maxUs: metrics.get('histogram_max_us') ?? 0,
           count: metrics.get('histogram_count') ?? 0,
           sumSec: metrics.get('histogram_sum_seconds') ?? 0,
+          rollbacks: metrics.get('rollbacks') ?? 0,
           buckets: buckets.sort((a, b) => a.leUs - b.leUs),
         })
       }
@@ -255,7 +257,7 @@ export function bucketBarColor(leUs: number): string {
   return 'var(--destructive)'
 }
 
-export type SortCol = 'label' | 'total' | 'opsPerSec' | 'durationSec' | 'avgLatencyUs' | 'cv' | 'minUs' | 'maxUs' | 'p50' | 'p95' | 'p99'
+export type SortCol = 'label' | 'total' | 'opsPerSec' | 'durationSec' | 'avgLatencyUs' | 'cv' | 'minUs' | 'maxUs' | 'p50' | 'p95' | 'p99' | 'rollbacks'
 export type SortDir = 'asc' | 'desc'
 
 export function sortGroups(groups: HistogramGroup[], col: SortCol, dir: SortDir): HistogramGroup[] {
@@ -275,6 +277,7 @@ export function sortGroups(groups: HistogramGroup[], col: SortCol, dir: SortDir)
       case 'p50': va = interpolatePercentile(a.buckets, 50); vb = interpolatePercentile(b.buckets, 50); break
       case 'p95': va = interpolatePercentile(a.buckets, 95); vb = interpolatePercentile(b.buckets, 95); break
       case 'p99': va = interpolatePercentile(a.buckets, 99); vb = interpolatePercentile(b.buckets, 99); break
+      case 'rollbacks': va = a.rollbacks; vb = b.rollbacks; break
       default: va = a.avgLatencyUs; vb = b.avgLatencyUs
     }
     return m * ((va as number) - (vb as number))

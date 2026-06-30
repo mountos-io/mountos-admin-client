@@ -33,20 +33,38 @@ async function fetchLicense() {
   }
 }
 
-// uploadLicense sends one or more signed (JWT-like) license payloads to the HUB as an
-// array; the HUB verifies each and returns an error if any is invalid. Payloads are
-// deduped by content hash server-side. Refreshes the active license on success.
-async function uploadLicense(files: FileList | File[]) {
-  const licenses: string[] = []
-  for (const f of Array.from(files)) {
-    for (const line of (await f.text()).split(/\r?\n/)) {
-      const t = line.trim()
-      if (t) licenses.push(t)
-    }
+// parsePayloads splits raw license text into one trimmed payload per non-empty line — the format the
+// HUB accepts whether the text came from a file or a paste box.
+function parsePayloads(text: string): string[] {
+  const out: string[] = []
+  for (const line of text.split(/\r?\n/)) {
+    const t = line.trim()
+    if (t) out.push(t)
   }
-  if (!licenses.length) throw new Error('No license payloads found in the selected file(s)')
+  return out
+}
+
+// postPayloads sends the signed (JWT-like) license payloads to the HUB as an array; the HUB verifies
+// each and returns an error if any is invalid. Payloads are deduped by content hash server-side.
+// Refreshes the active license on success.
+async function postPayloads(licenses: string[]) {
   await request('POST', '/api/v1/license/load', { payloads: licenses })
   await fetchLicense()
+}
+
+// uploadLicense loads one or more license payloads from the selected file(s).
+async function uploadLicense(files: FileList | File[]) {
+  const licenses: string[] = []
+  for (const f of Array.from(files)) licenses.push(...parsePayloads(await f.text()))
+  if (!licenses.length) throw new Error('No license payloads found in the selected file(s)')
+  await postPayloads(licenses)
+}
+
+// pasteLicense loads license payload(s) from pasted text — no file needed.
+async function pasteLicense(text: string) {
+  const licenses = parsePayloads(text)
+  if (!licenses.length) throw new Error('No license payload found in the pasted text')
+  await postPayloads(licenses)
 }
 
 function statusLabel(status: LicenseStatus): string {
@@ -88,6 +106,7 @@ export function useLicense() {
     get badgeVariant() { return badgeVariant },
     fetchLicense,
     uploadLicense,
+    pasteLicense,
     statusLabel,
     formatLimit,
     formatBytes,

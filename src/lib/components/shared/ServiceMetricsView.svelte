@@ -796,6 +796,7 @@
             {@render sortableHead("p95", "p95")}
             {@render sortableHead("p99", "p99")}
           {/if}
+          {@render sortableHead("rollbacks", "Rollbk")}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -882,6 +883,13 @@
                 <span style="color: {latencyColor(p99)}">{formatUs(p99)}</span>
               </TableCell>
             {/if}
+            <TableCell class="font-mono tabular-nums text-sm text-right">
+              {#if group.rollbacks > 0}
+                <span class="text-warning">{group.rollbacks}</span>
+              {:else}
+                <span class="text-muted-foreground">&mdash;</span>
+              {/if}
+            </TableCell>
           </TableRow>
           {#if isOpen && group.buckets.length > 0}
             {@const bucketTotal = group.buckets.reduce(
@@ -890,7 +898,7 @@
             )}
             <TableRow>
               <TableCell
-                colspan={metricMode === "minMax" ? 9 : 10}
+                colspan={metricMode === "minMax" ? 10 : 11}
                 class="p-0"
               >
                 <div
