@@ -174,10 +174,10 @@
                 <span class="capitalize">{alert.category}</span>
               </TableCell>
               <TableCell>
-                <div class="min-w-0">
-                  <p class="font-medium truncate" title={alert.title}>{alert.title}</p>
+                <div class="max-w-md">
+                  <p class="font-medium break-words" title={alert.title}>{alert.title}</p>
                   {#if alert.description}
-                    <p class="text-muted-foreground truncate mt-0.5" title={alert.description}>{alert.description}</p>
+                    <p class="text-muted-foreground break-words mt-0.5" title={alert.description}>{alert.description}</p>
                   {/if}
                 </div>
               </TableCell>
