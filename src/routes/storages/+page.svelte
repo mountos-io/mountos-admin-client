@@ -21,6 +21,7 @@
   import Plus from '@lucide/svelte/icons/plus'
   import Search from '@lucide/svelte/icons/search'
   import DatabaseIcon from '@lucide/svelte/icons/database'
+  import Wrench from '@lucide/svelte/icons/wrench'
 
   const storageStore = useStorages()
   const accountStore = useAccounts()
@@ -35,6 +36,7 @@
   let typeFilter = $state('')
   let providerFilter = $state('')
   let statusFilter = $state<'active' | 'inactive' | 'all'>('active')
+  let maintenanceFilter = $state<'all' | 'on' | 'off'>('all')
   let filtersLoadedFor: number | null = null
 
   const statusOptions = [
@@ -43,7 +45,13 @@
     { value: 'all', label: 'All' },
   ]
 
-  const hasFilter = $derived(activeSearch || regionFilter || typeFilter || providerFilter || statusFilter !== 'active')
+  const maintenanceOptions = [
+    { value: 'all', label: 'All' },
+    { value: 'on', label: 'In maintenance' },
+    { value: 'off', label: 'Normal' },
+  ]
+
+  const hasFilter = $derived(activeSearch || regionFilter || typeFilter || providerFilter || statusFilter !== 'active' || maintenanceFilter !== 'all')
 
   const regionOptions = $derived([
     { value: '', label: 'All Regions' },
@@ -63,6 +71,7 @@
       storageType: typeFilter || undefined,
       providerType: providerFilter || undefined,
       isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+      directAccess: maintenanceFilter === 'all' ? undefined : maintenanceFilter === 'on',
     }
   }
 
@@ -91,6 +100,7 @@
         filtersLoadedFor = accountId
       }
       void statusFilter
+      void maintenanceFilter
       fetchPage()
     }
   })
@@ -116,6 +126,13 @@
         placeholder="Active"
         label="Filter by status"
         onchange={(v) => (statusFilter = v as 'active' | 'inactive' | 'all')}
+      />
+      <FilterSelect
+        options={maintenanceOptions}
+        value={maintenanceFilter}
+        placeholder="Maintenance"
+        label="Filter by maintenance"
+        onchange={(v) => (maintenanceFilter = v as 'all' | 'on' | 'off')}
       />
     </FilterPanel>
   {/if}
@@ -163,12 +180,19 @@
               <a href="/storages/{storage.id}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Storage {storage.name}{storage.isActive ? '' : ', deactivated'}">{storage.name}</a>
             </TableCell>
             <TableCell class="text-sm text-muted-foreground hidden sm:table-cell">{storage.regionInfo.name}</TableCell>
-            <TableCell class="hidden md:table-cell"><Badge variant="outline">{storage.storageType}</Badge></TableCell>
+            <TableCell class="hidden md:table-cell">
+              <span class="inline-flex items-center gap-1.5">
+                <Badge variant="outline">{storage.storageType}</Badge>
+                {#if storage.directAccess}
+                  <Badge variant="warning" title="Maintenance mode: blockserv bypassed"><Wrench class="size-3" aria-hidden="true" />Maintenance</Badge>
+                {/if}
+              </span>
+            </TableCell>
             <TableCell class="hidden md:table-cell"><Badge variant="secondary">{storage.providerType}</Badge></TableCell>
             <TableCell><StatusBadge active={storage.isActive} /></TableCell>
             <TableCell>
               {#if auth.can('volumes', 'create')}
-                <Button variant="ghost" size="sm" class="relative z-10"
+                <Button variant="ghost" size="sm" class="relative z-10 min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8"
                   href="/volumes/create?storageId={storage.id}"
                   title="Create Volume" aria-label="Create Volume">
                   <DatabaseIcon class="size-3.5" aria-hidden="true" />

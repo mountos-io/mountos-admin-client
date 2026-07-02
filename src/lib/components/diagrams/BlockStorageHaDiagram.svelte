@@ -19,7 +19,7 @@
   viewBox="0 0 1000 684"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
-  aria-label="A block storage has up to three active-active block volumes, each a blockserv node with its own attached volume in a distinct region cluster. Block volumes replicate peer-to-peer. A client discovers them via appserv and connects directly to any node. Every block volume is backed by the region's object storage."
+  aria-label="A block storage has up to three active-active block volumes, each a blockserv node with its own attached volume in a distinct region cluster. Block volumes replicate peer-to-peer. A client discovers them via appserv and connects directly to any node. Every block volume is backed by the region's object storage. In direct-access maintenance mode the client bypasses blockserv and reads and writes the same object keys on the backing object storage directly."
 >
   <defs>
     <marker id="ha-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -36,6 +36,9 @@
     </marker>
     <marker id="ha-bi-end" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--d-accent)" />
+    </marker>
+    <marker id="ha-arrow-direct" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--d-warn)" />
     </marker>
   </defs>
 
@@ -107,6 +110,14 @@
   <path class="edge-muted" d="M 500 540 L 500 580" marker-end="url(#ha-arrow-muted)" />
   <text x="510" y="566" class="t-small t-muted">persist &amp; fetch parts</text>
 
+  <!-- Direct-access (maintenance): client bypasses blockserv and reads/writes the
+       backing object store directly, using the SAME object keys. -->
+  <path class="edge-warn" d="M 60 114 C 40 320, 40 500, 90 580" marker-end="url(#ha-arrow-direct)" />
+  <text x="24" y="352" class="t-small" style="fill:var(--d-warn)">direct access</text>
+  <text x="24" y="368" class="t-small" style="fill:var(--d-warn)">(maintenance):</text>
+  <text x="24" y="384" class="t-small" style="fill:var(--d-warn)">bypass blockserv,</text>
+  <text x="24" y="400" class="t-small" style="fill:var(--d-warn)">same object keys</text>
+
   <!-- Legend -->
   <g transform="translate(70,656)">
     <line x1="0" y1="0" x2="26" y2="0" class="edge-accent" marker-start="url(#ha-bi-start)" marker-end="url(#ha-bi-end)" />
@@ -115,5 +126,7 @@
     <text x="222" y="4" class="t-small">cluster (fault domain)</text>
     <line x1="420" y1="0" x2="446" y2="0" class="edge-muted" marker-end="url(#ha-arrow-muted)" />
     <text x="454" y="4" class="t-small">discovery / object storage</text>
+    <line x1="640" y1="0" x2="666" y2="0" class="edge-warn" marker-end="url(#ha-arrow-direct)" />
+    <text x="674" y="4" class="t-small">direct access (maintenance)</text>
   </g>
 </svg>

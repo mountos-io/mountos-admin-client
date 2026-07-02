@@ -13,6 +13,7 @@ export interface StorageFilters {
   storageType?: string
   providerType?: string
   isActive?: boolean
+  directAccess?: boolean
 }
 
 type FetchStoragesParams = {
@@ -34,6 +35,7 @@ async function fetchStorages({ accountId, page = 1, limit = 20, filters }: Fetch
       storageType: filters?.storageType,
       providerType: filters?.providerType,
       isActive: filters?.isActive,
+      directAccess: filters?.directAccess,
     }, ctrl.signal)
     storages = res.items
     totalPages = res.pagination?.totalPages ?? 0
@@ -52,6 +54,12 @@ async function createStorage(req: CreateStorageRequest) {
 
 async function editStorage(id: number, req: EditStorageRequest) {
   return api.storages.edit(id, req)
+}
+
+// Toggle maintenance mode (direct object-store access) on a block storage. Name is
+// required by the edit endpoint, so it is echoed back unchanged.
+async function setDirectAccess(id: number, name: string, directAccess: boolean) {
+  return api.storages.edit(id, { name, directAccess })
 }
 
 async function getStorage(id: number) {
@@ -83,6 +91,7 @@ export function useStorages() {
     fetchStorages,
     createStorage,
     editStorage,
+    setDirectAccess,
     getStorage,
     listBlockVolumes,
     deactivateStorage,

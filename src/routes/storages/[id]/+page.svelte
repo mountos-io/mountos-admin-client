@@ -23,6 +23,8 @@
   import FlaskConical from '@lucide/svelte/icons/flask-conical'
   import Loader2 from '@lucide/svelte/icons/loader-2'
   import DatabaseIcon from '@lucide/svelte/icons/database'
+  import Wrench from '@lucide/svelte/icons/wrench'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import type { Storage, EditStorageRequest } from '$lib/core/api/types'
   import { getProvider } from '$lib/core/utils/object-storage-providers'
 
@@ -124,6 +126,36 @@
   }
 
   const isObject = $derived(storage?.storageType === 'object')
+  const isBlock = $derived(storage?.storageType === 'block')
+  const maintenanceOn = $derived(!!storage?.directAccess)
+  let maintenanceSubmitting = $state(false)
+
+  // Maintenance mode ("direct access") makes a block storage bypass blockserv and hit its
+  // backing object store directly, so blockserv can be safely stopped/upgraded. Flipping it
+  // is operationally significant: gate behind a confirm dialog, then reload the record.
+  function toggleMaintenance() {
+    if (!storage || !auth.guard('storages', 'update')) return
+    const next = !maintenanceOn
+    dialog.confirm(
+      next ? 'Enable maintenance mode' : 'Disable maintenance mode',
+      next
+        ? `Enable direct access on "${storage.name}"? Clients and gateways will bypass blockserv and read/write the backing object store directly. Wait for all consumers to settle before stopping blockserv.`
+        : `Disable direct access on "${storage.name}"? Clients and gateways will resume routing through blockserv. Ensure blockserv is running and healthy first.`,
+      async () => {
+        maintenanceSubmitting = true
+        try {
+          await store.setDirectAccess(id, storage!.name, next)
+          showSuccessToast(next ? 'Maintenance mode enabled' : 'Maintenance mode disabled')
+        } catch (err: unknown) {
+          handleApiError(err, 'Failed to update maintenance mode')
+          throw err
+        } finally {
+          maintenanceSubmitting = false
+        }
+      },
+      next ? 'destructive' : 'default',
+    )
+  }
 </script>
 
 <svelte:head><title>{storage?.name ?? 'Storage'} · mountOS Admin</title></svelte:head>
@@ -133,6 +165,11 @@
     <Button variant="ghost" size="sm" href="/storages" aria-label="Back to storages"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight">{storage?.name ?? 'Storage'}</h1>
     {#if storage}<Badge variant="outline" style="border-color: var(--pastel-storage); color: var(--pastel-storage-text)">Storage</Badge>{/if}
+    {#if maintenanceOn}
+      <Badge variant="warning" title="blockserv is bypassed; the backing object store is accessed directly">
+        <Wrench class="size-3 mr-1" aria-hidden="true" />Maintenance
+      </Badge>
+    {/if}
   </div>
   {#if loading}
     <DetailSkeleton cards={[{ rows: 3, cols: 2 }]} />
@@ -178,7 +215,7 @@
               />
             {/if}
           </CardContent>
-          <CardFooter class="gap-4">
+          <CardFooter class="gap-4 [&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8">
             <Button variant="primary" type="submit" size="sm" class="cyberpunk-skewed-sm" disabled={!canSave}>
               {editSubmitting ? 'Saving…' : 'Save'}
             </Button>
@@ -212,6 +249,16 @@
               </div>
             </div>
           </div>
+
+          {#if maintenanceOn}
+            <div class="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-warning" role="status">
+              <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
+              <p>
+                <span class="font-medium">Maintenance mode is active.</span>
+                Clients and gateways bypass blockserv and read/write the backing object store directly. blockserv can be stopped or upgraded during this window.
+              </p>
+            </div>
+          {/if}
 
           {#if storage.description}
             <div>
@@ -255,7 +302,7 @@
             {/if}
           </div>
         </CardContent>
-        <CardFooter class="gap-2">
+        <CardFooter class="gap-2 [&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8">
           {#if isObject}
             <Button variant="outline" size="sm" disabled={bucketTesting} onclick={runBucketTest}>
               {#if bucketTesting}
@@ -270,6 +317,17 @@
             <Button variant="outline" size="sm" href="/volumes/create?storageId={storage.id}" class="gap-1.5">
               <DatabaseIcon class="h-4 w-4" />
               Create Volume
+            </Button>
+          {/if}
+          {#if isBlock && storage.isActive && auth.can('storages', 'update')}
+            <Button variant={maintenanceOn ? 'primary' : 'outline'} size="sm" class="gap-1.5"
+              disabled={maintenanceSubmitting} onclick={toggleMaintenance}>
+              {#if maintenanceSubmitting}
+                <Loader2 class="h-4 w-4 animate-spin" />
+              {:else}
+                <Wrench class="h-4 w-4" />
+              {/if}
+              {maintenanceOn ? 'Disable Maintenance' : 'Enable Maintenance'}
             </Button>
           {/if}
           {#if storage.isActive && auth.can('storages', 'update')}

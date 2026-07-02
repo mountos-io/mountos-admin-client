@@ -14,6 +14,12 @@
   const MIN = 1, MAX = 2.6, STEP = 0.2
   let scale = $state(1)
   const set = (v: number) => { scale = Math.min(MAX, Math.max(MIN, Math.round(v * 100) / 100)) }
+
+  function onKeydown(e: KeyboardEvent) {
+    if (e.key === '+' || e.key === '=') { set(scale + STEP); e.preventDefault() }
+    else if (e.key === '-') { set(scale - STEP); e.preventDefault() }
+    else if (e.key === '0') { scale = 1; e.preventDefault() }
+  }
 </script>
 
 <div class="space-y-2">
@@ -36,9 +42,10 @@
     </Button>
   </div>
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="overflow-auto rounded-lg border bg-card p-3 sm:p-4"
     style="max-height: min(60vh, 560px)"
-    tabindex="0" role="group" aria-label={`${ariaLabel}, scrollable`}>
+    tabindex="0" role="group" aria-label={`${ariaLabel}, scrollable`} onkeydown={onKeydown}>
     <div style="width: {scale * 100}%">
       {@render children()}
     </div>

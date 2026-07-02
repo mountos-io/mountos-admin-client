@@ -5,7 +5,7 @@
 :root {
   --d-stroke: oklch(0.42 0 0);
   --d-stroke-muted: oklch(0.80 0 0);
-  --d-surface: #ffffff;
+  --d-surface: oklch(1 0 0);
   --d-surface-alt: oklch(0.975 0 0);
   --d-node-client: oklch(0.95 0.03 230);
   --d-node-provider: oklch(0.95 0.03 345);
@@ -16,6 +16,7 @@
   --d-text: oklch(0.24 0 0);
   --d-text-muted: oklch(0.45 0 0);
   --d-accent: oklch(0.48 0.10 255);
+  --d-warn: oklch(0.50 0.14 55);
 }
 
 .dark {
@@ -32,6 +33,7 @@
   --d-text: oklch(0.93 0 0);
   --d-text-muted: oklch(0.72 0 0);
   --d-accent: oklch(0.74 0.10 255);
+  --d-warn: oklch(0.78 0.14 65);
 }
 
 .diagram-svg {
@@ -82,6 +84,12 @@
   fill: none;
   stroke: var(--d-accent);
   stroke-width: 1.5;
+}
+.diagram-svg .edge-warn {
+  fill: none;
+  stroke: var(--d-warn);
+  stroke-width: 1.75;
+  stroke-dasharray: 7 4;
 }
 
 .diagram-svg .region-frame {
