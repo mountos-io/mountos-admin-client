@@ -1,3 +1,23 @@
+// =============================================================================
+// THIS IS THE ACCESS-CONTROL LAYER for the mountOS dashboard plane.
+//
+// appserv/hub does NOT enforce the role->capability matrix. By contract it only:
+//   - treats a signed X-MountOS-Dashboard-User with role="user" as scoped to its
+//     own accountId/volumeId (data isolation) and uses userId for audit; every
+//     other role, or an absent header, is an unrestricted admin;
+//   - keeps a system-admin floor on provider infra it cannot account-scope.
+//
+// Everything else - which role may call which endpoint, which fields a role may
+// set (see USER_ROLE_FORBIDDEN_VOLUME_FIELDS in proxy.ts), the capability map in
+// auth.ts - is enforced HERE. This backend is open-source precisely so you can
+// fork and change this policy. If you loosen or remove a check here, appserv
+// will NOT catch it for you (except account/volume scoping and the infra floor).
+//
+// One thing appserv DOES validate: a signed dashboard-user header must be
+// well-formed (role non-empty; role="user" must carry accountId + userId) or it
+// rejects the request. So always sign a complete identity; a partial one is
+// treated as an attempted bypass, not a fallback to admin.
+// =============================================================================
 import type { MiddlewareHandler } from 'hono'
 import { dashboardAuth } from './auth'
 import { Cap, ROLE } from './types'
