@@ -1269,7 +1269,7 @@
             </div>
             <p class="text-xs text-muted-foreground">Mints an access key and secret pair bound to your logged-in account. The previous token for your account (if any) is revoked.</p>
           </fieldset>
-          {#if auth.can('volumes', 'update')}
+          {#if auth.can('volumes', 'update') && !auth.isUserRole}
             <Separator />
             <div class="space-y-4 rounded-md bg-destructive/5 p-3">
               <fieldset class="space-y-3">

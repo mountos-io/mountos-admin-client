@@ -132,10 +132,10 @@
     {:else if stats}
       <!-- Overview Stats -->
       {@const overviewItems = [
-        { label: 'Users', value: stats.userCount, href: '/users', icon: UsersIcon },
+        { label: 'Users', value: stats.userCount, href: undefined, icon: UsersIcon },
         { label: 'Volumes', value: stats.volumeCount, href: '/volumes', icon: DatabaseIcon },
-        { label: 'Regions', value: stats.regionCount, href: '/regions', icon: GlobeIcon },
-        { label: 'Storages', value: stats.storageCount, href: '/storages', icon: HardDriveIcon },
+        { label: 'Regions', value: stats.regionCount, href: undefined, icon: GlobeIcon },
+        { label: 'Storages', value: stats.storageCount, href: undefined, icon: HardDriveIcon },
         { label: 'Usage', value: formatBytes(stats.totalVolumeUsed), href: '/volumes', icon: DatabaseIcon },
         ...(canReadNodes ? [{ label: 'Nodes', value: nodeStore.nodes.length, href: '/nodes', icon: ServerIcon }] : []),
         ...(canReadSessions ? [{ label: 'Sessions', value: sessionStore.summary.activeCount || stats.activeSessionCount, href: '/sessions', icon: MonitorDotIcon }] : []),
@@ -144,9 +144,9 @@
         <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
         <div class="relative flex flex-wrap">
           {#each overviewItems as item, i}
-            <a href={item.href}
+            <svelte:element this={item.href ? 'a' : 'div'} {...(item.href ? { href: item.href } : {})}
               class="group relative flex-1 min-w-[120px] sm:min-w-[140px] flex items-center gap-3 px-4 py-3
-                     hover:bg-muted/40 transition-colors
+                     {item.href ? 'hover:bg-muted/40 transition-colors' : ''}
                      border-r border-border last:border-r-0">
               <div class="flex size-8 items-center justify-center rounded-md bg-muted/60 group-hover:bg-primary/10 transition-colors">
                 <item.icon class="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -155,8 +155,10 @@
                 <p class="text-xl font-bold tabular-nums leading-none">{item.value}</p>
                 <p class="text-xs text-muted-foreground mt-0.5">{item.label}</p>
               </div>
-              <ChevronRightIcon class="size-3 invisible group-hover:visible text-muted-foreground transition-colors absolute right-2 top-1/2 -translate-y-1/2" />
-            </a>
+              {#if item.href}
+                <ChevronRightIcon class="size-3 invisible group-hover:visible text-muted-foreground transition-colors absolute right-2 top-1/2 -translate-y-1/2" />
+              {/if}
+            </svelte:element>
           {/each}
         </div>
       </div>

@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation'
   import { useVolumes } from '$lib/core/stores/volumes.svelte'
   import { useStorages } from '$lib/core/stores/storages.svelte'
+  import { useRegions } from '$lib/core/stores/regions.svelte'
   import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
@@ -25,6 +26,7 @@
 
   const volumeStore = useVolumes()
   const storageStore = useStorages()
+  const regionStore = useRegions()
   const clusterStore = useClusters()
   const accountStore = useAccounts()
   const auth = useAuth()
@@ -37,62 +39,9 @@
     }
   })
 
-  const preselectedStorageId = $page.url.searchParams.get('storageId') ?? ''
-
-  let storagesLoaded = $state(false)
-  $effect(() => {
-    if (accountId) {
-      storageId = ''
-      storagesLoaded = false
-      storageStore.fetchStorages({ accountId, page: 1, limit: 100 }).finally(() => {
-        // Only honor the preselection when that storage is active and attachable.
-        if (preselectedStorageId && storageStore.storages.some(s => String(s.id) === preselectedStorageId && s.isActive)) {
-          storageId = preselectedStorageId
-        }
-        storagesLoaded = true
-      })
-    }
-  })
-
-  // A volume can only attach to an active storage (the API rejects inactive ones), so the
-  // picker lists active, non-hub storages only.
-  const storageOptions = $derived(
-    storageStore.storages
-      .filter(s => s.isActive && s.regionInfo.name !== HUB_REGION_NAME)
-      .map(s => ({ value: String(s.id), label: s.name }))
-  )
-
-  // Volumes are placed on a region cluster. Resolve the selected storage's region and load
-  // its clusters so the operator can pick the availability/placement boundary explicitly.
-  const selectedStorage = $derived(storageStore.storages.find(s => String(s.id) === storageId))
-  const storageRegionId = $derived(selectedStorage?.regionInfo.id ?? 0)
-
-  let lastClusterRegion = $state(0)
-  $effect(() => {
-    const rid = storageRegionId
-    if (rid === lastClusterRegion) return
-    lastClusterRegion = rid
-    regionClusterId = ''
-    if (rid) clusterStore.fetchClusters(rid, { isActive: true })
-  })
-
-  // Only ready+active clusters can host a volume; each is an availability/placement boundary.
-  const clusterOptions = $derived(
-    clusterStore.clustersFor(storageRegionId)
-      .filter(c => c.isActive && c.isReady)
-      .map(c => ({ value: String(c.id), label: c.defaultCluster ? `${c.name} (default)` : c.name }))
-  )
-  const clustersLoading = $derived(!!storageRegionId && clusterStore.isLoading(storageRegionId))
-
-  // Preselect the region's default cluster so the prior default-only behaviour is preserved.
-  $effect(() => {
-    if (regionClusterId || !clusterOptions.length) return
-    const def = clusterStore.clustersFor(storageRegionId).find(c => c.defaultCluster && c.isActive && c.isReady)
-    regionClusterId = String(def?.id ?? clusterOptions[0].value)
-  })
-
   let name = $state('')
   let description = $state('')
+  let regionId = $state('')
   let storageId = $state('')
   let regionClusterId = $state('')
   let volumeType = $state('general')
@@ -106,6 +55,88 @@
   let quotaLimit = $state('')
   let submitting = $state(false)
   let createResult = $state<{ id: number; encryptionKey: string } | null>(null)
+
+  const preselectedStorageId = $page.url.searchParams.get('storageId') ?? ''
+  const preselectedRegionId = $page.url.searchParams.get('regionId') ?? ''
+
+  let regionsLoaded = $state(false)
+  $effect(() => {
+    if (accountId) {
+      regionId = ''
+      regionsLoaded = false
+      regionStore.fetchRegions(accountId, { page: 1, limit: 100 }).finally(async () => {
+        if (preselectedStorageId) {
+          // Resolve the preselected storage's region so both fields land pre-filled.
+          try {
+            const storage = await storageStore.getStorage(Number(preselectedStorageId))
+            regionId = String(storage.regionInfo.id)
+          } catch {
+            // Storage no longer resolves; fall back to manual region selection.
+          }
+        } else if (preselectedRegionId) {
+          regionId = preselectedRegionId
+        }
+        regionsLoaded = true
+      })
+    }
+  })
+
+  // Volumes attach to a storage within a region; the hub region has no attachable storages.
+  const regionOptions = $derived(
+    regionStore.regions
+      .filter(r => r.name !== HUB_REGION_NAME)
+      .map(r => ({ value: String(r.id), label: r.name }))
+  )
+
+  // Storage options are scoped to the selected region and refetched whenever it changes.
+  let lastStorageRegion = ''
+  $effect(() => {
+    const rid = regionId
+    if (rid === lastStorageRegion) return
+    lastStorageRegion = rid
+    storageId = ''
+    if (!rid || !accountId) return
+    storageStore.fetchStorages({ accountId, page: 1, limit: 100, filters: { regionId: Number(rid) } }).finally(() => {
+      // Only honor the preselection when that storage is active and attachable.
+      if (preselectedStorageId && storageStore.storages.some(s => String(s.id) === preselectedStorageId && s.isActive)) {
+        storageId = preselectedStorageId
+      }
+    })
+  })
+
+  // A volume can only attach to an active storage (the API rejects inactive ones).
+  const storageOptions = $derived(
+    storageStore.storages
+      .filter(s => s.isActive)
+      .map(s => ({ value: String(s.id), label: s.name }))
+  )
+  const storagesLoading = $derived(!!regionId && storageStore.loading)
+
+  // Volumes are placed on a region cluster; load the selected region's clusters so the
+  // operator can pick the availability/placement boundary explicitly.
+  let lastClusterRegion = ''
+  $effect(() => {
+    const rid = regionId
+    if (rid === lastClusterRegion) return
+    lastClusterRegion = rid
+    regionClusterId = ''
+    if (rid) clusterStore.fetchClusters(Number(rid), { isActive: true })
+  })
+
+  // Only ready+active clusters can host a volume; each is an availability/placement boundary.
+  const clusterOptions = $derived(
+    clusterStore.clustersFor(Number(regionId))
+      .filter(c => c.isActive && c.isReady)
+      .map(c => ({ value: String(c.id), label: c.defaultCluster ? `${c.name} (default)` : c.name }))
+  )
+  const clustersLoading = $derived(!!regionId && clusterStore.isLoading(Number(regionId)))
+
+  // Preselect the region's default cluster so the prior default-only behaviour is preserved.
+  $effect(() => {
+    if (regionClusterId || !clusterOptions.length) return
+    const def = clusterStore.clustersFor(Number(regionId)).find(c => c.defaultCluster && c.isActive && c.isReady)
+    regionClusterId = String(def?.id ?? clusterOptions[0].value)
+  })
 
   $effect(() => {
     if (encryption && encryptionKeyRef) encryptionKeyRef.focus()
@@ -161,7 +192,7 @@
 <div class="mx-auto max-w-2xl space-y-6">
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before creating a volume." />
-  {:else if !storagesLoaded}
+  {:else if !regionsLoaded}
     <FormSkeleton fields={7} />
   {:else if createResult}
     <Card cornerBrackets role="status" aria-live="polite">
@@ -201,15 +232,25 @@
             <Input id="description" bind:value={description} placeholder="Description" autocomplete="off" />
           </div>
           <div class="space-y-2">
+            <Label id="region-label">Region</Label>
+            <Combobox options={regionOptions} bind:value={regionId} placeholder="Select region..." emptyText="No regions found." aria-labelledby="region-label" />
+          </div>
+          <div class="space-y-2">
             <Label id="storage-label">Storage</Label>
-            <Combobox options={storageOptions} bind:value={storageId} placeholder="Select storage..." emptyText="No storages found." aria-labelledby="storage-label" />
+            {#if !regionId}
+              <p class="text-sm text-muted-foreground">Select a region first.</p>
+            {:else if storagesLoading}
+              <p class="text-sm text-muted-foreground">Loading storages…</p>
+            {:else}
+              <Combobox options={storageOptions} bind:value={storageId} placeholder="Select storage..." emptyText="No storages found." aria-labelledby="storage-label" />
+            {/if}
           </div>
           <div class="space-y-2">
             <FieldLabel id="cluster-label" tooltip="The availability/placement cluster that hosts this volume's metadata. Defaults to the region's default cluster.">
               Availability / placement
             </FieldLabel>
-            {#if !storageId}
-              <p class="text-sm text-muted-foreground">Select a storage first.</p>
+            {#if !regionId}
+              <p class="text-sm text-muted-foreground">Select a region first.</p>
             {:else if clustersLoading}
               <p class="text-sm text-muted-foreground">Loading clusters…</p>
             {:else if clusterOptions.length === 0}
