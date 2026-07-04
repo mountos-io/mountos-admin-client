@@ -75,6 +75,10 @@ async function generateApiKeys(volumeId: number, req: GenerateVolumeAPIKeysReque
   return api.volumes.generateAPIKeys(volumeId, req)
 }
 
+async function listApiKeys(volumeId: number, signal?: AbortSignal) {
+  return api.volumes.listAPIKeys(volumeId, signal)
+}
+
 async function revokeApiKey(volumeId: number, apiKey: string) {
   return api.volumes.revokeAPIKey(volumeId, { apiKey })
 }
@@ -126,6 +130,7 @@ export function useVolumes() {
     deactivateVolume,
     activateVolume,
     generateApiKeys,
+    listApiKeys,
     revokeApiKey,
     revokeApiKeysByUser,
     updateQuota,

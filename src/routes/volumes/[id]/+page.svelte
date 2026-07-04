@@ -29,7 +29,7 @@
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import { api } from '$lib/core/stores/client.svelte'
   import { userCache } from '$lib/core/stores/user-cache.svelte'
-  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint } from '$lib/core/api/types'
+  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint, VolumeApiKey } from '$lib/core/api/types'
   import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
@@ -234,8 +234,41 @@
   }
 
   let revokeUserId = $state('')
-  let genResult = $state<{ apiKey: string; apiSecret: string } | null>(null)
+  let genResult = $state<{ apiKey: string; apiSecret: string; evictedApiKeys?: string[] } | null>(null)
   let credentialsOpen = $state(false)
+
+  const API_KEY_LIMIT = 2
+  let apiKeys = $state<VolumeApiKey[]>([])
+  let apiKeysLoading = $state(false)
+  // False until a list succeeds; an unknown key set makes generateKeys confirm.
+  let apiKeysKnown = $state(false)
+  let apiKeysCtrl: AbortController | null = null
+
+  async function fetchApiKeys() {
+    // Listing needs a linked mountOS user (403 otherwise) and an active volume
+    if (auth.userMountosUserId == null || !volume?.isActive) return
+    apiKeysCtrl?.abort()
+    const ctrl = apiKeysCtrl = new AbortController()
+    apiKeysLoading = true
+    try {
+      // Oldest first (server orders by creation time)
+      const keys = (await store.listApiKeys(id, ctrl.signal)).keys ?? []
+      if (ctrl.signal.aborted) return
+      apiKeys = keys
+      apiKeysKnown = true
+    } catch (e) {
+      if (ctrl.signal.aborted || (e as Error).name === 'AbortError') return
+      // Keep any stale list; the inline error state below reports the failure
+      // (the api client already toasts 5xx, so no extra toast here)
+      apiKeysKnown = false
+    } finally {
+      if (apiKeysCtrl === ctrl) apiKeysLoading = false
+    }
+  }
+
+  function keyLabel(k: VolumeApiKey) {
+    return k.name || `${k.apiKey.slice(0, 6)}…`
+  }
   let userSelectOpen = $state(false)
   let userSearchQuery = $state('')
   let userOptions = $state<User[]>([])
@@ -292,6 +325,7 @@
     volFetchCtrl = new AbortController()
     const ctrl = volFetchCtrl
     volSessions = []; sessionsTotal = 0; sessionsTotalPages = 0; sessionsPage = 1
+    apiKeysCtrl?.abort(); apiKeys = []; apiKeysKnown = false; newKeyName = ''
     loading = true
     store.getVolume(id).then(v => {
       if (ctrl.signal.aborted) return
@@ -299,10 +333,11 @@
       syncEditFields(v)
       fetchVolumeSessions()
       fetchForks()
+      fetchApiKeys()
     }).catch(() => { if (!ctrl.signal.aborted) volume = null }).finally(() => { if (!ctrl.signal.aborted) loading = false })
   })
 
-  onDestroy(() => { volFetchCtrl?.abort(); sessionsCtrl?.abort(); sizeCtrl?.abort() })
+  onDestroy(() => { volFetchCtrl?.abort(); sessionsCtrl?.abort(); sizeCtrl?.abort(); apiKeysCtrl?.abort() })
 
   async function reload() {
     const v = await store.getVolume(id)
@@ -372,19 +407,38 @@
     finally { editSaving = false }
   }
 
+  let newKeyName = $state('')
+
   function generateKeys() {
-    dialog.confirm(
-      'Generate API Token',
-      'Your existing API token for this volume will be revoked and replaced. Anything currently mounted with the old credentials will lose access.',
-      async () => {
-        try {
-          // userId is filled by the admin-client proxy from the logged-in
-          // session; the placeholder here is ignored by the backend.
-          genResult = await store.generateApiKeys(id, { userId: 0 })
-          credentialsOpen = true
-        } catch (e: unknown) { handleApiError(e, 'Failed to generate token') }
-      },
-    )
+    const doGenerate = async () => {
+      try {
+        // userId is filled by the admin-client proxy from the logged-in
+        // session; the placeholder here is ignored by the backend.
+        genResult = await store.generateApiKeys(id, { userId: 0, name: newKeyName.trim() || undefined })
+        credentialsOpen = true
+        newKeyName = ''
+        await fetchApiKeys()
+      } catch (e: unknown) { handleApiError(e, 'Failed to generate token') }
+    }
+    if (apiKeys.length >= API_KEY_LIMIT) {
+      const oldest = apiKeys[0]
+      dialog.confirm(
+        'Generate API Token',
+        `You already have ${API_KEY_LIMIT} active API keys on this volume. Generating a new one revokes your oldest key (${keyLabel(oldest)}). Anything currently mounted with that key will lose access.`,
+        doGenerate,
+        'destructive',
+      )
+    } else if (!apiKeysKnown) {
+      // Key list unknown (load failed): warn as if at the limit.
+      dialog.confirm(
+        'Generate API Token',
+        `Your current keys could not be loaded. If you already have ${API_KEY_LIMIT} active keys on this volume, generating a new one revokes the oldest; anything mounted with it will lose access.`,
+        doGenerate,
+        'destructive',
+      )
+    } else {
+      void doGenerate()
+    }
   }
 
   function closeCredentials() {
@@ -402,13 +456,13 @@
     }
   }
 
-  function handleRevokeKey() {
-    if (!revokeKey) return
-    const key = revokeKey
-    dialog.confirm('Revoke API Key', `Revoke key "${key}"?`, async () => {
+  function handleRevokeKey(key = revokeKey, label = '') {
+    if (!key) return
+    dialog.confirm('Revoke API Key', `Revoke key "${label || key}"? Anything currently mounted with it will lose access.`, async () => {
       await store.revokeApiKey(id, key)
-      revokeKey = ''
+      if (key === revokeKey) revokeKey = ''
       showSuccessToast('API key revoked')
+      await fetchApiKeys()
     }, 'destructive')
   }
 
@@ -634,6 +688,7 @@
     dialog.confirm('Revoke Key', `Revoke API key for ${label}?`, async () => {
       await store.revokeApiKeysByUser({ volumeId: id, userId: uid })
       showSuccessToast(`API key revoked for ${label}`)
+      await fetchApiKeys()
     }, 'destructive')
   }
 </script>
@@ -641,6 +696,16 @@
 <svelte:head>
   <title>{volume?.name ?? 'Volume'} · mountOS Admin</title>
 </svelte:head>
+
+{#snippet apiKeysHeaderRow()}
+  <TableRow>
+    <TableHead class="th-cyber">Name</TableHead>
+    <TableHead class="th-cyber">Key</TableHead>
+    <TableHead class="th-cyber hidden sm:table-cell">Created</TableHead>
+    <TableHead class="th-cyber">Last used</TableHead>
+    <TableHead class="th-cyber w-20"><span class="sr-only">Actions</span></TableHead>
+  </TableRow>
+{/snippet}
 
 {#snippet sessionsHeaderRow()}
   <TableRow>
@@ -1259,15 +1324,57 @@
         <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
         <CardContent class="space-y-4">
           <fieldset class="space-y-3">
-            <legend class="text-sm font-semibold">Generate your API token</legend>
-            <div class="flex items-end gap-3">
+            <legend class="text-sm font-semibold">Your API keys</legend>
+            {#if apiKeysLoading}
+              <TableSkeleton rows={2} caption="Loading API keys" header={apiKeysHeaderRow}
+                cells={[{ width: 'w-20' }, { width: 'w-40' }, { width: 'w-24', class: 'hidden sm:table-cell' }, { width: 'w-24' }, { width: 'w-16' }]} />
+            {:else if auth.userMountosUserId == null}
+              <p class="text-sm text-muted-foreground">Your dashboard account has no linked mountOS user, so it holds no API keys.</p>
+            {:else if !apiKeysKnown}
+              <div class="flex items-center gap-3">
+                <p class="text-sm text-destructive">Could not load your API keys.</p>
+                <Button variant="outline" size="sm" onclick={fetchApiKeys}>Retry</Button>
+              </div>
+            {:else if apiKeys.length === 0}
+              <p class="text-sm text-muted-foreground">No active keys for your account on this volume.</p>
+            {:else}
+              <Table containerLabel="Your API keys">
+                <TableHeader>
+                  {@render apiKeysHeaderRow()}
+                </TableHeader>
+                <TableBody>
+                  {#each apiKeys as k (k.apiKey)}
+                    <TableRow>
+                      <TableCell class="font-medium">{k.name || '·'}</TableCell>
+                      <TableCell><code class="font-mono text-xs">{k.apiKey}</code></TableCell>
+                      <TableCell class="hidden sm:table-cell text-muted-foreground" title={k.createdAt}>{k.createdAt ? formatRelative(k.createdAt) : '·'}</TableCell>
+                      <TableCell class="text-muted-foreground" title={k.lastUsedAt}>{k.lastUsedAt ? formatRelative(k.lastUsedAt) : 'never'}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" class="h-9 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 text-xs text-destructive hover:text-destructive"
+                          onclick={() => handleRevokeKey(k.apiKey, keyLabel(k))}>Revoke</Button>
+                      </TableCell>
+                    </TableRow>
+                  {/each}
+                </TableBody>
+              </Table>
+              <p class="text-xs text-muted-foreground">Last used advances on authentication events and may lag actual use by up to an hour.</p>
+            {/if}
+          </fieldset>
+          <Separator />
+          <fieldset class="space-y-3">
+            <legend class="text-sm font-semibold">Generate an API token</legend>
+            <div class="flex items-end gap-3 flex-wrap">
               <div class="w-full max-w-64 space-y-1">
                 <Label for="api-key-user">User</Label>
                 <Input id="api-key-user" value={auth.username ?? auth.user?.name ?? 'current session'} readonly />
               </div>
+              <div class="w-full max-w-64 space-y-1">
+                <Label for="api-key-name">Key name (optional)</Label>
+                <Input id="api-key-name" bind:value={newKeyName} maxlength={64} placeholder="e.g. laptop, ci-runner" />
+              </div>
               <Button size="sm" class="shrink-0" aria-describedby="api-key-user" onclick={generateKeys}>Generate</Button>
             </div>
-            <p class="text-xs text-muted-foreground">Mints an access key and secret pair bound to your logged-in account. The previous token for your account (if any) is revoked.</p>
+            <p class="text-xs text-muted-foreground">Mints an access key and secret pair bound to your logged-in account. Up to {API_KEY_LIMIT} keys can be active at once; generating another revokes your oldest key.</p>
           </fieldset>
           {#if auth.can('volumes', 'update') && !auth.isUserRole}
             <Separator />
@@ -1322,7 +1429,7 @@
                     <Label for="revoke-key-id">API Key</Label>
                     <Input id="revoke-key-id" bind:value={revokeKey} placeholder="API key to revoke" />
                   </div>
-                  <Button variant="destructive" size="sm" class="shrink-0" disabled={!revokeKey} onclick={handleRevokeKey}>Revoke</Button>
+                  <Button variant="destructive" size="sm" class="shrink-0" disabled={!revokeKey} onclick={() => handleRevokeKey()}>Revoke</Button>
                 </div>
               </fieldset>
             </div>
@@ -1576,6 +1683,11 @@
               </button>
             </div>
           </div>
+          {#if genResult.evictedApiKeys?.length}
+            <p class="text-xs text-warning">
+              Key limit reached, so the oldest key was revoked ({genResult.evictedApiKeys.join(', ')}).
+            </p>
+          {/if}
         </div>
       {/if}
       <div class="pt-2 flex justify-end">

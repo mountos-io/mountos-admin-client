@@ -31,6 +31,7 @@ export type {
   CreateVolumeRequest,
   EditVolumeRequest,
   GenerateVolumeAPIKeysRequest,
+  VolumeApiKey,
   RevokeVolumeAPIKeyRequest,
   RevokeVolumeAPIKeysByUserRequest,
   DeactivateVolumeRequest,
