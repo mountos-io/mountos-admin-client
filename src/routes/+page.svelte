@@ -132,10 +132,10 @@
     {:else if stats}
       <!-- Overview Stats -->
       {@const overviewItems = [
-        { label: 'Users', value: stats.userCount, href: undefined, icon: UsersIcon },
+        { label: 'Users', value: stats.userCount, href: auth.isUserRole ? undefined : '/users', icon: UsersIcon },
         { label: 'Volumes', value: stats.volumeCount, href: '/volumes', icon: DatabaseIcon },
-        { label: 'Regions', value: stats.regionCount, href: undefined, icon: GlobeIcon },
-        { label: 'Storages', value: stats.storageCount, href: undefined, icon: HardDriveIcon },
+        { label: 'Regions', value: stats.regionCount, href: auth.isUserRole ? undefined : '/regions', icon: GlobeIcon },
+        { label: 'Storages', value: stats.storageCount, href: auth.isUserRole ? undefined : '/storages', icon: HardDriveIcon },
         { label: 'Usage', value: formatBytes(stats.totalVolumeUsed), href: '/volumes', icon: DatabaseIcon },
         ...(canReadNodes ? [{ label: 'Nodes', value: nodeStore.nodes.length, href: '/nodes', icon: ServerIcon }] : []),
         ...(canReadSessions ? [{ label: 'Sessions', value: sessionStore.summary.activeCount || stats.activeSessionCount, href: '/sessions', icon: MonitorDotIcon }] : []),
