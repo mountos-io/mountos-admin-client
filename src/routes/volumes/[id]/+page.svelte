@@ -410,11 +410,11 @@
   let newKeyName = $state('')
 
   function generateKeys() {
+    const userId = auth.userMountosUserId
+    if (userId == null) return
     const doGenerate = async () => {
       try {
-        // userId is filled by the admin-client proxy from the logged-in
-        // session; the placeholder here is ignored by the backend.
-        genResult = await store.generateApiKeys(id, { userId: 0, name: newKeyName.trim() || undefined })
+        genResult = await store.generateApiKeys(id, { userId, name: newKeyName.trim() || undefined })
         credentialsOpen = true
         newKeyName = ''
         await fetchApiKeys()
@@ -1372,9 +1372,13 @@
                 <Label for="api-key-name">Key name (optional)</Label>
                 <Input id="api-key-name" bind:value={newKeyName} maxlength={64} placeholder="e.g. laptop, ci-runner" />
               </div>
-              <Button size="sm" class="shrink-0" aria-describedby="api-key-user" onclick={generateKeys}>Generate</Button>
+              <Button size="sm" class="shrink-0" aria-describedby="api-key-user" disabled={auth.userMountosUserId == null} onclick={generateKeys}>Generate</Button>
             </div>
-            <p class="text-xs text-muted-foreground">Mints an access key and secret pair bound to your logged-in account. Up to {API_KEY_LIMIT} keys can be active at once; generating another revokes your oldest key.</p>
+            {#if auth.userMountosUserId == null}
+              <p class="text-xs text-muted-foreground">Your dashboard account has no linked mountOS user, so it cannot generate API keys.</p>
+            {:else}
+              <p class="text-xs text-muted-foreground">Mints an access key and secret pair bound to your logged-in account. Up to {API_KEY_LIMIT} keys can be active at once; generating another revokes your oldest key.</p>
+            {/if}
           </fieldset>
           {#if auth.can('volumes', 'update') && !auth.isUserRole}
             <Separator />
