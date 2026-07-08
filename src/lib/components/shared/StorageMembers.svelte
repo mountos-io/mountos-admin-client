@@ -156,11 +156,18 @@
                 {/if}
                 <ul class="flex flex-wrap gap-2">
                   {#each servers as n (n.nodeId)}
+                    {@const unsynced = n.metadata?.['unsynced_objects']}
+                    {@const drainReady = n.metadata?.['drain_ready'] === true}
                     <li>
                       <a href={`/nodes/${n.regionId}/${n.nodeId}`}
                         class="inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs hover:border-primary hover:text-primary transition-colors">
                         <span class="font-mono truncate max-w-[12rem]" title={n.nodeId}>{n.nodeId}</span>
                         <Badge variant={nodeStatusVariant(n.status)} class="text-[10px]">{n.status}</Badge>
+                        {#if drainReady}
+                          <Badge variant="outline" class="text-[10px]" title="Fully synced and no active clients: safe to stop for maintenance">drain&#8209;ready</Badge>
+                        {:else if typeof unsynced === 'number' && unsynced > 0}
+                          <Badge variant="warning" class="text-[10px]" title="Objects not yet synced to object storage: do not stop this instance until synced">{unsynced} unsynced</Badge>
+                        {/if}
                       </a>
                     </li>
                   {/each}
