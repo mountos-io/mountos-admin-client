@@ -126,6 +126,7 @@
   {@const len = samples.length}
   {@const [min, max] = bounds(...visible.map(s => s.values))}
   {@const latest = visible.map(s => s.values[s.values.length - 1] ?? 0)}
+  {@const validIndex = sharedIndex !== null && sharedIndex < len ? sharedIndex : null}
   <div class="space-y-1.5">
     <div class="flex items-baseline justify-between">
       <span class="text-[0.7rem] font-mono text-muted-foreground tracking-wider uppercase">{title}</span>
@@ -142,30 +143,31 @@
           <text x={PAD} y={PAD + 6} text-anchor="start" font-size="7" font-family="monospace" fill="currentColor" opacity="0.5">{fmt(max)}</text>
           <text x={PAD} y={H - PAD - 1} text-anchor="start" font-size="7" font-family="monospace" fill="currentColor" opacity="0.5">{fmt(min)}</text>
         {/if}
-        {#if sharedIndex !== null && len > 0}
-          {@const x = xFor(sharedIndex, len)}
+        {#if validIndex !== null}
+          {@const x = xFor(validIndex, len)}
           <line x1={x} y1={PAD} x2={x} y2={H - PAD} stroke="currentColor" opacity="0.25" stroke-dasharray="3 3" />
           {#if activeTile === tile}
             {#each visible as s, si (si)}
               {@const span = max - min}
-              {@const y = H - PAD - ((s.values[sharedIndex] - min) / span) * (H - PAD * 2)}
+              {@const y = H - PAD - ((s.values[validIndex] - min) / span) * (H - PAD * 2)}
               <circle cx={x} cy={y} r="2.5" fill={s.color} stroke="var(--background)" stroke-width="1.5" />
             {/each}
           {/if}
         {/if}
       </svg>
-      {#if activeTile === tile && sharedIndex !== null && len > 0}
-        {@const sample = samples[sharedIndex]}
-        {@const flip = xFor(sharedIndex, len) / W > 0.65}
+      {#if activeTile === tile && validIndex !== null}
+        {@const sample = samples[validIndex]}
+        {@const x = xFor(validIndex, len)}
+        {@const flip = x / W > 0.65}
         <div class="absolute top-1 pointer-events-none rounded-sm border border-border bg-popover px-2 py-1.5 text-[12px] font-mono space-y-0.5 whitespace-nowrap"
           role="tooltip"
-          style={flip ? `right: calc(${100 - (xFor(sharedIndex, len) / W) * 100}% + 6px);` : `left: calc(${(xFor(sharedIndex, len) / W) * 100}% + 6px);`}>
+          style={flip ? `right: calc(${100 - (x / W) * 100}% + 6px);` : `left: calc(${(x / W) * 100}% + 6px);`}>
           <div class="text-muted-foreground">{timeLabel(sample.timestampMs)}</div>
           {#each visible as s, si (si)}
             <div class="flex items-center gap-1.5">
               <span class="h-1.5 w-1.5 rounded-full" style="background: {s.color}"></span>
               <span class="text-muted-foreground">{s.label}</span>
-              <span class="ml-auto">{fmt(s.values[sharedIndex])}</span>
+              <span class="ml-auto">{fmt(s.values[validIndex])}</span>
             </div>
           {/each}
         </div>

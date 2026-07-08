@@ -134,7 +134,7 @@
             <path d={pathFor(s.key)} fill="none" stroke={s.color} stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
           {/if}
         {/each}
-        {#if hover}
+        {#if hover && hover.idx < sorted.length}
           <line x1={hover.x} y1={PAD_T} x2={hover.x} y2={H - PAD_B} stroke="currentColor" opacity="0.25" stroke-dasharray="3 3" />
           {#each seriesDefs as s}
             {#if !disabled.has(s.key)}
@@ -143,7 +143,7 @@
           {/each}
         {/if}
       </svg>
-      {#if hover}
+      {#if hover && hover.idx < sorted.length}
         {@const p = sorted[hover.idx]}
         {@const flip = hover.x / W > 0.65}
         <div class="absolute pointer-events-none rounded-sm border border-border bg-popover px-2.5 py-1.5 text-[12px] font-mono space-y-0.5 max-w-[16rem]"
