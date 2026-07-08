@@ -9,6 +9,7 @@ export type {
   Fork,
   AuditLog,
   ServiceNode,
+  NodeStatsSample,
   DiscoverMetaResponse,
   DiscoverEndpoint,
   DashboardStats,

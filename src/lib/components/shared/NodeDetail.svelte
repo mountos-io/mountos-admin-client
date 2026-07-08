@@ -19,6 +19,7 @@
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import ServiceMetricsView from '$lib/components/shared/ServiceMetricsView.svelte'
+  import NodeStatsHistoryChart from '$lib/components/shared/NodeStatsHistoryChart.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
   import { formatRelative, nodeStatusVariant, formatDate } from '$lib/core/utils/format'
@@ -79,6 +80,7 @@
     } else {
       nodeStore.stopPolling()
       nodeStore.fetchStats(regionId, nodeId)
+      nodeStore.fetchStatsHistory(regionId, nodeId)
     }
   })
 
@@ -453,6 +455,9 @@
       alertsTab={canReadAlerts ? alertsTabSnippet : undefined}
       activityTab={canReadAuditLogs ? activityTabSnippet : undefined}
     />
+
+    <NodeStatsHistoryChart samples={nodeStore.statsHistory} intervalMs={nodeStore.statsHistoryIntervalMs}
+      loading={nodeStore.statsHistoryLoading} error={nodeStore.statsHistoryError} />
 
     {#snippet alertsTabSnippet()}
       <Card>

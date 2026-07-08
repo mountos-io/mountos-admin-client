@@ -1,4 +1,4 @@
-import type { ServiceNode } from '$lib/core/api/types'
+import type { ServiceNode, NodeStatsSample } from '$lib/core/api/types'
 import { parsePrometheusText, type PrometheusMetric } from '$lib/core/utils/format'
 import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
 import { api } from './client.svelte'
@@ -23,6 +23,12 @@ let statsLastUpdated = $state<Date | null>(null)
 let pollInterval = $state(0)
 let poll: ActivePoll | null = null
 let statsFetchCtrl: AbortController | null = null
+
+let statsHistory = $state<NodeStatsSample[]>([])
+let statsHistoryIntervalMs = $state(0)
+let statsHistoryLoading = $state(false)
+let statsHistoryError = $state('')
+let statsHistoryFetchCtrl: AbortController | null = null
 
 const nodesByType = $derived.by(() => {
   const map = new Map<string, ServiceNode[]>()
@@ -102,11 +108,33 @@ async function fetchStats(regionId: number, nodeId: string) {
   }
 }
 
+async function fetchStatsHistory(regionId: number, nodeId: string) {
+  statsHistoryFetchCtrl?.abort()
+  const ctrl = statsHistoryFetchCtrl = new AbortController()
+  statsHistoryLoading = true
+  statsHistoryError = ''
+  try {
+    const resp = await api.serviceNodes.statsHistory(regionId, nodeId, ctrl.signal)
+    statsHistory = resp.samples
+    statsHistoryIntervalMs = resp.intervalMs
+  } catch (e) {
+    if ((e as Error).name === 'AbortError') return
+    statsHistoryError = (e as Error).message || 'Failed to fetch stats history'
+    statsHistory = []
+    statsHistoryIntervalMs = 0
+  } finally {
+    if (statsHistoryFetchCtrl === ctrl) statsHistoryLoading = false
+  }
+}
+
 function startPolling({ regionId, nodeId, interval }: { regionId: number; nodeId: string; interval: number }) {
   stopPolling()
   pollInterval = interval
   if (interval <= 0) return
-  poll = createActivePoll(() => fetchStats(regionId, nodeId), interval * 1000)
+  poll = createActivePoll(() => {
+    fetchStats(regionId, nodeId)
+    fetchStatsHistory(regionId, nodeId)
+  }, interval * 1000)
   poll.start()
 }
 
@@ -114,6 +142,7 @@ function stopPolling() {
   poll?.stop()
   poll = null
   statsFetchCtrl?.abort()
+  statsHistoryFetchCtrl?.abort()
   pollInterval = 0
 }
 
@@ -123,6 +152,9 @@ function resetStats() {
   statsRaw = ''
   statsError = ''
   statsLastUpdated = null
+  statsHistory = []
+  statsHistoryIntervalMs = 0
+  statsHistoryError = ''
 }
 
 function refetch() {
@@ -178,10 +210,15 @@ export function useNodes() {
     get statsError() { return statsError },
     get statsLastUpdated() { return statsLastUpdated },
     get pollInterval() { return pollInterval },
+    get statsHistory() { return statsHistory },
+    get statsHistoryIntervalMs() { return statsHistoryIntervalMs },
+    get statsHistoryLoading() { return statsHistoryLoading },
+    get statsHistoryError() { return statsHistoryError },
     refetch,
     fetchNodes,
     fetchAllNodes,
     fetchStats,
+    fetchStatsHistory,
     startPolling,
     stopPolling,
     resetStats,
