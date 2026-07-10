@@ -14,11 +14,15 @@
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
   import StorageMembers from '$lib/components/shared/StorageMembers.svelte'
   import StorageVolumes from '$lib/components/shared/StorageVolumes.svelte'
+  import CompatibleStorages from '$lib/components/shared/CompatibleStorages.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
+  import { copyText } from '$lib/core/utils/clipboard'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
+  import CopyIcon from '@lucide/svelte/icons/copy'
+  import CheckIcon from '@lucide/svelte/icons/check'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import FlaskConical from '@lucide/svelte/icons/flask-conical'
   import Loader2 from '@lucide/svelte/icons/loader-2'
@@ -41,6 +45,7 @@
 
   let storage = $state<Storage | null>(null)
   let loading = $state(true)
+  let volumesRefreshKey = $state(0)
   const dialog = useConfirmDialog(() => reload())
 
   let editing = $state(false)
@@ -91,6 +96,17 @@
 
   async function reload() {
     storage = await store.getStorage(id)
+  }
+
+  let fingerprintCopied = $state(false)
+  async function copyFingerprint(value: string) {
+    if (await copyText(value)) {
+      fingerprintCopied = true
+      showSuccessToast('Fingerprint copied')
+      setTimeout(() => { fingerprintCopied = false }, 1500)
+    } else {
+      showErrorToast('Copy failed: clipboard access blocked')
+    }
   }
 
   function startEdit() {
@@ -300,6 +316,19 @@
                 <p class="mt-1 text-sm font-mono">{storage.base}</p>
               </div>
             {/if}
+            {#if storage.physicalFingerprint}
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground" title="Identifies the backing bucket/prefix; storages sharing this value can move volumes between them">Physical Fingerprint</span>
+                <div class="mt-1 flex items-center gap-2">
+                  <code class="text-sm font-mono truncate" title={storage.physicalFingerprint}>{storage.physicalFingerprint.slice(0, 12)}…</code>
+                  <button type="button" onclick={() => copyFingerprint(storage!.physicalFingerprint!)}
+                    class="shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-60 hover:opacity-100 hover:text-primary focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring rounded-sm transition-[color,opacity]"
+                    title="Copy full fingerprint" aria-label="Copy full physical fingerprint">
+                    {#if fingerprintCopied}<CheckIcon class="size-3.5 text-primary" aria-hidden="true" />{:else}<CopyIcon class="size-3.5" aria-hidden="true" />{/if}
+                  </button>
+                </div>
+              </div>
+            {/if}
           </div>
         </CardContent>
         <CardFooter class="gap-2 [&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8">
@@ -347,10 +376,20 @@
       {/if}
     </Card>
 
-    <StorageVolumes storageId={storage.id} accountId={storage.account.id} />
+    {#key volumesRefreshKey}
+      <StorageVolumes storageId={storage.id} accountId={storage.account.id} />
+    {/key}
 
     {#if !isObject}
       <StorageMembers storageId={storage.id} regionId={storage.regionInfo.id} directAccess={maintenanceOn} />
+    {/if}
+
+    {#if storage.physicalFingerprint}
+      <CompatibleStorages
+        storageId={storage.id}
+        storageType={storage.storageType}
+        onmoved={() => { volumesRefreshKey += 1 }}
+      />
     {/if}
   {:else}
     <p class="text-muted-foreground">Storage not found.</p>

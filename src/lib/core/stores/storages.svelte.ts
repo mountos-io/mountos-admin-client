@@ -1,4 +1,4 @@
-import type { Storage, CreateStorageRequest, EditStorageRequest, TestStorageBucketRequest } from '$lib/core/api/types'
+import type { Storage, CreateStorageRequest, EditStorageRequest, TestStorageBucketRequest, MoveStorageVolumesRequest } from '$lib/core/api/types'
 import { api } from './client.svelte'
 
 let storages = $state<Storage[]>([])
@@ -82,6 +82,17 @@ async function testStorageBucket(id: number) {
   return api.storages.testStorageBucket(id)
 }
 
+// Other storages sharing this one's physicalFingerprint, each with its current
+// volumes — move-volumes candidates (fingerprint is a discovery index only;
+// the server re-verifies raw fields before actually moving anything).
+async function listCompatibleStorages(id: number, signal?: AbortSignal) {
+  return api.storages.listCompatible(id, signal)
+}
+
+async function moveVolumes(id: number, req: MoveStorageVolumesRequest) {
+  return api.storages.moveVolumes(id, req)
+}
+
 export function useStorages() {
   return {
     get storages() { return storages },
@@ -97,5 +108,7 @@ export function useStorages() {
     deactivateStorage,
     testBucket,
     testStorageBucket,
+    listCompatibleStorages,
+    moveVolumes,
   }
 }
