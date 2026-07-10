@@ -145,7 +145,7 @@
       <path class="edge" d="M260,700 H400" />
       <path class="edge" d="M400,105 V915" />
       <path class="edge" d="M400,105 H592" />
-      <path class="edge" d="M400,337 H592" />
+      <path class="edge" d="M400,337 H582" />
       <path class="edge" d="M400,657 H592" />
       <path class="edge" d="M400,915 H1360" />
       <path class="edge" d="M1360,230 V915" />
@@ -154,7 +154,7 @@
       <path class="edge" d="M1360,490 H1456" />
       <path class="edge" d="M1360,620 H1456" />
       <path class="edge" d="M1060,657 H1360" />
-      <path class="edge" d="M1040,337 H1118" />
+      <path class="edge" d="M1052,337 H1118" />
       <path class="edge" d="M760,240 V168" />
       <path class="edge" d="M880,75 H951" />
       <path class="edge" d="M1100,131 H888" />
@@ -205,9 +205,9 @@
       <path data-g="dis1" class="guide" d="M260,300 H400 V105 H600" />
       <path data-g="dis2" class="guide" d="M260,500 H400 V105 H600" />
       <path data-g="dis3" class="guide" d="M260,700 H400 V105 H600" />
-      <path data-g="meta1" class="guide" d="M260,300 H400 V337 H600" />
-      <path data-g="meta2" class="guide" d="M260,500 H400 V337 H600" />
-      <path data-g="meta3" class="guide" d="M260,700 H400 V337 H600" />
+      <path data-g="meta1" class="guide" d="M260,300 H400 V337 H588" />
+      <path data-g="meta2" class="guide" d="M260,500 H400 V337 H588" />
+      <path data-g="meta3" class="guide" d="M260,700 H400 V337 H588" />
       <path data-g="blk1" class="guide" d="M260,300 H400 V657 H600" />
       <path data-g="blk2" class="guide" d="M260,500 H400 V657 H600" />
       <path data-g="blk3" class="guide" d="M260,700 H400 V657 H600" />
@@ -216,7 +216,7 @@
       <path data-g="dir3" class="guide" d="M260,700 H400 V915 H1360 V490 H1464" />
       <path data-g="bo1" class="guide" d="M1060,657 H1360 V230 H1464" />
       <path data-g="bo2" class="guide" d="M1060,657 H1360 V360 H1464" />
-      <path data-g="dsdb" class="guide" d="M1040,337 H1126" />
+      <path data-g="dsdb" class="guide" d="M1052,337 H1126" />
       <path data-g="hb" class="guide" d="M760,240 V160" />
       <path data-g="hadb" class="guide" d="M880,75 H959" />
       <path data-g="hv" class="guide" d="M1100,131 H880" />
@@ -349,7 +349,7 @@
       <text class="t-box" x="980" y="332" text-anchor="middle" style="font-size:12px">dataserv</text>
       <text class="t-boxsm" x="980" y="350" text-anchor="middle">meta</text>
 
-      <text class="t-lbl" x="820" y="396" text-anchor="middle">raft · one owner per (volume · fork)</text>
+      <text class="t-lbl" x="820" y="396" text-anchor="middle">raft · ownership sync · one owner per (volume · fork)</text>
     </g>
 
     <!-- region db (primary + replicas) -->

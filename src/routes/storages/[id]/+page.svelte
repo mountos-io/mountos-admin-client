@@ -320,7 +320,7 @@
               <div class="md:col-span-2">
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground" title="Identifies the backing bucket/prefix; storages sharing this value can move volumes between them">Physical Fingerprint</span>
                 <div class="mt-1 flex items-center gap-2">
-                  <code class="flex-1 min-w-0 break-all rounded-sm bg-muted px-2 py-1 font-mono text-xs">{storage.physicalFingerprint}</code>
+                  <code class="min-w-0 break-all rounded-sm bg-muted px-2 py-1 font-mono text-xs">{storage.physicalFingerprint}</code>
                   <button type="button" onclick={() => copyFingerprint(storage!.physicalFingerprint!)}
                     class="shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-60 hover:opacity-100 hover:text-primary focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring rounded-sm transition-[color,opacity]"
                     title="Copy full fingerprint" aria-label="Copy full physical fingerprint">

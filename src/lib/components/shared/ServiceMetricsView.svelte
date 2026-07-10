@@ -49,8 +49,9 @@
 
   import type { Snippet } from 'svelte';
 
-  let { raw, alertsTab, alertsCount = 0, activityTab }: {
+  let { raw, systemTab, alertsTab, alertsCount = 0, activityTab }: {
     raw: string;
+    systemTab?: Snippet<[number]>;
     alertsTab?: Snippet;
     alertsCount?: number;
     activityTab?: Snippet;
@@ -76,6 +77,19 @@
   ])
 
   let activeTab = $state<string>("overview");
+
+  // Roving tabindex per the WAI-ARIA tabs pattern; selection follows focus.
+  function onTabKeydown(e: KeyboardEvent, idx: number) {
+    let next: number;
+    if (e.key === "ArrowRight") next = (idx + 1) % tabs.length;
+    else if (e.key === "ArrowLeft") next = (idx - 1 + tabs.length) % tabs.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = tabs.length - 1;
+    else return;
+    e.preventDefault();
+    activeTab = tabs[next].id;
+    document.getElementById(`tab-${tabs[next].uiId}`)?.focus();
+  }
   let layout = $state<Layout>("table");
   let metricMode = $state<MetricMode>("percentiles");
   let sortCol = $state<SortCol>("avgLatencyUs");
@@ -232,17 +246,20 @@
   ]);
   const hasBlockStats = $derived(sections.some((s) => blockSections.has(s.name)));
 
-  // Dynamic tabs: overview + one per histogram section
+  // Dynamic tabs: overview + one per histogram section. Histogram tab ids
+  // carry a 'sec:' namespace so a section name can never collide with the
+  // fixed tab ids (system/alerts/activity) or their tab/panel DOM ids.
   const histogramSections = $derived(
     sections.filter(s => s.kind === 'histogram' && !overviewSections.has(s.name))
   )
   const tabs = $derived([
     { id: 'overview', label: 'Overview', count: 0, uiId: 'overview' },
+    ...(systemTab ? [{ id: 'system', label: 'System Info', count: 0, uiId: 'system' }] : []),
     ...histogramSections.map(s => ({
-      id: s.name,
+      id: `sec:${s.name}`,
       label: s.name,
       count: s.groups.length,
-      uiId: s.name.toLowerCase().replace(/\s+/g, '-'),
+      uiId: `sec-${s.name.toLowerCase().replace(/\s+/g, '-')}`,
     })),
     ...(alertsTab ? [{ id: 'alerts', label: 'Alerts', count: alertsCount, uiId: 'alerts' }] : []),
     ...(activityTab ? [{ id: 'activity', label: 'Activity Log', count: 0, uiId: 'activity' }] : []),
@@ -408,8 +425,8 @@
       </div>
     {/if}
     </div>
-  {:else if activeTab !== 'alerts'}
-    {@const section = histogramSections.find(s => s.name === activeTab)}
+  {:else if activeTab.startsWith('sec:')}
+    {@const section = histogramSections.find(s => `sec:${s.name}` === activeTab)}
     {@const activeTabObj = tabs.find(t => t.id === activeTab)}
     <div role="tabpanel" id="panel-{activeTabObj?.uiId}" aria-labelledby="tab-{activeTabObj?.uiId}">
       {#if section && section.groups.length > 0}
@@ -430,6 +447,12 @@
     </div>
   {/if}
 
+  {#if activeTab === 'system' && systemTab}
+    <div role="tabpanel" id="panel-system" aria-labelledby="tab-system">
+      {@render systemTab(cpuCount)}
+    </div>
+  {/if}
+
   {#if activeTab === 'alerts' && alertsTab}
     <div role="tabpanel" id="panel-alerts" aria-labelledby="tab-alerts">
       {@render alertsTab()}
@@ -446,21 +469,24 @@
 <!-- Snippets -->
 
 {#snippet tabBar()}
+  {@const activeIdx = Math.max(0, tabs.findIndex((t) => t.id === activeTab))}
   <div
     class="tab-bar relative flex items-center gap-0.5 pb-3 pt-1 overflow-x-auto"
     role="tablist"
     aria-label="Metrics"
   >
-    {#each tabs as t}
+    {#each tabs as t, i}
       {@const c = t.count}
       <button
         role="tab"
         id="tab-{t.uiId}"
         aria-selected={activeTab === t.id}
         aria-controls="panel-{t.uiId}"
+        tabindex={i === activeIdx ? 0 : -1}
         class="tab-btn flex items-center gap-1.5 px-4 py-2 min-h-[44px] sm:min-h-0 transition-colors
           {activeTab === t.id ? 'font-medium' : 'text-muted-foreground'}"
         onclick={() => (activeTab = t.id)}
+        onkeydown={(e) => onTabKeydown(e, i)}
       >
         {t.label}
         {#if c > 0}

@@ -452,12 +452,15 @@
   {:else if nodeStore.statsRaw}
     <ServiceMetricsView raw={nodeStore.statsRaw}
       alertsCount={canReadAlerts ? (alertStore.activeCount || alertStore.alerts.length) : 0}
+      systemTab={systemTabSnippet}
       alertsTab={canReadAlerts ? alertsTabSnippet : undefined}
       activityTab={canReadAuditLogs ? activityTabSnippet : undefined}
     />
 
-    <NodeStatsHistoryChart samples={nodeStore.statsHistory} intervalMs={nodeStore.statsHistoryIntervalMs}
-      loading={nodeStore.statsHistoryLoading} error={nodeStore.statsHistoryError} />
+    {#snippet systemTabSnippet(cpuCores: number)}
+      <NodeStatsHistoryChart samples={nodeStore.statsHistory} intervalMs={nodeStore.statsHistoryIntervalMs}
+        {cpuCores} loading={nodeStore.statsHistoryLoading} error={nodeStore.statsHistoryError} />
+    {/snippet}
 
     {#snippet alertsTabSnippet()}
       <Card>

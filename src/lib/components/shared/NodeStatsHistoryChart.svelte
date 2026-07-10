@@ -4,9 +4,10 @@
   import { formatBytes } from '$lib/core/utils/format'
   import type { NodeStatsSample } from '$lib/core/api/types'
 
-  let { samples, intervalMs, loading = false, error = '' }: {
+  let { samples, intervalMs, cpuCores = 0, loading = false, error = '' }: {
     samples: NodeStatsSample[]
     intervalMs: number
+    cpuCores?: number
     loading?: boolean
     error?: string
   } = $props()
@@ -14,10 +15,22 @@
   const hasDiskUsage = $derived(samples.some(s => (s.diskTotalBytes ?? 0) > 0))
   const intervalLabel = $derived(intervalMs > 0 ? `${Math.round(intervalMs / 1000)}s` : '')
 
-  // Matches VolumeSizeHistoryChart's sparkline geometry conventions.
-  const W = 280
-  const H = 64
-  const PAD = 4
+  // Load average normalized to core count reads as % of CPU capacity, which
+  // is comparable across nodes; raw load is only a fallback when the core
+  // count is not reported.
+  const normalizeLoad = $derived(cpuCores > 0)
+  function loadVal(v: number): number {
+    return normalizeLoad ? (v / cpuCores) * 100 : v
+  }
+
+  // Plot-only viewBox; axis labels render as HTML around the SVG so they
+  // keep a fixed pixel size at every viewport width.
+  const W = 560
+  const H = 150
+  const PX = 4
+  const PY = 5
+  const PW = W - PX * 2
+  const PH = H - PY * 2
 
   function bounds(...serieses: number[][]): [number, number] {
     const all = serieses.flat()
@@ -28,20 +41,35 @@
     return [min, max]
   }
 
-  function pathFor(values: number[], min: number, max: number): string {
-    if (values.length === 0) return ''
-    const span = max - min
-    const stepX = values.length > 1 ? (W - PAD * 2) / (values.length - 1) : 0
-    return values.map((v, i) => {
-      const x = PAD + i * stepX
-      const y = H - PAD - ((v - min) / span) * (H - PAD * 2)
-      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
-    }).join(' ')
+  function xFor(i: number, len: number): number {
+    const stepX = len > 1 ? PW / (len - 1) : 0
+    return PX + i * stepX
   }
 
-  function xFor(i: number, len: number): number {
-    const stepX = len > 1 ? (W - PAD * 2) / (len - 1) : 0
-    return PAD + i * stepX
+  function yFor(v: number, min: number, max: number): number {
+    return PY + PH - ((v - min) / (max - min)) * PH
+  }
+
+  function pathFor(values: number[], min: number, max: number): string {
+    if (values.length === 0) return ''
+    return values
+      .map((v, i) => `${i === 0 ? 'M' : 'L'}${xFor(i, values.length).toFixed(1)},${yFor(v, min, max).toFixed(1)}`)
+      .join(' ')
+  }
+
+  // Closes an already-built line path down to the plot base, so the line
+  // path string is only constructed once per series.
+  function areaFor(line: string, len: number): string {
+    if (!line) return ''
+    const base = (PY + PH).toFixed(1)
+    return `${line} L${xFor(len - 1, len).toFixed(1)},${base} L${PX},${base} Z`
+  }
+
+  function xTickIndexes(len: number): number[] {
+    if (len === 0) return []
+    const count = Math.min(4, len)
+    const idxs = Array.from({ length: count }, (_, k) => Math.round((k * (len - 1)) / Math.max(1, count - 1)))
+    return [...new Set(idxs)]
   }
 
   // Per-tile disabled-series sets, keyed by tile id, same show/hide-by-legend
@@ -55,46 +83,65 @@
     disabledByTile = next
   }
 
-  // sharedIndex drives the crosshair on EVERY tile at once (so a spike lines
-  // up visually across metrics); activeTile gates which tile also shows the
-  // detailed value tooltip, so hovering one tile doesn't pop six tooltips.
-  let activeTile = $state<string | null>(null)
+  // sharedIndex drives the crosshair AND the value tooltip on EVERY tile at
+  // once, so hovering any chart lines the same instant up across all metrics.
   let sharedIndex = $state<number | null>(null)
   let touchDismissTimer: ReturnType<typeof setTimeout> | undefined
 
-  function indexFromClientX(e: { clientX: number; currentTarget: EventTarget | null }, len: number): number {
+  function indexFromClientX(e: { clientX: number; currentTarget: EventTarget | null }): number {
     const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect()
-    const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
-    return Math.round(ratio * (len - 1))
+    const px = ((e.clientX - rect.left) / rect.width) * W
+    const ratio = Math.min(1, Math.max(0, (px - PX) / PW))
+    return Math.round(ratio * (samples.length - 1))
   }
-  function onMove(tile: string, e: MouseEvent, len: number) {
-    if (len === 0) return
-    activeTile = tile
-    sharedIndex = indexFromClientX(e, len)
+  function onMove(e: MouseEvent) {
+    if (samples.length === 0) return
+    sharedIndex = indexFromClientX(e)
   }
   function onLeave() {
-    activeTile = null
     sharedIndex = null
   }
   // Touch: same crosshair, kept visible briefly after lift-off so a tap
   // (rather than hover) still gives the reader time to see the values.
-  // preventDefault stops the page from scrolling while dragging across a tile.
-  function onTouch(tile: string, e: TouchEvent, len: number) {
-    if (len === 0 || e.touches.length === 0) return
-    e.preventDefault()
+  // touch-action: pan-y on the SVG keeps vertical swipes scrolling the page
+  // while horizontal drags drive the crosshair (Svelte's delegated touch
+  // handlers are passive, so preventDefault is not an option here).
+  function onTouch(e: TouchEvent) {
+    if (samples.length === 0 || e.touches.length === 0) return
     clearTimeout(touchDismissTimer)
     const touch = e.touches[0]
-    activeTile = tile
-    sharedIndex = indexFromClientX({ clientX: touch.clientX, currentTarget: e.currentTarget }, len)
+    sharedIndex = indexFromClientX({ clientX: touch.clientX, currentTarget: e.currentTarget })
   }
   function onTouchEnd() {
     clearTimeout(touchDismissTimer)
     touchDismissTimer = setTimeout(onLeave, 1500)
   }
-
-  function timeLabel(ms: number): string {
-    return new Date(ms).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  // Keyboard: focused charts step the shared crosshair through samples, so
+  // the same cross-tile correlation works without a pointer.
+  function onKey(e: KeyboardEvent) {
+    if (samples.length === 0) return
+    if (e.key === 'Escape') {
+      onLeave()
+      return
+    }
+    const last = samples.length - 1
+    let idx = sharedIndex ?? last
+    if (e.key === 'ArrowLeft') idx = Math.max(0, idx - 1)
+    else if (e.key === 'ArrowRight') idx = Math.min(last, idx + 1)
+    else if (e.key === 'Home') idx = 0
+    else if (e.key === 'End') idx = last
+    else return
+    e.preventDefault()
+    sharedIndex = idx
   }
+
+  const timeFmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  function timeLabel(ms: number): string {
+    return timeFmt.format(ms)
+  }
+  // Formatted once per samples arrival; tooltips on every tile re-read these
+  // at pointer-move frequency while hovering.
+  const timeLabels = $derived(samples.map(s => timeLabel(s.timestampMs)))
 
   // Screen-reader text alternative: the SVG paths are invisible to AT, so
   // summarise the visible series' range up front (matches VolumeSizeHistoryChart).
@@ -111,13 +158,14 @@
       const lo = Math.min(...vals), hi = Math.max(...vals)
       return `${s.label} ranges from ${fmt(lo)} to ${fmt(hi)}, latest ${fmt(vals[vals.length - 1])}`
     })
-    return `${title} from ${timeLabel(first.timestampMs)} to ${timeLabel(last.timestampMs)}, ${samples.length} samples. ${parts.join('. ')}.`
+    return `${title} from ${timeLabel(first.timestampMs)} to ${timeLabel(last.timestampMs)}, ${samples.length} samples. ${parts.join('. ')}. Use the left and right arrow keys to step through samples.`
   }
 </script>
 
 {#snippet chartTile(
   tile: string,
   title: string,
+  unit: string,
   series: { label: string; color: string; values: number[] }[],
   fmt: (v: number) => string,
 )}
@@ -125,53 +173,93 @@
   {@const visible = series.filter(s => !disabled.has(s.label))}
   {@const len = samples.length}
   {@const [min, max] = bounds(...visible.map(s => s.values))}
-  {@const latest = visible.map(s => s.values[s.values.length - 1] ?? 0)}
   {@const validIndex = sharedIndex !== null && sharedIndex < len ? sharedIndex : null}
-  <div class="space-y-1.5">
-    <div class="flex items-baseline justify-between">
-      <span class="text-[0.7rem] font-mono text-muted-foreground tracking-wider uppercase">{title}</span>
-      <span class="text-[0.7rem] font-mono tabular-nums">{latest.map(fmt).join(' / ')}</span>
-    </div>
-    <div class="relative border border-border rounded-sm overflow-hidden bg-background">
-      <svg viewBox="0 0 {W} {H}" class="w-full h-16 block select-none touch-none" role="img" aria-label={srSummary(title, visible, fmt)}
-        onmousemove={(e) => onMove(tile, e, len)} onmouseleave={onLeave}
-        ontouchstart={(e) => onTouch(tile, e, len)} ontouchmove={(e) => onTouch(tile, e, len)} ontouchend={onTouchEnd}>
+  {@const crosshairX = validIndex !== null && visible.length > 0 ? xFor(validIndex, len) : null}
+  {@const vi = validIndex ?? len - 1}
+  <div class="space-y-2">
+    <div class="flex items-baseline justify-between gap-3 flex-wrap">
+      <span class="text-xs font-mono text-muted-foreground tracking-[0.15em] uppercase">{title} <span class="tracking-normal">({unit})</span></span>
+      <span class="flex items-center gap-3 font-mono tabular-nums text-base font-semibold">
         {#each visible as s, si (si)}
-          <path d={pathFor(s.values, min, max)} fill="none" stroke={s.color} stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+          <span class="flex items-center gap-1.5">
+            {#if visible.length > 1}
+              <span class="inline-block h-2 w-2 rounded-sm shrink-0" style="background: {s.color}"></span>
+            {/if}
+            {fmt(s.values[s.values.length - 1] ?? 0)}
+          </span>
         {/each}
+      </span>
+    </div>
+    <div class="grid grid-cols-[4rem_minmax(0,1fr)] gap-x-2 gap-y-1">
+      <!-- y axis: tick values centered on their gridlines -->
+      <div class="relative text-right text-[10px] leading-none font-mono tabular-nums text-muted-foreground">
         {#if visible.length > 0}
-          <text x={PAD} y={PAD + 6} text-anchor="start" font-size="7" font-family="monospace" fill="currentColor" opacity="0.5">{fmt(max)}</text>
-          <text x={PAD} y={H - PAD - 1} text-anchor="start" font-size="7" font-family="monospace" fill="currentColor" opacity="0.5">{fmt(min)}</text>
+          <span class="absolute inset-x-0 -translate-y-1/2" style="top: {(PY / H) * 100}%">{fmt(max)}</span>
+          <span class="absolute inset-x-0 top-1/2 -translate-y-1/2">{fmt((min + max) / 2)}</span>
+          <span class="absolute inset-x-0 -translate-y-1/2" style="top: {((PY + PH) / H) * 100}%">{fmt(min)}</span>
         {/if}
-        {#if validIndex !== null}
-          {@const x = xFor(validIndex, len)}
-          <line x1={x} y1={PAD} x2={x} y2={H - PAD} stroke="currentColor" opacity="0.25" stroke-dasharray="3 3" />
-          {#if activeTile === tile}
+      </div>
+      <div class="relative border border-border rounded-sm overflow-hidden bg-background">
+        <!-- The crosshair scrubs a sample index, so the chart is a slider to
+             AT: arrowing announces the sample's time and values via valuetext. -->
+        <svg viewBox="0 0 {W} {H}" tabindex="0" role="slider" aria-label={srSummary(title, visible, fmt)}
+          aria-orientation="horizontal" aria-valuemin={0} aria-valuemax={len - 1} aria-valuenow={vi}
+          aria-valuetext={visible.length > 0
+            ? `${timeLabels[vi]}: ${visible.map(s => `${s.label} ${fmt(s.values[vi])}`).join(', ')}`
+            : 'all series hidden'}
+          class="w-full h-auto block select-none [touch-action:pan-y] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          onmousemove={onMove} onmouseleave={onLeave} onkeydown={onKey} onblur={onLeave}
+          ontouchstart={onTouch} ontouchmove={onTouch} ontouchend={onTouchEnd}>
+          {#each [PY, H / 2, PY + PH] as gy (gy)}
+            <line x1="0" y1={gy} x2={W} y2={gy} stroke="currentColor" opacity="0.08" />
+          {/each}
+          {#each xTickIndexes(len) as ti (ti)}
+            <line x1={xFor(ti, len)} y1={PY + PH} x2={xFor(ti, len)} y2={H} stroke="currentColor" opacity="0.25" />
+          {/each}
+          {#each visible as s, si (si)}
+            {@const d = pathFor(s.values, min, max)}
+            <path d={areaFor(d, s.values.length)} fill={s.color} opacity="0.06" />
+            <path {d} fill="none" stroke={s.color} stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+          {/each}
+          {#if validIndex !== null && crosshairX !== null}
+            <line x1={crosshairX} y1={PY} x2={crosshairX} y2={PY + PH} stroke="currentColor" opacity="0.3" stroke-dasharray="3 3" />
             {#each visible as s, si (si)}
-              {@const span = max - min}
-              {@const y = H - PAD - ((s.values[validIndex] - min) / span) * (H - PAD * 2)}
-              <circle cx={x} cy={y} r="2.5" fill={s.color} stroke="var(--background)" stroke-width="1.5" />
+              <circle cx={crosshairX} cy={yFor(s.values[validIndex], min, max)} r="3" fill={s.color} stroke="var(--background)" stroke-width="1.5" />
             {/each}
           {/if}
+        </svg>
+        {#if visible.length === 0}
+          <div class="absolute inset-0 flex items-center justify-center text-xs font-mono text-muted-foreground">all series hidden</div>
         {/if}
-      </svg>
-      {#if activeTile === tile && validIndex !== null}
-        {@const sample = samples[validIndex]}
-        {@const x = xFor(validIndex, len)}
-        {@const flip = x / W > 0.65}
-        <div class="absolute top-1 pointer-events-none rounded-sm border border-border bg-popover px-2 py-1.5 text-[12px] font-mono space-y-0.5 whitespace-nowrap"
-          role="tooltip"
-          style={flip ? `right: calc(${100 - (x / W) * 100}% + 6px);` : `left: calc(${(x / W) * 100}% + 6px);`}>
-          <div class="text-muted-foreground">{timeLabel(sample.timestampMs)}</div>
-          {#each visible as s, si (si)}
-            <div class="flex items-center gap-1.5">
-              <span class="h-1.5 w-1.5 rounded-full" style="background: {s.color}"></span>
-              <span class="text-muted-foreground">{s.label}</span>
-              <span class="ml-auto">{fmt(s.values[validIndex])}</span>
-            </div>
+        {#if validIndex !== null && crosshairX !== null}
+          <!-- Pinned to the corner away from the crosshair: never clipped by
+               overflow-hidden and keeps the hovered region visible on every tile. -->
+          {@const pinLeft = crosshairX / W > 0.55}
+          <div class="absolute top-2 {pinLeft ? 'left-2' : 'right-2'} pointer-events-none z-10 rounded-sm border border-border bg-popover px-2.5 py-1.5 text-xs font-mono space-y-0.5 whitespace-nowrap shadow-sm"
+            role="tooltip">
+            <div class="text-muted-foreground">{timeLabels[validIndex]}</div>
+            {#each visible as s, si (si)}
+              <div class="flex items-center gap-2">
+                <span class="h-1.5 w-1.5 rounded-full shrink-0" style="background: {s.color}"></span>
+                <span class="text-muted-foreground">{s.label}</span>
+                <span class="ml-auto pl-3 tabular-nums">{fmt(s.values[validIndex])}</span>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+      <!-- x axis: time ticks + name, aligned under the plot -->
+      <div></div>
+      <div class="space-y-1">
+        <div class="relative h-3 text-[10px] leading-none font-mono tabular-nums text-muted-foreground">
+          {#each xTickIndexes(len) as ti (ti)}
+            {@const pct = (xFor(ti, len) / W) * 100}
+            <span class="absolute top-0 whitespace-nowrap {ti === 0 ? '' : ti === len - 1 ? '-translate-x-full' : '-translate-x-1/2'}"
+              style="left: {pct}%">{timeLabels[ti]}</span>
           {/each}
         </div>
-      {/if}
+        <div class="text-center text-[9px] font-mono uppercase tracking-[0.12em] text-muted-foreground">time</div>
+      </div>
     </div>
     {#if series.length > 1}
       <div class="flex flex-wrap gap-2">
@@ -188,21 +276,21 @@
 {/snippet}
 
 {#snippet chartTileSkeleton()}
-  <div class="space-y-1.5">
+  <div class="space-y-2">
     <div class="flex items-baseline justify-between">
-      <Skeleton class="h-3 w-24" />
-      <Skeleton class="h-3 w-16" />
+      <Skeleton class="h-3.5 w-28" />
+      <Skeleton class="h-4 w-20" />
     </div>
-    <Skeleton class="h-16 w-full" />
+    <Skeleton class="w-full" style="aspect-ratio: {W} / {H}" />
   </div>
 {/snippet}
 
 <Card>
   <CardHeader>
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
       <CardTitle class="text-base">Resource History</CardTitle>
       {#if intervalLabel}
-        <span class="text-[0.7rem] font-mono text-muted-foreground">every {intervalLabel}, last {samples.length} samples</span>
+        <span class="text-[0.7rem] font-mono text-muted-foreground">every {intervalLabel} &middot; last {samples.length} samples &middot; hover, touch, or arrow keys correlate all charts</span>
       {/if}
     </div>
   </CardHeader>
@@ -210,44 +298,45 @@
     {#if error}
       <p class="text-sm text-destructive">{error}</p>
     {:else if loading && samples.length === 0}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" role="status" aria-busy="true" aria-label="Loading resource history">
-        {#each { length: 3 } as _, i (i)}
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6" role="status" aria-busy="true" aria-label="Loading resource history">
+        {#each { length: 4 } as _, i (i)}
           {@render chartTileSkeleton()}
         {/each}
       </div>
     {:else if samples.length === 0}
       <p class="text-sm text-muted-foreground">No history yet. Check back in a few sample intervals.</p>
     {:else}
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {@render chartTile('cpu', 'CPU Load Avg', [
-          { label: '1m', color: 'var(--fork-0)', values: samples.map(s => s.loadAvg1) },
-          { label: '5m', color: 'var(--fork-1)', values: samples.map(s => s.loadAvg5) },
-          { label: '15m', color: 'var(--fork-2)', values: samples.map(s => s.loadAvg15) },
-        ], v => v.toFixed(2))}
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+        {@render chartTile('cpu', 'CPU Load',
+          normalizeLoad ? `% of ${cpuCores} cores` : 'load avg', [
+          { label: '1m', color: 'var(--fork-0)', values: samples.map(s => loadVal(s.loadAvg1)) },
+          { label: '5m', color: 'var(--fork-1)', values: samples.map(s => loadVal(s.loadAvg5)) },
+          { label: '15m', color: 'var(--fork-2)', values: samples.map(s => loadVal(s.loadAvg15)) },
+        ], normalizeLoad ? (v: number) => `${v.toFixed(1)}%` : (v: number) => v.toFixed(2))}
 
-        {@render chartTile('mem', 'Memory Usage', [
+        {@render chartTile('mem', 'Memory Usage', '% used', [
           { label: 'used', color: 'var(--fork-0)', values: samples.map(s => s.memUsage * 100) },
         ], v => `${v.toFixed(1)}%`)}
 
-        {@render chartTile('procs', 'Process Count', [
-          { label: 'processes', color: 'var(--fork-0)', values: samples.map(s => s.processCount) },
-        ], v => Math.round(v).toString())}
-
-        {@render chartTile('iops', 'Disk IOPS', [
-          { label: 'read', color: 'var(--fork-0)', values: samples.map(s => s.readIops) },
-          { label: 'write', color: 'var(--fork-1)', values: samples.map(s => s.writeIops) },
-        ], v => v.toFixed(1))}
-
-        {@render chartTile('net', 'Network Throughput', [
+        {@render chartTile('net', 'Network Throughput', 'bytes/s', [
           { label: 'rx', color: 'var(--fork-0)', values: samples.map(s => s.netRxBytesPerSec) },
           { label: 'tx', color: 'var(--fork-1)', values: samples.map(s => s.netTxBytesPerSec) },
         ], v => `${formatBytes(v)}/s`)}
 
+        {@render chartTile('iops', 'Disk IOPS', 'ops/s', [
+          { label: 'read', color: 'var(--fork-0)', values: samples.map(s => s.readIops) },
+          { label: 'write', color: 'var(--fork-1)', values: samples.map(s => s.writeIops) },
+        ], v => Math.ceil(v).toString())}
+
         {#if hasDiskUsage}
-          {@render chartTile('disk', 'Disk Usage', [
+          {@render chartTile('disk', 'Disk Usage', '% used', [
             { label: 'used', color: 'var(--fork-0)', values: samples.map(s => (s.diskTotalBytes ?? 0) > 0 ? (100 * (s.diskUsedBytes ?? 0)) / (s.diskTotalBytes ?? 1) : 0) },
           ], v => `${v.toFixed(1)}%`)}
         {/if}
+
+        {@render chartTile('procs', 'Process Count', 'count', [
+          { label: 'processes', color: 'var(--fork-0)', values: samples.map(s => s.processCount) },
+        ], v => Math.round(v).toString())}
       </div>
     {/if}
   </CardContent>
