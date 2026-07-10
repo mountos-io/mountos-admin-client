@@ -89,7 +89,7 @@
         {@render headerRow()}
       </TableHeader>
       <TableBody>
-        {#each store.accounts as account}
+        {#each store.accounts as account (account.id)}
           <TableRow class={account.isActive ? '' : 'bg-muted/40'} aria-label="Account {account.name}{account.isActive ? '' : ', deactivated'}">
             <TableCell class="font-medium max-w-[200px]">
               <a href="/accounts/{account.id}" class="hover:text-primary truncate block transition-colors" title={account.name}>{account.name}</a>

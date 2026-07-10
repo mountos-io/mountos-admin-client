@@ -142,7 +142,7 @@
         {@render headerRow()}
       </TableHeader>
       <TableBody>
-        {#each filteredRegions as region}
+        {#each filteredRegions as region (region.id)}
           <TableRow
             class={`relative cursor-pointer hover:bg-muted/50 ${region.isActive ? '' : 'bg-muted/40'}`}
           >

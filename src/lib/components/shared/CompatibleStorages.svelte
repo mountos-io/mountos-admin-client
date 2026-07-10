@@ -138,8 +138,8 @@
       {:else}
         {#each compatible as s (s.id)}
           <div class="space-y-2">
-            <div class="flex items-center gap-2">
-              <a href="/storages/{s.id}" class="text-sm font-medium hover:underline">{s.name}</a>
+            <div class="flex flex-wrap items-center gap-2">
+              <a href="/storages/{s.id}" class="min-w-0 max-w-full truncate text-sm font-medium hover:underline" title={s.name}>{s.name}</a>
               <Badge variant="outline" class="capitalize">{s.storageType}</Badge>
               <Badge variant="secondary">{s.providerType}</Badge>
             </div>
@@ -179,7 +179,7 @@
       {/if}
     </CardContent>
     {#if !loading && !error && totalVolumes > 0 && auth.can('storages', 'update')}
-      <CardFooter>
+      <CardFooter class="[&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8">
         <Button variant="primary" size="sm" disabled={selectedCount === 0 || moving} onclick={moveSelected}>
           {#if moving}
             <Loader2 class="h-4 w-4 animate-spin" />

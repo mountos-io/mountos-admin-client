@@ -178,7 +178,7 @@
 
 <div class="space-y-6">
   <div class="flex items-center gap-4">
-    <Button variant="ghost" size="sm" href="/storages" aria-label="Back to storages"><ArrowLeft class="h-4 w-4" /></Button>
+    <Button variant="ghost" size="sm" href="/storages" class="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-label="Back to storages"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight">{storage?.name ?? 'Storage'}</h1>
     {#if storage}<Badge variant="outline" style="border-color: var(--pastel-storage); color: var(--pastel-storage-text)">Storage</Badge>{/if}
     {#if maintenanceOn}
@@ -241,7 +241,7 @@
       {:else}
         <CardHeader>
           <div class="flex items-center gap-3">
-            <CardTitle class="flex-1 truncate" title={storage.name}>{storage.name}</CardTitle>
+            <CardTitle class="min-w-0 flex-1 truncate" title={storage.name}>{storage.name}</CardTitle>
             {#if auth.can('storages', 'update')}
               <button type="button" onclick={startEdit}
                 class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-60 hover:opacity-100 hover:text-primary transition-[color,opacity] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
@@ -294,7 +294,7 @@
                 >{storage.regionInfo.name}</a>
               </div>
             </div>
-            <div>
+            <div class="min-w-0">
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Endpoint</span>
               <p class="mt-1 text-sm font-mono truncate" title={storage.endpoint}>{storage.endpoint}</p>
             </div>
@@ -317,10 +317,10 @@
               </div>
             {/if}
             {#if storage.physicalFingerprint}
-              <div>
+              <div class="md:col-span-2">
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground" title="Identifies the backing bucket/prefix; storages sharing this value can move volumes between them">Physical Fingerprint</span>
                 <div class="mt-1 flex items-center gap-2">
-                  <code class="text-sm font-mono truncate" title={storage.physicalFingerprint}>{storage.physicalFingerprint.slice(0, 12)}…</code>
+                  <code class="flex-1 min-w-0 break-all rounded-sm bg-muted px-2 py-1 font-mono text-xs">{storage.physicalFingerprint}</code>
                   <button type="button" onclick={() => copyFingerprint(storage!.physicalFingerprint!)}
                     class="shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-60 hover:opacity-100 hover:text-primary focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring rounded-sm transition-[color,opacity]"
                     title="Copy full fingerprint" aria-label="Copy full physical fingerprint">

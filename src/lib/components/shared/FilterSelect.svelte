@@ -41,15 +41,15 @@
   </PopoverTrigger>
   <PopoverContent class="w-[--bits-popover-anchor-width] min-w-36 p-1" align="start">
     <div role="listbox" aria-label={label ?? placeholder}>
-      {#each options as opt}
+      {#each options as opt (opt.value)}
         <button
           type="button"
           role="option"
           aria-selected={opt.value === value}
           class={cn(
-            "flex w-full items-center gap-2 rounded-sm px-2 py-2 text-sm outline-none cursor-pointer",
+            "flex w-full items-center gap-2 rounded-sm px-2 py-2 text-sm outline-none cursor-pointer min-h-[44px] sm:min-h-0",
             "hover:bg-accent hover:text-accent-foreground",
-            "focus-visible:bg-accent focus-visible:text-accent-foreground",
+            "focus-visible:bg-accent focus-visible:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
             opt.value === value && "bg-accent/50"
           )}
           onclick={() => { value = opt.value; open = false; onchange?.(opt.value) }}

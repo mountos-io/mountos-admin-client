@@ -50,7 +50,7 @@
       <CommandInput placeholder="Search..." aria-label="Search options" aria-controls={listId} bind:value={searchQuery} />
       <CommandList id={listId} aria-live="polite">
         <CommandEmpty>{emptyText}</CommandEmpty>
-        {#each options as opt}
+        {#each options as opt (opt.value)}
           <CommandItem value={opt.label} onSelect={() => { value = opt.value; open = false }}>
             <Check class={cn("h-4 w-4", value === opt.value ? "opacity-100" : "opacity-0")} />
             {opt.label}

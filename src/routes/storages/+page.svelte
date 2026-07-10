@@ -172,7 +172,7 @@
         {@render headerRow()}
       </TableHeader>
       <TableBody>
-        {#each storageStore.storages as storage}
+        {#each storageStore.storages as storage (storage.id)}
           <TableRow
             class={`relative cursor-pointer hover:bg-muted/50 ${storage.isActive ? '' : 'bg-muted/40'}`}
           >

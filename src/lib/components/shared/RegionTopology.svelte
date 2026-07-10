@@ -633,7 +633,7 @@
         {#if !nodeStore.loading && nodeStore.nodes.length > 0}
           <div class="hud-divider"></div>
           <div class="flex flex-wrap items-center gap-1.5">
-            {#each legendEntries as entry}
+            {#each legendEntries as entry (entry.type)}
               {#if entry.hasNodes}
                 <button
                   class="legend-chip"
@@ -821,8 +821,9 @@
                               class="led-dot block h-2 w-2 shrink-0 rounded-full"
                               class:led-ping={node.status === 'healthy'}
                               style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
-                              title={node.status}
+                              aria-hidden="true"
                             ></span>
+                            <span class="shrink-0 text-[0.65rem] uppercase tracking-wide text-muted-foreground" style:color={statusColor(node.status)}>{node.status}</span>
                             <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
                             <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
                           </button>
@@ -883,13 +884,14 @@
               class:led-ping={node.status === 'healthy'}
               class:led-raft={isDataserv}
               style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
-              title={node.status}
+              aria-hidden="true"
             ></span>
+            <span class="shrink-0 text-[0.65rem] uppercase tracking-wide text-muted-foreground" style:color={statusColor(node.status)}>{node.status}</span>
             <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
             <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
           </button>
         {/snippet}
-        {#each td as tier}
+        {#each td as tier (tier.id)}
           {@const tierColor = TIER_COLORS[tier.id]}
           <section class="tier-column corner-brackets flex flex-col gap-3 w-full md:w-auto border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
               <div class="flex items-center gap-2">
@@ -920,7 +922,7 @@
                   <span class="text-xs uppercase tracking-wider text-muted-foreground/40">no nodes</span>
                 </div>
               {/if}
-              {#each tier.groups as group}
+              {#each tier.groups as group (group.type)}
                 {@const p = palette(group.type)}
                 {@const Icon = p.icon}
                 {@const isDataserv = group.type === 'dataserv'}
@@ -970,12 +972,12 @@
                             <span class="ml-auto font-mono text-[10px] tabular-nums text-muted-foreground">{sg.nodes.length}</span>
                             {#if linkable}<ChevronRight class="size-3 shrink-0 text-muted-foreground/60" aria-hidden="true" />{/if}
                           </svelte:element>
-                          {#each sg.nodes as node}
+                          {#each sg.nodes as node (node.id)}
                             {@render nodeRow(node, isDataserv)}
                           {/each}
                         {/each}
                       {:else}
-                        {#each visibleNodes as node}
+                        {#each visibleNodes as node (node.id)}
                           {@render nodeRow(node, isDataserv)}
                         {/each}
                       {/if}

@@ -114,7 +114,7 @@
         {@render headerRow()}
       </TableHeader>
       <TableBody>
-        {#each userStore.users as user}
+        {#each userStore.users as user (user.id)}
           <TableRow class={`relative cursor-pointer hover:bg-muted/50 ${user.isActive ? '' : 'bg-muted/40'}`}>
             <TableCell class="font-medium max-w-[160px] truncate" title={user.username}>
               <a href="/users/{user.id}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="User {user.username}{user.isActive ? '' : ', deactivated'}">{user.username}</a>

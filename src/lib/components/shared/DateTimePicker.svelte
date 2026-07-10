@@ -278,7 +278,7 @@
     <button
       type="button"
       aria-label="Clear"
-      class="absolute right-2 top-1/2 -translate-y-1/2 flex h-5 w-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring transition-colors"
+      class="absolute right-2 top-1/2 -translate-y-1/2 flex h-5 w-5 min-h-[44px] min-w-[44px] sm:min-h-5 sm:min-w-5 items-center justify-center rounded-sm text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring transition-colors"
       onclick={clear}
     >
       <X class="h-3.5 w-3.5" />

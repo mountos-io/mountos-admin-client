@@ -720,7 +720,7 @@
 
 <div class="space-y-6">
   <div class="flex items-center gap-4 flex-wrap">
-    <Button variant="ghost" size="sm" href="/volumes" aria-label="Back to volumes"><ArrowLeft class="h-4 w-4" /></Button>
+    <Button variant="ghost" size="sm" href="/volumes" class="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-label="Back to volumes"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight min-w-0 truncate">{volume?.name ?? 'Volume'}</h1>
     {#if volume}
       <Badge variant="outline" style="border-color: var(--pastel-volume); color: var(--pastel-volume-text)">Volume</Badge>
@@ -1281,7 +1281,7 @@
                 {@render sessionsHeaderRow()}
               </TableHeader>
               <TableBody>
-                {#each volSessions as session}
+                {#each volSessions as session (session.id)}
                   {@const st = formatSessionStatus(session.status)}
                   <TableRow>
                     <TableCell class="text-sm">

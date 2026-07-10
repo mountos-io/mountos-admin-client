@@ -101,7 +101,7 @@
 
 <div class="space-y-6">
   <div class="flex items-center gap-4">
-    <Button variant="ghost" size="sm" href="/users" aria-label="Back to users"><ArrowLeft class="h-4 w-4" /></Button>
+    <Button variant="ghost" size="sm" href="/users" class="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-label="Back to users"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight">{user?.username ?? 'User'}</h1>
     {#if user}<Badge variant="outline" style="border-color: var(--pastel-user); color: var(--pastel-user-text)">User</Badge>{/if}
   </div>

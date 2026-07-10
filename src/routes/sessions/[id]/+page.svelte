@@ -217,7 +217,7 @@
 <div class="space-y-6">
   <!-- Header -->
   <div class="flex items-center gap-3 flex-wrap">
-    <a href="/sessions" class="p-2 rounded-sm hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring" aria-label="Back to sessions">
+    <a href="/sessions" class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-2 rounded-sm hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors focus-visible:ring-2 focus-visible:ring-ring" aria-label="Back to sessions">
       <ArrowLeft class="h-5 w-5" />
     </a>
     <h1 class="text-2xl font-bold tracking-tight">Session #{isNaN(id) ? 'Invalid' : id}</h1>
@@ -237,7 +237,7 @@
     {/if}
     {#if !session || session.isActive}
       <div class="flex items-center gap-2 ml-auto">
-        <Button variant="ghost" size="icon" onclick={() => fetchSession()} aria-label="Refresh" title="Refresh">
+        <Button variant="ghost" size="icon" class="min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9" onclick={() => fetchSession()} aria-label="Refresh" title="Refresh">
           <RefreshCw class="h-4 w-4" />
         </Button>
         <FilterSelect options={POLL_OPTIONS} value={pollValue} placeholder="Poll Off" onchange={setPoll} />

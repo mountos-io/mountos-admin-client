@@ -321,7 +321,7 @@
                   <div class="flex items-center gap-1.5">
                     <code class="font-mono text-sm break-all">{m.text}</code>
                     <Button
-                      variant="ghost" size="icon" class="h-6 w-6 shrink-0"
+                      variant="ghost" size="icon" class="h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-6 sm:min-w-6 shrink-0"
                       aria-label={copiedKey === m.key ? `${m.label} copied` : `Copy ${m.label}`}
                       onclick={() => copyMeta(m.key, m.text)}
                     >

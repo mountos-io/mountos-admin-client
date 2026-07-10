@@ -269,7 +269,7 @@
           {@render headerRow()}
         </TableHeader>
         <TableBody>
-          {#each volumeStore.volumes as volume}
+          {#each volumeStore.volumes as volume (volume.id)}
             <TableRow
               class={`relative cursor-pointer hover:bg-muted/50 ${volume.isActive ? '' : 'bg-muted/40'}`}
             >

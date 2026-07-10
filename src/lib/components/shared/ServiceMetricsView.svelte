@@ -458,7 +458,7 @@
         id="tab-{t.uiId}"
         aria-selected={activeTab === t.id}
         aria-controls="panel-{t.uiId}"
-        class="tab-btn flex items-center gap-1.5 px-4 py-2 transition-colors
+        class="tab-btn flex items-center gap-1.5 px-4 py-2 min-h-[44px] sm:min-h-0 transition-colors
           {activeTab === t.id ? 'font-medium' : 'text-muted-foreground'}"
         onclick={() => (activeTab = t.id)}
       >
@@ -476,7 +476,7 @@
   <div class="flex items-center gap-2">
     <div class="toggle-group flex items-center overflow-hidden" role="group" aria-label="Layout">
       <button
-        class="toggle-btn px-2.5 py-1 transition-colors {layout === 'histogram'
+        class="toggle-btn px-2.5 py-1 min-h-[44px] sm:min-h-0 transition-colors {layout === 'histogram'
           ? 'toggle-active'
           : 'text-muted-foreground'}"
         aria-pressed={layout === 'histogram'}
@@ -484,7 +484,7 @@
       >
       <span class="text-border/40 select-none" aria-hidden="true">&vert;</span>
       <button
-        class="toggle-btn px-2.5 py-1 transition-colors {layout === 'table'
+        class="toggle-btn px-2.5 py-1 min-h-[44px] sm:min-h-0 transition-colors {layout === 'table'
           ? 'toggle-active'
           : 'text-muted-foreground'}"
         aria-pressed={layout === 'table'}
@@ -493,7 +493,7 @@
     </div>
     <div class="toggle-group flex items-center overflow-hidden" role="group" aria-label="Metric mode">
       <button
-        class="toggle-btn px-2.5 py-1 transition-colors {metricMode ===
+        class="toggle-btn px-2.5 py-1 min-h-[44px] sm:min-h-0 transition-colors {metricMode ===
         'minMax'
           ? 'toggle-active'
           : 'text-muted-foreground'}"
@@ -502,7 +502,7 @@
       >
       <span class="text-border/40 select-none" aria-hidden="true">&vert;</span>
       <button
-        class="toggle-btn px-2.5 py-1 transition-colors {metricMode ===
+        class="toggle-btn px-2.5 py-1 min-h-[44px] sm:min-h-0 transition-colors {metricMode ===
         'percentiles'
           ? 'toggle-active'
           : 'text-muted-foreground'}"
@@ -511,7 +511,7 @@
       >
     </div>
     <button
-      class="toggle-btn toggle-group flex items-center gap-1 px-2 py-1 transition-colors {allOpen
+      class="toggle-btn toggle-group flex items-center gap-1 px-2 py-1 min-h-[44px] sm:min-h-0 transition-colors {allOpen
         ? 'toggle-active'
         : 'text-muted-foreground'}"
       aria-pressed={allOpen}
@@ -811,18 +811,26 @@
               )
             : null}
           <TableRow
-            class="cursor-pointer hover:bg-muted/50 transition-colors {isOpen
+            class="relative {group.buckets.length > 0 ? 'cursor-pointer' : ''} hover:bg-muted/50 transition-colors {isOpen
               ? 'bg-muted/30'
               : ''}"
-            onclick={() => group.buckets.length > 0 && toggleExpand(key)}
           >
             <TableCell class="w-6 px-1">
               {#if group.buckets.length > 0}
-                <ChevronRight
-                  class="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 {isOpen
-                    ? 'rotate-90'
-                    : ''}"
-                />
+                <button
+                  type="button"
+                  class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                  aria-expanded={isOpen}
+                  aria-label="{isOpen ? 'Collapse' : 'Expand'} {group.label}"
+                  onclick={() => toggleExpand(key)}
+                >
+                  <ChevronRight
+                    aria-hidden={true}
+                    class="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 {isOpen
+                      ? 'rotate-90'
+                      : ''}"
+                  />
+                </button>
               {/if}
             </TableCell>
             <TableCell class="font-mono text-sm">
@@ -958,11 +966,14 @@
 
 {#snippet sortableHead(col: SortCol, label: string)}
   <TableHead
-    class="th-cyber cursor-pointer select-none"
+    class="th-cyber select-none"
     aria-sort={sortCol === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-    onclick={() => toggleSort(col)}
   >
-    <div class="flex items-center gap-1 {col !== 'label' ? 'justify-end' : ''}">
+    <button
+      type="button"
+      class="flex w-full items-center gap-1 cursor-pointer {col !== 'label' ? 'justify-end' : ''}"
+      onclick={() => toggleSort(col)}
+    >
       <span class={col === 'cv' ? 'normal-case' : ''}>{label}</span>
       {#if sortCol === col}
         {#if sortDir === "asc"}
@@ -971,7 +982,7 @@
           <ArrowDown class="h-3 w-3" />
         {/if}
       {/if}
-    </div>
+    </button>
   </TableHead>
 {/snippet}
 
@@ -1303,16 +1314,6 @@
   .toggle-active {
     color: var(--foreground);
     background: var(--_toggle-active-bg);
-  }
-
-  /* Touch targets; coarse pointer devices (touch screens, tablets) */
-  @media (pointer: coarse) {
-    .tab-btn {
-      min-height: 2.75rem;
-    }
-    .toggle-btn {
-      min-height: 2.75rem;
-    }
   }
 
   /* Reduced motion */

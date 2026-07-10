@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
   import { Card } from '$lib/components/ui/card'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import type { ServiceNode } from '$lib/core/api/types'
@@ -60,12 +59,9 @@
     </TableHeader>
     <TableBody>
       {#each allNodes as node (node.id)}
-        <TableRow
-          class="cursor-pointer hover:bg-foreground/[0.04] transition-colors"
-          onclick={() => goto(`${basePath}/${regionId}/${node.nodeId}`)}
-        >
+        <TableRow class="relative cursor-pointer hover:bg-foreground/[0.04] transition-colors">
           <TableCell>
-            <span class="font-mono text-sm">{node.nodeId}</span>
+            <a href="{basePath}/{regionId}/{node.nodeId}" class="font-mono text-sm after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Node {node.nodeId}, {node.serviceLabel}, {node.status}">{node.nodeId}</a>
           </TableCell>
           <TableCell class={embedded ? 'pl-8' : undefined}>
             <span class="text-sm whitespace-nowrap">{node.serviceLabel}</span>

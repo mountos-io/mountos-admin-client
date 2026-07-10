@@ -23,7 +23,7 @@
     )}
     type={visible ? "text" : "password"} bind:value {...restProps} />
   <button type="button"
-    class="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer transition-colors"
+    class="text-muted-foreground hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 cursor-pointer transition-colors"
     aria-label={visible ? 'Hide password' : 'Show password'}
     onclick={() => visible = !visible}>
     {#if visible}

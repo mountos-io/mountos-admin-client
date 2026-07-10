@@ -289,7 +289,7 @@
         {@render headerRow()}
       </TableHeader>
       <TableBody>
-        {#each pagedNodes as node}
+        {#each pagedNodes as node (`${node.regionId}-${node.nodeId}`)}
           <TableRow class="relative cursor-pointer hover:bg-muted/50">
             <TableCell class="font-mono text-sm">
               <a href="/nodes/{node.regionId}/{node.nodeId}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Node {node.nodeId}">{node.nodeId}</a>

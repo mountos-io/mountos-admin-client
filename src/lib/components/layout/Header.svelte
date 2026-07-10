@@ -86,7 +86,7 @@
 <header class="sticky top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-4">
   <button
     bind:this={sidebarToggleRef}
-    class="flex h-9 w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+    class="flex h-9 w-9 min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
     onclick={() => onToggleSidebar ? onToggleSidebar() : (prefs.sidebarCollapsed = !prefs.sidebarCollapsed)}
     aria-label="Toggle sidebar"
     aria-expanded={!prefs.sidebarCollapsed}
@@ -183,7 +183,7 @@
     <button
       type="button"
       onclick={() => { signOutOpen = true }}
-      class="flex h-9 w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      class="flex h-9 w-9 min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
       aria-label="Sign out"
       title="Sign out"
     >
