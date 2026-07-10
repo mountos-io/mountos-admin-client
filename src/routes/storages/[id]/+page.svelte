@@ -139,7 +139,7 @@
     dialog.confirm(
       next ? 'Enable maintenance mode' : 'Disable maintenance mode',
       next
-        ? `Enable direct access on "${storage.name}"? Clients and gateways read the backing object store directly and fall back to blockserv only for objects not yet synced. Do not stop the last blockserv instance until the sync backlog drains to zero: stopping early makes unsynced objects unreachable.`
+        ? `Enable direct access on "${storage.name}"? Clients and gateways read the backing object store directly and fall back to blockserv only for objects not yet synced. Keep at least one blockserv instance running until it reports drain-ready (fully synced and no active clients streaming): stopping all instances early makes unsynced objects unreachable.`
         : `Disable direct access on "${storage.name}"? Clients and gateways will resume routing through blockserv. Ensure blockserv is running and healthy first.`,
       async () => {
         maintenanceSubmitting = true
@@ -255,7 +255,7 @@
               <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
               <p>
                 <span class="font-medium">Maintenance mode is active.</span>
-                Clients and gateways read the backing object store directly and fall back to blockserv only for objects not yet synced. Keep at least one blockserv instance running until the sync backlog reaches zero (drain&#8209;ready): stopping all instances early makes unsynced objects unreachable.
+                Clients and gateways read the backing object store directly and fall back to blockserv only for objects not yet synced. Keep at least one blockserv instance running until it reports drain&#8209;ready (fully synced and no active clients streaming): stopping all instances early makes unsynced objects unreachable.
               </p>
             </div>
           {/if}
@@ -350,7 +350,7 @@
     <StorageVolumes storageId={storage.id} accountId={storage.account.id} />
 
     {#if !isObject}
-      <StorageMembers storageId={storage.id} regionId={storage.regionInfo.id} />
+      <StorageMembers storageId={storage.id} regionId={storage.regionInfo.id} directAccess={maintenanceOn} />
     {/if}
   {:else}
     <p class="text-muted-foreground">Storage not found.</p>
