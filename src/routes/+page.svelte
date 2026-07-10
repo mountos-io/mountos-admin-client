@@ -27,6 +27,7 @@
   import BuildingIcon from '@lucide/svelte/icons/building'
   import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert'
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
+  import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import { formatBytes } from '$lib/core/utils/format'
@@ -106,6 +107,7 @@
           <p class="text-sm text-muted-foreground truncate">{account.description}</p>
         {/if}
       </div>
+      <HowItWorks topic="system" />
     </div>
 
     {#if dashboard.loading && !stats}

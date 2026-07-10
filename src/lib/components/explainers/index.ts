@@ -2,12 +2,18 @@ import type { Component } from 'svelte'
 import BlockStorageExplainer from './BlockStorageExplainer.svelte'
 import StorageTypeExplainer from './StorageTypeExplainer.svelte'
 import RegionExplainer from './RegionExplainer.svelte'
+import SystemExplainer from './SystemExplainer.svelte'
 
 // Single source for the "How it works" explainers, reused by the desktop modal
 // (HowItWorks.svelte) and the mobile static page (/how-it-works/[topic]).
-export type ExplainerTopic = 'block-storage' | 'storage-type' | 'region'
+export type ExplainerTopic = 'block-storage' | 'storage-type' | 'region' | 'system'
 
 export const EXPLAINERS: Record<ExplainerTopic, { title: string; description: string; component: Component }> = {
+  system: {
+    title: 'How it all fits together',
+    description: 'Partners and admins drive the HUB, clients discover there once, and all data flows inside the region and its object storage.',
+    component: SystemExplainer,
+  },
   'block-storage': {
     title: 'How block storage works',
     description: 'A block storage is up to three active-active members, each a blockserv node with its own block volume, for high availability.',
