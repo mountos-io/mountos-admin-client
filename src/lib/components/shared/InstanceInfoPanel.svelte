@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
@@ -29,6 +30,11 @@
     mac: 'MAC',
     network: 'Network',
     resourceGroup: 'Resource Group',
+    dbType: 'DB Type',
+    dbHost: 'DB Host',
+    dbProvider: 'DB Provider',
+    vaultProvider: 'Vault Provider',
+    vaultHost: 'Vault Host',
   }
   const CLOUD_LABELS: Record<string, string> = {
     aws: 'AWS',
@@ -42,7 +48,7 @@
   const GROUPED_KEYS = new Set([
     'cloud', 'instanceId', 'instanceType', 'imageId', 'region', 'zone',
     'hostname', 'publicIp', 'privateIps', 'network', 'securityGroups',
-    'accountId', 'extra', 'capturedAt',
+    'accountId', 'mountos', 'extra', 'capturedAt',
   ])
 
   function humanize(key: string): string {
@@ -61,7 +67,7 @@
   // Long opaque identifiers get mono + copy; short scalars stay plain text.
   function entry(key: string, v: unknown): Entry {
     const text = asText(v)
-    const mono = /id$|ip|mac|subnet|image|hostname/i.test(key) || text.length > 24
+    const mono = /id$|ip|mac|subnet|image|host/i.test(key) || text.length > 24
     return { key, label: humanize(key), text, mono, copy: mono && text.length > 8, wide: text.length > 40 }
   }
 
@@ -79,7 +85,9 @@
   }
 
   const cloudLabel = $derived(CLOUD_LABELS[String(info.cloud ?? '')] ?? String(info.cloud ?? ''))
-  const securityGroups = $derived(Array.isArray(info.securityGroups) ? info.securityGroups.map(String) : [])
+  // Dedupe so the keyed each below cannot crash on repeated names (an AWS
+  // instance with several ENIs in the same group reports it once per ENI).
+  const securityGroups = $derived(Array.isArray(info.securityGroups) ? [...new Set(info.securityGroups.map(String))] : [])
   const capturedAt = $derived(typeof info.capturedAt === 'number' ? info.capturedAt : null)
 
   const groups = $derived.by<Group[]>(() => {
@@ -95,6 +103,7 @@
         entries: [...pick(['hostname', 'publicIp', 'privateIps']), ...entriesOf(info.network, 'network')],
       },
       { title: 'Account', entries: pick(['accountId']) },
+      { title: 'mountOS', entries: entriesOf(info.mountos, 'mountos') },
       { title: 'Details', entries: [...entriesOf(info.extra, 'extra'), ...rest] },
     ]
     return all.filter((g) => g.entries.length > 0)
@@ -109,6 +118,14 @@
       copyTimer = setTimeout(() => { copiedKey = '' }, 1500)
     }
   }
+  // Entry keys are stable across nodes (instanceId, region, ...), so a swap of
+  // the info prop must drop any in-flight copied indicator.
+  $effect(() => {
+    void info
+    clearTimeout(copyTimer)
+    copiedKey = ''
+  })
+  onDestroy(() => clearTimeout(copyTimer))
 </script>
 
 <Card>

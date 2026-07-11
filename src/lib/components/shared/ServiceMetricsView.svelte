@@ -266,6 +266,12 @@
     ...(alertsTab ? [{ id: 'alerts', label: 'Alerts', count: alertsCount, uiId: 'alerts' }] : []),
     ...(activityTab ? [{ id: 'activity', label: 'Activity Log', count: 0, uiId: 'activity' }] : []),
   ])
+  // Optional tabs (instance/alerts/activity, histogram sections) come and go
+  // per node; a selected tab that disappears must not strand the panel area
+  // on a tab id no branch renders.
+  $effect(() => {
+    if (!tabs.some((t) => t.id === activeTab)) activeTab = 'overview'
+  })
 </script>
 
 <div class="space-y-5">
