@@ -158,15 +158,15 @@
       <path class="edge" d="M760,240 V168" />
       <path class="edge" d="M880,75 H951" />
       <path class="edge" d="M1100,131 H888" />
-      <path class="edge" d="M1120,505 H820 V372" />
+      <path class="edge" d="M1120,505 H820 V386" />
       <path class="edge" d="M1120,527 H960 V592" />
       <path class="edge" d="M260,404 H520 V462 H592" />
       <path class="edge" d="M150,372 V338" />
       <path class="edge" d="M150,436 V462" />
-      <path class="edge" d="M680,430 V372" />
+      <path class="edge" d="M680,430 V386" />
       <path class="edge" d="M680,494 V592" />
       <path class="edge" d="M760,462 H1360" />
-      <path class="edge" d="M608,298 H1032 A20,20 0 0 1 1052,318 V356 A20,20 0 0 1 1032,376 H608 A20,20 0 0 1 588,356 V318 A20,20 0 0 1 608,298 Z" />
+      <path class="edge" d="M608,292 H1032 A20,20 0 0 1 1052,312 V362 A20,20 0 0 1 1032,382 H608 A20,20 0 0 1 588,362 V312 A20,20 0 0 1 608,292 Z" />
       <path class="edge" d="M700,657 L960,657 L830,767 Z" />
       <path class="edge" d="M600,-46 H672" />
       <path class="edge" d="M880,-46 H808" />
@@ -220,10 +220,10 @@
       <path data-g="hb" class="guide" d="M760,240 V160" />
       <path data-g="hadb" class="guide" d="M880,75 H959" />
       <path data-g="hv" class="guide" d="M1100,131 H880" />
-      <path data-g="rv1" class="guide" d="M1120,505 H820 V364" />
+      <path data-g="rv1" class="guide" d="M1120,505 H820 V382" />
       <path data-g="rv2" class="guide" d="M1120,527 H960 V600" />
       <path data-g="gw" class="guide" d="M260,404 H520 V462 H600" />
-      <path data-g="gwm" class="guide" d="M680,430 V364" />
+      <path data-g="gwm" class="guide" d="M680,430 V382" />
       <path data-g="gwb" class="guide" d="M680,494 V600" />
       <path data-g="gwo" class="guide" d="M760,462 H1360 V490 H1464" />
       <path data-g="psdk" class="guide" d="M600,-46 H680" />
@@ -232,7 +232,7 @@
       <path data-g="sdkhub" class="guide" d="M740,-22 V50" />
       <path data-g="capp1" class="guide" d="M150,372 V332" />
       <path data-g="capp2" class="guide" d="M150,436 V468" />
-      <path data-g="raft" class="guide" d="M608,298 H1032 A20,20 0 0 1 1052,318 V356 A20,20 0 0 1 1032,376 H608 A20,20 0 0 1 588,356 V318 A20,20 0 0 1 608,298 Z" />
+      <path data-g="raft" class="guide" d="M608,292 H1032 A20,20 0 0 1 1052,312 V362 A20,20 0 0 1 1032,382 H608 A20,20 0 0 1 588,362 V312 A20,20 0 0 1 608,292 Z" />
       <path data-g="peer" class="guide" d="M700,657 L960,657 L830,767 Z" />
       <path data-g="rdb1" class="guide" d="M1198,325 H1210 V312 H1234" />
       <path data-g="rdb2" class="guide" d="M1198,345 H1210 V364 H1234" />
@@ -272,17 +272,17 @@
     <g>
       <rect class="box-outer" x="40" y="268" width="220" height="64" rx="3" />
       <rect class="box-inner" x="45" y="273" width="210" height="54" rx="2" />
-      <text class="t-box" x="150" y="295" text-anchor="middle">CLIENT</text>
+      <text class="t-box" x="150" y="295" text-anchor="middle">MOUNT CLIENT</text>
       <text class="t-boxsm" x="150" y="315" text-anchor="middle">macOS · FSKit / FUSE</text>
 
       <rect class="box-outer" x="40" y="468" width="220" height="64" rx="3" />
       <rect class="box-inner" x="45" y="473" width="210" height="54" rx="2" />
-      <text class="t-box" x="150" y="495" text-anchor="middle">CLIENT</text>
+      <text class="t-box" x="150" y="495" text-anchor="middle">MOUNT CLIENT</text>
       <text class="t-boxsm" x="150" y="515" text-anchor="middle">Linux · FUSE · CSI</text>
 
       <rect class="box-outer" x="40" y="668" width="220" height="64" rx="3" />
       <rect class="box-inner" x="45" y="673" width="210" height="54" rx="2" />
-      <text class="t-box" x="150" y="695" text-anchor="middle">CLIENT</text>
+      <text class="t-box" x="150" y="695" text-anchor="middle">MOUNT CLIENT</text>
       <text class="t-boxsm" x="150" y="715" text-anchor="middle">Windows · kernel driver</text>
 
       <rect class="box-outer" x="40" y="372" width="220" height="64" rx="3" />
@@ -334,22 +334,28 @@
 
     <!-- dataserv cluster -->
     <g>
-      <rect class="box-outer" x="600" y="310" width="120" height="54" rx="3" />
-      <rect class="box-inner" x="604" y="314" width="112" height="46" rx="2" />
-      <text class="t-box" x="660" y="332" text-anchor="middle" style="font-size:12px">dataserv</text>
-      <text class="t-boxsm" x="660" y="350" text-anchor="middle">meta</text>
+      <rect class="box-outer" x="600" y="303" width="120" height="68" rx="3" />
+      <rect class="box-inner" x="604" y="307" width="112" height="60" rx="2" />
+      <text class="t-box" x="660" y="322" text-anchor="middle" style="font-size:12px">dataserv</text>
+      <text class="t-boxsm" x="660" y="337" text-anchor="middle">meta</text>
+      <path class="divider" d="M612,345 H708" />
+      <text class="t-boxsm" x="660" y="360" text-anchor="middle">+ gcserv</text>
 
-      <rect class="box-outer" x="760" y="310" width="120" height="54" rx="3" />
-      <rect class="box-inner" x="764" y="314" width="112" height="46" rx="2" />
-      <text class="t-box" x="820" y="332" text-anchor="middle" style="font-size:12px">dataserv</text>
-      <text class="t-boxsm" x="820" y="350" text-anchor="middle">meta</text>
+      <rect class="box-outer" x="760" y="303" width="120" height="68" rx="3" />
+      <rect class="box-inner" x="764" y="307" width="112" height="60" rx="2" />
+      <text class="t-box" x="820" y="322" text-anchor="middle" style="font-size:12px">dataserv</text>
+      <text class="t-boxsm" x="820" y="337" text-anchor="middle">meta</text>
+      <path class="divider" d="M772,345 H868" />
+      <text class="t-boxsm" x="820" y="360" text-anchor="middle">+ gcserv</text>
 
-      <rect class="box-outer" x="920" y="310" width="120" height="54" rx="3" />
-      <rect class="box-inner" x="924" y="314" width="112" height="46" rx="2" />
-      <text class="t-box" x="980" y="332" text-anchor="middle" style="font-size:12px">dataserv</text>
-      <text class="t-boxsm" x="980" y="350" text-anchor="middle">meta</text>
+      <rect class="box-outer" x="920" y="303" width="120" height="68" rx="3" />
+      <rect class="box-inner" x="924" y="307" width="112" height="60" rx="2" />
+      <text class="t-box" x="980" y="322" text-anchor="middle" style="font-size:12px">dataserv</text>
+      <text class="t-boxsm" x="980" y="337" text-anchor="middle">meta</text>
+      <path class="divider" d="M932,345 H1028" />
+      <text class="t-boxsm" x="980" y="360" text-anchor="middle">+ gcserv</text>
 
-      <text class="t-lbl" x="820" y="396" text-anchor="middle">raft · ownership sync · one owner per (volume · fork)</text>
+      <text class="t-lbl" x="820" y="402" text-anchor="middle">raft · ownership sync · one owner per (volume · fork)</text>
     </g>
 
     <!-- region db (primary + replicas) -->
@@ -432,21 +438,21 @@
 
     <!-- legend -->
     <g>
-      <circle cx="46" cy="866" r="4" fill="var(--sm-c-meta)" />
-      <text class="t-lbl" x="58" y="870">metadata</text>
-      <circle cx="156" cy="866" r="4" fill="var(--sm-c-block)" />
-      <text class="t-lbl" x="168" y="870">block protocol</text>
-      <circle cx="296" cy="866" r="4" fill="var(--sm-c-object)" />
-      <text class="t-lbl" x="308" y="870">object parts</text>
-      <circle cx="46" cy="892" r="4" fill="var(--sm-c-ctrl)" opacity="0.6" />
-      <text class="t-lbl" x="58" y="896">control · discovery</text>
-      <circle cx="196" cy="892" r="4" fill="var(--sm-c-repl)" />
-      <text class="t-lbl" x="208" y="896">replication</text>
-      <circle cx="296" cy="892" r="4" fill="var(--sm-c-secret)" />
-      <text class="t-lbl" x="308" y="896">secrets</text>
-      <circle cx="46" cy="918" r="4" fill="var(--sm-c-gw)" />
-      <text class="t-lbl" x="58" y="922">gateway api</text>
-      <text class="t-lbl" x="196" y="922">cluster = logical group</text>
+      <circle cx="46" cy="816" r="4" fill="var(--sm-c-meta)" />
+      <text class="t-lbl" x="58" y="820">metadata</text>
+      <circle cx="216" cy="816" r="4" fill="var(--sm-c-block)" />
+      <text class="t-lbl" x="228" y="820">block protocol</text>
+      <circle cx="46" cy="846" r="4" fill="var(--sm-c-object)" />
+      <text class="t-lbl" x="58" y="850">object parts</text>
+      <circle cx="216" cy="846" r="4" fill="var(--sm-c-ctrl)" opacity="0.6" />
+      <text class="t-lbl" x="228" y="850">control · discovery</text>
+      <circle cx="46" cy="876" r="4" fill="var(--sm-c-repl)" />
+      <text class="t-lbl" x="58" y="880">replication</text>
+      <circle cx="216" cy="876" r="4" fill="var(--sm-c-secret)" />
+      <text class="t-lbl" x="228" y="880">secrets</text>
+      <circle cx="46" cy="906" r="4" fill="var(--sm-c-gw)" />
+      <text class="t-lbl" x="58" y="910">gateway api</text>
+      <text class="t-lbl" x="216" y="910">cluster = logical group</text>
     </g>
   </svg>
 </figure>
@@ -484,7 +490,7 @@
     --sm-c-secret: #cf8a0a;
     --sm-c-gw: #dd2e5e;
     position: relative;
-    margin: 0;
+    margin: 0 0 24px;
     padding: 8px;
     background: var(--sm-bg);
     border-radius: 10px;
@@ -553,4 +559,5 @@
   .cyl { fill: var(--sm-cyl-fill); stroke: var(--sm-blue); stroke-width: 1.4; }
   .ssd { fill: var(--sm-ssd-fill); stroke: var(--sm-box-stroke); stroke-width: 1.2; }
   .attach { stroke: var(--sm-box-stroke); stroke-width: 1.4; fill: none; }
+  .divider { stroke: var(--sm-box-inner); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0.7; fill: none; }
 </style>

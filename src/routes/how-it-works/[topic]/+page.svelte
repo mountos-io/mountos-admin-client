@@ -4,8 +4,19 @@
   import { Button } from '$lib/components/ui/button'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import { EXPLAINERS, isExplainerTopic } from '$lib/components/explainers'
+  import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { showErrorToast } from '$lib/core/utils/toast'
 
   // Static page mirror of the "How it works" modal, for mobile viewing.
+  // Explainers describe operator internals; admins only.
+  const auth = useAuth()
+  $effect(() => {
+    if (!auth.loading && auth.isUserRole) {
+      showErrorToast('Access denied')
+      goto('/', { replaceState: true })
+    }
+  })
+
   const topic = $derived($page.params.topic ?? '')
   const meta = $derived(isExplainerTopic(topic) ? EXPLAINERS[topic] : null)
 
@@ -17,7 +28,7 @@
 
 <svelte:head><title>{meta ? meta.title : 'How it works'} · mountOS Admin</title></svelte:head>
 
-<div class="mx-auto max-w-3xl space-y-5 p-4 sm:p-6">
+<div class={`mx-auto space-y-5 p-4 sm:p-6 ${meta?.fullPage ? 'max-w-[1720px]' : 'max-w-3xl'}`}>
   {#if !meta}
     <h1 class="text-xl font-bold tracking-tight">How it works</h1>
     <p class="text-sm text-muted-foreground">Unknown topic.</p>
