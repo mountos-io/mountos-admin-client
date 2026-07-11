@@ -20,6 +20,7 @@
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
   import ServiceMetricsView from '$lib/components/shared/ServiceMetricsView.svelte'
   import NodeStatsHistoryChart from '$lib/components/shared/NodeStatsHistoryChart.svelte'
+  import InstanceInfoPanel from '$lib/components/shared/InstanceInfoPanel.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
   import { formatRelative, nodeStatusVariant, formatDate } from '$lib/core/utils/format'
@@ -108,6 +109,7 @@
   })
 
   const nodeProcessId = $derived(node?.metadata?.['processId'] ?? null)
+  const instanceInfo = $derived(node?.instanceInfo ?? null)
 
   // Node metadata is service-specific; render it as labeled fields (not raw JSON).
   // Known keys (mostly blockserv) get friendly labels, ordering and typed rendering;
@@ -441,6 +443,9 @@
         <p class="text-sm text-muted-foreground">Metrics unavailable; node is {node.status}{!node.isActive ? ' (inactive)' : ''}.</p>
       </CardContent>
     </Card>
+    {#if instanceInfo}
+      <InstanceInfoPanel info={instanceInfo} />
+    {/if}
   {:else if nodeStore.statsLoading && !nodeStore.statsLastUpdated}
     <DetailSkeleton cards={[{ rows: 4, cols: 3, title: true }]} />
   {:else if nodeStore.statsError}
@@ -453,6 +458,7 @@
     <ServiceMetricsView raw={nodeStore.statsRaw}
       alertsCount={canReadAlerts ? (alertStore.activeCount || alertStore.alerts.length) : 0}
       systemTab={systemTabSnippet}
+      instanceTab={instanceInfo ? instanceTabSnippet : undefined}
       alertsTab={canReadAlerts ? alertsTabSnippet : undefined}
       activityTab={canReadAuditLogs ? activityTabSnippet : undefined}
     />
@@ -460,6 +466,12 @@
     {#snippet systemTabSnippet(cpuCores: number)}
       <NodeStatsHistoryChart samples={nodeStore.statsHistory} intervalMs={nodeStore.statsHistoryIntervalMs}
         {cpuCores} loading={nodeStore.statsHistoryLoading} error={nodeStore.statsHistoryError} />
+    {/snippet}
+
+    {#snippet instanceTabSnippet()}
+      {#if instanceInfo}
+        <InstanceInfoPanel info={instanceInfo} />
+      {/if}
     {/snippet}
 
     {#snippet alertsTabSnippet()}

@@ -246,6 +246,7 @@
       <TableHead class="th-cyber hidden lg:table-cell">Cluster</TableHead>
       <TableHead class="th-cyber">Type</TableHead>
       <TableHead class="th-cyber hidden md:table-cell">Address</TableHead>
+      <TableHead class="th-cyber hidden xl:table-cell">Instance</TableHead>
       <TableHead class="th-cyber">Status</TableHead>
       <TableHead class="th-cyber hidden md:table-cell">Memory</TableHead>
       <TableHead class="th-cyber hidden md:table-cell">Load</TableHead>
@@ -263,6 +264,7 @@
             { width: 'w-20', class: 'hidden lg:table-cell' },
             { width: 'w-20', height: 'h-5' },
             { width: 'w-32', class: 'hidden md:table-cell' },
+            { width: 'w-24', class: 'hidden xl:table-cell' },
             { width: 'w-16', height: 'h-5' },
             { width: 'w-12', class: 'hidden md:table-cell' },
             { width: 'w-12', class: 'hidden md:table-cell' },
@@ -274,6 +276,7 @@
             { width: 'w-20', class: 'hidden lg:table-cell' },
             { width: 'w-20', height: 'h-5' },
             { width: 'w-32', class: 'hidden md:table-cell' },
+            { width: 'w-24', class: 'hidden xl:table-cell' },
             { width: 'w-16', height: 'h-5' },
             { width: 'w-12', class: 'hidden md:table-cell' },
             { width: 'w-12', class: 'hidden md:table-cell' },
@@ -322,6 +325,13 @@
               <Badge variant="outline" class="font-mono text-xs" style="color: {SERVICE_COLORS[node.serviceType] ?? 'inherit'}; border-color: {SERVICE_COLORS[node.serviceType] ?? 'var(--border)'};">{node.serviceType}</Badge>
             </TableCell>
             <TableCell class="font-mono text-sm text-muted-foreground hidden md:table-cell">{node.advertiseAddr}</TableCell>
+            <TableCell class="font-mono text-sm text-muted-foreground hidden xl:table-cell max-w-40">
+              {#if node.instanceId}
+                <span class="block truncate" title={node.instanceId}>{node.instanceId}</span>
+              {:else}
+                <span>·</span>
+              {/if}
+            </TableCell>
             <TableCell><Badge variant={nodeStatusVariant(node.status)}>{node.status}</Badge></TableCell>
             <TableCell class="font-mono text-sm hidden md:table-cell">
               {#if node.memUsage != null}

@@ -49,9 +49,10 @@
 
   import type { Snippet } from 'svelte';
 
-  let { raw, systemTab, alertsTab, alertsCount = 0, activityTab }: {
+  let { raw, systemTab, instanceTab, alertsTab, alertsCount = 0, activityTab }: {
     raw: string;
     systemTab?: Snippet<[number]>;
+    instanceTab?: Snippet;
     alertsTab?: Snippet;
     alertsCount?: number;
     activityTab?: Snippet;
@@ -255,6 +256,7 @@
   const tabs = $derived([
     { id: 'overview', label: 'Overview', count: 0, uiId: 'overview' },
     ...(systemTab ? [{ id: 'system', label: 'System Info', count: 0, uiId: 'system' }] : []),
+    ...(instanceTab ? [{ id: 'instance', label: 'Instance Info', count: 0, uiId: 'instance' }] : []),
     ...histogramSections.map(s => ({
       id: `sec:${s.name}`,
       label: s.name,
@@ -450,6 +452,12 @@
   {#if activeTab === 'system' && systemTab}
     <div role="tabpanel" id="panel-system" aria-labelledby="tab-system">
       {@render systemTab(cpuCount)}
+    </div>
+  {/if}
+
+  {#if activeTab === 'instance' && instanceTab}
+    <div role="tabpanel" id="panel-instance" aria-labelledby="tab-instance">
+      {@render instanceTab()}
     </div>
   {/if}
 
