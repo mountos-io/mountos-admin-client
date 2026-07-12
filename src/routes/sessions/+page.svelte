@@ -286,6 +286,9 @@
                           <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
                         {/if}
                         <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
+                        {#if session.appVersion}
+                          <div><p class="detail-label">App Version</p><p class="text-sm font-mono">{session.appVersion}</p></div>
+                        {/if}
                     </div>
                     {#if m.reads !== undefined}
                       <div class="border-t border-border pt-3">

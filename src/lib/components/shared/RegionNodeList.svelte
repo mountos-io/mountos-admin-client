@@ -1,6 +1,8 @@
 <script lang="ts">
   import { Card } from '$lib/components/ui/card'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
+  import { Badge } from '$lib/components/ui/badge'
+  import { formatBinaryVersion } from '$lib/core/utils/format'
   import type { ServiceNode } from '$lib/core/api/types'
 
   type TierData = {
@@ -62,6 +64,9 @@
         <TableRow class="relative cursor-pointer hover:bg-foreground/[0.04] transition-colors">
           <TableCell>
             <a href="{basePath}/{regionId}/{node.nodeId}" class="font-mono text-sm after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Node {node.nodeId}, {node.serviceLabel}, {node.status}">{node.nodeId}</a>
+            {#if node.binaryVersion != null}
+              <Badge variant="outline" class="relative z-10 ml-1.5 font-mono text-xs">{formatBinaryVersion(node.binaryVersion)}</Badge>
+            {/if}
           </TableCell>
           <TableCell class={embedded ? 'pl-8' : undefined}>
             <span class="text-sm whitespace-nowrap">{node.serviceLabel}</span>

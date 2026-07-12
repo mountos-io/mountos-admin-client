@@ -16,7 +16,7 @@
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
-  import { formatRelative, nodeStatusVariant } from '$lib/core/utils/format'
+  import { formatRelative, nodeStatusVariant, formatBinaryVersion } from '$lib/core/utils/format'
   import { poolUtilColor } from '$lib/core/utils/metrics'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
@@ -296,6 +296,9 @@
           <TableRow class="relative cursor-pointer hover:bg-muted/50">
             <TableCell class="font-mono text-sm">
               <a href="/nodes/{node.regionId}/{node.nodeId}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Node {node.nodeId}">{node.nodeId}</a>
+              {#if node.binaryVersion != null}
+                <Badge variant="outline" class="relative z-10 ml-1.5 font-mono text-xs">{formatBinaryVersion(node.binaryVersion)}</Badge>
+              {/if}
             </TableCell>
             {#if !selectedRegionId}
               <TableCell>

@@ -27,7 +27,7 @@
   import RegionNodeList from '$lib/components/shared/RegionNodeList.svelte'
   import ClusterPicker from '$lib/components/shared/ClusterPicker.svelte'
   import { showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
-  import { formatRelative } from '$lib/core/utils/format'
+  import { formatRelative, formatBinaryVersion } from '$lib/core/utils/format'
   import type { Region, ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Plus from '@lucide/svelte/icons/plus'
@@ -823,8 +823,10 @@
                               style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
                               aria-hidden="true"
                             ></span>
-                            <span class="shrink-0 text-[0.65rem] uppercase tracking-wide text-muted-foreground" style:color={statusColor(node.status)}>{node.status}</span>
                             <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
+                            {#if node.binaryVersion != null}
+                              <Badge variant="outline" class="shrink-0 font-mono text-xs">{formatBinaryVersion(node.binaryVersion)}</Badge>
+                            {/if}
                             <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
                           </button>
                         {/each}
@@ -886,8 +888,10 @@
               style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
               aria-hidden="true"
             ></span>
-            <span class="shrink-0 text-[0.65rem] uppercase tracking-wide text-muted-foreground" style:color={statusColor(node.status)}>{node.status}</span>
             <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
+            {#if node.binaryVersion != null}
+              <Badge variant="outline" class="shrink-0 font-mono text-xs">{formatBinaryVersion(node.binaryVersion)}</Badge>
+            {/if}
             <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
           </button>
         {/snippet}
@@ -1296,6 +1300,12 @@
           <span>Status</span>
           <span style:color={statusColor(hoveredNode.node.status)}>{hoveredNode.node.status}</span>
         </div>
+        {#if hoveredNode.node.binaryVersion != null}
+          <div class="flex justify-between gap-4">
+            <span>Version</span>
+            <span class="text-foreground font-mono">{formatBinaryVersion(hoveredNode.node.binaryVersion)}</span>
+          </div>
+        {/if}
         <div class="flex justify-between gap-4">
           <span>Address</span>
           <span class="text-foreground font-mono">{hoveredNode.node.advertiseAddr}</span>
