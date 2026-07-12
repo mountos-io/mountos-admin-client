@@ -28,6 +28,7 @@
     formatNs,
     estimateCV,
     fmtPercentile,
+    fmtScalar,
     interpolatePercentile,
     latencyVariant,
     latencyColor,
@@ -125,26 +126,6 @@
       sortCol = col;
       sortDir = "desc";
     }
-  }
-
-  const byteKeys = new Set([
-    'cache_size_bytes', 'cache_hit_bytes', 'cache_miss_bytes',
-    'sys_mem_total', 'sys_mem_available',
-  ])
-  const idSuffixes = ['_port', '_id']
-
-  const dateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
-  function fmtScalar(name: string, value: number | string): string {
-    if (typeof value === 'string') {
-      const d = Date.parse(value)
-      if (!isNaN(d) && /^\d{4}-\d{2}-\d{2}/.test(value)) return dateFmt.format(d)
-      return value
-    }
-    if (name.endsWith('_bytes') || byteKeys.has(name)) return formatBytes(value)
-    if (name.endsWith('_pct')) return `${value}%`
-    if (name.endsWith('_ratio')) return value.toFixed(4)
-    if (name === 'pid' || name === 'view_mode' || idSuffixes.some(s => name.endsWith(s))) return String(value)
-    return value.toLocaleString()
   }
 
   // Section-level explainer hints (lightbulb tooltip on the card title).
@@ -303,7 +284,7 @@
 
   <!-- Tab Panels -->
   {#if activeTab === "overview"}
-    {@const extraSections = sections.filter(s => s.kind === 'scalar' && !inlineSections.has(s.name) && !blockSections.has(s.name) && s.scalars.length > 0)}
+    {@const extraSections = sections.filter(s => s.kind === 'scalar' && s.name !== 'Config' && !inlineSections.has(s.name) && !blockSections.has(s.name) && s.scalars.length > 0)}
     {@const recordSections = sections.filter(s => s.kind === 'record' && s.records.length > 0)}
     {@const sysSection = sections.find(s => s.name === 'System' && s.kind === 'scalar' && s.scalars.length > 0)}
     <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">

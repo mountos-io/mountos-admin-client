@@ -1,6 +1,8 @@
 // Generalized Prometheus metrics parser and formatting utilities
 // Used by HUB (appserv) metrics visualization, extensible for other service types
 
+import { formatBytes } from './format'
+
 export interface ScalarEntry { name: string; value: number | string }
 export interface MetricRecord { label: string; fields: Record<string, number | string> }
 export interface HistBucket { le: string; leUs: number; count: number }
@@ -200,6 +202,28 @@ export function sv(s: MetricSection[], sec: string, key: string): number {
 }
 export function ssv(s: MetricSection[], sec: string, key: string): string {
   return String(s.find(x => x.name === sec)?.scalars.find(x => x.name === key)?.value ?? '')
+}
+
+// Shared formatting for a raw scalar KV pair from a parsed section (Config,
+// Raft, Semaphore, etc). Used by both the generic scalar cards and any
+// caller that lifts specific scalar fields into its own layout.
+const scalarByteKeys = new Set([
+  'cache_size_bytes', 'cache_hit_bytes', 'cache_miss_bytes',
+  'sys_mem_total', 'sys_mem_available',
+])
+const scalarIdSuffixes = ['_port', '_id']
+const scalarDateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+export function fmtScalar(name: string, value: number | string): string {
+  if (typeof value === 'string') {
+    const d = Date.parse(value)
+    if (!isNaN(d) && /^\d{4}-\d{2}-\d{2}/.test(value)) return scalarDateFmt.format(d)
+    return value
+  }
+  if (name.endsWith('_bytes') || scalarByteKeys.has(name)) return formatBytes(value)
+  if (name.endsWith('_pct')) return `${value}%`
+  if (name.endsWith('_ratio')) return value.toFixed(4)
+  if (name === 'pid' || name === 'view_mode' || scalarIdSuffixes.some(s => name.endsWith(s))) return String(value)
+  return value.toLocaleString()
 }
 
 // Formatting

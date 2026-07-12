@@ -21,6 +21,7 @@
   import ServiceMetricsView from '$lib/components/shared/ServiceMetricsView.svelte'
   import NodeStatsHistoryChart from '$lib/components/shared/NodeStatsHistoryChart.svelte'
   import InstanceInfoPanel from '$lib/components/shared/InstanceInfoPanel.svelte'
+  import { parseMetrics, fmtScalar } from '$lib/core/utils/metrics'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
   import { formatRelative, nodeStatusVariant, formatDate, formatBinaryVersion } from '$lib/core/utils/format'
@@ -112,6 +113,18 @@
   const nodeBinaryVersion = $derived(node?.binaryVersion != null ? formatBinaryVersion(node.binaryVersion) : null)
   const nodeCommitHash = $derived(node?.metadata?.['commitHash'] ? String(node.metadata['commitHash']) : null)
   const instanceInfo = $derived(node?.instanceInfo ?? null)
+
+  // The service's live "# Config" block (service, build time, go version, srpc port, ...)
+  // folds into Node Info instead of its own card. "version" is dropped here since
+  // node.binaryVersion already surfaces as "Version" above.
+  const configEntries = $derived.by<{ key: string; label: string; text: string }[]>(() => {
+    if (!nodeStore.statsRaw) return []
+    const configSection = parseMetrics(nodeStore.statsRaw).find(s => s.name === 'Config' && s.kind === 'scalar')
+    if (!configSection) return []
+    return configSection.scalars
+      .filter(e => e.name !== 'version')
+      .map(e => ({ key: e.name, label: humanizeKey(e.name), text: fmtScalar(e.name, e.value) }))
+  })
 
   // Node metadata is service-specific; render it as labeled fields (not raw JSON).
   // Known keys (mostly blockserv) get friendly labels, ordering and typed rendering;
@@ -327,6 +340,12 @@
               <dd class="font-mono text-sm mt-0.5">{nodeCommitHash}</dd>
             </div>
           {/if}
+          {#each configEntries as c (c.key)}
+            <div>
+              <dt class="text-muted-foreground text-sm">{c.label}</dt>
+              <dd class="font-mono text-sm mt-0.5">{c.text}</dd>
+            </div>
+          {/each}
           {#each nodeMetaEntries as m (m.key)}
             <div class={m.wide ? 'col-span-full' : ''}>
               <dt class="text-muted-foreground text-sm">{m.label}</dt>
