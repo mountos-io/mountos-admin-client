@@ -16,6 +16,8 @@
   import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal'
   import Keyboard from '@lucide/svelte/icons/keyboard'
   import ShieldCheck from '@lucide/svelte/icons/shield-check'
+  import Info from '@lucide/svelte/icons/info'
+  import ScrollText from '@lucide/svelte/icons/scroll-text'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useLicense } from '$lib/core/stores/license.svelte'
   import { Badge } from '$lib/components/ui/badge'
@@ -75,6 +77,7 @@
     { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
     { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
     ...(!auth.isUserRole ? [{ id: 'license' as SettingsTab, label: 'License', icon: ShieldCheck }] : []),
+    { id: 'about', label: 'About', icon: Info },
   ])
 
   const allTabs = $derived([
@@ -519,6 +522,26 @@
             {:else if licenseUploaded}
               <p class="text-sm text-success" role="status">License loaded.</p>
             {/if}
+          </div>
+
+        {:else if modal.tab === 'about'}
+          <div class="space-y-5">
+            <div class="space-y-1">
+              <h3 class="text-sm font-medium">Open-source licenses</h3>
+              <p class="text-xs text-muted-foreground">
+                This dashboard is built with open-source software. The full license
+                notices for every bundled package are reproduced in one file.
+              </p>
+            </div>
+            <a
+              href="/THIRD-PARTY-NOTICES.txt"
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center gap-2 text-sm text-primary underline underline-offset-2 hover:text-primary/80"
+            >
+              <ScrollText class="h-4 w-4" aria-hidden="true" />
+              View third-party licenses
+            </a>
           </div>
 
         {:else if activeProviderTab}
