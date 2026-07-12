@@ -110,7 +110,7 @@
 
   const nodeProcessId = $derived(node?.metadata?.['processId'] ?? null)
   const nodeBinaryVersion = $derived(node?.binaryVersion != null ? formatBinaryVersion(node.binaryVersion) : null)
-  const nodeCommitHash = $derived(node?.metadata?.['commitHash'] ?? null)
+  const nodeCommitHash = $derived(node?.metadata?.['commitHash'] ? String(node.metadata['commitHash']) : null)
   const instanceInfo = $derived(node?.instanceInfo ?? null)
 
   // Node metadata is service-specific; render it as labeled fields (not raw JSON).
