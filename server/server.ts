@@ -335,6 +335,20 @@ app.delete('/api/webauthn/credentials/:id', async (c) => {
 if (providerAuthzMiddleware) app.use('/api/*', providerAuthzMiddleware)
 app.route('/', proxy)
 
+// Cache policy for the static SPA below. Content-hashed assets are immutable
+// and cached for a year, other images/fonts/styles cache for a week, and the
+// app shell always revalidates so a new deploy is picked up immediately.
+app.use('/*', async (c, next) => {
+  await next()
+  const p = c.req.path
+  if (p.startsWith('/_app/immutable/')) {
+    c.header('Cache-Control', 'public, max-age=31536000, immutable')
+  } else if (/\.(avif|png|ico|svg|jpe?g|webp|gif|woff2?|ttf|otf|css|js)$/.test(p)) {
+    c.header('Cache-Control', 'public, max-age=604800')
+  } else if (p === '/' || p.endsWith('.html')) {
+    c.header('Cache-Control', 'no-cache')
+  }
+})
 app.use('/*', serveStatic({ root: './build' }))
 app.get('*', serveStatic({ path: './build/index.html' }))
 

@@ -21,9 +21,9 @@ function read(): string {
   return v
 }
 
-// abbr() runs at module evaluation and after every `.set`, memoised so
-// consumer reads (TreeContextChip, TreeFilePanel, listbox triggers) don't
-// reconstruct an Intl.DateTimeFormat on every render.
+// abbr() feeds the derived `_label`, so it recomputes only when the zone
+// changes; consumer reads (TreeContextChip, TreeFilePanel, listbox triggers)
+// don't reconstruct an Intl.DateTimeFormat on every render.
 function abbr(tz: string, now: Date = new Date()): string {
   try {
     const parts = new Intl.DateTimeFormat('en', { timeZone: tz, timeZoneName: 'short' }).formatToParts(now)
@@ -34,7 +34,7 @@ function abbr(tz: string, now: Date = new Date()): string {
 }
 
 let _value = $state(read())
-let _label = $state(abbr(_value))
+let _label = $derived(abbr(_value))
 let _local = $state(browserTz())
 
 export const tz = {
@@ -46,7 +46,6 @@ export const tz = {
   set(next: string) {
     const local = browserTz()
     _value = next || local
-    _label = abbr(_value)
     _local = local
     if (typeof localStorage !== 'undefined') {
       if (_value === local) localStorage.removeItem(STORAGE_KEY)

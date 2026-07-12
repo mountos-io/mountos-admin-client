@@ -12,6 +12,11 @@ const loadCerts = async () => {
 
 export default defineConfig(async () => ({
   plugins: [tailwindcss(), sveltekit()],
+  // Drop third-party @license comment blocks from the minified client JS. The
+  // notices are consolidated into build/THIRD-PARTY-NOTICES.txt at build time.
+  esbuild: {
+    legalComments: 'none' as const,
+  },
   server: {
     host: 'local.mountos.io',
     port: 5173,

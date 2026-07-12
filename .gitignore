@@ -11,3 +11,6 @@ dist/
 .certs/
 .github/hooks/context-mode.json
 .impeccable/
+
+# Generated at build time by scripts/gen-notices.ts
+static/THIRD-PARTY-NOTICES.txt

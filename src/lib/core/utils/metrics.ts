@@ -2,6 +2,7 @@
 // Used by HUB (appserv) metrics visualization, extensible for other service types
 
 export interface ScalarEntry { name: string; value: number | string }
+export interface MetricRecord { label: string; fields: Record<string, number | string> }
 export interface HistBucket { le: string; leUs: number; count: number }
 export interface HistogramGroup {
   label: string
@@ -18,9 +19,62 @@ export interface HistogramGroup {
 }
 export interface MetricSection {
   name: string
-  kind: 'scalar' | 'histogram'
+  kind: 'scalar' | 'histogram' | 'record'
   scalars: ScalarEntry[]
   groups: HistogramGroup[]
+  records: MetricRecord[]
+  recordFields: string[]
+}
+
+// Known field suffixes for the per-entity KV-record shape (mirrors
+// internal/jobs/workers/goal_metrics.go's AppendGoalStatsFormat field list:
+// goal_<name>_runs, goal_<name>_errors, etc). A scalar section renders as a
+// 'record' table (one row per entity, one column per field) instead of a
+// flat list when every key decomposes into <entity>_<suffix> for one of
+// these suffixes, across at least 2 distinct entities. Checked longest-first
+// so a shared trailing token (e.g. "_us" inside "last_duration_us") can't
+// short-match before the real suffix.
+const RECORD_SUFFIXES = [
+  'last_duration_us', 'last_run_unix', 'lease_acquired', 'need_more',
+  'last_error', 'errors', 'skips', 'runs',
+].sort((a, b) => b.length - a.length)
+
+// detectRecords returns null (caller keeps the flat scalar list) unless
+// EVERY key in the section matches the shape, so a section with any
+// unexpected field never silently drops data into a partial table.
+function detectRecords(scalars: ScalarEntry[]): { records: MetricRecord[]; fields: string[] } | null {
+  if (scalars.length < 2) return null
+  const byEntity = new Map<string, Record<string, number | string>>()
+  const fieldOrder: string[] = []
+  for (const { name, value } of scalars) {
+    const suffix = RECORD_SUFFIXES.find(s => name.endsWith('_' + s))
+    if (!suffix) return null
+    const entity = name.slice(0, -(suffix.length + 1))
+    if (!entity) return null
+    if (!byEntity.has(entity)) byEntity.set(entity, {})
+    byEntity.get(entity)![suffix] = value
+    if (!fieldOrder.includes(suffix)) fieldOrder.push(suffix)
+  }
+  if (byEntity.size < 2) return null
+
+  // Strip the longest common leading token (e.g. "goal_") shared by every
+  // entity so labels read as "blob defect orphan", not "goal blob defect
+  // orphan" — structural, not tied to today's specific section/prefix.
+  const entities = [...byEntity.keys()]
+  let commonPrefix = entities[0]!
+  for (const e of entities.slice(1)) {
+    let i = 0
+    while (i < commonPrefix.length && i < e.length && commonPrefix[i] === e[i]) i++
+    commonPrefix = commonPrefix.slice(0, i)
+  }
+  const cut = commonPrefix.lastIndexOf('_')
+  const stripLen = cut >= 0 ? cut + 1 : 0
+
+  const records = entities.map(e => ({
+    label: (stripLen > 0 ? e.slice(stripLen) : e).replaceAll('_', ' '),
+    fields: byEntity.get(e)!,
+  }))
+  return { records, fields: fieldOrder }
 }
 
 function parseLeValue(le: string): number {
@@ -53,7 +107,7 @@ export function parseMetrics(text: string): MetricSection[] {
 
   for (const [name, lines] of sectionMap) {
     if (!lines.length) {
-      result.push({ name, kind: 'histogram', scalars: [], groups: [] })
+      result.push({ name, kind: 'histogram', scalars: [], groups: [], records: [], recordFields: [] })
       continue
     }
     const hasLabels = lines.some(l => l.includes('{'))
@@ -67,7 +121,12 @@ export function parseMetrics(text: string): MetricSection[] {
         const n = Number(raw)
         scalars.push({ name: m[1], value: isNaN(n) ? raw : n })
       }
-      result.push({ name, kind: 'scalar', scalars, groups: [] })
+      const rec = detectRecords(scalars)
+      if (rec) {
+        result.push({ name, kind: 'record', scalars: [], groups: [], records: rec.records, recordFields: rec.fields })
+      } else {
+        result.push({ name, kind: 'scalar', scalars, groups: [], records: [], recordFields: [] })
+      }
     } else {
       const gmap = new Map<string, { metrics: Map<string, number>; buckets: HistBucket[] }>()
 
@@ -116,10 +175,22 @@ export function parseMetrics(text: string): MetricSection[] {
         })
       }
       groups.sort((a, b) => b.avgLatencyUs - a.avgLatencyUs)
-      result.push({ name, kind: 'histogram', scalars: [], groups })
+      result.push({ name, kind: 'histogram', scalars: [], groups, records: [], recordFields: [] })
     }
   }
   return result
+}
+
+// Column header for a record-table field. Known suffixes get a short label;
+// anything else (a future field this list doesn't know about yet) falls back
+// to a humanized version of the raw suffix so the table never renders blank.
+const RECORD_FIELD_LABELS: Record<string, string> = {
+  runs: 'Runs', errors: 'Errors', skips: 'Skips', need_more: 'Need More',
+  lease_acquired: 'Leased', last_run_unix: 'Last Run',
+  last_duration_us: 'Duration', last_error: 'Last Error',
+}
+export function recordFieldLabel(field: string): string {
+  return RECORD_FIELD_LABELS[field] ?? field.replaceAll('_', ' ').replace(/\b\w/g, c => c.toUpperCase())
 }
 
 // Section scalar accessors

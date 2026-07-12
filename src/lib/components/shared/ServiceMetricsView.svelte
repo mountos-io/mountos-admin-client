@@ -14,7 +14,7 @@
     TableHeader,
     TableRow,
   } from "$lib/components/ui/table";
-  import { formatBytes } from "$lib/core/utils/format";
+  import { formatBytes, formatUTCShort, formatRelative } from "$lib/core/utils/format";
   import {
     parseMetrics,
     sv,
@@ -34,6 +34,7 @@
     cvVariant,
     poolUtilColor,
     bucketBarColor,
+    recordFieldLabel,
     type MetricSection,
     type HistogramGroup,
     type SortCol,
@@ -144,6 +145,28 @@
     if (name.endsWith('_ratio')) return value.toFixed(4)
     if (name === 'pid' || name === 'view_mode' || idSuffixes.some(s => name.endsWith(s))) return String(value)
     return value.toLocaleString()
+  }
+
+  // Section-level explainer hints (lightbulb tooltip on the card title).
+  // Keyed by section name; sections without an entry render no hint.
+  const SCALAR_SECTION_HINTS: Record<string, string> = {
+    'Segment Retry': "Segment-layer S3 retry and budget signals from the shared object-storage reader/writer. **Retry Throttled** and **Retry Exhausted** indicate real S3-side friction. **Budget Starved Fetches** counts ops that started with under 2s left on their caller's deadline (e.g. a table's compaction budget). This is an early-warning signal that fires before anything actually fails.",
+    'Iceberg Compact Circuit Breaker': "Counts Iceberg tables currently paused from compaction after failing their 5-minute per-table budget on 3 consecutive passes. A paused table is skipped until a periodic reset gives it another chance, so compaction doesn't waste a whole cycle retrying a table that can't finish in time.",
+  }
+
+  // Anomaly color for specific scalar fields where a nonzero value signals
+  // real friction or a stuck state, not just routine activity. Returns null
+  // for the common case (default muted/foreground styling).
+  function scalarAnomalyColor(sectionName: string, fieldName: string, value: number): string | null {
+    if (sectionName === 'Segment Retry') {
+      if (fieldName === 'retry_exhausted' && value > 0) return 'var(--destructive)'
+      if (fieldName === 'retry_throttled' && value > 0) return 'var(--warning)'
+      if (fieldName === 'budget_starved_fetches' && value > 0) return 'var(--warning)'
+    }
+    if (sectionName === 'Iceberg Compact Circuit Breaker' && fieldName === 'iceberg_compact_circuit_open_tables' && value > 0) {
+      return 'var(--destructive)'
+    }
+    return null
   }
 
   function numVal(sec: MetricSection, key: string): number {
@@ -281,6 +304,7 @@
   <!-- Tab Panels -->
   {#if activeTab === "overview"}
     {@const extraSections = sections.filter(s => s.kind === 'scalar' && !inlineSections.has(s.name) && !blockSections.has(s.name) && s.scalars.length > 0)}
+    {@const recordSections = sections.filter(s => s.kind === 'record' && s.records.length > 0)}
     {@const sysSection = sections.find(s => s.name === 'System' && s.kind === 'scalar' && s.scalars.length > 0)}
     <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview">
     <!-- Runtime Gauges; instrument panel -->
@@ -424,6 +448,10 @@
     {#if hasBlockStats}
       <BlockservStats {sections} />
     {/if}
+    <!-- Per-entity record sections (GC Goals, etc.): one row per entity -->
+    {#each recordSections as sec}
+      {@render recordTable(sec)}
+    {/each}
     <!-- Extra scalar sections (TCP Connections, Raft, Semaphore, etc.) -->
     {#if extraSections.length > 0}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -658,12 +686,18 @@
 {#snippet scalarCard(sec: MetricSection)}
   <Card cornerBrackets={false}>
     <CardHeader>
-      <CardTitle class="text-base">{sec.name}</CardTitle>
+      <CardTitle class="text-base inline-flex items-center gap-1">
+        {sec.name}
+        {#if SCALAR_SECTION_HINTS[sec.name]}
+          <InfoTip text={SCALAR_SECTION_HINTS[sec.name]} />
+        {/if}
+      </CardTitle>
     </CardHeader>
     <CardContent class="pt-0">
       <div class="grid grid-cols-1 gap-y-1.5 text-sm font-mono">
         {#each sec.scalars as entry}
           {@const isRaftNodes = sec.name === 'Raft' && entry.name === 'raft_cluster_nodes' && typeof entry.value === 'number'}
+          {@const anomalyColor = typeof entry.value === 'number' ? scalarAnomalyColor(sec.name, entry.name, entry.value) : null}
           <div class="flex justify-between gap-2">
             <span class="text-muted-foreground shrink-0 scalar-label inline-flex items-center gap-1">
               {entry.name.replaceAll('_', ' ')}
@@ -673,10 +707,68 @@
             </span>
             <span
               class="tabular-nums font-medium text-right truncate"
-              style={isRaftNodes ? `color: ${raftNodesColor(entry.value as number)}` : ''}
+              style={isRaftNodes ? `color: ${raftNodesColor(entry.value as number)}` : anomalyColor ? `color: ${anomalyColor}` : ''}
             >{fmtScalar(entry.name, entry.value)}</span>
           </div>
         {/each}
+      </div>
+    </CardContent>
+  </Card>
+{/snippet}
+
+{#snippet recordTable(sec: MetricSection)}
+  <Card cornerBrackets={false}>
+    <CardHeader>
+      <div class="flex items-center gap-2">
+        <CardTitle class="text-base">{sec.name}</CardTitle>
+        <Badge variant="secondary" class="font-mono tabular-nums text-[0.7rem]"
+          >{sec.records.length}</Badge
+        >
+      </div>
+    </CardHeader>
+    <CardContent class="pt-0">
+      <div class="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead class="th-cyber">Name</TableHead>
+              {#each sec.recordFields as field}
+                <TableHead class="th-cyber text-right">{recordFieldLabel(field)}</TableHead>
+              {/each}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {#each sec.records as rec}
+              <TableRow class="hover:bg-muted/50 transition-colors">
+                <TableCell class="font-mono text-sm capitalize truncate">{rec.label}</TableCell>
+                {#each sec.recordFields as field}
+                  {@const val = rec.fields[field]}
+                  <TableCell class="font-mono tabular-nums text-sm text-right">
+                    {#if val === undefined}
+                      <span class="text-muted-foreground">&mdash;</span>
+                    {:else if field === 'errors' && typeof val === 'number'}
+                      <span class={val > 0 ? 'text-destructive' : 'text-muted-foreground'}
+                        >{val.toLocaleString()}</span
+                      >
+                    {:else if field === 'last_run_unix' && typeof val === 'number'}
+                      <span title={formatRelative(val)}>{formatUTCShort(val)}</span>
+                    {:else if field === 'last_duration_us' && typeof val === 'number'}
+                      {formatUs(val)}
+                    {:else if field === 'last_error'}
+                      <span class="text-destructive text-left block max-w-[280px] truncate" title={String(val)}
+                        >{val}</span
+                      >
+                    {:else if typeof val === 'number'}
+                      {val.toLocaleString()}
+                    {:else}
+                      {val}
+                    {/if}
+                  </TableCell>
+                {/each}
+              </TableRow>
+            {/each}
+          </TableBody>
+        </Table>
       </div>
     </CardContent>
   </Card>

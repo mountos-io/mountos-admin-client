@@ -92,6 +92,18 @@
       </a>
     {/each}
   </nav>
+  {#if !collapsed}
+    <div class="border-t border-sidebar-border px-3 py-3">
+      <a
+        href="/THIRD-PARTY-NOTICES.txt"
+        target="_blank"
+        rel="noopener"
+        class="text-xs text-sidebar-foreground/60 transition-colors hover:text-sidebar-foreground"
+      >
+        Third-party licenses
+      </a>
+    </div>
+  {/if}
 </aside>
 
 <style>
