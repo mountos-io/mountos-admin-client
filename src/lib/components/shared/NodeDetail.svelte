@@ -23,7 +23,7 @@
   import InstanceInfoPanel from '$lib/components/shared/InstanceInfoPanel.svelte'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
-  import { formatRelative, nodeStatusVariant, formatDate } from '$lib/core/utils/format'
+  import { formatRelative, nodeStatusVariant, formatDate, formatBinaryVersion } from '$lib/core/utils/format'
   import type { ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Copy from '@lucide/svelte/icons/copy'
@@ -109,6 +109,8 @@
   })
 
   const nodeProcessId = $derived(node?.metadata?.['processId'] ?? null)
+  const nodeBinaryVersion = $derived(node?.binaryVersion != null ? formatBinaryVersion(node.binaryVersion) : null)
+  const nodeCommitHash = $derived(node?.metadata?.['commitHash'] ?? null)
   const instanceInfo = $derived(node?.instanceInfo ?? null)
 
   // Node metadata is service-specific; render it as labeled fields (not raw JSON).
@@ -154,7 +156,7 @@
     if (!node?.metadata) return []
     const meta = node.metadata
     return Object.keys(meta)
-      .filter((k) => k !== 'processId')
+      .filter((k) => k !== 'processId' && k !== 'commitHash')
       .sort((a, b) => {
         const ia = META_ORDER.indexOf(a)
         const ib = META_ORDER.indexOf(b)
@@ -311,6 +313,18 @@
             <div>
               <dt class="text-muted-foreground text-sm">Process ID</dt>
               <dd class="font-mono text-sm mt-0.5">{Number(nodeProcessId) || '·'}</dd>
+            </div>
+          {/if}
+          {#if nodeBinaryVersion}
+            <div>
+              <dt class="text-muted-foreground text-sm">Version</dt>
+              <dd class="font-mono text-sm mt-0.5">{nodeBinaryVersion}</dd>
+            </div>
+          {/if}
+          {#if nodeCommitHash}
+            <div>
+              <dt class="text-muted-foreground text-sm">Commit</dt>
+              <dd class="font-mono text-sm mt-0.5">{nodeCommitHash}</dd>
             </div>
           {/if}
           {#each nodeMetaEntries as m (m.key)}

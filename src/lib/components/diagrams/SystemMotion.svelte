@@ -5,6 +5,8 @@
 
   onMount(() => {
     // ball colors resolve through the theme tokens on .system-motion
+    const SPEED = 0.6
+
     const COLORS = {
       meta: 'var(--sm-c-meta)',
       block: 'var(--sm-c-block)',
@@ -75,7 +77,7 @@
       g.appendChild(halo)
       g.appendChild(core)
       layer.appendChild(g)
-      balls.push({ g, path, len, speed: f.s, rev, offset: (f.ph + (rev ? 0.5 : 0) + k / f.n) * len })
+      balls.push({ g, path, len, speed: f.s * SPEED, rev, offset: (f.ph + (rev ? 0.5 : 0) + k / f.n) * len })
     }
 
     for (const f of FLOWS) {
