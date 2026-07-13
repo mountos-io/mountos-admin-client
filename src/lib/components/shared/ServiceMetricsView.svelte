@@ -51,13 +51,14 @@
 
   import type { Snippet } from 'svelte';
 
-  let { raw, systemTab, instanceTab, alertsTab, alertsCount = 0, activityTab }: {
+  let { raw, systemTab, instanceTab, alertsTab, alertsCount = 0, activityTab, workerEventsTab }: {
     raw: string;
     systemTab?: Snippet<[number]>;
     instanceTab?: Snippet;
     alertsTab?: Snippet;
     alertsCount?: number;
     activityTab?: Snippet;
+    workerEventsTab?: Snippet;
   } = $props();
 
   let expanded = $state<Set<string>>(new Set());
@@ -269,6 +270,7 @@
     })),
     ...(alertsTab ? [{ id: 'alerts', label: 'Alerts', count: alertsCount, uiId: 'alerts' }] : []),
     ...(activityTab ? [{ id: 'activity', label: 'Activity Log', count: 0, uiId: 'activity' }] : []),
+    ...(workerEventsTab ? [{ id: 'worker-events', label: 'Worker Events', count: 0, uiId: 'worker-events' }] : []),
   ])
   // Optional tabs (instance/alerts/activity, histogram sections) come and go
   // per node; a selected tab that disappears must not strand the panel area
@@ -485,6 +487,12 @@
   {#if activeTab === 'activity' && activityTab}
     <div role="tabpanel" id="panel-activity" aria-labelledby="tab-activity">
       {@render activityTab()}
+    </div>
+  {/if}
+
+  {#if activeTab === 'worker-events' && workerEventsTab}
+    <div role="tabpanel" id="panel-worker-events" aria-labelledby="tab-worker-events">
+      {@render workerEventsTab()}
     </div>
   {/if}
 </div>

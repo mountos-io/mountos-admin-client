@@ -23,7 +23,7 @@ export const TIME_RANGES = [
 ] as const
 
 export const SEVERITY_LABELS: Record<number, string> = { 0: 'Info', 1: 'Warning', 2: 'Critical' }
-export const CATEGORIES = ['vault', 'db', 'license', 'config', 'quota'] as const
+export const CATEGORIES = ['vault', 'db', 'license', 'config', 'quota', 'distribution'] as const
 
 const prefs = usePreferences()
 

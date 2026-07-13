@@ -68,6 +68,8 @@ export type {
   VolumeSizePoint,
   RegionAlert,
   RegionAlertListOptions,
+  GCWorkerEvent,
+  GCWorkerEventListOptions,
   ForkTreeEntry,
   ForkEntryDetail,
   ForkTreeMatch,

@@ -386,7 +386,7 @@
     <!-- Zoom-out reset (visible only when zoomed) -->
     {#if zoom}
       <button type="button"
-        class="absolute top-2 right-2 z-10 inline-flex items-center gap-1.5 rounded-sm border border-border bg-card h-7 min-h-[44px] sm:min-h-0 px-2.5 text-[0.85rem] font-mono text-muted-foreground hover:text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors"
+        class="absolute top-2 right-2 z-10 inline-flex items-center gap-1.5 rounded-sm border border-border bg-card h-7 min-h-[44px] sm:min-h-0 px-2.5 text-[1rem] font-mono text-muted-foreground hover:text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors"
         onclick={resetZoom}
         title="Reset zoom (0)">
         <ZoomOutIcon class="w-3.5 h-3.5" />

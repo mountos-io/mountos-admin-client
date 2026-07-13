@@ -35,6 +35,8 @@
     dbProvider: 'DB Provider',
     vaultProvider: 'Vault Provider',
     vaultHost: 'Vault Host',
+    verified: 'Verified',
+    productCodes: 'Product Codes',
   }
   const CLOUD_LABELS: Record<string, string> = {
     aws: 'AWS',
@@ -48,7 +50,7 @@
   const GROUPED_KEYS = new Set([
     'cloud', 'instanceId', 'instanceType', 'imageId', 'region', 'zone',
     'hostname', 'publicIp', 'privateIps', 'network', 'securityGroups',
-    'accountId', 'mountos', 'extra', 'capturedAt',
+    'accountId', 'mountos', 'marketplace', 'extra', 'capturedAt',
   ])
 
   function humanize(key: string): string {
@@ -104,6 +106,7 @@
       },
       { title: 'Account', entries: pick(['accountId']) },
       { title: 'mountOS', entries: entriesOf(info.mountos, 'mountos') },
+      { title: 'Marketplace', entries: entriesOf(info.marketplace, 'marketplace') },
       { title: 'Details', entries: [...entriesOf(info.extra, 'extra'), ...rest] },
     ]
     return all.filter((g) => g.entries.length > 0)

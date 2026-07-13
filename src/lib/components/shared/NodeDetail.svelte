@@ -7,17 +7,21 @@
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useRegionAlerts } from '$lib/core/stores/regionAlerts.svelte'
   import { useRegionAuditLogs } from '$lib/core/stores/regionAudit.svelte'
-  import { SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
+  import { useGCWorkerEvents, DEFAULT_SINCE } from '$lib/core/stores/gcWorkerEvents.svelte'
+  import WorkerEventsChart from '$lib/components/shared/WorkerEventsChart.svelte'
+  import { TIME_RANGES, SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
   import { severityBadgeVariant, severityIcon } from '$lib/core/utils/alert'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
+  import { Input } from '$lib/components/ui/input'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
+  import Pagination from '$lib/components/shared/Pagination.svelte'
   import ServiceMetricsView from '$lib/components/shared/ServiceMetricsView.svelte'
   import NodeStatsHistoryChart from '$lib/components/shared/NodeStatsHistoryChart.svelte'
   import InstanceInfoPanel from '$lib/components/shared/InstanceInfoPanel.svelte'
@@ -39,11 +43,21 @@
   const accountStore = useAccounts()
   const alertStore = useRegionAlerts(() => regionId, () => nodeId)
   const auditStore = useRegionAuditLogs()
+  const workerEventStore = useGCWorkerEvents(() => regionId, () => nodeId)
+  // sid-filter box is validated locally before it commits to the store: a
+  // rejected keystroke (0, negative, decimal, non-integer, unsafe-large)
+  // must not leave the box silently showing a value that was never applied.
+  let sidFilterInput = $state('')
+  let sidFilterInvalid = $state(false)
   const auth = useAuth()
   const canReadAlerts = $derived(auth.can('alerts', 'read'))
   const canReadAuditLogs = $derived(auth.can('auditLogs', 'read'))
 
   const node = $derived<ServiceNode | undefined>(nodeStore.nodes.find(n => n.nodeId === nodeId))
+  // Worker events are gcserv-specific (per-goal cycle summaries); other
+  // service types have nothing to show here, same structural gate the
+  // Volume Group card uses for blockserv-only metadata.
+  const isGCServ = $derived(node?.serviceType === 'gcserv')
   const clusterLabel = $derived.by(() => {
     if (!node?.regionClusterId) return null
     const c = clusterStore.clustersFor(regionId).find(x => x.id === node.regionClusterId)
@@ -90,6 +104,14 @@
     const store = alertStore
     if (canReadAlerts && regionId && nodeId) {
       store.fetchAlerts()
+    }
+    return () => store.reset()
+  })
+
+  $effect(() => {
+    const store = workerEventStore
+    if (isGCServ && regionId && nodeId) {
+      store.fetchEvents()
     }
     return () => store.reset()
   })
@@ -494,6 +516,7 @@
       instanceTab={instanceInfo ? instanceTabSnippet : undefined}
       alertsTab={canReadAlerts ? alertsTabSnippet : undefined}
       activityTab={canReadAuditLogs ? activityTabSnippet : undefined}
+      workerEventsTab={isGCServ ? workerEventsTabSnippet : undefined}
     />
 
     {#snippet systemTabSnippet(cpuCores: number)}
@@ -595,6 +618,146 @@
           />
         </CardContent>
       </Card>
+    {/snippet}
+
+    {#snippet workerEventsTabSnippet()}
+      <Card>
+        <CardHeader>
+          <CardTitle class="text-base">Worker Events</CardTitle>
+        </CardHeader>
+        <CardContent class="pt-0 space-y-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <Input
+              value={workerEventStore.goalFilter}
+              oninput={(e: Event) => workerEventStore.setGoalFilter((e.currentTarget as HTMLInputElement).value)}
+              placeholder="Filter by goal"
+              aria-label="Filter by goal"
+              class="h-8 w-40 text-sm"
+            />
+            <div class="flex flex-col gap-1">
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                value={sidFilterInput}
+                oninput={(e: Event) => {
+                  const v = (e.currentTarget as HTMLInputElement).value
+                  sidFilterInput = v
+                  if (v === '') {
+                    sidFilterInvalid = false
+                    workerEventStore.setSidFilter(undefined)
+                    return
+                  }
+                  const n = Number(v)
+                  if (Number.isSafeInteger(n) && n > 0) {
+                    sidFilterInvalid = false
+                    workerEventStore.setSidFilter(n)
+                  } else {
+                    // Reject silently-stale state: an invalid keystroke must
+                    // not leave the box showing a value that was never
+                    // applied to the filter, so surface it instead.
+                    sidFilterInvalid = true
+                  }
+                }}
+                placeholder="Filter by volume (sid)"
+                aria-label="Filter by volume (sid)"
+                aria-invalid={sidFilterInvalid}
+                class="h-8 w-44 text-sm"
+              />
+              {#if sidFilterInvalid}
+                <span class="text-xs text-destructive">Enter a whole number ≥ 1</span>
+              {/if}
+            </div>
+            <FilterSelect
+              options={TIME_RANGES}
+              value={workerEventStore.sinceFilter}
+              onchange={(v) => workerEventStore.setSinceFilter(v)}
+              placeholder="Time range"
+              label="Time range"
+            />
+            {#if workerEventStore.goalFilter || workerEventStore.sidFilter !== undefined || workerEventStore.sinceFilter !== DEFAULT_SINCE}
+              <Button
+                variant="ghost"
+                size="sm"
+                onclick={() => {
+                  sidFilterInput = ''
+                  sidFilterInvalid = false
+                  workerEventStore.clearFilters()
+                }}
+              >
+                Clear filters
+              </Button>
+            {/if}
+          </div>
+
+          {#if workerEventStore.loading && workerEventStore.events.length === 0}
+            <TableSkeleton
+              header={workerEventsHeader}
+              caption="Loading worker events"
+              rows={3}
+              cells={[
+                { width: 'w-32' },
+                { width: 'w-24', class: 'hidden sm:table-cell' },
+                { width: 'w-24' },
+                { width: 'w-64' },
+                { width: 'w-16', class: 'hidden md:table-cell' },
+              ]}
+            />
+          {:else if workerEventStore.error}
+            <p class="text-sm text-destructive">{workerEventStore.error}</p>
+          {:else if workerEventStore.events.length === 0}
+            <p class="text-sm text-muted-foreground">No worker events recorded for this node in the selected range.</p>
+          {:else}
+            <WorkerEventsChart events={workerEventStore.events} />
+
+            <Table>
+              <caption class="sr-only">Worker events for this node</caption>
+              <TableHeader>
+                {@render workerEventsHeader()}
+              </TableHeader>
+              <TableBody>
+                {#each workerEventStore.events as event (event.id)}
+                  <TableRow>
+                    <TableCell class="font-medium">{event.goal}</TableCell>
+                    <TableCell class="hidden sm:table-cell">
+                      {#if event.sid}
+                        <span class="font-mono">{event.subject ?? `sid ${event.sid}`}</span>
+                      {:else}
+                        <span class="text-muted-foreground">&mdash;</span>
+                      {/if}
+                    </TableCell>
+                    <TableCell class="text-muted-foreground whitespace-nowrap">{formatRelative(event.eventTime)}</TableCell>
+                    <TableCell>
+                      <span class="text-xs font-mono text-muted-foreground">
+                        {Object.entries(event.ops).map(([k, v]) => `${k}=${v}`).join(', ')}
+                      </span>
+                    </TableCell>
+                    <TableCell class="hidden md:table-cell text-muted-foreground whitespace-nowrap">{event.durationMs}ms</TableCell>
+                  </TableRow>
+                {/each}
+              </TableBody>
+            </Table>
+
+            {#if workerEventStore.totalPages > 1}
+              <Pagination
+                currentPage={workerEventStore.page}
+                totalPages={workerEventStore.totalPages}
+                onPageChange={(p) => workerEventStore.setPage(p)}
+              />
+            {/if}
+          {/if}
+        </CardContent>
+      </Card>
+    {/snippet}
+
+    {#snippet workerEventsHeader()}
+      <TableRow>
+        <TableHead>Goal</TableHead>
+        <TableHead class="hidden sm:table-cell">Volume</TableHead>
+        <TableHead>Time</TableHead>
+        <TableHead>Ops</TableHead>
+        <TableHead class="hidden md:table-cell">Duration</TableHead>
+      </TableRow>
     {/snippet}
   {:else if node}
     <Card>

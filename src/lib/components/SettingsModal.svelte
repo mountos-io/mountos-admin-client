@@ -454,15 +454,28 @@
                 </div>
                 <div class="flex justify-between">
                   <dt class="text-muted-foreground">Max Storage</dt>
-                  <dd>{licenseStore.formatLimit(lic.maxStorageBytes, 'bytes')}</dd>
+                  <dd>{licenseStore.formatLimit(lic.maxStorageBytes, 'bytes', lic.unlimitedStorage)}</dd>
                 </div>
+                {#if lic.distribution}
+                  <div class="flex justify-between gap-3 min-w-0">
+                    <dt class="text-muted-foreground shrink-0">Distribution</dt>
+                    <dd class="text-right truncate min-w-0">
+                      {lic.distribution}
+                      {#if lic.distributionRef?.length}
+                        <span class="text-muted-foreground font-mono text-xs"> ({lic.distributionRef.join(', ')})</span>
+                      {/if}
+                    </dd>
+                  </div>
+                {/if}
                 {#if lic.quota}
                   <hr class="border-border" aria-hidden="true" />
                   <div class="flex justify-between gap-2">
                     <dt class="text-muted-foreground">Total Used</dt>
                     <dd class:text-destructive={lic.quota.state === 'exceeded'} class="text-right">
                       {licenseStore.formatBytes(lic.quota.totalVolume)}
-                      {#if lic.maxStorageBytes > 0}
+                      {#if lic.unlimitedStorage}
+                        <span class="text-muted-foreground"> / Unlimited</span>
+                      {:else if lic.maxStorageBytes > 0}
                         <span class="text-muted-foreground"> / {licenseStore.formatBytes(lic.maxStorageBytes)}</span>
                         <span class:text-destructive={lic.quota.state === 'exceeded'} class="text-muted-foreground">
                           ({Math.round((lic.quota.totalVolume / lic.maxStorageBytes) * 100)}%)
