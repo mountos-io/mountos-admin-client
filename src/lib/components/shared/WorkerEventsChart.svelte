@@ -123,12 +123,12 @@
         class="absolute left-32 right-2 top-2 bottom-8 border-l border-b border-border/50 overflow-visible select-none touch-none cursor-crosshair focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         role="application"
         aria-label="Worker event timeline. Drag to zoom into a time range, or use arrow keys to pan, +/- to zoom, 0 to reset."
-        aria-keyshortcuts="ArrowLeft ArrowRight Plus Minus 0 Escape"
+        aria-keyshortcuts="ArrowLeft ArrowRight + - 0 Escape"
         tabindex="0"
         onpointerdown={drag.onPointerDown}
         onpointermove={drag.onPointerMove}
         onpointerup={drag.onPointerUp}
-        onpointercancel={drag.onPointerUp}
+        onpointercancel={drag.onPointerCancel}
         onkeydown={drag.onKeyDown}>
         {#each enriched.goals as _, i}
           <div class="absolute left-0 right-0 border-t border-border/20 pointer-events-none" style="top: {(i / enriched.goals.length) * 100}%"></div>

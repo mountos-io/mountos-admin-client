@@ -113,7 +113,16 @@
     if (isGCServ && regionId && nodeId) {
       store.fetchEvents()
     }
-    return () => store.reset()
+    return () => {
+      store.reset()
+      // sidFilterInput/sidFilterInvalid mirror the store's sidFilter locally
+      // (for invalid-keystroke feedback) and aren't covered by store.reset()
+      // -- this component is reused, not remounted, across a node/region
+      // switch (no {#key}), so without this the box would keep showing a
+      // filter value that no longer applies to the new node.
+      sidFilterInput = ''
+      sidFilterInvalid = false
+    }
   })
 
   $effect(() => {
@@ -246,6 +255,18 @@
       copyTimer = setTimeout(() => { copiedKey = '' }, 1500)
     }
   }
+
+  // This component is reused (not remounted) across a node/region switch, so
+  // a "just copied" indicator from the previous node must not survive onto
+  // the new one -- e.g. a metadata key with the same name on the new node
+  // would otherwise show a stale "copied" checkmark it never earned.
+  $effect(() => {
+    void nodeId
+    return () => {
+      copiedKey = ''
+      clearTimeout(copyTimer)
+    }
+  })
 
   onDestroy(() => {
     nodeStore.resetStats()

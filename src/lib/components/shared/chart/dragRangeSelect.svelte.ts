@@ -35,6 +35,7 @@ export interface DragRangeSelect {
   onPointerDown(e: PointerEvent): void
   onPointerMove(e: PointerEvent): void
   onPointerUp(e: PointerEvent): void
+  onPointerCancel(e: PointerEvent): void
   onKeyDown(e: KeyboardEvent): void
   resetZoom(): void
 }
@@ -98,16 +99,29 @@ export function createDragRangeSelect(opts: DragRangeSelectOptions, formatValue:
     dragSel = { ...dragSel, x1: x }
   }
 
-  function onPointerUp(e: PointerEvent) {
-    const sel = dragSel
-    dragSel = null
+  function releaseCapture(e: PointerEvent) {
     try {
       ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
     } catch {
-      // noop: capture may already have been released (e.g. pointercancel)
+      // noop: capture may already have been released
     }
+  }
+
+  function onPointerUp(e: PointerEvent) {
+    const sel = dragSel
+    dragSel = null
+    releaseCapture(e)
     if (!sel || !sel.started) return
     applyZoomFromPct(sel.x0, sel.x1)
+  }
+
+  // A cancel (OS-level gesture interruption -- a system swipe, too many
+  // simultaneous touch points, the element removed mid-gesture) is not a
+  // deliberate release at the current position: discard the in-progress
+  // selection rather than committing a zoom the user never asked to finalize.
+  function onPointerCancel(e: PointerEvent) {
+    dragSel = null
+    releaseCapture(e)
   }
 
   function applyZoomFromPct(a: number, b: number) {
@@ -174,13 +188,13 @@ export function createDragRangeSelect(opts: DragRangeSelectOptions, formatValue:
         e.preventDefault()
         return
       }
-      if (zoom) {
+      if (clampedZoomView()) {
         zoom = null
         e.preventDefault()
         return
       }
     }
-    if (e.key === '0' && zoom) {
+    if (e.key === '0' && clampedZoomView()) {
       zoom = null
       e.preventDefault()
       return
@@ -247,6 +261,7 @@ export function createDragRangeSelect(opts: DragRangeSelectOptions, formatValue:
     onPointerDown,
     onPointerMove,
     onPointerUp,
+    onPointerCancel,
     onKeyDown,
     resetZoom,
   }

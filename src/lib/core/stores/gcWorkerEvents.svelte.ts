@@ -1,7 +1,6 @@
 import type { GCWorkerEvent, GCWorkerEventListOptions } from '$lib/core/api/types'
 import { api } from './client.svelte'
 import { TIME_RANGES } from './alerts.svelte'
-import { debounce } from '$lib/utils'
 
 export type { GCWorkerEvent }
 
@@ -37,9 +36,21 @@ export function useGCWorkerEvents(
   let page = $state(1)
 
   // goal/sid are typed live (per-keystroke via oninput); debounce their fetch
-  // the same way the users and sessions search boxes do, so typing doesn't
-  // fire a request per character.
-  const debouncedFetchEvents = debounce(fetchEvents, 250)
+  // the same way sessions.svelte.ts's search box does, so typing doesn't fire
+  // a request per character. Hand-rolled (not $lib/utils' debounce) so reset()
+  // can cancel a pending call -- a stale timer surviving a node/region switch
+  // would otherwise fire against the NEW getRegionId()/getNodeId() later and
+  // abort whatever fetch that switch already started.
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+  function cancelDebounce() {
+    if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null }
+  }
+
+  function debouncedFetchEvents() {
+    cancelDebounce()
+    debounceTimer = setTimeout(() => { debounceTimer = null; fetchEvents() }, 250)
+  }
 
   async function fetchEvents() {
     const regionId = getRegionId()
@@ -72,6 +83,7 @@ export function useGCWorkerEvents(
   }
 
   function clearFilters() {
+    cancelDebounce()
     goalFilter = ''
     sidFilter = undefined
     sinceFilter = DEFAULT_SINCE
@@ -80,6 +92,7 @@ export function useGCWorkerEvents(
   }
 
   function reset() {
+    cancelDebounce()
     fetchCtrl?.abort()
     fetchCtrl = null
     events = []
