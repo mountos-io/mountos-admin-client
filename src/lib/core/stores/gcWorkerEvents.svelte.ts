@@ -1,16 +1,40 @@
-import type { GCWorkerEvent, GCWorkerEventListOptions } from '$lib/core/api/types'
+import type { GCWorkerEvent, GCWorkerEventListOptions, GCWorkerEventBucket } from '$lib/core/api/types'
 import { api } from './client.svelte'
 import { TIME_RANGES } from './alerts.svelte'
 
-export type { GCWorkerEvent }
+export type { GCWorkerEvent, GCWorkerEventBucket }
 
 const DISPLAY_PAGE_SIZE = 20
 export const DEFAULT_SINCE = '3d'
+
+// Target ~70 buckets across the visible window: enough resolution to see
+// shape, few enough to stay readable as bars. Clamped to the backend's
+// [60s, 1d] range so a very short or very long window doesn't request a
+// degenerate bucket width.
+const TARGET_BUCKET_COUNT = 70
+const MIN_BUCKET_SECONDS = 60
+const MAX_BUCKET_SECONDS = 86_400
+// 'all' (unbounded) has no fixed window to size buckets against; assume a
+// generous 30-day span so buckets stay coarse rather than defaulting to the
+// 60s floor and requesting tens of thousands of empty buckets.
+const UNBOUNDED_ASSUMED_WINDOW_MS = 30 * 86_400_000
 
 function sinceToISO(value: string): string | undefined {
   const range = TIME_RANGES.find(r => r.value === value)
   if (!range || range.ms === 0) return undefined
   return new Date(Date.now() - range.ms).toISOString()
+}
+
+function sinceToMs(value: string): number | undefined {
+  const range = TIME_RANGES.find(r => r.value === value)
+  if (!range || range.ms === 0) return undefined
+  return range.ms
+}
+
+function bucketSecondsFor(windowMs: number | undefined): number {
+  const ms = windowMs ?? UNBOUNDED_ASSUMED_WINDOW_MS
+  const raw = Math.round(ms / TARGET_BUCKET_COUNT / 1000)
+  return Math.min(MAX_BUCKET_SECONDS, Math.max(MIN_BUCKET_SECONDS, raw))
 }
 
 // useGCWorkerEvents mirrors useRegionAlerts' shape (filter state + page-based
@@ -30,6 +54,11 @@ export function useGCWorkerEvents(
   let totalPages = $state(0)
   let fetchCtrl: AbortController | null = null
 
+  let histogram = $state<GCWorkerEventBucket[]>([])
+  let histogramLoading = $state(false)
+  let histogramBucketSeconds = $state(bucketSecondsFor(undefined))
+  let histogramCtrl: AbortController | null = null
+
   let goalFilter = $state('')
   let sidFilter = $state<number | undefined>(undefined)
   let sinceFilter = $state(DEFAULT_SINCE)
@@ -47,9 +76,14 @@ export function useGCWorkerEvents(
     if (debounceTimer) { clearTimeout(debounceTimer); debounceTimer = null }
   }
 
-  function debouncedFetchEvents() {
+  function debouncedFetchAll() {
     cancelDebounce()
-    debounceTimer = setTimeout(() => { debounceTimer = null; fetchEvents() }, 250)
+    debounceTimer = setTimeout(() => { debounceTimer = null; fetchEvents(); fetchHistogram() }, 250)
+  }
+
+  function fetchAll() {
+    fetchEvents()
+    fetchHistogram()
   }
 
   async function fetchEvents() {
@@ -82,24 +116,65 @@ export function useGCWorkerEvents(
     }
   }
 
+  // Buckets counts per goal instead of returning raw rows, so the density
+  // chart stays a fixed-cost fetch (bounded by bucket count) regardless of
+  // how many raw events fall in the window -- unlike fetchEvents(), which is
+  // one page of DISPLAY_PAGE_SIZE and can silently under-represent a busy
+  // window/goal.
+  async function fetchHistogram() {
+    const regionId = getRegionId()
+    if (!regionId) return
+    histogramCtrl?.abort()
+    const ctrl = histogramCtrl = new AbortController()
+    histogramLoading = true
+
+    const bucketSeconds = bucketSecondsFor(sinceToMs(sinceFilter))
+    try {
+      const res = await api.gcWorkerEvents.histogram(
+        regionId,
+        getNodeId?.(),
+        goalFilter || undefined,
+        sidFilter,
+        undefined,
+        sinceToISO(sinceFilter),
+        bucketSeconds,
+        ctrl.signal,
+      )
+      histogram = res.buckets
+      histogramBucketSeconds = bucketSeconds
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return
+      // Density chart degrades to empty rather than surfacing a second error
+      // banner alongside fetchEvents()' -- the raw table/scatter remains the
+      // authoritative error signal for this feature.
+      histogram = []
+    } finally {
+      if (histogramCtrl === ctrl) histogramLoading = false
+    }
+  }
+
   function clearFilters() {
     cancelDebounce()
     goalFilter = ''
     sidFilter = undefined
     sinceFilter = DEFAULT_SINCE
     page = 1
-    fetchEvents()
+    fetchAll()
   }
 
   function reset() {
     cancelDebounce()
     fetchCtrl?.abort()
     fetchCtrl = null
+    histogramCtrl?.abort()
+    histogramCtrl = null
     events = []
     loading = false
     error = null
     totalEvents = 0
     totalPages = 0
+    histogram = []
+    histogramLoading = false
     goalFilter = ''
     sidFilter = undefined
     sinceFilter = DEFAULT_SINCE
@@ -114,16 +189,21 @@ export function useGCWorkerEvents(
     get totalPages() { return totalPages },
     get page() { return page },
 
+    get histogram() { return histogram },
+    get histogramLoading() { return histogramLoading },
+    get histogramBucketSeconds() { return histogramBucketSeconds },
+
     get goalFilter() { return goalFilter },
     get sidFilter() { return sidFilter },
     get sinceFilter() { return sinceFilter },
+    get sinceRangeMs() { return sinceToMs(sinceFilter) },
 
-    setGoalFilter(v: string) { goalFilter = v; page = 1; debouncedFetchEvents() },
-    setSidFilter(v: number | undefined) { sidFilter = v; page = 1; debouncedFetchEvents() },
-    setSinceFilter(v: string) { sinceFilter = v; page = 1; fetchEvents() },
+    setGoalFilter(v: string) { goalFilter = v; page = 1; debouncedFetchAll() },
+    setSidFilter(v: number | undefined) { sidFilter = v; page = 1; debouncedFetchAll() },
+    setSinceFilter(v: string) { sinceFilter = v; page = 1; fetchAll() },
     setPage(p: number) { page = p; fetchEvents() },
 
-    fetchEvents,
+    fetchEvents: fetchAll,
     clearFilters,
     reset,
   }

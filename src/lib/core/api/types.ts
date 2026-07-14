@@ -70,6 +70,8 @@ export type {
   RegionAlertListOptions,
   GCWorkerEvent,
   GCWorkerEventListOptions,
+  GCWorkerEventBucket,
+  GCWorkerEventHistogramResponse,
   ForkTreeEntry,
   ForkEntryDetail,
   ForkTreeMatch,

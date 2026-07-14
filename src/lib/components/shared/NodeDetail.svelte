@@ -8,7 +8,7 @@
   import { useRegionAlerts } from '$lib/core/stores/regionAlerts.svelte'
   import { useRegionAuditLogs } from '$lib/core/stores/regionAudit.svelte'
   import { useGCWorkerEvents, DEFAULT_SINCE } from '$lib/core/stores/gcWorkerEvents.svelte'
-  import WorkerEventsChart from '$lib/components/shared/WorkerEventsChart.svelte'
+  import WorkerEventsHistogram from '$lib/components/shared/WorkerEventsHistogram.svelte'
   import { TIME_RANGES, SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
   import { severityBadgeVariant, severityIcon } from '$lib/core/utils/alert'
   import { useAuth } from '$lib/core/stores/auth.svelte'
@@ -741,7 +741,11 @@
           {:else if workerEventStore.events.length === 0}
             <p class="text-sm text-muted-foreground">No worker events recorded for this node in the selected range.</p>
           {:else}
-            <WorkerEventsChart events={workerEventStore.events} />
+            <WorkerEventsHistogram
+              buckets={workerEventStore.histogram}
+              bucketSeconds={workerEventStore.histogramBucketSeconds}
+              rangeMs={workerEventStore.sinceRangeMs}
+            />
 
             <Table>
               <caption class="sr-only">Worker events for this node</caption>

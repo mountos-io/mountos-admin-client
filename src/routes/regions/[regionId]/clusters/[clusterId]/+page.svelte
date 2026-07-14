@@ -10,6 +10,7 @@
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import DeactivateClusterDialog from '$lib/components/shared/DeactivateClusterDialog.svelte'
   import { formatRelative } from '$lib/core/utils/format'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
@@ -110,7 +111,7 @@
 
 <div class="mx-auto max-w-3xl space-y-4">
   {#if loading && !cluster}
-    <p class="text-muted-foreground text-base" role="status" aria-live="polite">Loading…</p>
+    <DetailSkeleton cards={[{ rows: 3, cols: 2 }]} />
   {:else if !cluster}
     <EmptyState title="Cluster not found" description="It may have been deactivated or never existed." />
   {:else}

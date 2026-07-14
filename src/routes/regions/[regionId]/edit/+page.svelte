@@ -8,6 +8,7 @@
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import type { Region } from '$lib/core/api/types'
 
@@ -78,7 +79,7 @@
 
 <div class="mx-auto max-w-lg space-y-6">
   {#if loading && !region}
-    <p class="text-muted-foreground text-base" role="status" aria-live="polite">Loading…</p>
+    <FormSkeleton fields={2} />
   {:else if !region}
     <EmptyState title="Region not found" description="It may have been deactivated or never existed." />
   {:else}

@@ -1061,7 +1061,7 @@
                   {#if filtered.length === 0}
                     <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
                   {:else}
-                    <ActivityChart logs={filtered} />
+                    <ActivityChart logs={filtered} rangeMs={days === 'auto' ? undefined : days * 86400000} />
                   {/if}
                 {:else}
                   <ActivityFeed

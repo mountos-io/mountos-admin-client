@@ -14,6 +14,7 @@
   import Label from '$lib/components/ui/label/label.svelte'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
+  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import DeactivateClusterDialog from '$lib/components/shared/DeactivateClusterDialog.svelte'
   import { formatRelative } from '$lib/core/utils/format'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
@@ -110,6 +111,21 @@
 <svelte:head><title>Region Clusters · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-5xl space-y-4">
+  {#snippet headerRow()}
+    <TableRow>
+      <TableHead>Name</TableHead>
+      <TableHead class="hidden lg:table-cell">
+        <span class="inline-flex items-center gap-1">
+          Export ID
+          <InfoTip text="Set as env on service instances to pin them to this specific cluster within the region." />
+        </span>
+      </TableHead>
+      <TableHead>State</TableHead>
+      <TableHead>Updated</TableHead>
+      {#if !auth.isUserRole}<TableHead class="w-12"></TableHead>{/if}
+    </TableRow>
+  {/snippet}
+
   <Card cornerBrackets>
     <CardHeader class="flex flex-row items-center justify-between gap-4">
       <div>
@@ -130,24 +146,23 @@
 
     <CardContent>
       {#if loading && clusters.length === 0}
-        <p class="text-muted-foreground text-base" role="status" aria-live="polite">Loading…</p>
+        <TableSkeleton
+          header={headerRow}
+          caption="Loading clusters"
+          cells={[
+            { width: 'w-32' },
+            { width: 'w-40', class: 'hidden lg:table-cell' },
+            { width: 'w-20', height: 'h-5' },
+            { width: 'w-20' },
+            ...(!auth.isUserRole ? [{ width: 'w-8' }] : []),
+          ]}
+        />
       {:else if clusters.length === 0}
         <EmptyState title="No clusters" description="Create one to start grouping instances and volumes." />
       {:else}
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead class="hidden lg:table-cell">
-                <span class="inline-flex items-center gap-1">
-                  Export ID
-                  <InfoTip text="Set as env on service instances to pin them to this specific cluster within the region." />
-                </span>
-              </TableHead>
-              <TableHead>State</TableHead>
-              <TableHead>Updated</TableHead>
-              {#if !auth.isUserRole}<TableHead class="w-12"></TableHead>{/if}
-            </TableRow>
+            {@render headerRow()}
           </TableHeader>
           <TableBody>
             {#each clusters as c (c.id)}

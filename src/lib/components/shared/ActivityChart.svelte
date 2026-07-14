@@ -6,7 +6,7 @@
   import CheckIcon from '@lucide/svelte/icons/check'
   import ZoomOutIcon from '@lucide/svelte/icons/zoom-out'
 
-  let { logs = [] }: { logs: AuditLog[] } = $props()
+  let { logs = [], rangeMs }: { logs: AuditLog[]; rangeMs?: number } = $props()
 
   interface PlottedLog extends AuditLog {
     x: number; y: number; date: Date; timeMinutes: number
@@ -65,8 +65,19 @@
     return { rows, xMin, xMax }
   })
 
-  // Full data extent (epoch ms for X; minutes-of-day for Y stays 0..1440)
-  const dataExtent = $derived({ xMin: enrichedLogs.xMin, xMax: enrichedLogs.xMax, yMin: 0, yMax: 1440 })
+  // Full data extent (epoch ms for X; minutes-of-day for Y stays 0..1440).
+  // When a caller passes rangeMs (the selected day-range filter), the X
+  // domain is anchored to that window ending now -- not to the timestamps
+  // of whichever logs happened to come back -- so "7d" reliably covers the
+  // last 7 days regardless of how dense the log volume is. Floored to
+  // MIN_X_SPAN so short windows still get a full day of plotting room.
+  const dataExtent = $derived.by(() => {
+    if (rangeMs != null) {
+      const xMax = Date.now()
+      return { xMin: xMax - Math.max(rangeMs, MIN_X_SPAN), xMax, yMin: 0, yMax: 1440 }
+    }
+    return { xMin: enrichedLogs.xMin, xMax: enrichedLogs.xMax, yMin: 0, yMax: 1440 }
+  })
 
   // Effective viewing window
   const view = $derived(zoom ?? dataExtent)
