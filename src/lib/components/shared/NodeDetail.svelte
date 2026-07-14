@@ -46,7 +46,7 @@
   const accountStore = useAccounts()
   const alertStore = useRegionAlerts(() => regionId, () => nodeId)
   const auditStore = useRegionAuditLogs()
-  const workerEventStore = useGCWorkerEvents(() => regionId, () => nodeId)
+  const workerEventStore = useGCWorkerEvents(() => regionId, () => nodeId, () => node?.binaryVersion)
   // "All goals" first so clearing the combobox is a normal selection, not a
   // separate affordance.
   const goalOptions = $derived([

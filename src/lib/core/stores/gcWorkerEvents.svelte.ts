@@ -20,9 +20,11 @@ const MAX_BUCKET_SECONDS = 86_400
 // 60s floor and requesting tens of thousands of empty buckets.
 const UNBOUNDED_ASSUMED_WINDOW_MS = 30 * 86_400_000
 
-// Goal names are gcserv's own internal job-type constants; new ones ship
-// occasionally but not so often that every mount needs a fresh fetch.
-const GOALS_CACHE_TTL_MS = 60 * 60 * 1000
+// The cache key folds in the node's reported gcserv binaryVersion, so a real
+// gcserv upgrade (the only thing that changes the goal set) busts the cache
+// immediately. This TTL is only the fallback for when binaryVersion is
+// unavailable -- kept short since it's then the sole staleness guard.
+const GOALS_CACHE_TTL_MS = 3 * 60 * 60 * 1000
 
 function sinceToISO(value: string): string | undefined {
   const range = TIME_RANGES.find(r => r.value === value)
@@ -51,6 +53,7 @@ function bucketSecondsFor(windowMs: number | undefined): number {
 export function useGCWorkerEvents(
   getRegionId: () => number,
   getNodeId?: () => string | undefined,
+  getBinaryVersion?: () => number | null | undefined,
 ) {
   let events = $state<GCWorkerEvent[]>([])
   let loading = $state(false)
@@ -168,14 +171,16 @@ export function useGCWorkerEvents(
   // Backs the goal-filter combobox with real, observed values instead of a
   // free-text box hoping for an exact match against gcserv's internal goal
   // constants (not reflected anywhere queryable outside the event rows
-  // themselves). Cached in localStorage for GOALS_CACHE_TTL_MS: the goal set
-  // per node changes rarely enough that refetching it on every mount is
-  // wasted chatter, but not never, so it isn't cached indefinitely either.
+  // themselves). Cached in localStorage, keyed by the node's reported
+  // binaryVersion so a real gcserv upgrade (the only thing that actually
+  // changes the goal set) busts the cache immediately; GOALS_CACHE_TTL_MS is
+  // just a fallback for when binaryVersion isn't available.
   async function fetchGoals() {
     const regionId = getRegionId()
     if (!regionId) return
     const nodeId = getNodeId?.()
-    const cacheKey = `mountos.gcWorkerEventGoals.${regionId}.${nodeId ?? 'all'}`
+    const binaryVersion = getBinaryVersion?.()
+    const cacheKey = `mountos.gcWorkerEventGoals.${regionId}.${nodeId ?? 'all'}.${binaryVersion ?? 'unknown'}`
 
     const cached = readCached<string[]>(cacheKey, GOALS_CACHE_TTL_MS)
     if (cached) {
