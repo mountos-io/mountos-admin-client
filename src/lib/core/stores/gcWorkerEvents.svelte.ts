@@ -1,6 +1,7 @@
 import type { GCWorkerEvent, GCWorkerEventListOptions, GCWorkerEventBucket } from '$lib/core/api/types'
 import { api } from './client.svelte'
 import { TIME_RANGES } from './alerts.svelte'
+import { readCached, writeCached } from '$lib/core/utils/cache'
 
 export type { GCWorkerEvent, GCWorkerEventBucket }
 
@@ -18,6 +19,10 @@ const MAX_BUCKET_SECONDS = 86_400
 // generous 30-day span so buckets stay coarse rather than defaulting to the
 // 60s floor and requesting tens of thousands of empty buckets.
 const UNBOUNDED_ASSUMED_WINDOW_MS = 30 * 86_400_000
+
+// Goal names are gcserv's own internal job-type constants; new ones ship
+// occasionally but not so often that every mount needs a fresh fetch.
+const GOALS_CACHE_TTL_MS = 60 * 60 * 1000
 
 function sinceToISO(value: string): string | undefined {
   const range = TIME_RANGES.find(r => r.value === value)
@@ -58,6 +63,13 @@ export function useGCWorkerEvents(
   let histogramLoading = $state(false)
   let histogramBucketSeconds = $state(bucketSecondsFor(undefined))
   let histogramCtrl: AbortController | null = null
+
+  // Real, observed goal values for the filter combobox -- fetched once per
+  // node (unscoped by time, so it doesn't need to re-fetch when since/goal/
+  // sid change), not folded into fetchAll()/debouncedFetchAll().
+  let knownGoals = $state<string[]>([])
+  let goalsLoading = $state(false)
+  let goalsCtrl: AbortController | null = null
 
   let goalFilter = $state('')
   let sidFilter = $state<number | undefined>(undefined)
@@ -153,6 +165,39 @@ export function useGCWorkerEvents(
     }
   }
 
+  // Backs the goal-filter combobox with real, observed values instead of a
+  // free-text box hoping for an exact match against gcserv's internal goal
+  // constants (not reflected anywhere queryable outside the event rows
+  // themselves). Cached in localStorage for GOALS_CACHE_TTL_MS: the goal set
+  // per node changes rarely enough that refetching it on every mount is
+  // wasted chatter, but not never, so it isn't cached indefinitely either.
+  async function fetchGoals() {
+    const regionId = getRegionId()
+    if (!regionId) return
+    const nodeId = getNodeId?.()
+    const cacheKey = `mountos.gcWorkerEventGoals.${regionId}.${nodeId ?? 'all'}`
+
+    const cached = readCached<string[]>(cacheKey, GOALS_CACHE_TTL_MS)
+    if (cached) {
+      knownGoals = cached
+      return
+    }
+
+    goalsCtrl?.abort()
+    const ctrl = goalsCtrl = new AbortController()
+    goalsLoading = true
+    try {
+      const res = await api.gcWorkerEvents.goals(regionId, nodeId, ctrl.signal)
+      knownGoals = res.goals
+      writeCached(cacheKey, res.goals)
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return
+      knownGoals = []
+    } finally {
+      if (goalsCtrl === ctrl) goalsLoading = false
+    }
+  }
+
   function clearFilters() {
     cancelDebounce()
     goalFilter = ''
@@ -168,6 +213,8 @@ export function useGCWorkerEvents(
     fetchCtrl = null
     histogramCtrl?.abort()
     histogramCtrl = null
+    goalsCtrl?.abort()
+    goalsCtrl = null
     events = []
     loading = false
     error = null
@@ -175,6 +222,8 @@ export function useGCWorkerEvents(
     totalPages = 0
     histogram = []
     histogramLoading = false
+    knownGoals = []
+    goalsLoading = false
     goalFilter = ''
     sidFilter = undefined
     sinceFilter = DEFAULT_SINCE
@@ -193,6 +242,9 @@ export function useGCWorkerEvents(
     get histogramLoading() { return histogramLoading },
     get histogramBucketSeconds() { return histogramBucketSeconds },
 
+    get knownGoals() { return knownGoals },
+    get goalsLoading() { return goalsLoading },
+
     get goalFilter() { return goalFilter },
     get sidFilter() { return sidFilter },
     get sinceFilter() { return sinceFilter },
@@ -204,6 +256,7 @@ export function useGCWorkerEvents(
     setPage(p: number) { page = p; fetchEvents() },
 
     fetchEvents: fetchAll,
+    fetchGoals,
     clearFilters,
     reset,
   }

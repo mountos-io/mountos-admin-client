@@ -164,7 +164,7 @@
     that would otherwise wrap into an unreadable multi-row block. Comes first
     so it reads as the controls for the graph beside it, not an afterthought
     below it. -->
-    <div class="relative flex flex-col border border-border/30 rounded-sm sm:w-1/5 sm:min-w-[11rem] sm:max-w-[316px]" style="height: min(320px, 45vh);">
+    <div class="relative flex flex-col border border-border/30 rounded-sm sm:w-1/5 sm:min-w-[11rem] sm:max-w-[316px]" style="height: min(400px, 56vh);">
       <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
       <div class="relative flex items-center gap-1 p-2 border-b border-border/30">
         <Input
@@ -199,7 +199,7 @@
       </div>
     </div>
 
-    <div class="relative flex-1 min-w-0 border border-border rounded-sm bg-background" style="padding: 1.5rem 1.5rem 3rem 3rem; height: min(320px, 45vh); contain: layout;">
+    <div class="relative flex-1 min-w-0 border border-border rounded-sm bg-background" style="padding: 1.5rem 1.5rem 3rem 3rem; height: min(400px, 56vh); contain: layout;">
       <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
       <!-- Y-axis labels: event count -->
       <div class="absolute left-1 top-6 bottom-10 w-10 flex flex-col justify-between text-[1rem] font-mono text-muted-foreground">

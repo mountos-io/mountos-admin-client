@@ -9,6 +9,7 @@
   import { useRegionAuditLogs } from '$lib/core/stores/regionAudit.svelte'
   import { useGCWorkerEvents, DEFAULT_SINCE } from '$lib/core/stores/gcWorkerEvents.svelte'
   import WorkerEventsHistogram from '$lib/components/shared/WorkerEventsHistogram.svelte'
+  import Combobox from '$lib/components/shared/Combobox.svelte'
   import { TIME_RANGES, SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
   import { severityBadgeVariant, severityIcon } from '$lib/core/utils/alert'
   import { useAuth } from '$lib/core/stores/auth.svelte'
@@ -46,6 +47,12 @@
   const alertStore = useRegionAlerts(() => regionId, () => nodeId)
   const auditStore = useRegionAuditLogs()
   const workerEventStore = useGCWorkerEvents(() => regionId, () => nodeId)
+  // "All goals" first so clearing the combobox is a normal selection, not a
+  // separate affordance.
+  const goalOptions = $derived([
+    { value: '', label: 'All goals' },
+    ...workerEventStore.knownGoals.map(g => ({ value: g, label: g })),
+  ])
   // sid-filter box is validated locally before it commits to the store: a
   // rejected keystroke (0, negative, decimal, non-integer, unsafe-large)
   // must not leave the box silently showing a value that was never applied.
@@ -120,7 +127,7 @@
   $effect(() => {
     const store = workerEventStore
     if (isGCServ && regionId && nodeId) {
-      untrack(() => store.fetchEvents())
+      untrack(() => { store.fetchEvents(); store.fetchGoals() })
     }
     return () => untrack(() => {
       store.reset()
@@ -657,10 +664,11 @@
         </CardHeader>
         <CardContent class="pt-0 space-y-4">
           <FilterPanel>
-            <Input
-              value={workerEventStore.goalFilter}
-              oninput={(e: Event) => workerEventStore.setGoalFilter((e.currentTarget as HTMLInputElement).value)}
+            <Combobox
+              options={goalOptions}
+              bind:value={() => workerEventStore.goalFilter, (v) => workerEventStore.setGoalFilter(v)}
               placeholder="Filter by goal"
+              emptyText="No goals recorded for this node"
               aria-label="Filter by goal"
               class="h-8 w-80 text-sm"
             />
