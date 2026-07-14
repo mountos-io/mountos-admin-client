@@ -1,6 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
-  import { onDestroy } from 'svelte'
+  import { onDestroy, untrack } from 'svelte'
   import { useNodes } from '$lib/core/stores/nodes.svelte'
   import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { useStorages } from '$lib/core/stores/storages.svelte'
@@ -15,7 +15,9 @@
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import { Input } from '$lib/components/ui/input'
+  import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
+  import InfoTip from '$lib/components/shared/InfoTip.svelte'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
@@ -108,12 +110,19 @@
     return () => store.reset()
   })
 
+  // fetchEvents() reads goalFilter/sidFilter/sinceFilter/page synchronously
+  // (before its first await), so calling it untracked keeps this effect's
+  // dependencies limited to isGCServ/regionId/nodeId -- otherwise every
+  // filter change (typed or selected) would itself be read as a dependency,
+  // re-running this effect's cleanup (which resets those same filters) right
+  // after the store's own setter just applied them. Same class of bug as
+  // RegionTopology's fetchNodes/clearFilters loop.
   $effect(() => {
     const store = workerEventStore
     if (isGCServ && regionId && nodeId) {
-      store.fetchEvents()
+      untrack(() => store.fetchEvents())
     }
-    return () => {
+    return () => untrack(() => {
       store.reset()
       // sidFilterInput/sidFilterInvalid mirror the store's sidFilter locally
       // (for invalid-keystroke feedback) and aren't covered by store.reset()
@@ -122,7 +131,7 @@
       // filter value that no longer applies to the new node.
       sidFilterInput = ''
       sidFilterInvalid = false
-    }
+    })
   })
 
   $effect(() => {
@@ -647,44 +656,47 @@
           <CardTitle class="text-base">Worker Events</CardTitle>
         </CardHeader>
         <CardContent class="pt-0 space-y-4">
-          <div class="flex flex-wrap items-center gap-2">
+          <FilterPanel>
             <Input
               value={workerEventStore.goalFilter}
               oninput={(e: Event) => workerEventStore.setGoalFilter((e.currentTarget as HTMLInputElement).value)}
               placeholder="Filter by goal"
               aria-label="Filter by goal"
-              class="h-8 w-40 text-sm"
+              class="h-8 w-80 text-sm"
             />
             <div class="flex flex-col gap-1">
-              <Input
-                type="number"
-                min="1"
-                step="1"
-                value={sidFilterInput}
-                oninput={(e: Event) => {
-                  const v = (e.currentTarget as HTMLInputElement).value
-                  sidFilterInput = v
-                  if (v === '') {
-                    sidFilterInvalid = false
-                    workerEventStore.setSidFilter(undefined)
-                    return
-                  }
-                  const n = Number(v)
-                  if (Number.isSafeInteger(n) && n > 0) {
-                    sidFilterInvalid = false
-                    workerEventStore.setSidFilter(n)
-                  } else {
-                    // Reject silently-stale state: an invalid keystroke must
-                    // not leave the box showing a value that was never
-                    // applied to the filter, so surface it instead.
-                    sidFilterInvalid = true
-                  }
-                }}
-                placeholder="Filter by volume (sid)"
-                aria-label="Filter by volume (sid)"
-                aria-invalid={sidFilterInvalid}
-                class="h-8 w-44 text-sm"
-              />
+              <div class="flex items-center gap-1">
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={sidFilterInput}
+                  oninput={(e: Event) => {
+                    const v = (e.currentTarget as HTMLInputElement).value
+                    sidFilterInput = v
+                    if (v === '') {
+                      sidFilterInvalid = false
+                      workerEventStore.setSidFilter(undefined)
+                      return
+                    }
+                    const n = Number(v)
+                    if (Number.isSafeInteger(n) && n > 0) {
+                      sidFilterInvalid = false
+                      workerEventStore.setSidFilter(n)
+                    } else {
+                      // Reject silently-stale state: an invalid keystroke must
+                      // not leave the box showing a value that was never
+                      // applied to the filter, so surface it instead.
+                      sidFilterInvalid = true
+                    }
+                  }}
+                  placeholder="Filter by volume ID"
+                  aria-label="Filter by volume ID"
+                  aria-invalid={sidFilterInvalid}
+                  class="h-8 w-52 text-sm"
+                />
+                <InfoTip text="The volume's numeric ID. Shown as **#4** in its breadcrumb (Dashboard > Volumes > #4) or its URL." />
+              </div>
               {#if sidFilterInvalid}
                 <span class="text-xs text-destructive">Enter a whole number ≥ 1</span>
               {/if}
@@ -709,7 +721,7 @@
                 Clear filters
               </Button>
             {/if}
-          </div>
+          </FilterPanel>
 
           {#if workerEventStore.loading && workerEventStore.events.length === 0}
             <TableSkeleton
@@ -742,7 +754,7 @@
                     <TableCell class="font-medium">{event.goal}</TableCell>
                     <TableCell class="hidden sm:table-cell">
                       {#if event.sid}
-                        <span class="font-mono">{event.subject ?? `sid ${event.sid}`}</span>
+                        <span class="font-mono">{event.subject ?? `#${event.sid}`}</span>
                       {:else}
                         <span class="text-muted-foreground">&mdash;</span>
                       {/if}

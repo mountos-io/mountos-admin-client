@@ -42,6 +42,7 @@
     type SortDir,
   } from "$lib/core/utils/metrics";
   import InfoTip from "$lib/components/shared/InfoTip.svelte";
+  import TextTooltip from "$lib/components/shared/TextTooltip.svelte";
   import BlockservStats from "$lib/components/shared/BlockservStats.svelte";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ChevronsDownUp from "@lucide/svelte/icons/chevrons-down-up";
@@ -740,13 +741,11 @@
                         >{val.toLocaleString()}</span
                       >
                     {:else if field === 'last_run_unix' && typeof val === 'number'}
-                      <span title={formatRelative(val)}>{formatUTCShort(val)}</span>
+                      <TextTooltip text={formatRelative(val)}>{formatUTCShort(val)}</TextTooltip>
                     {:else if field === 'last_duration_us' && typeof val === 'number'}
                       {formatUs(val)}
                     {:else if field === 'last_error'}
-                      <span class="text-destructive text-left block max-w-[280px] truncate" title={String(val)}
-                        >{val}</span
-                      >
+                      <TextTooltip text={String(val)} copyable align="left" class="text-destructive block max-w-lg truncate">{val}</TextTooltip>
                     {:else if typeof val === 'number'}
                       {val.toLocaleString()}
                     {:else}
