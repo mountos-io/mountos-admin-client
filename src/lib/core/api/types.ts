@@ -17,6 +17,7 @@ export type {
   CreateAccountRequest,
   EditAccountRequest,
   UpdateAccountQuotaRequest,
+  UpdateAccountMetadataRateLimitRequest,
   AddUserRequest,
   EditUserRequest,
   CreateRegionRequest,
