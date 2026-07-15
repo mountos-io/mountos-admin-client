@@ -433,8 +433,8 @@
 
     <!-- flow labels -->
     <text class="t-lbl" x="452" y="97">discovery</text>
-    <text class="t-lbl" x="452" y="329">metadata · srpc / noise</text>
-    <text class="t-lbl" x="452" y="649">block protocol</text>
+    <text class="t-lbl" x="452" y="329">metadata</text>
+    <text class="t-lbl" x="452" y="649">block i/o</text>
     <text class="t-lbl" x="660" y="907">chunks · direct to object storage</text>
     <text class="t-lbl" x="1190" y="649" text-anchor="end">persist chunks</text>
 
@@ -443,7 +443,7 @@
       <circle cx="46" cy="816" r="4" fill="var(--sm-c-meta)" />
       <text class="t-lbl" x="58" y="820">metadata</text>
       <circle cx="216" cy="816" r="4" fill="var(--sm-c-block)" />
-      <text class="t-lbl" x="228" y="820">block protocol</text>
+      <text class="t-lbl" x="228" y="820">block i/o</text>
       <circle cx="46" cy="846" r="4" fill="var(--sm-c-object)" />
       <text class="t-lbl" x="58" y="850">object parts</text>
       <circle cx="216" cy="846" r="4" fill="var(--sm-c-ctrl)" opacity="0.6" />
