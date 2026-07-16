@@ -13,7 +13,14 @@
   } = $props()
 
   const hasDiskUsage = $derived(samples.some(s => (s.diskTotalBytes ?? 0) > 0))
+  // DB metrics only arrive from DB-backed services (dataserv/gcserv/appserv).
+  const hasDB = $derived(samples.some(s => (s.dbConnsMax ?? 0) > 0))
+  const dbConnsMax = $derived(Math.max(0, ...samples.map(s => s.dbConnsMax ?? 0)))
   const intervalLabel = $derived(intervalMs > 0 ? `${Math.round(intervalMs / 1000)}s` : '')
+
+  function fmtLatencyUs(v: number): string {
+    return v >= 1000 ? `${(v / 1000).toFixed(2)}ms` : `${Math.round(v)}µs`
+  }
 
   // Load average normalized to core count reads as % of CPU capacity, which
   // is comparable across nodes; raw load is only a fallback when the core
@@ -168,11 +175,14 @@
   unit: string,
   series: { label: string; color: string; values: number[] }[],
   fmt: (v: number) => string,
+  ceiling: { label: string; value: number } | null = null,
 )}
   {@const disabled = disabledByTile.get(tile) ?? new Set<string>()}
   {@const visible = series.filter(s => !disabled.has(s.label))}
   {@const len = samples.length}
-  {@const [min, max] = bounds(...visible.map(s => s.values))}
+  <!-- The ceiling joins the bounds so a reference line above the data max
+       is never clipped off the top of the auto-scaled plot. -->
+  {@const [min, max] = bounds(...visible.map(s => s.values), ceiling ? [ceiling.value] : [])}
   {@const validIndex = sharedIndex !== null && sharedIndex < len ? sharedIndex : null}
   {@const crosshairX = validIndex !== null && visible.length > 0 ? xFor(validIndex, len) : null}
   {@const vi = validIndex ?? len - 1}
@@ -216,6 +226,15 @@
           {#each xTickIndexes(len) as ti (ti)}
             <line x1={xFor(ti, len)} y1={PY + PH} x2={xFor(ti, len)} y2={H} stroke="currentColor" opacity="0.25" />
           {/each}
+          {#if ceiling && visible.length > 0}
+            {@const cy = yFor(ceiling.value, min, max)}
+            <!-- Label sits below the line when the ceiling defines the plot
+                 top (its usual position, since it joins bounds()); above-line
+                 placement there would clip out of the viewBox. -->
+            {@const labelY = cy < PY + 14 ? cy + 12 : cy - 4}
+            <line x1={PX} y1={cy} x2={PX + PW} y2={cy} stroke="currentColor" opacity="0.45" stroke-dasharray="6 4" />
+            <text x={PX + PW - 4} y={labelY} text-anchor="end" fill="currentColor" opacity="0.6" font-size="10" font-family="var(--font-mono, monospace)">{ceiling.label} {fmt(ceiling.value)}</text>
+          {/if}
           {#each visible as s, si (si)}
             {@const d = pathFor(s.values, min, max)}
             <path d={areaFor(d, s.values.length)} fill={s.color} opacity="0.06" />
@@ -337,6 +356,22 @@
         {@render chartTile('procs', 'Process Count', 'count', [
           { label: 'processes', color: 'var(--fork-0)', values: samples.map(s => s.processCount) },
         ], v => Math.round(v).toString())}
+
+        {#if hasDB}
+          {@render chartTile('db-latency', 'DB Latency', 'decayed avg', [
+            { label: '1m', color: 'var(--fork-0)', values: samples.map(s => s.dbLatency1mUs ?? 0) },
+            { label: '5m', color: 'var(--fork-1)', values: samples.map(s => s.dbLatency5mUs ?? 0) },
+            { label: '15m', color: 'var(--fork-2)', values: samples.map(s => s.dbLatency15mUs ?? 0) },
+          ], fmtLatencyUs)}
+
+          {@render chartTile('db-qps', 'DB Throughput', 'queries/s', [
+            { label: 'queries', color: 'var(--fork-0)', values: samples.map(s => s.dbQueriesPerSec ?? 0) },
+          ], v => v >= 100 ? Math.round(v).toString() : v.toFixed(1))}
+
+          {@render chartTile('db-conns', 'DB Concurrency', 'connections', [
+            { label: 'in use', color: 'var(--fork-0)', values: samples.map(s => s.dbConnsInUse ?? 0) },
+          ], v => Math.round(v).toString(), { label: 'max', value: dbConnsMax })}
+        {/if}
       </div>
     {/if}
   </CardContent>
