@@ -220,6 +220,7 @@ export function fmtScalar(name: string, value: number | string): string {
     return value
   }
   if (name.endsWith('_bytes') || scalarByteKeys.has(name)) return formatBytes(value)
+  if (name.endsWith('_us')) return formatUs(value)
   if (name.endsWith('_pct')) return `${value}%`
   if (name.endsWith('_ratio')) return value.toFixed(4)
   if (name === 'pid' || name === 'view_mode' || scalarIdSuffixes.some(s => name.endsWith(s))) return String(value)

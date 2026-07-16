@@ -135,6 +135,32 @@
   const SCALAR_SECTION_HINTS: Record<string, string> = {
     'Segment Retry': "Segment-layer S3 retry and budget signals from the shared object-storage reader/writer. **Retry Throttled** and **Retry Exhausted** indicate real S3-side friction. **Budget Starved Fetches** counts ops that started with under 2s left on their caller's deadline (e.g. a table's compaction budget). This is an early-warning signal that fires before anything actually fails.",
     'Iceberg Compact Circuit Breaker': "Counts Iceberg tables currently paused from compaction after failing their 5-minute per-table budget on 3 consecutive passes. A paused table is skipped until a periodic reset gives it another chance, so compaction doesn't waste a whole cycle retrying a table that can't finish in time.",
+    'TCP Backpressure': "Self-tuning admission control for the node's TCP server, in the style of gradient concurrency-limiting (TCP Vegas). There is no fixed latency target: connection and RPS ceilings shrink when recent DB latency degrades against its own 15-minute baseline. Below the connection ceiling requests are **delayed**, never dropped.",
+    'DB-Bound Admission Gate': "Token-bucket gate on requests that actually need the database; cache-servable reads bypass it. Unlike TCP backpressure (which delays), this gate **rejects outright** once the budget is spent. Its rate is never configured: every 10s it is re-derived from Little's Law (pool size ÷ measured query latency, at 70% utilization), then pulled down further by the end-to-end request-time gradient.",
+  }
+
+  // Per-field explainer bulbs inside scalar cards, keyed by section → field.
+  const SCALAR_FIELD_HINTS: Record<string, Record<string, string>> = {
+    'Raft': {
+      raft_cluster_nodes: "Ideal Raft cluster size is **3 instances** for quorum. Fewer than 3 reduces fault tolerance; more than 3 adds coordination overhead or signals nodes joined under a wrong cluster ID.",
+    },
+    'TCP Backpressure': {
+      tcp_bp_adaptive_connections: "**true**: the connection ceiling self-tunes from the latency gradient (no static max-connections override). **false**: a fixed operator-configured ceiling is in force.",
+      tcp_bp_effective_max_connections: "Connection ceiling currently in force. Under degradation the adaptive ceiling shrinks by the gradient (up to 10×), floored at 10% of the structural default of 10,000. Connections beyond it are refused at accept.",
+      tcp_bp_adaptive_rps: "**true**: the per-connection request rate self-tunes from the latency gradient (no static RPS override). **false**: a fixed operator-configured rate is in force.",
+      tcp_bp_effective_rps: "Per-connection requests/second cap currently in force (structural default 1,000). Refreshed after every gradient recompute and pushed to already-open connections. Exceeding it delays the request, it is not dropped.",
+      tcp_bp_gradient: "Ratio of the 1-minute EWMA of DB query latency to its 15-minute baseline, recomputed every 10s.\n**≈1** stable · **>1** degrading: ceilings divide by it (clamped to 10×) · **<1** recovering, treated as neutral; limits never grow above their defaults.",
+      tcp_bp_connections_rejected_total: "Cumulative TCP connections refused at accept because the effective max-connections ceiling was crossed, the only hard reject in this layer. **Any nonzero value means clients were turned away.**",
+    },
+    'DB-Bound Admission Gate': {
+      db_admission_pool_size: "Live max-open-connections of the SQL pool: the concurrency term of the Little's Law rate derivation.",
+      db_admission_avg_latency_us: "Recent delta-measured average DB query latency (SQL execution only): the latency term of Little's Law.",
+      db_admission_request_latency_us: "1-minute EWMA of **end-to-end** request time (lock waits, cache fills, scheduling, not just SQL). Feeds the request gradient once it crosses the 50ms activation floor.",
+      db_admission_request_gradient: "1m/15m ratio of end-to-end request time; divides the target rate when **>1** (capped at 10). Stays **1 (neutral)** until the 1-minute average exceeds 50ms, so a fast system is never throttled on ratio alone.",
+      db_admission_target_rate: "Derived admission rate in DB-bound requests/second: pool size ÷ avg query latency × 0.70 utilization ÷ request gradient. The 30% headroom keeps steady state below the pool's saturation alert thresholds.",
+      db_admission_burst: "Flat token-bucket burst: a spike of this many DB-bound requests is absorbed before the steady rate applies. Deliberately not rate-proportional so the absorbed spike size stays stable as the rate adapts.",
+      db_admission_rejected_total: "Cumulative DB-bound requests rejected because the token bucket was empty. Each rejection window also raises a backpressure alert that self-resolves after 60s of quiet. **Nonzero means real load shedding occurred.**",
+    },
   }
 
   // Anomaly color for specific scalar fields where a nonzero value signals
@@ -149,7 +175,22 @@
     if (sectionName === 'Iceberg Compact Circuit Breaker' && fieldName === 'iceberg_compact_circuit_open_tables' && value > 0) {
       return 'var(--destructive)'
     }
+    // Rejects are shed work: connection-level refusal turns clients away
+    // entirely (error), request-level admission shedding degrades but keeps
+    // the connection alive (warn, matching the server's own alert severity).
+    if (sectionName === 'TCP Backpressure' && fieldName === 'tcp_bp_connections_rejected_total' && value > 0) {
+      return 'var(--destructive)'
+    }
+    if (sectionName === 'DB-Bound Admission Gate' && fieldName === 'db_admission_rejected_total' && value > 0) {
+      return 'var(--warning)'
+    }
     return null
+  }
+
+  // _us fields render their value via formatUs (µs/ms), so the label drops
+  // the unit token instead of showing a redundant "us".
+  function scalarLabel(name: string): string {
+    return (name.endsWith('_us') ? name.slice(0, -3) : name).replaceAll('_', ' ')
   }
 
   function numVal(sec: MetricSection, key: string): number {
@@ -688,11 +729,12 @@
         {#each sec.scalars as entry}
           {@const isRaftNodes = sec.name === 'Raft' && entry.name === 'raft_cluster_nodes' && typeof entry.value === 'number'}
           {@const anomalyColor = typeof entry.value === 'number' ? scalarAnomalyColor(sec.name, entry.name, entry.value) : null}
+          {@const fieldHint = SCALAR_FIELD_HINTS[sec.name]?.[entry.name]}
           <div class="flex justify-between gap-2">
             <span class="text-muted-foreground shrink-0 scalar-label inline-flex items-center gap-1">
-              {entry.name.replaceAll('_', ' ')}
-              {#if isRaftNodes}
-                <InfoTip text="Ideal Raft cluster size is **3 instances** for quorum. Fewer than 3 reduces fault tolerance; more than 3 adds coordination overhead or signals nodes joined under a wrong cluster ID." />
+              {scalarLabel(entry.name)}
+              {#if fieldHint}
+                <InfoTip text={fieldHint} />
               {/if}
             </span>
             <span
@@ -1299,13 +1341,12 @@
     --_tab-bracket: oklch(0.4 0.002 200 / 0.5);
     --_tab-line: oklch(0.4 0.08 200);
     --_tab-line-hover: oklch(0.45 0.08 200);
-    --_tab-line-active: oklch(0.65 0.18 45);
+    --_tab-line-active: var(--ring);
   }
   :global(.dark) .tab-bar {
     --_tab-bracket: oklch(0.35 0.002 200 / 0.5);
     --_tab-line: oklch(0.5 0.08 200);
     --_tab-line-hover: oklch(0.55 0.08 200);
-    --_tab-line-active: oklch(0.78 0.13 92);
   }
   .toggle-group {
     --_toggle-bg: oklch(0.4 0.002 200 / 0.06);
@@ -1428,7 +1469,7 @@
   }
 
   .toggle-btn:focus-visible {
-    box-shadow: inset 0 0 0 1.5px var(--_tab-line-active, oklch(0.65 0.18 45));
+    box-shadow: inset 0 0 0 1.5px var(--ring);
   }
 
   .toggle-active {

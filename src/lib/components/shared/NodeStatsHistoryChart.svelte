@@ -16,6 +16,7 @@
   // DB metrics only arrive from DB-backed services (dataserv/gcserv/appserv).
   const hasDB = $derived(samples.some(s => (s.dbConnsMax ?? 0) > 0))
   const dbConnsMax = $derived(Math.max(0, ...samples.map(s => s.dbConnsMax ?? 0)))
+  const latestSample = $derived(samples.length > 0 ? samples[samples.length - 1] : null)
   const intervalLabel = $derived(intervalMs > 0 ? `${Math.round(intervalMs / 1000)}s` : '')
 
   function fmtLatencyUs(v: number): string {
@@ -176,6 +177,7 @@
   series: { label: string; color: string; values: number[] }[],
   fmt: (v: number) => string,
   ceiling: { label: string; value: number } | null = null,
+  extra: { label: string; value: string }[] = [],
 )}
   {@const disabled = disabledByTile.get(tile) ?? new Set<string>()}
   {@const visible = series.filter(s => !disabled.has(s.label))}
@@ -198,6 +200,15 @@
             {fmt(s.values[s.values.length - 1] ?? 0)}
           </span>
         {/each}
+        {#if extra.length > 0}
+          <!-- Current point-in-time stats, not plotted as lines (e.g. DB
+               connections' idle/free alongside the decayed in-use series). -->
+          <span class="flex items-center gap-2.5 text-xs font-normal text-muted-foreground border-l border-border pl-3">
+            {#each extra as e, ei (ei)}
+              <span>{e.label} <span class="text-foreground font-semibold">{e.value}</span></span>
+            {/each}
+          </span>
+        {/if}
       </span>
     </div>
     <div class="grid grid-cols-[4rem_minmax(0,1fr)] gap-x-2 gap-y-1">
@@ -368,9 +379,15 @@
             { label: 'queries', color: 'var(--fork-0)', values: samples.map(s => s.dbQueriesPerSec ?? 0) },
           ], v => v >= 100 ? Math.round(v).toString() : v.toFixed(1))}
 
-          {@render chartTile('db-conns', 'DB Concurrency', 'connections', [
-            { label: 'in use', color: 'var(--fork-0)', values: samples.map(s => s.dbConnsInUse ?? 0) },
-          ], v => Math.round(v).toString(), { label: 'max', value: dbConnsMax })}
+          {@render chartTile('db-conns', 'DB Concurrency', 'decayed avg', [
+            { label: '1m', color: 'var(--fork-0)', values: samples.map(s => s.dbConnsInUse1m ?? 0) },
+            { label: '5m', color: 'var(--fork-1)', values: samples.map(s => s.dbConnsInUse5m ?? 0) },
+            { label: '15m', color: 'var(--fork-2)', values: samples.map(s => s.dbConnsInUse15m ?? 0) },
+          ], v => Math.round(v).toString(), { label: 'max', value: dbConnsMax }, [
+            { label: 'in use', value: String(latestSample?.dbConnsInUse ?? 0) },
+            { label: 'idle', value: String(latestSample?.dbConnsIdle ?? 0) },
+            { label: 'free', value: String(latestSample?.dbConnsFree ?? 0) },
+          ])}
         {/if}
       </div>
     {/if}
