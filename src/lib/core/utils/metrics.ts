@@ -330,6 +330,13 @@ export function poolUtilColor(pct: number): string {
   if (pct < 80) return 'var(--warning)'
   return 'var(--destructive)'
 }
+// EWMA/baseline ratio (TCP backpressure, DB admission gradients): ~1 is
+// stable, <1 recovering (treated as neutral), >1 degrading toward the 10x clamp.
+export function gradientColor(g: number): string {
+  if (g > 1.25) return 'var(--destructive)'
+  if (g > 1.0) return 'var(--warning)'
+  return 'var(--success)'
+}
 
 // Client process resident-memory pressure bands. Calibrated for FUSE
 // clients (mfuse, fuseserv, hdfs-sdk) which legitimately hold large

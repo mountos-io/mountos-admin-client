@@ -34,6 +34,7 @@
     latencyColor,
     cvVariant,
     poolUtilColor,
+    gradientColor,
     bucketBarColor,
     recordFieldLabel,
     type MetricSection,
@@ -167,6 +168,7 @@
   // real friction or a stuck state, not just routine activity. Returns null
   // for the common case (default muted/foreground styling).
   function scalarAnomalyColor(sectionName: string, fieldName: string, value: number): string | null {
+    if (fieldName.endsWith('_gradient')) return gradientColor(value)
     if (sectionName === 'Segment Retry') {
       if (fieldName === 'retry_exhausted' && value > 0) return 'var(--destructive)'
       if (fieldName === 'retry_throttled' && value > 0) return 'var(--warning)'
@@ -226,6 +228,11 @@
   const dbInUse = $derived(sv(sections, "DB Pool", "db_in_use"));
   const dbIdle = $derived(sv(sections, "DB Pool", "db_idle"));
   const dbWaitCount = $derived(sv(sections, "DB Pool", "db_wait_count"));
+  // Why the pool closed connections. Absent on servers older than these keys,
+  // where sv yields 0 and the row reads as "no churn" rather than breaking.
+  const dbMaxIdleClosed = $derived(sv(sections, "DB Pool", "db_max_idle_closed"));
+  const dbMaxIdleTimeClosed = $derived(sv(sections, "DB Pool", "db_max_idle_time_closed"));
+  const dbMaxLifetimeClosed = $derived(sv(sections, "DB Pool", "db_max_lifetime_closed"));
 
   const memAllocPct = $derived(
     memSys > 0 ? Math.round((memAlloc / memSys) * 100) : 0,
@@ -235,15 +242,18 @@
   );
 
   // MetaEngine Arena (mmap'd, not GC-managed)
-  // region_size_bytes = total mmap allocation (static), region_used_bytes = bump allocator pos (frozen after init)
-  // Actual live usage: slot_occupied / slot_capacity (occupancy_pct)
+  // region_size_bytes = total mmap budget, region_used_bytes = bytes handed
+  // out as extents (shards grow/shrink on demand; one hot volume may take
+  // the whole budget). Live usage: slot_occupied / slot_capacity.
   const arenaSection = $derived(sections.find(s => s.name === 'MetaEngine Arena' && s.kind === 'scalar'));
   const arenaShards = $derived(arenaSection ? numVal(arenaSection, 'shards') : 0);
   const slotCapacity = $derived(arenaSection ? numVal(arenaSection, 'slot_capacity') : 0);
   const slotOccupied = $derived(arenaSection ? numVal(arenaSection, 'slot_occupied') : 0);
   const occupancyPct = $derived(slotCapacity > 0 ? Math.round((slotOccupied / slotCapacity) * 100) : 0);
   const regionSize = $derived(arenaSection ? numVal(arenaSection, 'region_size_bytes') : 0);
-  const evictCount = $derived(arenaSection ? numVal(arenaSection, 'evict_count') : 0);
+  // capacity_evictions counts real pressure evictions; the legacy
+  // evict_count key only ever tracked the external EvictN API.
+  const evictCount = $derived(arenaSection ? numVal(arenaSection, 'capacity_evictions') : 0);
 
   // MetaEngine Name Pool
   const poolSection = $derived(sections.find(s => s.name === 'MetaEngine Name Pool' && s.kind === 'scalar'));
@@ -461,6 +471,18 @@
                     {dbWaitCount} waiting
                   </span>
                 {/if}
+              </div>
+            </div>
+
+            <!-- Why connections were closed. Idle-cap churn should stay 0: the
+                 pool pins max-idle to max-open, so a non-zero value means
+                 connections are being destroyed that could have been reused. -->
+            <div class="space-y-1.5">
+              <div class="text-sm font-mono text-muted-foreground tracking-wider uppercase">Closed</div>
+              <div class="flex flex-wrap gap-x-3 gap-y-0.5 text-sm font-mono text-muted-foreground">
+                <span class:text-warning={dbMaxIdleClosed > 0}>Idle cap {dbMaxIdleClosed}</span>
+                <span>Idle timeout {dbMaxIdleTimeClosed}</span>
+                <span>Lifetime {dbMaxLifetimeClosed}</span>
               </div>
             </div>
           {/if}
