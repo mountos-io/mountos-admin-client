@@ -7,6 +7,7 @@
   import { Button } from '$lib/components/ui/button'
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
+  import * as Dialog from '$lib/components/ui/dialog'
   import AccountIcon from '$lib/components/shared/AccountIcon.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
@@ -129,6 +130,7 @@
   let editQuotaGb = $state('')
   let editExcessPct = $state('')
   let quotaSubmitting = $state(false)
+  let quotaLimitInputEl = $state<HTMLInputElement | null>(null)
 
   function startQuotaEdit() {
     if (!account) return
@@ -157,40 +159,6 @@
     }
   }
 
-  let editingRateLimit = $state(false)
-  let editRateLimitPerMinute = $state('')
-  let editMaxRequestsPerSecond = $state('')
-  let rateLimitSubmitting = $state(false)
-
-  function startRateLimitEdit() {
-    if (!account) return
-    editRateLimitPerMinute = String(account.metadataRateLimitPerMinute)
-    // -1 means "never configured, using the platform default" -- not a
-    // valid input value (the field requires min="0"), so the edit form
-    // starts from 0 (unlimited) rather than showing a negative sentinel.
-    editMaxRequestsPerSecond = account.metadataMaxRequestsPerSecond < 0 ? '0' : String(account.metadataMaxRequestsPerSecond)
-    editingRateLimit = true
-  }
-
-  async function handleRateLimitUpdate(e: Event) {
-    e.preventDefault()
-    rateLimitSubmitting = true
-    try {
-      const perMinute = Number(editRateLimitPerMinute)
-      const perSecond = Number(editMaxRequestsPerSecond)
-      await store.updateMetadataRateLimit(id, {
-        rateLimitPerMinute: isNaN(perMinute) || perMinute < 0 ? 0 : Math.round(perMinute),
-        maxRequestsPerSecond: isNaN(perSecond) || perSecond < 0 ? 0 : Math.round(perSecond),
-      })
-      account = await store.getAccount(id)
-      editingRateLimit = false
-      showSuccessToast('Account metadata rate limit updated')
-    } catch (err: unknown) {
-      handleApiError(err, 'Failed to update account metadata rate limit')
-    } finally {
-      rateLimitSubmitting = false
-    }
-  }
 </script>
 
 <svelte:head><title>{account?.name ?? 'Account'} · mountOS Admin</title></svelte:head>
@@ -207,9 +175,9 @@
   </div>
 
   {#if loading}
-    <DetailSkeleton gridCols={2} cards={[{ rows: 3, cols: 1 }, { rows: 3, cols: 1 }]} />
+    <DetailSkeleton gridCols={1} cards={[{ rows: 4, cols: 1 }, { rows: 2, cols: 1 }]} />
   {:else if account}
-    <div class="grid gap-6 md:grid-cols-2">
+    <div class="grid gap-6">
       <Card cornerBrackets>
         {#if editing}
           <form onsubmit={handleUpdate} class="flex flex-col gap-6">
@@ -279,6 +247,35 @@
                 <dt class="text-sm font-medium text-muted-foreground">Created</dt>
                 <dd class="mt-1 text-sm">{formatDate(account.createdAt)}</dd>
               </div>
+              <div>
+                <dt class="text-sm font-medium text-muted-foreground flex items-center gap-1">
+                  <span class="flex-1 inline-flex items-center gap-1">
+                    Quota
+                    {#if account.quotaExcessPct > 0}
+                      <Badge variant="outline" class="text-xs">+{account.quotaExcessPct}% excess</Badge>
+                    {/if}
+                  </span>
+                  {#if auth.can('accounts', 'update') && account.isActive}
+                    <button
+                      type="button"
+                      onclick={startQuotaEdit}
+                      class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-60 hover:opacity-100 hover:text-primary transition-[color,opacity] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
+                      title="Edit quota" aria-label="Edit account quota"
+                    >
+                      <PencilIcon class="size-3.5" aria-hidden="true" />
+                    </button>
+                  {/if}
+                </dt>
+                <dd class="mt-1 font-mono text-sm">{formatQuota(account.totalVolume, account.quotaLimit)}</dd>
+                {#if account.quotaLimit > 0}
+                  {@const pct = quotaPercent(account.totalVolume, account.quotaLimit)}
+                  <div class="mt-2 h-1.5 w-full rounded-sm bg-muted overflow-hidden" role="progressbar"
+                    aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
+                    aria-label="Account quota usage {pct}%">
+                    <div class="h-full rounded-sm transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
+                  </div>
+                {/if}
+              </div>
             </dl>
           </CardContent>
           {#if auth.can('accounts', 'update')}
@@ -298,142 +295,6 @@
         {/if}
       </Card>
 
-      <Card cornerBrackets>
-        {#if editingQuota}
-          <form onsubmit={handleQuotaUpdate} class="flex flex-col gap-6">
-            <CardHeader><CardTitle>Edit Account Quota</CardTitle></CardHeader>
-            <CardContent class="space-y-5">
-              <div class="space-y-2">
-                <Label for="edit-quota-limit" class="inline-flex items-center gap-1">
-                  Quota Limit (GB)
-                  <InfoTip text="Account-wide hard cap in GB across all volumes. 0 = unlimited. Enforced on total volume, independent of per-volume quotas." />
-                </Label>
-                <Input id="edit-quota-limit" type="number" bind:value={editQuotaGb} placeholder="0 = unlimited" min="0" step="0.01" />
-              </div>
-              <div class="space-y-2">
-                <Label for="edit-excess-pct" class="inline-flex items-center gap-1">
-                  Excess Allowed (%)
-                  <InfoTip text="Whole-number percentage of headroom allowed above the limit before writes are blocked. 0 = no excess (hard cap exactly at limit)." />
-                </Label>
-                <Input id="edit-excess-pct" type="number" bind:value={editExcessPct} placeholder="0" min="0" max="1000" step="1" />
-              </div>
-            </CardContent>
-            <CardFooter class="gap-4">
-              <Button variant="primary" type="submit" size="sm" class="cyberpunk-skewed-sm" disabled={quotaSubmitting}>
-                {quotaSubmitting ? 'Updating...' : 'Update'}
-              </Button>
-              <Button variant="secondary" size="sm" type="button" onclick={() => editingQuota = false} disabled={quotaSubmitting}>Cancel</Button>
-            </CardFooter>
-          </form>
-        {:else}
-          <CardHeader>
-            <div class="flex items-center gap-3">
-              <CardTitle class="flex-1">Quota</CardTitle>
-              {#if auth.can('accounts', 'update') && account.isActive}
-                <button
-                  type="button"
-                  onclick={startQuotaEdit}
-                  class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-60 hover:opacity-100 hover:text-primary transition-[color,opacity] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
-                  title="Edit quota" aria-label="Edit account quota"
-                >
-                  <PencilIcon class="size-4" aria-hidden="true" />
-                </button>
-              {/if}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <dl class="space-y-3">
-              <div>
-                <dt class="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
-                  Usage
-                  {#if account.quotaExcessPct > 0}
-                    <Badge variant="outline" class="text-xs">+{account.quotaExcessPct}% excess</Badge>
-                  {/if}
-                </dt>
-                <dd class="mt-1 font-mono text-sm">{formatQuota(account.totalVolume, account.quotaLimit)}</dd>
-                {#if account.quotaLimit > 0}
-                  {@const pct = quotaPercent(account.totalVolume, account.quotaLimit)}
-                  <div class="mt-2 h-1.5 w-full rounded-sm bg-muted overflow-hidden" role="progressbar"
-                    aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
-                    aria-label="Account quota usage {pct}%">
-                    <div class="h-full rounded-sm transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
-                  </div>
-                {/if}
-              </div>
-            </dl>
-          </CardContent>
-        {/if}
-      </Card>
-
-      <Card cornerBrackets>
-        {#if editingRateLimit}
-          <form onsubmit={handleRateLimitUpdate} class="flex flex-col gap-6">
-            <CardHeader><CardTitle>Edit Metadata Rate Limit</CardTitle></CardHeader>
-            <CardContent class="space-y-5">
-              <div class="space-y-2">
-                <Label for="edit-rate-limit-per-minute" class="inline-flex items-center gap-1">
-                  Metadata Requests / Minute
-                  <InfoTip text="Caps metadata requests (dataserv's TCP protocol, not block/data I/O) per volume+user pair within a fixed one-minute window. 0 = unlimited." />
-                </Label>
-                <Input id="edit-rate-limit-per-minute" type="number" bind:value={editRateLimitPerMinute} placeholder="0 = unlimited" min="0" step="1" />
-              </div>
-              <div class="space-y-2">
-                <Label for="edit-max-requests-per-second" class="inline-flex items-center gap-1">
-                  Metadata Requests / Second (node-wide)
-                  <InfoTip text="Node-wide metadata backpressure ceiling applied to every connection on this account's dataserv node. 0 = unlimited. Before this is ever set, the node uses the platform's own default ceiling -- setting it here always takes an explicit value (including 0), it can't be reset back to 'unset'." />
-                </Label>
-                <Input id="edit-max-requests-per-second" type="number" bind:value={editMaxRequestsPerSecond} placeholder="0 = unlimited" min="0" step="1" />
-              </div>
-            </CardContent>
-            <CardFooter class="gap-4">
-              <Button variant="primary" type="submit" size="sm" class="cyberpunk-skewed-sm" disabled={rateLimitSubmitting}>
-                {rateLimitSubmitting ? 'Updating...' : 'Update'}
-              </Button>
-              <Button variant="secondary" size="sm" type="button" onclick={() => editingRateLimit = false} disabled={rateLimitSubmitting}>Cancel</Button>
-            </CardFooter>
-          </form>
-        {:else}
-          <CardHeader>
-            <div class="flex items-center gap-3">
-              <CardTitle class="flex-1 inline-flex items-center gap-1">
-                Metadata Rate Limit
-                <InfoTip text="Limits metadata requests only (dataserv's TCP protocol) -- block/data I/O is a separate service and is not affected by these limits." />
-              </CardTitle>
-              {#if auth.can('accounts', 'update') && account.isActive}
-                <button
-                  type="button"
-                  onclick={startRateLimitEdit}
-                  class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-60 hover:opacity-100 hover:text-primary transition-[color,opacity] focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-sm"
-                  title="Edit metadata rate limit" aria-label="Edit account metadata rate limit"
-                >
-                  <PencilIcon class="size-4" aria-hidden="true" />
-                </button>
-              {/if}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <dl class="space-y-3">
-              <div>
-                <dt class="text-sm font-medium text-muted-foreground">Per volume+user, per minute</dt>
-                <dd class="mt-1 font-mono text-sm">{account.metadataRateLimitPerMinute > 0 ? `${account.metadataRateLimitPerMinute} requests/min` : 'Unlimited'}</dd>
-              </div>
-              <div>
-                <dt class="text-sm font-medium text-muted-foreground">Node-wide, per second</dt>
-                <dd class="mt-1 font-mono text-sm">
-                  {#if account.metadataMaxRequestsPerSecond < 0}
-                    Using platform default
-                  {:else if account.metadataMaxRequestsPerSecond === 0}
-                    Unlimited
-                  {:else}
-                    {account.metadataMaxRequestsPerSecond} requests/sec
-                  {/if}
-                </dd>
-              </div>
-            </dl>
-          </CardContent>
-        {/if}
-      </Card>
-
       {#if account.providerInfo}
         <Card>
           <CardHeader><CardTitle>Provider Info</CardTitle></CardHeader>
@@ -445,7 +306,7 @@
     </div>
 
     {#if auth.can('auditLogs', 'read')}
-      <div class="grid gap-6 md:grid-cols-2">
+      <div class="grid gap-6">
         <Card>
           <CardHeader><CardTitle class="text-base font-mono">Activity</CardTitle></CardHeader>
           <CardContent class="pt-0">
@@ -465,3 +326,33 @@
 </div>
 
 <ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} variant={dialog.variant} onConfirm={dialog.action} />
+
+<Dialog.Root bind:open={editingQuota}>
+  <Dialog.Content class="sm:max-w-md" onOpenAutoFocus={(e) => { e.preventDefault(); quotaLimitInputEl?.focus() }}>
+    <Dialog.Header>
+      <Dialog.Title>Edit Account Quota</Dialog.Title>
+    </Dialog.Header>
+    <form onsubmit={handleQuotaUpdate} class="space-y-5">
+      <div class="space-y-2">
+        <Label for="edit-quota-limit" class="inline-flex items-center gap-1">
+          Quota Limit (GB)
+          <InfoTip text="Account-wide hard cap in GB across all volumes. 0 = unlimited. Enforced on total volume, independent of per-volume quotas." />
+        </Label>
+        <Input id="edit-quota-limit" bind:ref={quotaLimitInputEl} type="number" bind:value={editQuotaGb} placeholder="0 = unlimited" min="0" step="0.01" />
+      </div>
+      <div class="space-y-2">
+        <Label for="edit-excess-pct" class="inline-flex items-center gap-1">
+          Excess Allowed (%)
+          <InfoTip text="Whole-number percentage of headroom allowed above the limit before writes are blocked. 0 = no excess (hard cap exactly at limit)." />
+        </Label>
+        <Input id="edit-excess-pct" type="number" bind:value={editExcessPct} placeholder="0" min="0" max="1000" step="1" />
+      </div>
+      <Dialog.Footer class="gap-2">
+        <Button variant="secondary" type="button" onclick={() => editingQuota = false} disabled={quotaSubmitting}>Cancel</Button>
+        <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={quotaSubmitting}>
+          {quotaSubmitting ? 'Updating...' : 'Update'}
+        </Button>
+      </Dialog.Footer>
+    </form>
+  </Dialog.Content>
+</Dialog.Root>

@@ -163,13 +163,14 @@
 
   // The service's live "# Config" block (service, build time, go version, srpc port, ...)
   // folds into Node Info instead of its own card. "version" is dropped here since
-  // node.binaryVersion already surfaces as "Version" above.
+  // node.binaryVersion already surfaces as "Version" above; "go_version" carries no
+  // operator-actionable information and is dropped too.
   const configEntries = $derived.by<{ key: string; label: string; text: string }[]>(() => {
     if (!nodeStore.statsRaw) return []
     const configSection = parseMetrics(nodeStore.statsRaw).find(s => s.name === 'Config' && s.kind === 'scalar')
     if (!configSection) return []
     return configSection.scalars
-      .filter(e => e.name !== 'version')
+      .filter(e => e.name !== 'version' && e.name !== 'go_version')
       .map(e => ({ key: e.name, label: humanizeKey(e.name), text: fmtScalar(e.name, e.value) }))
   })
 

@@ -1,4 +1,4 @@
-import type { Account, CreateAccountRequest, EditAccountRequest, UpdateAccountQuotaRequest, UpdateAccountMetadataRateLimitRequest } from '$lib/core/api/types'
+import type { Account, CreateAccountRequest, EditAccountRequest, UpdateAccountQuotaRequest } from '$lib/core/api/types'
 import { api } from './client.svelte'
 
 let accounts = $state<Account[]>([])
@@ -54,12 +54,6 @@ async function updateQuota(id: number, req: UpdateAccountQuotaRequest) {
   return res
 }
 
-async function updateMetadataRateLimit(id: number, req: UpdateAccountMetadataRateLimitRequest) {
-  const res = await api.accounts.updateMetadataRateLimit(id, req)
-  await fetchAccounts({ page: currentPage })
-  return res
-}
-
 async function lockAccount(id: number) {
   await api.accounts.lock(id)
   await fetchAccounts({ page: currentPage })
@@ -93,7 +87,6 @@ export function useAccounts() {
     createAccount,
     editAccount,
     updateQuota,
-    updateMetadataRateLimit,
     lockAccount,
     unlockAccount,
     deactivateAccount,
