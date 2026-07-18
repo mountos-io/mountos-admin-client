@@ -217,7 +217,7 @@
     if (!node?.metadata) return []
     const meta = node.metadata
     return Object.keys(meta)
-      .filter((k) => k !== 'processId' && k !== 'commitHash')
+      .filter((k) => k !== 'processId' && k !== 'commitHash' && k !== 'metrics_port' && k !== 'metrics_path')
       .sort((a, b) => {
         const ia = META_ORDER.indexOf(a)
         const ib = META_ORDER.indexOf(b)
@@ -372,6 +372,27 @@
             <dt class="text-muted-foreground text-sm">Address</dt>
             <dd class="font-mono text-sm mt-0.5">{node.advertiseAddr}</dd>
           </div>
+          {#if node.metricsEndpoint}
+            <div class="col-span-full">
+              <dt class="text-muted-foreground text-sm">Metrics Endpoint</dt>
+              <dd class="mt-0.5">
+                <div class="flex items-center gap-1.5">
+                  <code class="font-mono text-sm break-all">{node.metricsEndpoint}</code>
+                  <Button
+                    variant="ghost" size="icon" class="h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-6 sm:min-w-6 shrink-0"
+                    aria-label={copiedKey === 'metricsEndpoint' ? 'Metrics Endpoint copied' : 'Copy Metrics Endpoint'}
+                    onclick={() => copyMeta('metricsEndpoint', node.metricsEndpoint ?? '')}
+                  >
+                    {#if copiedKey === 'metricsEndpoint'}
+                      <Check class="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                    {:else}
+                      <Copy class="h-3.5 w-3.5" aria-hidden="true" />
+                    {/if}
+                  </Button>
+                </div>
+              </dd>
+            </div>
+          {/if}
           <div>
             <dt class="text-muted-foreground text-sm">Last Heartbeat</dt>
             <dd class="text-sm mt-0.5">{node.lastHeartbeat ? formatRelative(node.lastHeartbeat) : '·'}</dd>
