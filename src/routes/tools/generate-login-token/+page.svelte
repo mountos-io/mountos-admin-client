@@ -132,7 +132,7 @@
           <h1 class="text-lg font-bold uppercase tracking-wide text-warning">Internal · Test Login-Token Generator</h1>
           <p class="mt-1 text-sm text-muted-foreground">
             Signs a short-lived provider JWT in your browser and builds a login URL for this origin.
-            Not linked from the app — for local development only.
+            Not linked from the app. For internal test only.
           </p>
         </div>
       </div>
@@ -198,7 +198,7 @@
       <Card>
         <CardHeader>
           <CardTitle>Login URL</CardTitle>
-          <CardDescription>Token expires 60 seconds after generation — regenerate if it lapses.</CardDescription>
+          <CardDescription>Token expires 60 seconds after generation. Regenerate if it lapses.</CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="rounded-sm border border-border bg-muted/40 px-3 py-2 font-mono text-xs break-all select-all">
