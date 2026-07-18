@@ -23,6 +23,10 @@
   const accountStore = useAccounts()
   const prefs = usePreferences()
 
+  // Routes rendered without the auth gate or app shell: /login, plus internal
+  // tools that must be reachable before sign-in (e.g. the login-token generator).
+  const CHROMELESS_ROUTES = new Set(['/login', '/tools/generate-login-token'])
+
   let { children } = $props()
   let exchanging = $state(false)
   let exchangeError = $state('')
@@ -99,8 +103,7 @@
   }
 
   $effect(() => {
-    const isLoginPage = $page.url.pathname === '/login'
-    if (isLoginPage || exchanging) return
+    if (CHROMELESS_ROUTES.has($page.url.pathname) || exchanging) return
 
     const providerToken = $page.url.searchParams.get('token')
     if (providerToken) {
@@ -144,7 +147,7 @@
       </button>
     </div>
   </div>
-{:else if $page.url.pathname === '/login'}
+{:else if CHROMELESS_ROUTES.has($page.url.pathname)}
   {#if children}{@render children()}{/if}
 {:else if auth.loading}
   <div class="flex h-screen items-center justify-center" role="status" aria-busy="true" aria-label="Authenticating">
