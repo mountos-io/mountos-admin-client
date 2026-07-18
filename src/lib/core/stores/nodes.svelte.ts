@@ -72,7 +72,7 @@ async function fetchAllNodes(accountId: number) {
   allNodesAccountId = accountId
   loading = true
   try {
-    nodes = await api.nodes.listAll(
+    nodes = await api.nodes.list(
       accountId,
       serviceType || undefined,
       statusFilter || undefined,

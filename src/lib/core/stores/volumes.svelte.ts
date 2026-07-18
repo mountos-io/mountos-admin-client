@@ -96,7 +96,7 @@ async function listForks(volumeId: number, volumeType?: string) {
 }
 
 async function listAllForks(volumeId: number, volumeType?: string) {
-  return api.volumes.listAllForks(volumeId, volumeType)
+  return api.volumes.listForks(volumeId, volumeType, true)
 }
 
 async function createFork(volumeId: number, req: CreateVolumeForkRequest) {

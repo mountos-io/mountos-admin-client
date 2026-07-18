@@ -31,7 +31,7 @@ export type {
   RegionClusterListOptions,
   CreateStorageRequest,
   EditStorageRequest,
-  TestStorageBucketRequest,
+  TestStorageNewBucketRequest,
   CompatibleStorage,
   CompatibleVolume,
   MoveStorageVolumesRequest,

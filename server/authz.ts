@@ -72,6 +72,7 @@ function requiredCap(method: string, path: string): number {
   switch (method) {
     case 'GET':
     case 'HEAD':
+    case 'QUERY':
       return Cap.R
     case 'PUT':
     case 'PATCH':

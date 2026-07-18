@@ -138,10 +138,10 @@ const summaryLoaded = $derived(globalSummary !== null)
 function buildListOptions(accountId: number): ClientSessionListOptions {
   const opts: ClientSessionListOptions = {
     accountId,
-    isActive: showInactive ? 'all' : 'true',
     page: displayPage,
     limit: PAGE_SIZE,
   }
+  if (!showInactive) opts.isActive = true
   // Defensive: validate against the dropdown allowlist before casting,
   // so any future URL-deserialization path can't smuggle a non-label
   // value (e.g. legacy numeric codes) into a typed SDK call.

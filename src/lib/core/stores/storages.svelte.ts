@@ -1,4 +1,4 @@
-import type { Storage, CreateStorageRequest, EditStorageRequest, TestStorageBucketRequest, MoveStorageVolumesRequest } from '$lib/core/api/types'
+import type { Storage, CreateStorageRequest, EditStorageRequest, TestStorageNewBucketRequest, MoveStorageVolumesRequest } from '$lib/core/api/types'
 import { api } from './client.svelte'
 
 let storages = $state<Storage[]>([])
@@ -74,8 +74,8 @@ async function deactivateStorage(id: number) {
   await api.storages.deactivate(id)
 }
 
-async function testBucket(req: TestStorageBucketRequest) {
-  return api.storages.testBucket(req)
+async function testBucket(req: TestStorageNewBucketRequest) {
+  return api.storages.testNewBucket(req)
 }
 
 async function testStorageBucket(id: number) {
