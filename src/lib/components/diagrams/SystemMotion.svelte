@@ -1,7 +1,22 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import Pause from '@lucide/svelte/icons/pause'
+  import Play from '@lucide/svelte/icons/play'
 
   let svgEl: SVGSVGElement
+  let paused = $state(false)
+  // false under prefers-reduced-motion: nothing animates, so hide the control
+  let animated = $state(false)
+
+  function onKeydown(e: KeyboardEvent) {
+    if (!animated || e.metaKey || e.ctrlKey || e.altKey) return
+    const t = e.target as HTMLElement | null
+    if (t?.isContentEditable || /^(input|textarea|select)$/i.test(t?.tagName ?? '')) return
+    if (e.key === 'i' || e.key === 'I') {
+      paused = !paused
+      e.preventDefault()
+    }
+  }
 
   onMount(() => {
     // ball colors resolve through the theme tokens on .system-motion
@@ -102,9 +117,14 @@
     if (reduced) {
       place(0)
     } else {
-      const t0 = performance.now()
+      animated = true
+      // accumulate elapsed time so a pause freezes the clock instead of jumping
+      let acc = 0
+      let last = performance.now()
       const tick = (now: number) => {
-        place((now - t0) / 1000)
+        if (!paused) acc += now - last
+        last = now
+        place(acc / 1000)
         raf = requestAnimationFrame(tick)
       }
       raf = requestAnimationFrame(tick)
@@ -117,7 +137,25 @@
   })
 </script>
 
+<svelte:window onkeydown={onKeydown} />
+
 <figure class="system-motion">
+  {#if animated}
+    <button
+      type="button"
+      class="ctl"
+      aria-pressed={paused}
+      aria-label={paused ? 'Resume motion' : 'Pause motion'}
+      title={paused ? 'Resume motion (i)' : 'Pause motion (i)'}
+      onclick={() => (paused = !paused)}
+    >
+      {#if paused}
+        <Play aria-hidden="true" />
+      {:else}
+        <Pause aria-hidden="true" />
+      {/if}
+    </button>
+  {/if}
   <svg
     bind:this={svgEl}
     viewBox="0 -130 1680 1075"
@@ -533,6 +571,34 @@
     width: 100%;
     height: auto;
     display: block;
+  }
+  .ctl {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: 6px;
+    border: 1px solid var(--sm-border);
+    background: var(--sm-panel);
+    color: var(--sm-dim);
+    cursor: pointer;
+  }
+  .ctl:hover {
+    color: var(--sm-ink);
+  }
+  .ctl:focus-visible {
+    outline: 2px solid var(--sm-blue);
+    outline-offset: 2px;
+  }
+  .ctl :global(svg) {
+    width: 16px;
+    height: 16px;
   }
   text {
     font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
