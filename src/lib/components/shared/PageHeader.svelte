@@ -14,7 +14,7 @@
 <div class="flex items-center justify-between gap-3">
   <h1 class="text-2xl font-bold tracking-tight">{title}</h1>
   {#if children || action}
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center justify-end gap-2">
       {@render children?.()}
       {#if action}
         <Button href={action.href} variant="primary" size="sm" class="gap-1.5 cyberpunk-skewed-sm">

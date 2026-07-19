@@ -26,7 +26,7 @@
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import RegionNodeList from '$lib/components/shared/RegionNodeList.svelte'
   import ClusterPicker from '$lib/components/shared/ClusterPicker.svelte'
-  import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
+  import { showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import { formatRelative, formatBinaryVersion } from '$lib/core/utils/format'
   import type { Region, ServiceNode } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
@@ -48,17 +48,11 @@
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
   import CheckCircle from '@lucide/svelte/icons/check-circle'
   import Loader2 from '@lucide/svelte/icons/loader-2'
-  import KeyRound from '@lucide/svelte/icons/key-round'
-  import Copy from '@lucide/svelte/icons/copy'
-  import Check from '@lucide/svelte/icons/check'
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
-  import * as Dialog from '$lib/components/ui/dialog'
   import { api } from '$lib/core/stores/client.svelte'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
-  import { copyText } from '$lib/core/utils/clipboard'
 
   let { regionId, basePath, initialTab }: { regionId: number; basePath: string; initialTab?: 'overview' | 'activity' | 'alerts' } = $props()
 
@@ -73,46 +67,6 @@
   const canEditRegion = $derived(auth.can('regions', 'update'))
   let resyncInFlight = $state(false)
   let regionMenuOpen = $state(false)
-
-  const METRICS_TOKEN_EXPIRY_OPTIONS = [
-    { label: 'Never expires', value: 0 },
-    { label: '1 day', value: 86400 },
-    { label: '7 days', value: 604800 },
-    { label: '30 days', value: 2592000 },
-  ]
-  let metricsTokenExpiry = $state(0)
-  let metricsTokenInFlight = $state(false)
-  let metricsTokenOpen = $state(false)
-  let metricsTokenResult = $state<{ token: string } | null>(null)
-  let copiedMetricsToken = $state(false)
-
-  async function generateMetricsToken() {
-    metricsTokenInFlight = true
-    try {
-      metricsTokenResult = await api.metrics.generateToken({ expirySeconds: metricsTokenExpiry })
-      metricsTokenOpen = true
-    } catch (e: unknown) {
-      handleApiError(e, 'Failed to generate metrics token')
-    } finally {
-      metricsTokenInFlight = false
-    }
-  }
-
-  function closeMetricsToken() {
-    metricsTokenOpen = false
-    metricsTokenResult = null
-    copiedMetricsToken = false
-  }
-
-  async function copyMetricsToken() {
-    if (!metricsTokenResult) return
-    if (await copyText(metricsTokenResult.token)) {
-      copiedMetricsToken = true
-      setTimeout(() => { copiedMetricsToken = false }, 1500)
-    } else {
-      showErrorToast('Copy failed, select and copy manually')
-    }
-  }
 
   let activeTab = $state<'overview' | 'activity' | 'alerts'>(untrack(() => initialTab) ?? 'overview')
   $effect(() => { if (initialTab) activeTab = initialTab })
@@ -554,27 +508,6 @@
             Vault Resync
           </Button>
           <InfoTip text="When vault secrets change (master keys, service verifier keys), resync forces all services to drop cached values and fetch fresh copies. Use only when needed; services auto-refresh periodically." />
-        </span>
-        <span class="flex items-center gap-1.5">
-          <select
-            bind:value={metricsTokenExpiry}
-            aria-label="Metrics token expiry"
-            class="h-9 rounded-sm border border-input bg-background px-2 text-sm"
-          >
-            {#each METRICS_TOKEN_EXPIRY_OPTIONS as opt (opt.value)}
-              <option value={opt.value}>{opt.label}</option>
-            {/each}
-          </select>
-          <Button variant="outline" size="sm" class="gap-1.5" disabled={metricsTokenInFlight} aria-busy={metricsTokenInFlight}
-            onclick={generateMetricsToken}>
-            {#if metricsTokenInFlight}
-              <Loader2 class="h-3.5 w-3.5 animate-spin" />
-            {:else}
-              <KeyRound class="h-3.5 w-3.5" />
-            {/if}
-            Generate Metrics Token
-          </Button>
-          <InfoTip text="Mints a bearer token that only authorizes scraping /metrics on every service and the metrics service-discovery endpoint. Shown once; save it before closing the dialog." />
         </span>
       {/if}
       {#if canEditRegion}
@@ -1390,35 +1323,6 @@
 {/if}
 
 <ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} variant={dialog.variant} onConfirm={dialog.action} />
-
-<Dialog.Root bind:open={metricsTokenOpen} onOpenChange={(v) => { if (!v) closeMetricsToken() }}>
-  <Dialog.Content class="sm:max-w-lg">
-    <Dialog.Header>
-      <div class="flex items-start gap-3">
-        <ShieldAlert class="size-5 shrink-0 text-warning mt-0.5" />
-        <div class="flex flex-col gap-1">
-          <Dialog.Title>Metrics Token Generated</Dialog.Title>
-          <Dialog.Description>
-            Copy and save this token now. It will not be shown again.
-          </Dialog.Description>
-        </div>
-      </div>
-    </Dialog.Header>
-    {#if metricsTokenResult}
-      <div class="flex items-center gap-2">
-        <code class="flex-1 font-mono text-sm break-all bg-muted/50 rounded-sm px-2.5 py-1.5 border select-all">{metricsTokenResult.token}</code>
-        <button type="button"
-          class="shrink-0 size-11 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-          onclick={copyMetricsToken} aria-label="Copy metrics token">
-          {#if copiedMetricsToken}<Check class="size-4 text-success" />{:else}<Copy class="size-4" />{/if}
-        </button>
-      </div>
-    {/if}
-    <Dialog.Footer>
-      <Button variant="primary" onclick={closeMetricsToken}>Done</Button>
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
 
 <style>
   .audit-content-scroll {

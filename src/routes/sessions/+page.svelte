@@ -19,7 +19,7 @@
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
-  import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
+  import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode } from '$lib/core/utils/format'
   import { SESSION_POLL_OPTIONS } from '$lib/core/utils/options'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
   import { showErrorToast } from '$lib/core/utils/toast'
@@ -74,7 +74,7 @@
   onDestroy(() => { poll?.stop(); store.reset() })
 
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
-  function mountModeVariant(m: string) { return m === 'readonly' ? 'outline' as const : 'default' as const }
+  function mountModeVariant(m: string) { return isReadOnlyMountMode(m) ? 'outline' as const : 'default' as const }
   function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
   function clearVolumeFilter() { goto('/sessions') }
 
@@ -247,7 +247,7 @@
               </TableCell>
               <TableCell><Badge variant={statusVariant(session.status)}>{session.status}</Badge></TableCell>
               <TableCell class="hidden md:table-cell">
-                {#if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)}>{session.mountMode}</Badge>{:else}·{/if}
+                {#if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
               </TableCell>
               <TableCell class="text-sm tabular-nums hidden md:table-cell">{sessionDuration(session)}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</TableCell>

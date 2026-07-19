@@ -10,7 +10,7 @@
   import { api } from '$lib/core/stores/client.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus } from '$lib/core/utils/format'
+  import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode } from '$lib/core/utils/format'
   import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, memAllocColor, cvVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
@@ -273,7 +273,7 @@
             <Badge variant="secondary" class="text-sm px-3 py-1">{formatOs(session.osName)}</Badge>
             <Badge class="text-sm px-3 py-1">{session.region.name}</Badge>
             {#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="text-sm px-3 py-1 capitalize">{session.volume.type}</Badge>{/if}
-            {#if session.mountMode}<Badge variant={session.mountMode === 'readonly' ? 'warning' : 'success'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
+            {#if session.mountMode}<Badge variant={isReadOnlyMountMode(session.mountMode) ? 'outline' : 'default'} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
             {#if session.forkName}<Badge variant="outline" class="text-sm px-3 py-1">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning" class="text-sm px-3 py-1">Temporary</Badge>{/if}{/if}
             <Badge variant="secondary" class="text-sm px-3 py-1">{session.clientType}</Badge>
           </div>

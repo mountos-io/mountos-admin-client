@@ -155,6 +155,14 @@ export function formatClientType(raw: string): string {
   return CLIENT_TYPE_NAMES[raw] ?? raw
 }
 
+// mountMode vocabulary sent by every client (Go/Swift/Windows/HDFS-SDK):
+// "rw" for read-write, "r" alone or comma-joined with a view suffix
+// ("r,ver", "r,del", "r,snap") for every read-only variant. "rw" itself
+// starts with "r" too, so this can't be a plain prefix check.
+export function isReadOnlyMountMode(mode: string): boolean {
+  return mode === 'r' || mode.startsWith('r,')
+}
+
 export function formatDuration(from: string | number | Date, to?: string | number | Date): string {
   const start = parseDate(from)
   const end = to ? parseDate(to) : new Date()

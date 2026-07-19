@@ -10,7 +10,7 @@ const AUD_REFRESH = 'mountos/dashboard/refresh'
 const SYSTEM_ACCOUNT_ID = 0
 const SYSTEM_EMAIL_DOMAIN = 'system.local'
 
-const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'clientSessions', 'alerts', 'discover', 'vault', 'dashboard', 'license'] as const
+const RESOURCES = ['accounts', 'users', 'regions', 'storages', 'volumes', 'auditLogs', 'serviceNodes', 'clientSessions', 'alerts', 'discover', 'vault', 'metrics', 'dashboard', 'license'] as const
 const allCaps = (v: number) => Object.fromEntries(RESOURCES.map(r => [r, v]))
 
 const defaults: DashboardAuthConfig = {
@@ -18,8 +18,8 @@ const defaults: DashboardAuthConfig = {
   refreshTTL: 7 * 24 * 60 * 60, // 7d
   roles: {
     [ROLE.superadmin]: allCaps(15), // CRUD
-    [ROLE.l1admin]: { ...allCaps(14), vault: 0 },    // CRU, no delete; vault: superadmin-only
-    [ROLE.l2admin]: { ...allCaps(4), vault: 0 },     // read-only; vault: superadmin-only
+    [ROLE.l1admin]: { ...allCaps(14), vault: 0, metrics: 0 },    // CRU, no delete; vault/metrics: superadmin-only
+    [ROLE.l2admin]: { ...allCaps(4), vault: 0, metrics: 0 },     // read-only; vault/metrics: superadmin-only
     [ROLE.user]: { volumes: 15, auditLogs: 4, dashboard: 4, clientSessions: 4, regions: 4, storages: 4 }, // volumes: CRUD; rest: R-only
   },
 }
