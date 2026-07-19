@@ -8,7 +8,7 @@
   import { Button } from '$lib/components/ui/button'
   import { Input } from '$lib/components/ui/input'
   import { Textarea } from '$lib/components/ui/textarea'
-  import { cn } from '$lib/utils'
+  import { cn, isMacPlatform } from '$lib/utils'
   import Sun from '@lucide/svelte/icons/sun'
   import Moon from '@lucide/svelte/icons/moon'
   import Monitor from '@lucide/svelte/icons/monitor'
@@ -103,12 +103,15 @@
 
   const pageSizes = [10, 20, 50]
 
+  const mac = isMacPlatform()
+  const modKey = mac ? '⌘' : 'Ctrl'
+  const shiftKey = mac ? '⇧' : 'Shift'
   const shortcuts: { keys: string; description: string }[] = [
-    { keys: '⌘ K', description: 'Open command palette' },
-    { keys: '⌘ ,', description: 'Open settings' },
-    { keys: '⌘ B', description: 'Toggle sidebar' },
-    { keys: '⌘ ⇧ G', description: 'Toggle grayscale' },
-    { keys: '⌘ 1-9', description: 'Switch account by index' },
+    { keys: `${modKey} K`, description: 'Open command palette' },
+    { keys: `${modKey} ,`, description: 'Open settings' },
+    { keys: `${modKey} B`, description: 'Toggle sidebar' },
+    { keys: `${modKey} ${shiftKey} G`, description: 'Toggle grayscale' },
+    { keys: `${modKey} 1-9`, description: 'Switch account by index' },
   ]
 
   let tablistEl: HTMLElement | null = $state(null)

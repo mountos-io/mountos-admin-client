@@ -11,6 +11,7 @@
   import { useLicense } from '$lib/core/stores/license.svelte'
   import { useAlerts } from '$lib/core/stores/alerts.svelte'
   import { features } from '$lib/config/features'
+  import { isMacPlatform } from '$lib/utils'
   import type { Snippet } from 'svelte'
 
   let { children }: { children?: Snippet } = $props()
@@ -44,7 +45,14 @@
   })
 
   function handleKeydown(e: KeyboardEvent) {
-    if (!e.metaKey || e.altKey || e.ctrlKey) return
+    // e.metaKey is the Cmd key on macOS but the Windows/Super key elsewhere
+    // (already claimed by the OS), so Windows/Linux users need ctrlKey for
+    // this to reach them at all -- swap which one counts as "the" modifier,
+    // and which one disqualifies the combo, based on the actual platform.
+    const mac = isMacPlatform()
+    const modPressed = mac ? e.metaKey : e.ctrlKey
+    const otherModifier = mac ? e.ctrlKey : e.metaKey
+    if (!modPressed || otherModifier || e.altKey) return
 
     const target = e.target as HTMLElement
     const inInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable

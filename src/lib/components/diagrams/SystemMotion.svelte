@@ -122,7 +122,13 @@
       let acc = 0
       let last = performance.now()
       const tick = (now: number) => {
-        if (!paused) acc += now - last
+        // while paused the clock freezes and positions are static: skip the recompute
+        if (paused) {
+          last = now
+          raf = requestAnimationFrame(tick)
+          return
+        }
+        acc += now - last
         last = now
         place(acc / 1000)
         raf = requestAnimationFrame(tick)
@@ -144,7 +150,6 @@
     <button
       type="button"
       class="ctl"
-      aria-pressed={paused}
       aria-label={paused ? 'Resume motion' : 'Pause motion'}
       title={paused ? 'Resume motion (i)' : 'Pause motion (i)'}
       onclick={() => (paused = !paused)}
@@ -583,7 +588,7 @@
     width: 32px;
     height: 32px;
     padding: 0;
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid var(--sm-border);
     background: var(--sm-panel);
     color: var(--sm-dim);
@@ -599,6 +604,17 @@
   .ctl :global(svg) {
     width: 16px;
     height: 16px;
+  }
+  /* comfortable tap target on touch devices; this page is the mobile mirror */
+  @media (pointer: coarse) {
+    .ctl {
+      width: 44px;
+      height: 44px;
+    }
+    .ctl :global(svg) {
+      width: 18px;
+      height: 18px;
+    }
   }
   text {
     font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;

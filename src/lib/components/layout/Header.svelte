@@ -17,6 +17,7 @@
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { useLicense } from '$lib/core/stores/license.svelte'
   import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
+  import { isMacPlatform } from '$lib/utils'
 
   const auth = useAuth()
   const accountStore = useAccounts()
@@ -24,6 +25,7 @@
   const prefs = usePreferences()
   const licenseStore = useLicense()
   const settingsModal = useSettingsModal()
+  const modSymbol = isMacPlatform() ? '⌘' : 'Ctrl+'
 
   const visibleNav = $derived(
     navigation.filter(item => !item.feature || features[item.feature])
@@ -90,7 +92,7 @@
     onclick={() => onToggleSidebar ? onToggleSidebar() : (prefs.sidebarCollapsed = !prefs.sidebarCollapsed)}
     aria-label="Toggle sidebar"
     aria-expanded={!prefs.sidebarCollapsed}
-    title="Toggle sidebar (⌘B)"
+    title={`Toggle sidebar (${modSymbol}B)`}
   >
     <PanelLeft class="h-4 w-4" />
   </button>
@@ -126,7 +128,7 @@
         <span class="hidden sm:inline">Search</span>
       </div>
       <kbd class="pointer-events-none hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-xs font-medium text-muted-foreground">
-        <span class="text-sm">⌘</span>K
+        <span class="text-sm">{modSymbol}</span>K
       </kbd>
     </button>
     {#if !auth.isUserRole && licenseStore.license?.quota?.state === 'exceeded'}

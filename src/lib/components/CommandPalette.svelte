@@ -23,6 +23,7 @@
   import LogOut from '@lucide/svelte/icons/log-out'
   import Box from '@lucide/svelte/icons/box'
   import { Badge } from '$lib/components/ui/badge'
+  import { isMacPlatform } from '$lib/utils'
 
   let { open = $bindable(false) }: { open?: boolean } = $props()
 
@@ -30,6 +31,7 @@
   const auth = useAuth()
   const prefs = usePreferences()
   const settingsModal = useSettingsModal()
+  const modSymbol = isMacPlatform() ? '⌘' : 'Ctrl+'
 
   const iconMap: Record<string, Component> = {
     'layout-dashboard': LayoutDashboard, 'building-2': Building2,
@@ -77,12 +79,12 @@
       <Command.CommandItem value="Settings" onSelect={() => run(() => settingsModal.show())}>
         <Settings class="mr-2 h-4 w-4" />
         Settings
-        <Command.CommandShortcut>⌘,</Command.CommandShortcut>
+        <Command.CommandShortcut>{modSymbol},</Command.CommandShortcut>
       </Command.CommandItem>
       <Command.CommandItem value="Toggle Sidebar" onSelect={() => run(() => { prefs.sidebarCollapsed = !prefs.sidebarCollapsed })}>
         <PanelLeft class="mr-2 h-4 w-4" />
         Toggle Sidebar
-        <Command.CommandShortcut>⌘B</Command.CommandShortcut>
+        <Command.CommandShortcut>{modSymbol}B</Command.CommandShortcut>
       </Command.CommandItem>
       {#if auth.can('accounts', 'create')}
         <Command.CommandItem value="Create Account" onSelect={() => nav('/accounts/create')}>
@@ -123,7 +125,7 @@
               <Badge variant="primary">active</Badge>
             {/if}
             {#if i < 9}
-              <Command.CommandShortcut>⌘{i + 1}</Command.CommandShortcut>
+              <Command.CommandShortcut>{modSymbol}{i + 1}</Command.CommandShortcut>
             {/if}
           </Command.CommandItem>
         {/each}
