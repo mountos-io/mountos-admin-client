@@ -119,7 +119,7 @@
     <p class="text-sm text-muted-foreground">No data yet. Size samples are recorded in 6-hour windows.</p>
   {:else}
     <div class="relative border border-border rounded-sm overflow-hidden bg-background">
-      <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+      <div class="tech-grid absolute inset-0 pointer-events-none"></div>
       <p class="sr-only">{srSummary}</p>
       <svg viewBox="0 0 {W} {H}" class="w-full h-auto select-none" onmousemove={onMove} onmouseleave={onLeave} role="img" aria-label="Volume size over time. {srSummary}">
         {#each yTicks as t}

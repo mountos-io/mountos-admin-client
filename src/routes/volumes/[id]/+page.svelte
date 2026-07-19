@@ -730,7 +730,7 @@
   {#if volume}
     <div class="flex items-center justify-between gap-2 flex-wrap">
       <div role="tablist" aria-label="Volume sections" class="relative border border-border/30 rounded-sm px-2 py-1 max-w-full overflow-x-auto">
-        <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
         <div class="relative flex items-center gap-1 whitespace-nowrap">
           {#each [
             ['overview', 'Overview', 'Overview'],
@@ -1051,7 +1051,7 @@
         <div class="flex items-center justify-between">
           <CardTitle>Size History</CardTitle>
           <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
-            <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+            <div class="tech-grid absolute inset-0 pointer-events-none"></div>
             <div class="relative flex items-center gap-1.5" role="group" aria-label="Select size history range">
               {#each [['24h','24h'],['7d','7d'],['30d','30d'],['1y','1y']] as [val, label]}
                 <Button variant={sizeRange === val ? 'primary' : 'ghost'} size="sm"
@@ -1081,7 +1081,7 @@
           <div class="flex items-center gap-2 flex-wrap">
           {#if forks.length > 1}
             <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit hidden md:block">
-              <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+              <div class="tech-grid absolute inset-0 pointer-events-none"></div>
               <div class="relative flex items-center gap-1.5" role="group" aria-label="Fork view">
                 <Button variant={forkView === 'list' ? 'primary' : 'ghost'} size="sm"
                   class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"

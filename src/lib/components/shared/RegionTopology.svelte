@@ -679,7 +679,7 @@
     <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" class="space-y-6">
     <!-- Stats HUD -->
     <div class="corner-brackets relative border border-border/30 rounded-sm p-5 w-fit max-w-full">
-      <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+      <div class="tech-grid absolute inset-0 pointer-events-none"></div>
       <div class="relative flex flex-wrap items-end gap-x-6 gap-y-3">
         <div class="flex items-baseline gap-6">
           <div class="flex items-baseline gap-1.5">
@@ -1084,7 +1084,7 @@
               <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle>Region Audit Log</CardTitle>
                 <div class="relative border border-border/30 rounded-sm px-3 py-2 w-full sm:w-fit">
-                  <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+                  <div class="tech-grid absolute inset-0 pointer-events-none"></div>
                   <div class="relative flex flex-wrap items-center gap-1.5">
                     <div class="flex items-center gap-1.5">
                       <Button variant={activityDays === 'auto' ? 'primary' : 'ghost'} size="sm"

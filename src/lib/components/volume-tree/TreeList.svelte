@@ -62,7 +62,7 @@
   <ListSkeleton rows={6} />
 {:else if entries.length === 0}
   <div class="relative rounded-sm border border-border/60 bg-card/60 overflow-hidden">
-    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+    <div class="tech-grid absolute inset-0 pointer-events-none"></div>
     <div class="relative">
       <EmptyState title="Empty directory" description="No entries at this path." />
     </div>

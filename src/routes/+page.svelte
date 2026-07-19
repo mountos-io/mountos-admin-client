@@ -112,7 +112,7 @@
 
     {#if dashboard.loading && !stats}
       <div class="corner-brackets relative border border-border/30 rounded-sm" role="status" aria-busy="true" aria-label="Loading dashboard">
-        <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
         <div class="relative flex flex-wrap">
           {#each { length: 6 } as _, i (i)}
             <div class="flex-1 min-w-[120px] sm:min-w-[140px] flex items-center gap-3 px-4 py-3">
@@ -143,7 +143,7 @@
         ...(canReadSessions ? [{ label: 'Sessions', value: sessionStore.summary.activeCount || stats.activeSessionCount, href: '/sessions', icon: MonitorDotIcon }] : []),
       ]}
       <div class="corner-brackets relative border border-border/30 rounded-sm">
-        <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
         <div class="relative flex flex-wrap">
           {#each overviewItems as item, i}
             <svelte:element this={item.href ? 'a' : 'div'} {...(item.href ? { href: item.href } : {})}
@@ -263,7 +263,7 @@
             <div class="flex items-center justify-between gap-2 flex-wrap">
               <CardTitle>Recent Activity</CardTitle>
               <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
-                <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+                <div class="tech-grid absolute inset-0 pointer-events-none"></div>
                 <div class="relative flex items-center gap-1.5">
                   <Button variant={activityDays === 'auto' ? 'primary' : 'ghost'} size="sm"
                     class="h-7 w-12 min-h-[44px] sm:min-h-0 text-xs justify-center"

@@ -260,7 +260,7 @@
 
     <!-- Info -->
     <div class="corner-brackets relative border border-border/30 rounded-sm">
-      <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+      <div class="tech-grid absolute inset-0 pointer-events-none"></div>
       <div class="relative p-5 space-y-5">
         <!-- Host + badges -->
         <div class="flex flex-wrap items-center gap-4">
@@ -323,7 +323,7 @@
     {#if cacheCfg}
       <!-- Cache configuration (operator-facing knobs at mount time) -->
       <div class="corner-brackets relative border border-border/30 rounded-sm">
-        <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
         <div class="relative p-5">
           <h2 class="text-lg font-semibold mb-4">Cache Configuration</h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
@@ -363,7 +363,7 @@
     <!-- Metrics -->
     {#if m.reads !== undefined}
       <div class="corner-brackets relative border border-border/30 rounded-sm">
-        <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
         <div class="relative p-5">
           <h2 class="text-lg font-semibold mb-4">Metrics</h2>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-8 gap-y-5">
@@ -484,7 +484,7 @@
     {@const gw = getGatewayMetrics(m)}
       {#if gw}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
-          <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+          <div class="tech-grid absolute inset-0 pointer-events-none"></div>
           <div class="relative p-5">
             <div class="flex flex-wrap items-center gap-3 mb-4">
               <h2 class="text-lg font-semibold">Gateway Activity</h2>
@@ -524,7 +524,7 @@
         {@const bands = latencyBands(entries)}
         {@const hasBuckets = entries.some(([, l]) => l.buckets?.some(c => c > 0))}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
-          <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+          <div class="tech-grid absolute inset-0 pointer-events-none"></div>
           <div class="relative p-5">
             <div class="flex flex-wrap items-center gap-3 mb-4">
               <h2 class="text-lg font-semibold">{title}</h2>

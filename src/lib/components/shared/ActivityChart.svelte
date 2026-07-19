@@ -328,7 +328,7 @@
   for the clipped portion -- unlike the visible bubble itself, which stays
   inset from the edge. -->
   <div class="relative border border-border rounded-sm bg-background" style="padding: 1.5rem 1.5rem 3rem 4rem; height: min(400px, 50vh); contain: layout;">
-    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+    <div class="tech-grid absolute inset-0 pointer-events-none"></div>
     <!-- Y-axis labels -->
     <div class="absolute left-2 top-6 bottom-10 w-14 flex flex-col justify-between text-[1rem] font-mono text-muted-foreground">
       {#each timeLabels as { label }}
@@ -459,7 +459,7 @@
 
   <!-- Legend -->
   <div class="relative border border-border/30 rounded-sm px-5 py-3 mt-3 mx-auto w-fit max-w-full">
-    <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+    <div class="tech-grid absolute inset-0 pointer-events-none"></div>
     <div class="relative flex flex-wrap items-center justify-center gap-3">
       {#each allSubjects as s}
         {@const m = meta(s)}

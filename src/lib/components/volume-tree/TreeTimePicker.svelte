@@ -129,7 +129,7 @@
 <div class="flex flex-col items-end gap-1" role="group" aria-label="View mode">
   <div class="flex items-center gap-2 flex-wrap justify-end">
     <div class="relative border border-border/30 rounded-sm px-2 py-1 w-fit">
-      <div class="tech-grid absolute inset-0 pointer-events-none opacity-20"></div>
+      <div class="tech-grid absolute inset-0 pointer-events-none"></div>
       <div class="relative flex items-center gap-1">
         <Button variant={isLive ? 'primary' : 'ghost'} size="sm"
           class="h-7 min-h-[44px] sm:min-h-7 px-3 text-xs font-mono justify-center"
