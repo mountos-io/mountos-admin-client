@@ -85,7 +85,7 @@
 
   <!-- client -> owning cluster (data plane, solid) -->
   <path class="edge" d="M 90 138 C 60 280, 70 320, 150 360" marker-end="url(#rc-arrow)" />
-  <text x="100" y="166" class="t-small" style="font-size:10px">data: SRPC over Noise</text>
+  <text x="100" y="166" class="t-small" style="font-size:10px">data: custom protocol</text>
   <text x="100" y="182" class="t-small" style="font-size:10px">to the owning cluster</text>
 
   <!-- ============ Tier 2+3: regions and their clusters ============ -->

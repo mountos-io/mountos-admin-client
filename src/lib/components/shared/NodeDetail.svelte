@@ -161,7 +161,7 @@
   const nodeCommitHash = $derived(node?.metadata?.['commitHash'] ? String(node.metadata['commitHash']) : null)
   const instanceInfo = $derived(node?.instanceInfo ?? null)
 
-  // The service's live "# Config" block (service, build time, go version, srpc port, ...)
+  // The service's live "# Config" block (service, build time, go version, internal RPC port, ...)
   // folds into Node Info instead of its own card. "version" is dropped here since
   // node.binaryVersion already surfaces as "Version" above; "go_version" carries no
   // operator-actionable information and is dropped too.
