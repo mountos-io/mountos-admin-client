@@ -137,17 +137,20 @@ export function quotaPercent(used: number, limit: number): number {
   return Math.min(100, Math.round((used / limit) * 100))
 }
 
+// Inbound labels for values already written into client_sessions rows, so
+// retired clients keep rendering a friendly name in historical sessions.
+// "mountos" is what the shipped client binary stamps today.
 const CLIENT_TYPE_NAMES: Record<string, string> = {
+  'mountos': 'mountOS Client',
   'fuse': 'FUSE (Linux)',
   'macfuse': 'macFUSE',
   'mountosio': 'mountOSIO (Windows)',
-  'cloudfilter': 'CloudFilter (Windows)',
+  'cloudfilter': 'CloudFilter (Windows, retired)',
   'fskit': 'FSKit (macOS)',
   'nfs': 'NFS (macOS)',
-  'cfapi': 'CloudFilter (Windows)',
-  'csi-driver': 'CSI Driver (K8s)',
+  'cfapi': 'CloudFilter (Windows, retired)',
   'fuse+iouring': 'FUSE io_uring (Linux)',
-  'fp': 'File Provider (macOS)',
+  'fp': 'File Provider (macOS, retired)',
   'hdfs-sdk': 'HDFS SDK',
 }
 
@@ -155,7 +158,7 @@ export function formatClientType(raw: string): string {
   return CLIENT_TYPE_NAMES[raw] ?? raw
 }
 
-// mountMode vocabulary sent by every client (Go/Swift/Windows/HDFS-SDK):
+// mountMode vocabulary sent by every client (Go, Swift, HDFS SDK).
 // "rw" for read-write, "r" alone or comma-joined with a view suffix
 // ("r,ver", "r,del", "r,snap") for every read-only variant. "rw" itself
 // starts with "r" too, so this can't be a plain prefix check.
@@ -249,11 +252,13 @@ export function parsePrometheusText(text: string): Map<string, PrometheusMetric[
   return sections
 }
 
+// Same historical-value rule as CLIENT_TYPE_NAMES. Retired platforms stay
+// mapped so old sessions render a name instead of a raw token.
 const PLATFORM_LABELS: Record<string, string> = {
   macfuse: 'macFUSE', nfs: 'NFS', fuse: 'FUSE', fskit: 'FSKit',
-  mountosio: 'mountOSIO', cloudfilter: 'CloudFilter',
-  'fuse+iouring': 'FUSE io_uring', 'csi-driver': 'CSI Driver',
-  cfapi: 'CloudFilter', fp: 'File Provider', hdfs: 'HDFS',
+  mountosio: 'mountOSIO', 'fuse+iouring': 'FUSE io_uring',
+  cloudfilter: 'CloudFilter (retired)', cfapi: 'CloudFilter (retired)',
+  fp: 'File Provider (retired)', hdfs: 'HDFS',
 }
 
 export function formatPlatform(raw: string): string {

@@ -167,7 +167,6 @@
   {#snippet headerRow()}
     <TableRow>
       <TableHead class="th-cyber">Name</TableHead>
-      <TableHead class="th-cyber">Base DNS</TableHead>
       <TableHead class="th-cyber hidden md:table-cell">
         <span class="inline-flex items-center gap-1">
           Live
@@ -216,7 +215,6 @@
             <TableCell class="font-medium max-w-[160px] truncate" title={region.name}>
               <a href="/regions/{region.id}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Region {region.name}{region.isActive ? '' : ', deactivated'}">{region.name}</a>
             </TableCell>
-            <TableCell class="font-mono text-sm max-w-[200px] truncate" title={region.dns}>{region.dns}</TableCell>
             <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono">{formatBytes(region.liveVolume)}</TableCell>
             <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono">{formatBytes(region.totalVolume)}</TableCell>
             <TableCell><StatusBadge active={region.isActive} /></TableCell>

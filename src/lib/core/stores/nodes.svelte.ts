@@ -33,10 +33,9 @@ let statsHistoryFetchCtrl: AbortController | null = null
 const nodesByType = $derived.by(() => {
   const map = new Map<string, ServiceNode[]>()
   for (const n of nodes) {
-    const key = n.serviceType === 'mfuse' ? 'fuseserv' : n.serviceType
-    const list = map.get(key) ?? []
+    const list = map.get(n.serviceType) ?? []
     list.push(n)
-    map.set(key, list)
+    map.set(n.serviceType, list)
   }
   return map
 })

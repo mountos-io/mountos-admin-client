@@ -9,7 +9,7 @@
   viewBox="-20 0 1240 880"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
-  aria-label="mountOS hierarchical topology: a client resolves its volume at the global HUB, then talks to the owning region cluster. Each region owns its database and vault, points at S3-compatible or Azure object storage, and is partitioned into one or more clusters that run dataserv, the gateways, and gcserv. A region also runs block storage as up to three block volumes that span distinct clusters, backed by the object storage."
+  aria-label="mountOS hierarchical topology: a client resolves its volume at the global HUB, then talks to the owning region cluster. Each region owns its database and vault, points at S3-compatible or Azure object storage, and is partitioned into one or more clusters that run dataserv and gcserv, with an optional pool of client-hosted S3 and WebHDFS gateways in front. A region also runs block storage as up to three block volumes that span distinct clusters, backed by the object storage."
 >
   <defs>
     <marker id="rc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -117,8 +117,8 @@
       <!-- gateways -->
       <g transform="translate(16,134)">
         <rect class="n-gateway" x="0" y="0" width="320" height="58" rx="6" stroke-dasharray="5 3" />
-        <text x="16" y="24" class="t-title" style="font-size:12px">S3 + HDFS gateways</text>
-        <text x="16" y="44" class="t-small" style="font-size:10px">optional · pool behind one DNS</text>
+        <text x="16" y="24" class="t-title" style="font-size:12px">S3 + WebHDFS gateways</text>
+        <text x="16" y="44" class="t-small" style="font-size:10px">optional · client pool behind one DNS</text>
       </g>
       <!-- gcserv -->
       <g transform="translate(16,200)">
@@ -145,8 +145,8 @@
       </g>
       <g transform="translate(16,134)">
         <rect class="n-gateway" x="0" y="0" width="320" height="58" rx="6" stroke-dasharray="5 3" />
-        <text x="16" y="24" class="t-title" style="font-size:12px">S3 + HDFS gateways</text>
-        <text x="16" y="44" class="t-small" style="font-size:10px">optional</text>
+        <text x="16" y="24" class="t-title" style="font-size:12px">S3 + WebHDFS gateways</text>
+        <text x="16" y="44" class="t-small" style="font-size:10px">optional · client pool</text>
       </g>
       <g transform="translate(16,200)">
         <rect class="n-edge" x="0" y="0" width="320" height="58" rx="6" />
@@ -218,7 +218,7 @@
       </g>
       <g transform="translate(16,88)">
         <rect class="n-gateway" x="0" y="0" width="302" height="32" rx="5" stroke-dasharray="5 3" />
-        <text x="14" y="21" class="t-small" style="font-size:11px">S3 + HDFS gateways · optional</text>
+        <text x="14" y="21" class="t-small" style="font-size:11px">S3 + WebHDFS gateways · optional client pool</text>
       </g>
       <g transform="translate(16,126)">
         <rect class="n-edge" x="0" y="0" width="302" height="32" rx="5" />

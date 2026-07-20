@@ -12,7 +12,7 @@
     },
     {
       title: 'Gateways',
-      body: 'Apps without a mount reach the same data over S3 or WebHDFS, through the optional region gateways or the gateway embedded in every client.',
+      body: 'Apps without a mount reach the same data over S3 or WebHDFS, through the optional gateway embedded in every client.',
     },
     {
       title: 'Durability',

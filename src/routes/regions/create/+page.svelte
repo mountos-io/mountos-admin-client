@@ -26,7 +26,6 @@
   const nameRe = /^[a-z][a-z0-9-]{2,}$/
 
   let name = $state('')
-  let dns = $state('')
   let submitting = $state(false)
 
   const nameValid = $derived(nameRe.test(name))
@@ -41,10 +40,10 @@
 
   async function handleSubmit(e: Event) {
     e.preventDefault()
-    if (!nameValid || !dns.trim() || !accountId) return
+    if (!nameValid || !accountId) return
     submitting = true
     try {
-      await regionStore.createRegion({ accountId, name: name.trim(), dns: dns.trim() })
+      await regionStore.createRegion({ accountId, name: name.trim() })
       showSuccessToast('Region created')
       goto('/regions')
     } catch (err: unknown) {
@@ -78,13 +77,8 @@
               <p id="name-error" class="text-destructive text-sm" role="alert">{nameError}</p>
             {/if}
           </div>
-          <div class="space-y-2">
-            <Label for="dns">Base DNS</Label>
-            <Input id="dns" bind:value={dns} placeholder="e.g. ap-south-1a.example.com" required aria-required="true" autocomplete="off" />
-            <p class="text-muted-foreground text-sm">Used to build the S3 endpoint for direct S3 access.</p>
-          </div>
           <div class="flex gap-3 pt-2">
-            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !nameValid || !dns.trim()}>
+            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !nameValid}>
               {submitting ? 'Creating...' : 'Create Region'}
             </Button>
             <Button variant="outline" type="button" onclick={() => goto('/regions')}>

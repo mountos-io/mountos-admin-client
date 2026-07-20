@@ -71,10 +71,9 @@ const platformOptions = [
   { value: 'smb', label: 'smb' },
   { value: 'nfs', label: 'nfs' },
   { value: 'mountosio', label: 'mountosio' },
-  { value: 'cloudfilter', label: 'cloudfilter' },
-  // Embedded gateway in mfuse: gateway-only sessions advertise the
-  // protocol(s) here; mount+gateway sessions still report a FUSE platform
-  // and the gateway shows up via metrics.gateway instead.
+  // Embedded client gateway. Gateway-only sessions advertise the protocol(s)
+  // here; mount+gateway sessions still report a FUSE platform and the gateway
+  // shows up via metrics.gateway instead. "hdfs+hadoop" is the HDFS SDK.
   { value: 's3', label: 's3:gateway' },
   { value: 'hdfs', label: 'hdfs:gateway' },
   { value: 's3+hdfs', label: 's3+hdfs:gateway' },

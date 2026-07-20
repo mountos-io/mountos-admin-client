@@ -23,11 +23,8 @@
     hub: 'Hub',
     dataserv: 'Metadata',
     gcserv: 'Garbage Collection',
-    fuseserv: 'FUSE',
     blockserv: 'Block',
-    s3gatewayserv: 'S3 Gateway',
-    hdfsserv: 'HDFS Gateway',
-    csiserv: 'CSI',
+    mfuse: 'Client',
   }
 
   const STATUS_COLORS: Record<string, string> = {

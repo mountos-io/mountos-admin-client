@@ -166,7 +166,7 @@
     viewBox="0 -130 1680 1075"
     xmlns="http://www.w3.org/2000/svg"
     role="img"
-    aria-label="Animated mountOS system diagram: partner systems and the admin system drive the HUB through the SDK, clients and apps reach the region services, a region holds the dataserv raft cluster, region database, vaults, gateways, and block storage peer mesh, all backed by object storage"
+    aria-label="Animated mountOS system diagram: partner systems and the admin system drive the HUB through the SDK, clients and apps reach the region services, a region holds the dataserv raft cluster, region database, vaults, and block storage peer mesh, all backed by object storage. Apps without a mount reach the same data through the optional gateway embedded in the client"
   >
     <defs>
       <marker id="sm-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -336,13 +336,13 @@
       <text class="t-boxsm" x="150" y="419" text-anchor="middle">s3 sdk · webhdfs</text>
     </g>
 
-    <!-- optional gateways -->
+    <!-- optional gateway, embedded in the mountOS client -->
     <g>
       <rect class="box-outer" x="600" y="430" width="160" height="64" rx="3" />
       <rect class="box-inner" x="604" y="434" width="152" height="56" rx="2" />
       <text class="t-box" x="680" y="452" text-anchor="middle" style="font-size:12px">GATEWAY</text>
       <text class="t-boxsm" x="680" y="468" text-anchor="middle">s3 · webhdfs</text>
-      <text class="t-boxsm" x="680" y="483" text-anchor="middle">optional</text>
+      <text class="t-boxsm" x="680" y="483" text-anchor="middle">optional · in client</text>
     </g>
 
     <!-- hub -->

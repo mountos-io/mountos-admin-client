@@ -22,7 +22,6 @@
   let loading = $state(false)
   let submitting = $state(false)
   let name = $state('')
-  let dns = $state('')
 
   const nameValid = $derived(nameRe.test(name))
   const nameError = $derived(
@@ -34,7 +33,7 @@
     name.length < 3 ? 'At least 3 characters' : ''
   )
   const unchanged = $derived(
-    !!region && name.trim() === region.name && dns.trim() === region.dns,
+    !!region && name.trim() === region.name,
   )
 
   $effect(() => {
@@ -50,7 +49,6 @@
     try {
       region = await regionStore.getRegion(regionId)
       name = region.name
-      dns = region.dns
     } catch (e) {
       handleApiError(e, 'Failed to load region')
     } finally {
@@ -61,10 +59,10 @@
 
   async function handleSubmit(e: Event) {
     e.preventDefault()
-    if (!region || !nameValid || !dns.trim() || unchanged) return
+    if (!region || !nameValid || unchanged) return
     submitting = true
     try {
-      await regionStore.editRegion(regionId, { accountId: region.accountId, name: name.trim(), dns: dns.trim() })
+      await regionStore.editRegion(regionId, { accountId: region.accountId, name: name.trim() })
       showSuccessToast('Region updated')
       goto(`/regions/${regionId}`)
     } catch (err: unknown) {
@@ -97,13 +95,8 @@
               <p id="name-error" class="text-destructive text-sm" role="alert">{nameError}</p>
             {/if}
           </div>
-          <div class="space-y-2">
-            <Label for="dns">Base DNS</Label>
-            <Input id="dns" bind:value={dns} required aria-required="true" autocomplete="off" />
-            <p class="text-muted-foreground text-sm">Used to build the S3 endpoint for direct S3 access.</p>
-          </div>
           <div class="flex gap-3 pt-2">
-            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !nameValid || !dns.trim() || unchanged}>
+            <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !nameValid || unchanged}>
               {submitting ? 'Saving...' : 'Save'}
             </Button>
             <Button variant="outline" type="button" onclick={() => goto(`/regions/${regionId}`)}>

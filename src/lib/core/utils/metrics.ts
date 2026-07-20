@@ -339,7 +339,7 @@ export function gradientColor(g: number): string {
 }
 
 // Client process resident-memory pressure bands. Calibrated for FUSE
-// clients (mfuse, fuseserv, hdfs-sdk) which legitimately hold large
+// clients (mountos, hdfs-sdk) which legitimately hold large
 // page caches and may balloon under write back-pressure when the
 // upstream object store is slow; a 2 GB footprint alone is not a bug:
 //   < 512 MB  healthy        - light mounts, cold cache

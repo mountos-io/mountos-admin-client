@@ -42,8 +42,6 @@
   import Trash2 from '@lucide/svelte/icons/trash-2'
   import HardDrive from '@lucide/svelte/icons/hard-drive'
   import Box from '@lucide/svelte/icons/box'
-  import Cloud from '@lucide/svelte/icons/cloud'
-  import Container from '@lucide/svelte/icons/container'
   import ServerOff from '@lucide/svelte/icons/server-off'
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
   import CheckCircle from '@lucide/svelte/icons/check-circle'
@@ -92,21 +90,17 @@
   }
 
   const SERVICE_PALETTE: Record<string, { accent: string; bg: string; label: string; icon: typeof Shield }> = {
-    hub:           { accent: 'var(--pastel-region)',  bg: 'color-mix(in oklch, var(--pastel-region) 8%, transparent)',  label: 'Hub', icon: Shield },
-    dataserv:      { accent: 'var(--pastel-user)',    bg: 'color-mix(in oklch, var(--pastel-user) 8%, transparent)',    label: 'Metadata', icon: Database },
-    gcserv:        { accent: 'var(--pastel-role)',    bg: 'color-mix(in oklch, var(--pastel-role) 8%, transparent)',    label: 'Garbage Collection', icon: Trash2 },
-    fuseserv:      { accent: 'var(--pastel-mount)',   bg: 'color-mix(in oklch, var(--pastel-mount) 8%, transparent)',   label: 'FUSE', icon: HardDrive },
-    blockserv:     { accent: 'var(--pastel-storage)', bg: 'color-mix(in oklch, var(--pastel-storage) 8%, transparent)', label: 'Block', icon: Box },
-    s3gatewayserv: { accent: 'var(--pastel-license)', bg: 'color-mix(in oklch, var(--pastel-license) 8%, transparent)', label: 'S3 Gateway', icon: Cloud },
-    hdfsserv:      { accent: 'var(--pastel-license)', bg: 'color-mix(in oklch, var(--pastel-license) 8%, transparent)', label: 'HDFS Gateway', icon: Cloud },
-    csiserv:       { accent: 'var(--pastel-session)', bg: 'color-mix(in oklch, var(--pastel-session) 8%, transparent)', label: 'CSI', icon: Container },
+    hub:       { accent: 'var(--pastel-region)',  bg: 'color-mix(in oklch, var(--pastel-region) 8%, transparent)',  label: 'Hub', icon: Shield },
+    dataserv:  { accent: 'var(--pastel-user)',    bg: 'color-mix(in oklch, var(--pastel-user) 8%, transparent)',    label: 'Metadata', icon: Database },
+    gcserv:    { accent: 'var(--pastel-role)',    bg: 'color-mix(in oklch, var(--pastel-role) 8%, transparent)',    label: 'Garbage Collection', icon: Trash2 },
+    blockserv: { accent: 'var(--pastel-storage)', bg: 'color-mix(in oklch, var(--pastel-storage) 8%, transparent)', label: 'Block', icon: Box },
+    mfuse:     { accent: 'var(--pastel-mount)',   bg: 'color-mix(in oklch, var(--pastel-mount) 8%, transparent)',   label: 'Client', icon: HardDrive },
   }
 
   const TIER_COLORS: Record<string, string> = {
     control: 'var(--pastel-region)',
     data: 'var(--pastel-user)',
     storage: 'var(--pastel-storage)',
-    gateway: 'var(--pastel-license)',
     edge: 'var(--pastel-mount)',
   }
 
@@ -114,8 +108,7 @@
     { id: 'control', label: 'CONTROL', types: ['hub'] },
     { id: 'data', label: 'DATA', types: ['dataserv', 'gcserv'] },
     { id: 'storage', label: 'STORAGE', types: ['blockserv'] },
-    { id: 'gateway', label: 'GATEWAY', types: ['s3gatewayserv', 'hdfsserv'] },
-    { id: 'edge', label: 'CLIENT / EDGE', types: ['fuseserv', 'csiserv'] },
+    { id: 'edge', label: 'CLIENT / EDGE', types: ['mfuse'] },
   ]
 
   const isHubRegion = $derived(nodeStore.nodesByType.has('hub'))
@@ -151,10 +144,9 @@
   function buildTierData(forNodes: ServiceNode[]) {
     const byType = new Map<string, ServiceNode[]>()
     for (const n of forNodes) {
-      const key = n.serviceType === 'mfuse' ? 'fuseserv' : n.serviceType
-      const list = byType.get(key) ?? []
+      const list = byType.get(n.serviceType) ?? []
       list.push(n)
-      byType.set(key, list)
+      byType.set(n.serviceType, list)
     }
     const hub = byType.has('hub')
     const relevant = hub ? TIERS.filter(t => t.id === 'control') : TIERS.filter(t => t.id !== 'control')
