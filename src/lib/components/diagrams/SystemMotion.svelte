@@ -205,12 +205,9 @@
       <path class="edge" d="M1100,131 H888" />
       <path class="edge" d="M1120,505 H820 V386" />
       <path class="edge" d="M1120,527 H960 V592" />
-      <path class="edge" d="M260,404 H520 V462 H592" />
+      <path class="edge" d="M260,404 H400" />
       <path class="edge" d="M150,372 V338" />
       <path class="edge" d="M150,436 V462" />
-      <path class="edge" d="M680,430 V386" />
-      <path class="edge" d="M680,494 V592" />
-      <path class="edge" d="M760,462 H1360" />
       <path class="edge" d="M608,292 H1032 A20,20 0 0 1 1052,312 V362 A20,20 0 0 1 1032,382 H608 A20,20 0 0 1 588,362 V312 A20,20 0 0 1 608,292 Z" />
       <path class="edge" d="M700,657 L960,657 L830,767 Z" />
       <path class="edge" d="M600,-46 H672" />
@@ -240,9 +237,7 @@
       <circle class="jdot" cx="1360" cy="915" r="3" />
       <circle class="jdot" cx="820" cy="505" r="3" />
       <circle class="jdot" cx="960" cy="527" r="3" />
-      <circle class="jdot" cx="520" cy="404" r="3" />
-      <circle class="jdot" cx="520" cy="462" r="3" />
-      <circle class="jdot" cx="1360" cy="462" r="3" />
+      <circle class="jdot" cx="400" cy="404" r="3" />
     </g>
 
     <!-- particle guide paths (invisible) -->
@@ -267,10 +262,10 @@
       <path data-g="hv" class="guide" d="M1100,131 H880" />
       <path data-g="rv1" class="guide" d="M1120,505 H820 V382" />
       <path data-g="rv2" class="guide" d="M1120,527 H960 V600" />
-      <path data-g="gw" class="guide" d="M260,404 H520 V462 H600" />
-      <path data-g="gwm" class="guide" d="M680,430 V382" />
-      <path data-g="gwb" class="guide" d="M680,494 V600" />
-      <path data-g="gwo" class="guide" d="M760,462 H1360 V490 H1464" />
+      <path data-g="gw" class="guide" d="M260,404 H400 V105 H600" />
+      <path data-g="gwm" class="guide" d="M260,404 H400 V337 H588" />
+      <path data-g="gwb" class="guide" d="M260,404 H400 V657 H600" />
+      <path data-g="gwo" class="guide" d="M260,404 H400 V915 H1360 V490 H1464" />
       <path data-g="psdk" class="guide" d="M600,-46 H680" />
       <path data-g="apsdk" class="guide" d="M880,-46 H800" />
       <path data-g="pas" class="guide" d="M600,-80 H880" />
@@ -332,17 +327,9 @@
 
       <rect class="box-outer" x="40" y="372" width="220" height="64" rx="3" />
       <rect class="box-inner" x="45" y="377" width="210" height="54" rx="2" />
-      <text class="t-box" x="150" y="399" text-anchor="middle">APPS</text>
-      <text class="t-boxsm" x="150" y="419" text-anchor="middle">s3 sdk · webhdfs</text>
-    </g>
-
-    <!-- optional gateway, embedded in the mountOS client -->
-    <g>
-      <rect class="box-outer" x="600" y="430" width="160" height="64" rx="3" />
-      <rect class="box-inner" x="604" y="434" width="152" height="56" rx="2" />
-      <text class="t-box" x="680" y="452" text-anchor="middle" style="font-size:12px">GATEWAY</text>
-      <text class="t-boxsm" x="680" y="468" text-anchor="middle">s3 · webhdfs</text>
-      <text class="t-boxsm" x="680" y="483" text-anchor="middle">optional · in client</text>
+      <text class="t-box" x="150" y="395" text-anchor="middle">APPS</text>
+      <text class="t-boxsm" x="150" y="412" text-anchor="middle">s3 sdk · webhdfs</text>
+      <text class="t-boxsm" x="150" y="427" text-anchor="middle">via mountos gateway</text>
     </g>
 
     <!-- hub -->
