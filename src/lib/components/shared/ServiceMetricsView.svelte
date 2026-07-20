@@ -37,6 +37,7 @@
     gradientColor,
     bucketBarColor,
     recordFieldLabel,
+    CV_TOOLTIP_TEXT,
     type MetricSection,
     type HistogramGroup,
     type SortCol,
@@ -1153,20 +1154,23 @@
     class="th-cyber select-none"
     aria-sort={sortCol === col ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
   >
-    <button
-      type="button"
-      class="flex w-full items-center gap-1 cursor-pointer {col !== 'label' ? 'justify-end' : ''}"
-      onclick={() => toggleSort(col)}
-    >
-      <span class={col === 'cv' ? 'normal-case' : ''}>{label}</span>
-      {#if sortCol === col}
-        {#if sortDir === "asc"}
-          <ArrowUp class="h-3 w-3" />
-        {:else}
-          <ArrowDown class="h-3 w-3" />
+    <div class="flex w-full items-center gap-1 {col !== 'label' ? 'justify-end' : ''}">
+      <button
+        type="button"
+        class="flex items-center gap-1 cursor-pointer"
+        onclick={() => toggleSort(col)}
+      >
+        <span class={col === 'cv' ? 'normal-case' : ''}>{label}</span>
+        {#if sortCol === col}
+          {#if sortDir === "asc"}
+            <ArrowUp class="h-3 w-3" />
+          {:else}
+            <ArrowDown class="h-3 w-3" />
+          {/if}
         {/if}
-      {/if}
-    </button>
+      </button>
+      {#if col === 'cv'}<InfoTip text={CV_TOOLTIP_TEXT} width={420} />{/if}
+    </div>
   </TableHead>
 {/snippet}
 

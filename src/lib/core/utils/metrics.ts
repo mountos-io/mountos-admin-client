@@ -325,6 +325,9 @@ export function cvVariant(cv: number): 'success' | 'outline' | 'warning' | 'dest
   if (cv < 1.0) return 'warning'
   return 'destructive'
 }
+
+// InfoTip copy for the σ/μ column header; thresholds mirror cvVariant above
+export const CV_TOOLTIP_TEXT = "**σ/μ: coefficient of variation.** Ratio of the latency distribution's standard deviation (σ) to its mean (μ): 0 means every request took the same time; the higher it climbs, the more request latencies spread around the average. Estimated from the histogram's bucket midpoints weighted by bucket counts, so it's an approximation, not an exact sample σ.\n\n**Reading it:**\n• < 0.5 → tight, predictable latency\n• 0.5 – 1.0 → moderate spread\n• ≥ 1.0 → high variability: a long tail is pulling values away from the average, so the average alone understates worst-case latency"
 export function poolUtilColor(pct: number): string {
   if (pct < 50) return 'var(--success)'
   if (pct < 80) return 'var(--warning)'

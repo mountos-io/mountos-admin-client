@@ -11,7 +11,7 @@
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode } from '$lib/core/utils/format'
-  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, memAllocColor, cvVariant, bucketBarColor, estimateCV, fmtPercentile, type HistBucket } from '$lib/core/utils/metrics'
+  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, memAllocColor, cvVariant, bucketBarColor, estimateCV, fmtPercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
@@ -269,7 +269,7 @@
             <p class="text-sm text-muted-foreground font-mono">{session.ipAddr}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <Badge variant="primary" class="text-sm px-3 py-1">{formatPlatform(getPlatform(session))}</Badge>
+            {#if getPlatform(session)}<Badge variant="primary" class="text-sm px-3 py-1">{formatPlatform(getPlatform(session))}</Badge>{/if}
             <Badge variant="secondary" class="text-sm px-3 py-1">{formatOs(session.osName)}</Badge>
             <Badge class="text-sm px-3 py-1">{session.region.name}</Badge>
             {#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="text-sm px-3 py-1 capitalize">{session.volume.type}</Badge>{/if}
@@ -557,7 +557,7 @@
                     <th scope="col" class="text-right">Ops/s</th>
                     <th scope="col" class="text-right">Total</th>
                     <th scope="col" class="text-right">Avg</th>
-                    {#if hasBuckets}<th scope="col" class="text-right">σ/μ</th>{/if}
+                    {#if hasBuckets}<th scope="col" class="text-right"><span class="inline-flex items-center justify-end gap-0.5">σ/μ<InfoTip text={CV_TOOLTIP_TEXT} width={420} /></span></th>{/if}
                     {#if metricMode === 'minMax'}
                       <th scope="col" class="text-right">Min</th>
                       <th scope="col" class="text-right">Max</th>

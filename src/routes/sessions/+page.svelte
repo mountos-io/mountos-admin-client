@@ -228,7 +228,7 @@
               <TableCell>
                 <div class="flex items-center gap-1.5">
                   <span class="session-os">{formatOs(session.osName)}</span>
-                  <span class="session-platform">{formatPlatform(store.getPlatform(session))}</span>
+                  {#if store.getPlatform(session)}<span class="session-platform">{formatPlatform(store.getPlatform(session))}</span>{/if}
                 </div>
               </TableCell>
               <TableCell class="text-sm max-w-[120px]">
