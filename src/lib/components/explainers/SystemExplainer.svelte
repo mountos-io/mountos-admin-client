@@ -12,7 +12,7 @@
     },
     {
       title: 'Gateways',
-      body: 'Apps without a mount reach the same data over S3 or WebHDFS, through the gateway a client exposes locally on 127.0.0.1 for a volume. There are no backend gateway services.',
+      body: 'Apps without a mount reach the same data over S3 or WebHDFS, through the gateway a client exposes locally on 127.0.0.1 for a volume.',
     },
     {
       title: 'Durability',
