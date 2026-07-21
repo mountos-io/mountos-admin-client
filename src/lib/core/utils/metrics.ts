@@ -319,14 +319,21 @@ export function pingRttColor(ms: number): string {
   if (ms < 500) return 'var(--warning)'
   return 'var(--destructive)'
 }
-export function cvVariant(cv: number): 'success' | 'outline' | 'warning' | 'destructive' {
-  if (cv <= 0) return 'outline'
-  if (cv < 0.5) return 'success'
-  if (cv < 1.0) return 'warning'
-  return 'destructive'
+// 5 visual steps within the reading bands below, built from opacity
+// variations of the 3 sanctioned status hues (success/warning/destructive)
+// per DESIGN.md's rationed-color rule -- no new hue families, just an
+// intensity step within "tight" (two greens) and within "moderate" (two
+// ambers) before handing off to destructive red at the "high" threshold.
+export function cvClass(cv: number): string {
+  if (cv <= 0) return 'text-muted-foreground border-border'
+  if (cv < 0.25) return 'bg-success/25 text-success border-success/50'
+  if (cv < 0.5) return 'bg-success/10 text-success border-success/25'
+  if (cv < 0.75) return 'bg-warning/10 text-warning border-warning/25'
+  if (cv < 1.0) return 'bg-warning/25 text-warning border-warning/50'
+  return 'bg-destructive/15 text-destructive border-destructive/30'
 }
 
-// InfoTip copy for the σ/μ column header; thresholds mirror cvVariant above
+// InfoTip copy for the σ/μ column header; thresholds mirror cvClass above
 export const CV_TOOLTIP_TEXT = "**σ/μ: coefficient of variation.** Ratio of the latency distribution's standard deviation (σ) to its mean (μ): 0 means every request took the same time; the higher it climbs, the more request latencies spread around the average. Estimated from the histogram's bucket midpoints weighted by bucket counts, so it's an approximation, not an exact sample σ.\n\n**Reading it:**\n• < 0.5 → tight, predictable latency\n• 0.5 – 1.0 → moderate spread\n• ≥ 1.0 → high variability: a long tail is pulling values away from the average, so the average alone understates worst-case latency"
 export function poolUtilColor(pct: number): string {
   if (pct < 50) return 'var(--success)'

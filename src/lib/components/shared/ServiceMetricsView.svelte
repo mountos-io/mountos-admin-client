@@ -32,7 +32,7 @@
     interpolatePercentile,
     latencyVariant,
     latencyColor,
-    cvVariant,
+    cvClass,
     poolUtilColor,
     gradientColor,
     bucketBarColor,
@@ -1046,8 +1046,8 @@
             <TableCell class="text-right">
               {#if cv > 0}
                 <Badge
-                  variant={cvVariant(cv)}
-                  class="font-mono text-[0.65rem] px-1 py-0"
+                  variant="outline"
+                  class="font-mono text-[0.65rem] px-1 py-0 {cvClass(cv)}"
                   >{cv.toFixed(2)}</Badge
                 >
               {/if}
@@ -1304,8 +1304,8 @@
         <span class="text-border">|</span>
         <span
           >σ/μ <Badge
-            variant={cvVariant(cv)}
-            class="font-mono text-[0.65rem] px-1 py-0">{cv.toFixed(2)}</Badge
+            variant="outline"
+            class="font-mono text-[0.65rem] px-1 py-0 {cvClass(cv)}">{cv.toFixed(2)}</Badge
           ></span
         >
       {/if}

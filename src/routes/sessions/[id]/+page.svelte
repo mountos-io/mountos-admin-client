@@ -11,7 +11,7 @@
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode } from '$lib/core/utils/format'
-  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, memAllocColor, cvVariant, bucketBarColor, estimateCV, fmtPercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
+  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, memAllocColor, cvClass, bucketBarColor, estimateCV, fmtPercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
@@ -588,7 +588,7 @@
                       <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.avgUs)}">{formatUs(lat.avgUs)}</td>
                       {#if hasBuckets}
                         <td class="text-right">
-                          {#if cv >= 0}<Badge variant={cvVariant(cv)} class="font-mono text-xs px-1 py-0">{cv.toFixed(2)}</Badge>{/if}
+                          {#if cv >= 0}<Badge variant="outline" class="font-mono text-xs px-1 py-0 {cvClass(cv)}">{cv.toFixed(2)}</Badge>{/if}
                         </td>
                       {/if}
                       {#if metricMode === 'minMax'}
