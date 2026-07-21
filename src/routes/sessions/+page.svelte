@@ -76,6 +76,14 @@
   function statusVariant(s: string) { return formatSessionStatus(s).variant }
   function mountModeVariant(m: string) { return isReadOnlyMountMode(m) ? 'outline' as const : 'default' as const }
   function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
+
+  // Session kind reported under metadata.role: a gateway has no FUSE mount
+  // (path "."), a utility is a one-shot tool. Absent/unknown reads as a mount.
+  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' {
+    const md = s.metadata
+    const r = md != null && typeof md === 'object' ? (md as Record<string, unknown>).role : undefined
+    return r === 'gateway' || r === 'utility' ? r : 'mount'
+  }
   function clearVolumeFilter() { goto('/sessions') }
 
   // Duration covers both flavours: a still-active session shows wall-clock
@@ -247,7 +255,7 @@
               </TableCell>
               <TableCell><Badge variant={statusVariant(session.status)}>{session.status}</Badge></TableCell>
               <TableCell class="hidden md:table-cell">
-                {#if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
+                {#if getSessionRole(session) === 'gateway'}<Badge variant="primary" title="S3/HDFS gateway, no FUSE mount">Gateway</Badge>{:else if getSessionRole(session) === 'utility'}<Badge variant="outline" title="One-shot utility session, not a mount">Utility</Badge>{:else if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
               </TableCell>
               <TableCell class="text-sm tabular-nums hidden md:table-cell">{sessionDuration(session)}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</TableCell>
@@ -264,7 +272,7 @@
                     </a>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm" onclick={(e: MouseEvent) => e.stopPropagation()}>{session.account.name}</a></div>
-                        <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p></div>
+                        <div><p class="detail-label">Mount Path</p>{#if getSessionRole(session) === 'gateway'}<p class="text-sm font-mono text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">— gateway</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
                         <div>
                           <div class="detail-label flex items-center gap-0.5">

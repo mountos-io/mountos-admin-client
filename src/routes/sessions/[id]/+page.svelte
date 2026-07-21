@@ -106,6 +106,24 @@
     return m != null && typeof m === 'object' ? (m as Record<string, unknown>)[key] : undefined
   }
 
+  // Session kind reported by the client under metadata.role. A gateway process
+  // has no FUSE mount (mount path "."); a utility is a one-shot tool. Absent or
+  // unknown reads as a regular mount.
+  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' {
+    const r = getMetaProp(s, 'role')
+    return r === 'gateway' || r === 'utility' ? r : 'mount'
+  }
+
+  interface GatewayInfo { endpoints: Record<string, string> }
+  // Gateway endpoints reported under metadata.gateway.endpoints (protocol -> URL).
+  function getGatewayInfo(s: ClientSession): GatewayInfo | null {
+    const g = getMetaProp(s, 'gateway')
+    if (g == null || typeof g !== 'object') return null
+    const eps = (g as Record<string, unknown>).endpoints
+    if (eps == null || typeof eps !== 'object' || Object.keys(eps as object).length === 0) return null
+    return { endpoints: eps as Record<string, string> }
+  }
+
   interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number; durationNs?: number; buckets?: number[] }
   function getRpcLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
     const rl = m.rpcLatency as Record<string, RpcMethodLatency> | undefined
@@ -266,6 +284,8 @@
     {@const m = getMetrics(session)}
     {@const pid = getMetaProp(session, 'processId')}
     {@const cd = getConnDropped(m)}
+    {@const role = getSessionRole(session)}
+    {@const gw = getGatewayInfo(session)}
 
     {#if error}
       <div class="rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive" role="alert">Refresh failed: {error}</div>
@@ -288,6 +308,7 @@
             {#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="text-sm px-3 py-1 capitalize">{session.volume.type}</Badge>{/if}
             {#if session.mountMode}<Badge variant={isReadOnlyMountMode(session.mountMode) ? 'outline' : 'default'} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
             {#if session.forkName}<Badge variant="outline" class="text-sm px-3 py-1">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning" class="text-sm px-3 py-1">Temporary</Badge>{/if}{/if}
+            {#if role === 'gateway'}<Badge variant="primary" class="text-sm px-3 py-1" title="S3/HDFS gateway process, no FUSE mount">Gateway</Badge>{:else if role === 'utility'}<Badge variant="outline" class="text-sm px-3 py-1" title="One-shot utility session, not a mount">Utility</Badge>{/if}
             <Badge variant="secondary" class="text-sm px-3 py-1">{session.clientType}</Badge>
           </div>
         </div>
@@ -298,7 +319,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
           <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm">{session.account.name}</a></div>
           <div><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm">{session.volume.name || `#${session.volume.id}`}</a></div>
-          <div><p class="detail-label">Mount Path</p><p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p></div>
+          <div><p class="detail-label">Mount Path</p>{#if role === 'gateway'}<p class="text-sm font-mono text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">— gateway</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
           <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
           {#if session.forkName}
             <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
@@ -331,6 +352,24 @@
         </div>
       </div>
     </div>
+
+    {#if gw}
+      <!-- Gateway endpoints (embedded S3/HDFS gateway; no FUSE mount) -->
+      <div class="corner-brackets relative border border-border/30 rounded-sm">
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
+        <div class="relative p-5">
+          <h2 class="text-lg font-semibold mb-4">Gateway Endpoints</h2>
+          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+            {#each Object.entries(gw.endpoints) as [proto, url] (proto)}
+              <div class="min-w-0">
+                <dt class="detail-label uppercase">{proto}</dt>
+                <dd class="text-sm font-mono truncate" title={url}>{url}</dd>
+              </div>
+            {/each}
+          </dl>
+        </div>
+      </div>
+    {/if}
 
     {@const cacheCfg = getMetaProp(session, 'cache') as Record<string, unknown> | undefined}
     {#if cacheCfg}
