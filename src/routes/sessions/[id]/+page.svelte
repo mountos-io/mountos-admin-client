@@ -140,7 +140,7 @@
     return out
   }
 
-  // Client-side watcher (AFS-callback) counters: how many change pushes the
+  // Client-side watcher counters: how many change pushes the
   // owner streamed to this mount for the folders it watches, and the cache
   // invalidation passes they drove. Present only on regular mounts that
   // received at least one push (a sole-client mount is excluded from its own
@@ -373,6 +373,22 @@
       </div>
     {/if}
 
+    <!-- Client never sent a metrics payload: either it hasn't heartbeat yet
+         (still active) or it died before its first heartbeat (terminal). -->
+    {#if Object.keys(m).length === 0}
+      <div class="corner-brackets relative border border-border/30 rounded-sm">
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
+        <div class="relative p-5">
+          <h2 class="text-lg font-semibold mb-2">Metrics</h2>
+          <p class="text-sm text-muted-foreground">
+            {session.isActive
+              ? 'No metrics reported yet — waiting for the first heartbeat.'
+              : 'No metrics were ever reported — the session ended before sending its first heartbeat.'}
+          </p>
+        </div>
+      </div>
+    {/if}
+
     <!-- Metrics -->
     {#if m.reads !== undefined}
       <div class="corner-brackets relative border border-border/30 rounded-sm">
@@ -531,7 +547,7 @@
         </div>
       {/if}
 
-    <!-- Watcher Activity (AFS-callback push-driven cache invalidation). -->
+    <!-- Watcher Activity: push-driven cache invalidation. -->
     <!-- Present only when the mount received at least one owner push; a sole client on a folder is excluded from its own broadcasts and reports nothing. -->
     {@const wt = getWatcherMetrics(m)}
       {#if wt}
@@ -540,7 +556,6 @@
           <div class="relative p-5">
             <div class="flex flex-wrap items-center gap-3 mb-4">
               <h2 class="text-lg font-semibold">Watcher Activity</h2>
-              <span class="text-sm text-muted-foreground font-mono">AFS callbacks</span>
             </div>
             <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono max-w-sm">
               <dt class="text-muted-foreground">pushes received</dt>
