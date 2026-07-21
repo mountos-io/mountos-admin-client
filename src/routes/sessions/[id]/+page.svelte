@@ -140,6 +140,19 @@
     return out
   }
 
+  // Client-side watcher (AFS-callback) counters: how many change pushes the
+  // owner streamed to this mount for the folders it watches, and the cache
+  // invalidation passes they drove. Present only on regular mounts that
+  // received at least one push (a sole-client mount is excluded from its own
+  // broadcasts, so it reports nothing here).
+  interface WatcherSnapshot { pushesReceived?: number; pushEntries?: number; invalidations?: number }
+  function getWatcherMetrics(m: Record<string, any>): WatcherSnapshot | null {
+    const w = m.watcher as WatcherSnapshot | undefined
+    if (!w) return null
+    if (!w.pushesReceived && !w.pushEntries && !w.invalidations) return null
+    return w
+  }
+
   function toBuckets(raw?: number[]): HistBucket[] {
     if (!raw || raw.length !== HISTOGRAM_BOUNDS.length) return []
     return raw.map((count, i) => ({ le: formatUs(HISTOGRAM_BOUNDS[i]), leUs: HISTOGRAM_BOUNDS[i], count }))
@@ -514,6 +527,29 @@
                 </div>
               {/each}
             </div>
+          </div>
+        </div>
+      {/if}
+
+    <!-- Watcher Activity (AFS-callback push-driven cache invalidation). -->
+    <!-- Present only when the mount received at least one owner push; a sole client on a folder is excluded from its own broadcasts and reports nothing. -->
+    {@const wt = getWatcherMetrics(m)}
+      {#if wt}
+        <div class="corner-brackets relative border border-border/30 rounded-sm">
+          <div class="tech-grid absolute inset-0 pointer-events-none"></div>
+          <div class="relative p-5">
+            <div class="flex flex-wrap items-center gap-3 mb-4">
+              <h2 class="text-lg font-semibold">Watcher Activity</h2>
+              <span class="text-sm text-muted-foreground font-mono">AFS callbacks</span>
+            </div>
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono max-w-sm">
+              <dt class="text-muted-foreground">pushes received</dt>
+              <dd class="text-right">{formatNum(wt.pushesReceived ?? 0)}</dd>
+              <dt class="text-muted-foreground">change entries</dt>
+              <dd class="text-right">{formatNum(wt.pushEntries ?? 0)}</dd>
+              <dt class="text-muted-foreground">invalidations</dt>
+              <dd class="text-right">{formatNum(wt.invalidations ?? 0)}</dd>
+            </dl>
           </div>
         </div>
       {/if}

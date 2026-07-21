@@ -40,7 +40,6 @@
   import Shield from '@lucide/svelte/icons/shield'
   import Database from '@lucide/svelte/icons/database'
   import Trash2 from '@lucide/svelte/icons/trash-2'
-  import HardDrive from '@lucide/svelte/icons/hard-drive'
   import Box from '@lucide/svelte/icons/box'
   import ServerOff from '@lucide/svelte/icons/server-off'
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
@@ -94,21 +93,18 @@
     dataserv:  { accent: 'var(--pastel-user)',    bg: 'color-mix(in oklch, var(--pastel-user) 8%, transparent)',    label: 'Metadata', icon: Database },
     gcserv:    { accent: 'var(--pastel-role)',    bg: 'color-mix(in oklch, var(--pastel-role) 8%, transparent)',    label: 'Garbage Collection', icon: Trash2 },
     blockserv: { accent: 'var(--pastel-storage)', bg: 'color-mix(in oklch, var(--pastel-storage) 8%, transparent)', label: 'Block', icon: Box },
-    mfuse:     { accent: 'var(--pastel-mount)',   bg: 'color-mix(in oklch, var(--pastel-mount) 8%, transparent)',   label: 'Client', icon: HardDrive },
   }
 
   const TIER_COLORS: Record<string, string> = {
     control: 'var(--pastel-region)',
     data: 'var(--pastel-user)',
     storage: 'var(--pastel-storage)',
-    edge: 'var(--pastel-mount)',
   }
 
   const TIERS = [
     { id: 'control', label: 'CONTROL', types: ['hub'] },
     { id: 'data', label: 'DATA', types: ['dataserv', 'gcserv'] },
     { id: 'storage', label: 'STORAGE', types: ['blockserv'] },
-    { id: 'edge', label: 'CLIENT / EDGE', types: ['mfuse'] },
   ]
 
   const isHubRegion = $derived(nodeStore.nodesByType.has('hub'))
