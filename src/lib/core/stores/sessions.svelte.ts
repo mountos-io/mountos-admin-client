@@ -73,11 +73,10 @@ const platformOptions = [
   { value: 'mountosio', label: 'mountosio' },
   // Embedded client gateway. Gateway-only sessions advertise the protocol(s)
   // here; mount+gateway sessions still report a FUSE platform and the gateway
-  // shows up via metrics.gateway instead. "hdfs+hadoop" is the HDFS SDK.
+  // shows up via metrics.gateway instead.
   { value: 's3', label: 's3:gateway' },
   { value: 'hdfs', label: 'hdfs:gateway' },
   { value: 's3+hdfs', label: 's3+hdfs:gateway' },
-  { value: 'hdfs+hadoop', label: 'hdfs:api' },
 ]
 const osOptions = [
   { value: '', label: 'All OS' },
