@@ -10,7 +10,7 @@
   import { api } from '$lib/core/stores/client.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode } from '$lib/core/utils/format'
+  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode } from '$lib/core/utils/format'
   import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, memAllocColor, cvClass, bucketBarColor, estimateCV, fmtPercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
@@ -158,16 +158,22 @@
     return out
   }
 
-  // Client-side watcher counters: how many change pushes the
-  // owner streamed to this mount for the folders it watches, and the cache
-  // invalidation passes they drove. Present only on regular mounts that
-  // received at least one push (a sole-client mount is excluded from its own
-  // broadcasts, so it reports nothing here).
-  interface WatcherSnapshot { pushesReceived?: number; pushEntries?: number; invalidations?: number }
+  // Client-side watcher state. watchedFolders/trackedFolders is the live
+  // participation gauge (folders this mount is a registered watcher of right
+  // now); pushes/entries/invalidations are the cumulative push-driven activity.
+  // A lone mount on a folder still watches it but is excluded from its own
+  // broadcasts, so it shows folders with zero pushes rather than nothing.
+  interface WatcherSnapshot {
+    watchedFolders?: number
+    trackedFolders?: number
+    pushesReceived?: number
+    pushEntries?: number
+    invalidations?: number
+  }
   function getWatcherMetrics(m: Record<string, any>): WatcherSnapshot | null {
     const w = m.watcher as WatcherSnapshot | undefined
     if (!w) return null
-    if (!w.pushesReceived && !w.pushEntries && !w.invalidations) return null
+    if (!w.watchedFolders && !w.trackedFolders && !w.pushesReceived && !w.pushEntries && !w.invalidations) return null
     return w
   }
 
@@ -332,10 +338,10 @@
             <p class="text-sm">{m.uptimeSeconds != null ? formatUptime(m.uptimeSeconds) : '·'}</p>
           </div>
           <div><p class="detail-label">Session Age</p><p class="text-sm tabular-nums">{sessionDuration(session)}</p></div>
-          <div><p class="detail-label">Connected</p><p class="text-sm">{session.connectedAt ? formatRelative(session.connectedAt) : '·'}</p></div>
-          <div><p class="detail-label">Last Heartbeat</p><p class="text-sm">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</p></div>
+          <div><p class="detail-label">Connected</p><p class="text-sm flex items-center gap-0.5">{session.connectedAt ? formatRelative(session.connectedAt) : '·'}{#if session.connectedAt}<InfoTip text={formatDate(session.connectedAt)} />{/if}</p></div>
+          <div><p class="detail-label">Last Heartbeat</p><p class="text-sm flex items-center gap-0.5">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}{#if session.lastHeartbeat}<InfoTip text={formatDate(session.lastHeartbeat)} />{/if}</p></div>
           {#if session.disconnectedAt}
-            <div><p class="detail-label">Disconnected</p><p class="text-sm">{formatRelative(session.disconnectedAt)}</p></div>
+            <div><p class="detail-label">Disconnected</p><p class="text-sm flex items-center gap-0.5">{formatRelative(session.disconnectedAt)}<InfoTip text={formatDate(session.disconnectedAt)} /></p></div>
           {/if}
         </div>
 
@@ -586,8 +592,8 @@
         </div>
       {/if}
 
-    <!-- Watcher Activity: push-driven cache invalidation. -->
-    <!-- Present only when the mount received at least one owner push; a sole client on a folder is excluded from its own broadcasts and reports nothing. -->
+    <!-- Watcher Activity: folders this mount watches (live gauge) plus push-driven cache invalidation. -->
+    <!-- Shown whenever the mount watches any folder; a lone client on a folder still watches it but sees zero pushes (excluded from its own broadcasts). -->
     {@const wt = getWatcherMetrics(m)}
       {#if wt}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
@@ -597,6 +603,10 @@
               <h2 class="text-lg font-semibold">Watcher Activity</h2>
             </div>
             <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono max-w-sm">
+              <dt class="text-muted-foreground">folders watched</dt>
+              <dd class="text-right">{formatNum(wt.watchedFolders ?? 0)}</dd>
+              <dt class="text-muted-foreground">folders tracked</dt>
+              <dd class="text-right">{formatNum(wt.trackedFolders ?? 0)}</dd>
               <dt class="text-muted-foreground">pushes received</dt>
               <dd class="text-right">{formatNum(wt.pushesReceived ?? 0)}</dd>
               <dt class="text-muted-foreground">change entries</dt>
