@@ -189,11 +189,11 @@ type StatusVariant = 'success' | 'secondary' | 'warning' | 'destructive' | 'outl
 const SESSION_STATUS_MAP: Record<string, { label: string; variant: StatusVariant }> = {
   connected: { label: 'Connected', variant: 'success' },
   active: { label: 'Active', variant: 'success' },
-  unhealthy: { label: 'Unhealthy', variant: 'destructive' },
+  degraded: { label: 'Degraded', variant: 'destructive' },
   disconnected: { label: 'Disconnected', variant: 'secondary' },
   // expired: dead-sweep gave up after 15m of silence with no explicit
   // disconnect. Terminal state, no longer recoverable; muted so it stops
-  // pulling attention like the live unhealthy alarm does.
+  // pulling attention like the live degraded alarm does.
   expired: { label: 'Expired', variant: 'secondary' },
   idle: { label: 'Idle', variant: 'warning' },
   error: { label: 'Error', variant: 'destructive' },

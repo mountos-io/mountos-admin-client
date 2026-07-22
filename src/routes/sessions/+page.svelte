@@ -88,7 +88,7 @@
 
   // Duration covers both flavours: a still-active session shows wall-clock
   // age, a closed session shows total lifetime. Without an end we fall back
-  // to last heartbeat so a swept-unhealthy row doesn't keep ticking forever.
+  // to last heartbeat so a swept-degraded row doesn't keep ticking forever.
   function sessionDuration(s: ClientSession): string {
     if (!s.connectedAt) return '·'
     const end = s.disconnectedAt ?? (s.isActive ? undefined : s.lastHeartbeat)
@@ -272,7 +272,7 @@
                     </a>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm" onclick={(e: MouseEvent) => e.stopPropagation()}>{session.account.name}</a></div>
-                        <div><p class="detail-label">Mount Path</p>{#if getSessionRole(session) === 'gateway'}<p class="text-sm font-mono text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">— gateway</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
+                        <div><p class="detail-label">Mount Path</p>{#if getSessionRole(session) === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
                         <div>
                           <div class="detail-label flex items-center gap-0.5">

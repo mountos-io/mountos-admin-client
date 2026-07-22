@@ -8,7 +8,7 @@ export interface SessionSummaryData {
   byPlatform: [string, number][]
   byOs: [string, number][]
   activeCount: number
-  unhealthyCount: number
+  degradedCount: number
   regionCount: number
   volumeCount: number
   hostCount: number
@@ -57,7 +57,7 @@ let expanded = $state<Set<number>>(new Set())
 const statusOptions = [
   { value: '', label: 'All Status' },
   { value: 'active', label: 'active' },
-  { value: 'unhealthy', label: 'unhealthy' },
+  { value: 'degraded', label: 'degraded' },
   { value: 'disconnected', label: 'disconnected' },
   { value: 'expired', label: 'expired' },
 ]
@@ -124,7 +124,7 @@ const summary: SessionSummaryData = $derived.by(() => {
     byPlatform,
     byOs,
     activeCount,
-    unhealthyCount: Number(globalSummary?.unhealthyCount ?? 0),
+    degradedCount: Number(globalSummary?.degradedCount ?? 0),
     regionCount: Number(globalSummary?.regionCount ?? 0),
     volumeCount: Number(globalSummary?.volumeCount ?? 0),
     hostCount: Number(globalSummary?.hostCount ?? 0),

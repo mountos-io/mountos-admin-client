@@ -94,7 +94,7 @@
 
   // Wall-clock lifetime, mirroring the list view: still-active rows tick from
   // connectedAt to now; closed rows freeze at disconnectedAt (or last heartbeat
-  // for sessions swept-unhealthy without ever sending disconnect).
+  // for sessions swept-degraded without ever sending disconnect).
   function sessionDuration(s: ClientSession): string {
     if (!s.connectedAt) return '·'
     const end = s.disconnectedAt ?? (s.isActive ? undefined : s.lastHeartbeat)
@@ -319,7 +319,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
           <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm">{session.account.name}</a></div>
           <div><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm">{session.volume.name || `#${session.volume.id}`}</a></div>
-          <div><p class="detail-label">Mount Path</p>{#if role === 'gateway'}<p class="text-sm font-mono text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">— gateway</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
+          <div><p class="detail-label">Mount Path</p>{#if role === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
           <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
           {#if session.forkName}
             <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
@@ -421,7 +421,7 @@
           <h2 class="text-lg font-semibold mb-2">Metrics</h2>
           <p class="text-sm text-muted-foreground">
             {session.isActive
-              ? 'No metrics reported yet — waiting for the first heartbeat.'
+              ? 'No metrics available.'
               : 'No metrics were ever reported — the session ended before sending its first heartbeat.'}
           </p>
         </div>
