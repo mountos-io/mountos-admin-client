@@ -3,6 +3,7 @@
   import { Badge } from '$lib/components/ui/badge'
   import { CyberSkeleton } from '$lib/components/ui/skeleton'
   import { formatSessionStatus } from '$lib/core/utils/format'
+  import InfoTip from '$lib/components/shared/InfoTip.svelte'
   import Activity from '@lucide/svelte/icons/activity'
   import MapPin from '@lucide/svelte/icons/map-pin'
   import HardDrive from '@lucide/svelte/icons/hard-drive'
@@ -39,6 +40,7 @@
       </div>
     {/each}
     <span class="summary-divider hidden sm:block" aria-hidden="true"></span>
+    <InfoTip text={"Regions, Volumes, and Hosts count only sessions that are currently **active** (connected, active, or unhealthy) across the whole account.\n\nExpired and disconnected sessions aren't included, so these numbers won't match the full session total or every row in the table below."} />
     <div class="summary-stat">
       <MapPin class="h-5 w-5 text-primary" />
       <span class="summary-val">{summary.regionCount}</span>

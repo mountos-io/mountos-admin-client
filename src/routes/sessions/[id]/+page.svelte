@@ -549,8 +549,8 @@
          heartbeat shipped without the bulk I/O counters. -->
     <!-- Gateway Activity (embedded per-volume S3 / WebHDFS gateway). -->
     <!-- Present only when the client reported gateway counters; mount-only sessions skip. -->
-    {@const gw = getGatewayMetrics(m)}
-      {#if gw}
+    {@const gwMetrics = getGatewayMetrics(m)}
+      {#if gwMetrics}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
           <div class="tech-grid absolute inset-0 pointer-events-none"></div>
           <div class="relative p-5">
@@ -559,7 +559,7 @@
               <span class="text-sm text-muted-foreground font-mono">embedded per-volume</span>
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
-              {#each gatewayProtocols(gw) as { proto, snap }}
+              {#each gatewayProtocols(gwMetrics) as { proto, snap }}
                 {@const errPct = snap.requests > 0 ? (snap.errors * 100) / snap.requests : (snap.errors > 0 ? 100 : 0)}
                 {@const errBad = errPct > 1}
                 <div class="border border-border/30 rounded-sm p-4">
