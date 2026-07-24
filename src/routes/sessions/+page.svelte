@@ -230,7 +230,7 @@
               <TableCell>
                 <div>
                   <p class="text-sm font-medium truncate max-w-[200px]" title={session.hostname || session.ipAddr}>{session.hostname || session.ipAddr}</p>
-                  <p class="text-sm text-muted-foreground font-mono">{session.ipAddr}</p>
+                  <p class="text-sm text-muted-foreground font-mono">{session.ipAddr} &middot; #{session.id}</p>
                 </div>
               </TableCell>
               <TableCell>
