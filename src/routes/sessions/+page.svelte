@@ -350,7 +350,7 @@
   .session-platform, .session-os, .session-region, .session-cluster {
     display: inline-block;
     font-family: var(--font-mono);
-    font-size: 0.875rem;
+    font-size: 1rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     padding: 0.25rem 0.5rem;
@@ -378,12 +378,12 @@
     align-items: center;
     gap: 0.375rem;
     font-family: var(--font-mono);
-    font-size: 0.875rem;
+    font-size: 1rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     padding: 0.25rem 0.5rem 0.25rem 0.25rem;
     border: 1px solid var(--tc);
-    border-radius: 1px;
+    border-radius: 0;
     color: color-mix(in oklch, var(--tc) 85%, var(--foreground));
   }
   :global(.dark) .count-tag { color: color-mix(in oklch, var(--tc) 90%, var(--foreground)); }
@@ -395,8 +395,8 @@
     min-width: 1.5rem;
     height: 1.5rem;
     padding: 0 0.25rem;
-    border-radius: 9999px;
-    font-size: 0.8125rem;
+    border-radius: 0;
+    font-size: 1rem;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
     line-height: 1;
