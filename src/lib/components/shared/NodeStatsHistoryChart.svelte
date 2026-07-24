@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '$lib/components/ui/button'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Skeleton } from '$lib/components/ui/skeleton'
   import { formatBytes } from '$lib/core/utils/format'
@@ -91,6 +92,47 @@
     disabledByTile = next
   }
 
+  // Whole-tile focus filter: hiding down to one or two metrics fills the
+  // grid with just those for easier at-a-glance debugging. Hiding the last
+  // remaining tile would leave an empty grid, so that action resets back to
+  // "all visible" instead.
+  let hiddenTiles = $state<Set<string>>(new Set())
+  function toggleTile(tile: string) {
+    const next = new Set(hiddenTiles)
+    if (next.has(tile)) {
+      next.delete(tile)
+    } else {
+      next.add(tile)
+      if (next.size >= tiles.length) next.clear()
+    }
+    hiddenTiles = next
+  }
+  function selectAllTiles() {
+    hiddenTiles = new Set()
+  }
+  // Inverts the current focus: whatever's visible hides, whatever's hidden
+  // shows. Only reachable once something is already hidden (see disabled
+  // state below), so it can never invert down to "everything hidden" and
+  // trip the reset-to-all-visible safety net in toggleTile.
+  function invertTiles() {
+    const next = new Set<string>()
+    for (const t of tiles) {
+      if (!hiddenTiles.has(t.tile)) next.add(t.tile)
+    }
+    hiddenTiles = next
+  }
+
+  // Portal the summary panel to document.body so `position: fixed` resolves
+  // to the viewport (scroll-safe) instead of any positioned ancestor.
+  function portal(node: HTMLElement) {
+    document.body.appendChild(node)
+    return {
+      destroy() {
+        if (node.parentNode) node.parentNode.removeChild(node)
+      },
+    }
+  }
+
   // sharedIndex drives the crosshair AND the value tooltip on EVERY tile at
   // once, so hovering any chart lines the same instant up across all metrics.
   let sharedIndex = $state<number | null>(null)
@@ -168,6 +210,101 @@
     })
     return `${title} from ${timeLabel(first.timestampMs)} to ${timeLabel(last.timestampMs)}, ${samples.length} samples. ${parts.join('. ')}. Use the left and right arrow keys to step through samples.`
   }
+
+  type TileSeries = { label: string; color: string; values: number[] }
+  type TileDef = {
+    tile: string
+    title: string
+    unit: string
+    series: TileSeries[]
+    fmt: (v: number) => string
+    ceiling?: { label: string; value: number } | null
+    extra?: { label: string; value: string }[]
+  }
+
+  // Single source of truth for the 8-9 metric tiles: drives both the grid
+  // (chartTile calls below) and the all-metrics summary panel, so the two
+  // views can never drift out of sync.
+  const tiles = $derived<TileDef[]>([
+    {
+      tile: 'cpu', title: 'CPU Load', unit: normalizeLoad ? `% of ${cpuCores} cores` : 'load avg',
+      series: [
+        { label: '1m', color: 'var(--fork-0)', values: samples.map(s => loadVal(s.loadAvg1)) },
+        { label: '5m', color: 'var(--fork-1)', values: samples.map(s => loadVal(s.loadAvg5)) },
+        { label: '15m', color: 'var(--fork-2)', values: samples.map(s => loadVal(s.loadAvg15)) },
+      ],
+      fmt: normalizeLoad ? (v: number) => `${v.toFixed(1)}%` : (v: number) => v.toFixed(2),
+    },
+    {
+      tile: 'mem', title: 'Memory Usage', unit: '% used',
+      series: [{ label: 'used', color: 'var(--fork-0)', values: samples.map(s => s.memUsage * 100) }],
+      fmt: (v: number) => `${v.toFixed(1)}%`,
+    },
+    {
+      tile: 'net', title: 'Network Throughput', unit: 'bytes/s',
+      series: [
+        { label: 'rx', color: 'var(--fork-0)', values: samples.map(s => s.netRxBytesPerSec) },
+        { label: 'tx', color: 'var(--fork-1)', values: samples.map(s => s.netTxBytesPerSec) },
+      ],
+      fmt: (v: number) => `${formatBytes(v)}/s`,
+    },
+    {
+      tile: 'iops', title: 'Disk IOPS', unit: 'ops/s',
+      series: [
+        { label: 'read', color: 'var(--fork-0)', values: samples.map(s => s.readIops) },
+        { label: 'write', color: 'var(--fork-1)', values: samples.map(s => s.writeIops) },
+      ],
+      fmt: (v: number) => Math.ceil(v).toString(),
+    },
+    ...(hasDiskUsage ? [{
+      tile: 'disk', title: 'Disk Usage', unit: '% used',
+      series: [{
+        label: 'used', color: 'var(--fork-0)',
+        values: samples.map(s => (s.diskTotalBytes ?? 0) > 0 ? (100 * (s.diskUsedBytes ?? 0)) / (s.diskTotalBytes ?? 1) : 0),
+      }],
+      fmt: (v: number) => `${v.toFixed(1)}%`,
+    }] : []),
+    {
+      tile: 'procs', title: 'Process Count', unit: 'count',
+      series: [{ label: 'processes', color: 'var(--fork-0)', values: samples.map(s => s.processCount) }],
+      fmt: (v: number) => Math.round(v).toString(),
+    },
+    ...(hasDB ? [
+      {
+        tile: 'db-latency', title: 'DB Latency', unit: 'decayed avg',
+        series: [
+          { label: '1m', color: 'var(--fork-0)', values: samples.map(s => s.dbLatency1mUs ?? 0) },
+          { label: '5m', color: 'var(--fork-1)', values: samples.map(s => s.dbLatency5mUs ?? 0) },
+          { label: '15m', color: 'var(--fork-2)', values: samples.map(s => s.dbLatency15mUs ?? 0) },
+        ],
+        fmt: fmtLatencyUs,
+      },
+      {
+        tile: 'db-qps', title: 'DB Throughput', unit: 'queries/s',
+        series: [{ label: 'queries', color: 'var(--fork-0)', values: samples.map(s => s.dbQueriesPerSec ?? 0) }],
+        fmt: (v: number) => v >= 100 ? Math.round(v).toString() : v.toFixed(1),
+      },
+      {
+        tile: 'db-conns', title: 'DB Connections', unit: 'decayed avg',
+        series: [
+          { label: '1m', color: 'var(--fork-0)', values: samples.map(s => s.dbConnsInUse1m ?? 0) },
+          { label: '5m', color: 'var(--fork-1)', values: samples.map(s => s.dbConnsInUse5m ?? 0) },
+          { label: '15m', color: 'var(--fork-2)', values: samples.map(s => s.dbConnsInUse15m ?? 0) },
+        ],
+        fmt: (v: number) => Math.round(v).toString(),
+        ceiling: { label: 'max', value: dbConnsMax },
+        extra: [
+          { label: 'in use', value: String(latestSample?.dbConnsInUse ?? 0) },
+          { label: 'idle', value: String(latestSample?.dbConnsIdle ?? 0) },
+          { label: 'free', value: String(latestSample?.dbConnsFree ?? 0) },
+        ],
+      },
+    ] : []),
+  ])
+
+  // Clamped shared index for the all-metrics summary panel, mirroring each
+  // tile's own validIndex so both stay in lockstep while scrubbing.
+  const masterIndex = $derived(sharedIndex !== null && sharedIndex < samples.length ? sharedIndex : null)
 </script>
 
 {#snippet chartTile(
@@ -211,9 +348,10 @@
         {/if}
       </span>
     </div>
-    <div class="grid grid-cols-[4rem_minmax(0,1fr)] gap-x-2 gap-y-1">
-      <!-- y axis: tick values centered on their gridlines -->
-      <div class="relative text-right text-[10px] leading-none font-mono tabular-nums text-muted-foreground">
+    <div class="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-2 gap-y-1">
+      <!-- y axis: tick values centered on their gridlines; column widened
+           to fit the 16px floor (e.g. "123.4 MB/s") without clipping. -->
+      <div class="relative text-right text-xs leading-none font-mono tabular-nums text-muted-foreground">
         {#if visible.length > 0}
           <span class="absolute inset-x-0 -translate-y-1/2" style="top: {(PY / H) * 100}%">{fmt(max)}</span>
           <span class="absolute inset-x-0 top-1/2 -translate-y-1/2">{fmt((min + max) / 2)}</span>
@@ -244,7 +382,7 @@
                  placement there would clip out of the viewBox. -->
             {@const labelY = cy < PY + 14 ? cy + 12 : cy - 4}
             <line x1={PX} y1={cy} x2={PX + PW} y2={cy} stroke="currentColor" opacity="0.45" stroke-dasharray="6 4" />
-            <text x={PX + PW - 4} y={labelY} text-anchor="end" fill="currentColor" opacity="0.6" font-size="10" font-family="var(--font-mono, monospace)">{ceiling.label} {fmt(ceiling.value)}</text>
+            <text x={PX + PW - 4} y={labelY} text-anchor="end" fill="currentColor" opacity="0.6" font-size="13" font-family="var(--font-mono, monospace)">{ceiling.label} {fmt(ceiling.value)}</text>
           {/if}
           {#each visible as s, si (si)}
             {@const d = pathFor(s.values, min, max)}
@@ -281,14 +419,14 @@
       <!-- x axis: time ticks + name, aligned under the plot -->
       <div></div>
       <div class="space-y-1">
-        <div class="relative h-3 text-[10px] leading-none font-mono tabular-nums text-muted-foreground">
+        <div class="relative h-5 text-xs leading-none font-mono tabular-nums text-muted-foreground">
           {#each xTickIndexes(len) as ti (ti)}
             {@const pct = (xFor(ti, len) / W) * 100}
             <span class="absolute top-0 whitespace-nowrap {ti === 0 ? '' : ti === len - 1 ? '-translate-x-full' : '-translate-x-1/2'}"
               style="left: {pct}%">{timeLabels[ti]}</span>
           {/each}
         </div>
-        <div class="text-center text-[9px] font-mono uppercase tracking-[0.12em] text-muted-foreground">time</div>
+        <div class="text-center text-xs font-mono uppercase tracking-[0.12em] text-muted-foreground">time</div>
       </div>
     </div>
     {#if series.length > 1}
@@ -320,9 +458,36 @@
     <div class="flex items-center justify-between gap-3 flex-wrap">
       <CardTitle class="text-base">Resource History</CardTitle>
       {#if intervalLabel}
-        <span class="text-[0.7rem] font-mono text-muted-foreground">every {intervalLabel} &middot; last {samples.length} samples &middot; hover, touch, or arrow keys correlate all charts</span>
+        <span class="text-xs font-mono text-muted-foreground">every {intervalLabel} &middot; last {samples.length} samples &middot; hover, touch, or arrow keys correlate all charts</span>
       {/if}
     </div>
+    {#if samples.length > 0 && tiles.length > 1}
+      <!-- Focus filter: hides whole tiles (not series within one) so a
+           reader debugging 2-3 metrics can shrink the grid down to just
+           those; deselecting the last one resets back to all-visible.
+           Each chip borders in its own tile accent (cycling the app's
+           fork-N palette by tile index, decoupled from the per-series
+           colors inside each tile) instead of a filled background. A
+           hairline divider separates this from the title above rather
+           than a second bordered panel: this already sits inside Card,
+           and cards don't nest in this design system. -->
+      <div class="mt-2 pt-2.5 border-t border-border flex flex-wrap items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Visible metrics">
+          {#each tiles as t, i (t.tile)}
+            {@const active = !hiddenTiles.has(t.tile)}
+            <button type="button" class="series-chip min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" class:series-dimmed={!active}
+              style="--chip-accent: var(--fork-{i % 8})"
+              onclick={() => toggleTile(t.tile)} aria-pressed={active}>
+              {t.title}
+            </button>
+          {/each}
+        </div>
+        <div class="ml-auto flex items-center gap-1">
+          <Button variant="ghost" size="sm" disabled={hiddenTiles.size === 0} onclick={invertTiles}>Toggle</Button>
+          <Button variant="ghost" size="sm" disabled={hiddenTiles.size === 0} onclick={selectAllTiles}>Reset</Button>
+        </div>
+      </div>
+    {/if}
   </CardHeader>
   <CardContent class="pt-0">
     {#if error}
@@ -336,60 +501,49 @@
     {:else if samples.length === 0}
       <p class="text-sm text-muted-foreground">No history yet. Check back in a few sample intervals.</p>
     {:else}
+      {@const visibleTiles = tiles.filter(t => !hiddenTiles.has(t.tile))}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
-        {@render chartTile('cpu', 'CPU Load',
-          normalizeLoad ? `% of ${cpuCores} cores` : 'load avg', [
-          { label: '1m', color: 'var(--fork-0)', values: samples.map(s => loadVal(s.loadAvg1)) },
-          { label: '5m', color: 'var(--fork-1)', values: samples.map(s => loadVal(s.loadAvg5)) },
-          { label: '15m', color: 'var(--fork-2)', values: samples.map(s => loadVal(s.loadAvg15)) },
-        ], normalizeLoad ? (v: number) => `${v.toFixed(1)}%` : (v: number) => v.toFixed(2))}
-
-        {@render chartTile('mem', 'Memory Usage', '% used', [
-          { label: 'used', color: 'var(--fork-0)', values: samples.map(s => s.memUsage * 100) },
-        ], v => `${v.toFixed(1)}%`)}
-
-        {@render chartTile('net', 'Network Throughput', 'bytes/s', [
-          { label: 'rx', color: 'var(--fork-0)', values: samples.map(s => s.netRxBytesPerSec) },
-          { label: 'tx', color: 'var(--fork-1)', values: samples.map(s => s.netTxBytesPerSec) },
-        ], v => `${formatBytes(v)}/s`)}
-
-        {@render chartTile('iops', 'Disk IOPS', 'ops/s', [
-          { label: 'read', color: 'var(--fork-0)', values: samples.map(s => s.readIops) },
-          { label: 'write', color: 'var(--fork-1)', values: samples.map(s => s.writeIops) },
-        ], v => Math.ceil(v).toString())}
-
-        {#if hasDiskUsage}
-          {@render chartTile('disk', 'Disk Usage', '% used', [
-            { label: 'used', color: 'var(--fork-0)', values: samples.map(s => (s.diskTotalBytes ?? 0) > 0 ? (100 * (s.diskUsedBytes ?? 0)) / (s.diskTotalBytes ?? 1) : 0) },
-          ], v => `${v.toFixed(1)}%`)}
-        {/if}
-
-        {@render chartTile('procs', 'Process Count', 'count', [
-          { label: 'processes', color: 'var(--fork-0)', values: samples.map(s => s.processCount) },
-        ], v => Math.round(v).toString())}
-
-        {#if hasDB}
-          {@render chartTile('db-latency', 'DB Latency', 'decayed avg', [
-            { label: '1m', color: 'var(--fork-0)', values: samples.map(s => s.dbLatency1mUs ?? 0) },
-            { label: '5m', color: 'var(--fork-1)', values: samples.map(s => s.dbLatency5mUs ?? 0) },
-            { label: '15m', color: 'var(--fork-2)', values: samples.map(s => s.dbLatency15mUs ?? 0) },
-          ], fmtLatencyUs)}
-
-          {@render chartTile('db-qps', 'DB Throughput', 'queries/s', [
-            { label: 'queries', color: 'var(--fork-0)', values: samples.map(s => s.dbQueriesPerSec ?? 0) },
-          ], v => v >= 100 ? Math.round(v).toString() : v.toFixed(1))}
-
-          {@render chartTile('db-conns', 'DB Concurrency', 'decayed avg', [
-            { label: '1m', color: 'var(--fork-0)', values: samples.map(s => s.dbConnsInUse1m ?? 0) },
-            { label: '5m', color: 'var(--fork-1)', values: samples.map(s => s.dbConnsInUse5m ?? 0) },
-            { label: '15m', color: 'var(--fork-2)', values: samples.map(s => s.dbConnsInUse15m ?? 0) },
-          ], v => Math.round(v).toString(), { label: 'max', value: dbConnsMax }, [
-            { label: 'in use', value: String(latestSample?.dbConnsInUse ?? 0) },
-            { label: 'idle', value: String(latestSample?.dbConnsIdle ?? 0) },
-            { label: 'free', value: String(latestSample?.dbConnsFree ?? 0) },
-          ])}
-        {/if}
+        {#each visibleTiles as t (t.tile)}
+          {@render chartTile(t.tile, t.title, t.unit, t.series, t.fmt, t.ceiling ?? null, t.extra ?? [])}
+        {/each}
       </div>
+      {#if masterIndex !== null}
+        <!-- All-metrics summary: consolidates every tile's value at the
+             scrubbed instant into one panel instead of the 9 scattered
+             per-tile boxes, so the full reading is visible at a glance.
+             Always lists every tile regardless of the focus filter above —
+             hiding a tile from the grid declutters the view, it doesn't
+             mean the reader wants that metric missing from the full
+             reading. Fixed to the viewport (not the grid) and portaled to
+             body so it stays put while the page scrolls; desktop-only
+             (matches the lg: two-column grid), clearing the sticky app
+             header's 3.5rem height. Per-tile boxes still cover the
+             single-column layout. -->
+        <div use:portal role="tooltip"
+          class="hidden lg:block fixed top-16 right-4 z-50 w-96 max-w-[85vw] pointer-events-none rounded-sm border border-border bg-popover shadow-sm font-mono text-xs">
+          <div class="px-3 py-2 border-b border-border text-muted-foreground">{timeLabels[masterIndex]}</div>
+          <div class="max-h-[calc(100vh-6rem)] overflow-y-auto px-3 py-2 space-y-2.5">
+            {#each tiles as t (t.tile)}
+              {@const disabled = disabledByTile.get(t.tile) ?? new Set<string>()}
+              {@const visible = t.series.filter(s => !disabled.has(s.label))}
+              {#if visible.length > 0}
+                <div>
+                  <div class="text-muted-foreground tracking-[0.1em] uppercase text-xs">{t.title}</div>
+                  <div class="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                    {#each visible as s (s.label)}
+                      <span class="flex items-center gap-1.5">
+                        <span class="h-1.5 w-1.5 rounded-full shrink-0" style="background: {s.color}"></span>
+                        {#if visible.length > 1}<span class="text-muted-foreground">{s.label}</span>{/if}
+                        <span class="tabular-nums">{t.fmt(s.values[masterIndex])}</span>
+                      </span>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            {/each}
+          </div>
+        </div>
+      {/if}
     {/if}
   </CardContent>
 </Card>
@@ -399,10 +553,10 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 2px 8px;
-    border: 1px solid var(--chip-accent, currentColor);
-    border-radius: 4px;
-    font-size: 0.75rem;
+    padding: 3px 10px;
+    border: 2px solid var(--chip-accent, currentColor);
+    border-radius: 0;
+    font-size: 1rem;
     cursor: pointer;
     background: transparent;
     color: inherit;
