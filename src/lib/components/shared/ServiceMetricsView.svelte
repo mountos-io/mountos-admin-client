@@ -34,6 +34,7 @@
     latencyColor,
     cvClass,
     poolUtilColor,
+    dbPingColor,
     gradientColor,
     bucketBarColor,
     recordFieldLabel,
@@ -135,33 +136,33 @@
   // Section-level explainer hints (lightbulb tooltip on the card title).
   // Keyed by section name; sections without an entry render no hint.
   const SCALAR_SECTION_HINTS: Record<string, string> = {
-    'Segment Retry': "Segment-layer S3 retry and budget signals from the shared object-storage reader/writer. **Retry Throttled** and **Retry Exhausted** indicate real S3-side friction. **Budget Starved Fetches** counts ops that started with under 2s left on their caller's deadline (e.g. a table's compaction budget). This is an early-warning signal that fires before anything actually fails.",
-    'Iceberg Compact Circuit Breaker': "Counts Iceberg tables currently paused from compaction after failing their 5-minute per-table budget on 3 consecutive passes. A paused table is skipped until a periodic reset gives it another chance, so compaction doesn't waste a whole cycle retrying a table that can't finish in time.",
-    'TCP Backpressure': "Self-tuning admission control for the node's TCP server, in the style of gradient concurrency-limiting (TCP Vegas). There is no fixed latency target: connection and RPS ceilings shrink when recent DB latency degrades against its own 15-minute baseline. Below the connection ceiling requests are **delayed**, never dropped.",
-    'DB-Bound Admission Gate': "Token-bucket gate on requests that actually need the database; cache-servable reads bypass it. Unlike TCP backpressure (which delays), this gate **rejects outright** once the budget is spent. Its rate is never configured: every 10s it is re-derived from Little's Law (pool size ÷ measured query latency, at 70% utilization), then pulled down further by the end-to-end request-time gradient.",
+    'Segment Retry': "Segment-layer S3 retry and budget signals from the shared object-storage reader/writer.\n\n**Retry Throttled** and **Retry Exhausted** indicate real S3-side friction. **Budget Starved Fetches** counts ops that started with under 2s left on their caller's deadline (e.g. a table's compaction budget). This is an early-warning signal that fires before anything actually fails.",
+    'Iceberg Compact Circuit Breaker': "Counts Iceberg tables currently paused from compaction after failing their 5-minute per-table budget on 3 consecutive passes.\n\nA paused table is skipped until a periodic reset gives it another chance, so compaction doesn't waste a whole cycle retrying a table that can't finish in time.",
+    'TCP Backpressure': "Self-tuning admission control for the node's TCP server, in the style of gradient concurrency-limiting (TCP Vegas).\n\nThere is no fixed latency target: connection and RPS ceilings shrink when recent DB latency degrades against its own 15-minute baseline. Below the connection ceiling, requests are **delayed**, never dropped.",
+    'DB-Bound Admission Gate': "Token-bucket gate on requests that actually need the database; cache-servable reads bypass it entirely.\n\nUnlike TCP backpressure (which delays), this gate **rejects outright** once its budget is spent. Its rate is never configured: every 10s it's re-derived from Little's Law, then pulled down further by the end-to-end request-time gradient. See **Admission Target Rate** below for the exact formula.",
   }
 
   // Per-field explainer bulbs inside scalar cards, keyed by section → field.
   const SCALAR_FIELD_HINTS: Record<string, Record<string, string>> = {
     'Raft': {
-      raft_cluster_nodes: "Ideal Raft cluster size is **3 instances** for quorum. Fewer than 3 reduces fault tolerance; more than 3 adds coordination overhead or signals nodes joined under a wrong cluster ID.",
+      raft_cluster_nodes: "Ideal Raft cluster size is **3 instances** for quorum.\n\nFewer than 3 reduces fault tolerance; more than 3 adds coordination overhead or signals nodes joined under a wrong cluster ID.",
     },
     'TCP Backpressure': {
-      tcp_bp_adaptive_connections: "**true**: the connection ceiling self-tunes from the latency gradient (no static max-connections override). **false**: a fixed operator-configured ceiling is in force.",
-      tcp_bp_effective_max_connections: "Connection ceiling currently in force. Under degradation the adaptive ceiling shrinks by the gradient (up to 10×), floored at 10% of the structural default of 10,000. Connections beyond it are refused at accept.",
-      tcp_bp_adaptive_rps: "**true**: the per-connection request rate self-tunes from the latency gradient (no static RPS override). **false**: a fixed operator-configured rate is in force.",
-      tcp_bp_effective_rps: "Per-connection requests/second cap currently in force (structural default 1,000). Refreshed after every gradient recompute and pushed to already-open connections. Exceeding it delays the request, it is not dropped.",
-      tcp_bp_gradient: "Ratio of the 1-minute EWMA of DB query latency to its 15-minute baseline, recomputed every 10s.\n**≈1** stable · **>1** degrading: ceilings divide by it (clamped to 10×) · **<1** recovering, treated as neutral; limits never grow above their defaults.",
-      tcp_bp_connections_rejected_total: "Cumulative TCP connections refused at accept because the effective max-connections ceiling was crossed, the only hard reject in this layer. **Any nonzero value means clients were turned away.**",
+      tcp_bp_adaptive_connections: "**true**: the connection ceiling self-tunes from the latency gradient (no static max-connections override).\n**false**: a fixed operator-configured ceiling is in force.",
+      tcp_bp_effective_max_connections: "Connection ceiling currently in force.\n\nUnder degradation the adaptive ceiling shrinks by the gradient (up to 10×), floored at 10% of the structural default of 10,000. Connections beyond it are refused at accept.",
+      tcp_bp_adaptive_rps: "**true**: the per-connection request rate self-tunes from the latency gradient (no static RPS override).\n**false**: a fixed operator-configured rate is in force.",
+      tcp_bp_effective_rps: "Per-connection requests/second cap currently in force (structural default 1,000).\n\nRefreshed after every gradient recompute and pushed to already-open connections. Exceeding it delays the request, it is not dropped.",
+      tcp_bp_gradient: "Ratio of the 1-minute EWMA of DB query latency to its 15-minute baseline, recomputed every 10s.\n\n**≈1** stable · **>1** degrading: ceilings divide by it (clamped to 10×) · **<1** recovering, treated as neutral; limits never grow above their defaults.",
+      tcp_bp_connections_rejected_total: "Cumulative TCP connections refused at accept because the effective max-connections ceiling was crossed, the only hard reject in this layer.\n\n**Any nonzero value means clients were turned away.**",
     },
     'DB-Bound Admission Gate': {
-      db_admission_pool_size: "Live max-open-connections of the SQL pool: the concurrency term of the Little's Law rate derivation.",
-      db_admission_avg_latency_us: "Recent delta-measured average DB query latency (SQL execution only): the latency term of Little's Law.",
-      db_admission_request_latency_us: "1-minute EWMA of **end-to-end** request time (lock waits, cache fills, scheduling, not just SQL). Feeds the request gradient once it crosses the 50ms activation floor.",
-      db_admission_request_gradient: "1m/15m ratio of end-to-end request time; divides the target rate when **>1** (capped at 10). Stays **1 (neutral)** until the 1-minute average exceeds 50ms, so a fast system is never throttled on ratio alone.",
-      db_admission_target_rate: "Derived admission rate in DB-bound requests/second: pool size ÷ avg query latency × 0.70 utilization ÷ request gradient. The 30% headroom keeps steady state below the pool's saturation alert thresholds.",
-      db_admission_burst: "Flat token-bucket burst: a spike of this many DB-bound requests is absorbed before the steady rate applies. Deliberately not rate-proportional so the absorbed spike size stays stable as the rate adapts.",
-      db_admission_rejected_total: "Cumulative DB-bound requests rejected because the token bucket was empty. Each rejection window also raises a backpressure alert that self-resolves after 60s of quiet. **Nonzero means real load shedding occurred.**",
+      db_admission_pool_size: "Live max-open-connections of the SQL pool.\n\nThe concurrency term of the Little's Law rate derivation below.",
+      db_admission_avg_latency_us: "Recent delta-measured average DB query latency (SQL execution only).\n\nThe latency term of the Little's Law rate derivation below.",
+      db_admission_request_latency_us: "1-minute EWMA of **end-to-end** request time (lock waits, cache fills, scheduling, not just SQL).\n\nFeeds the request gradient once it crosses the 50ms activation floor.",
+      db_admission_request_gradient: "1m/15m ratio of end-to-end request time.\n\nDivides the target rate further while it's **above 1** (degrading), capped at 10×. Stays **neutral at 1** until the 1-minute average exceeds 50ms, so a fast system is never throttled on ratio alone.",
+      db_admission_target_rate: "Derived admission rate in DB-bound requests/second, recomputed every 10s:\n\n**(pool size ÷ avg query latency) × 0.70 ÷ request gradient**\n\nThe ×0.70 factor is a deliberate 30% headroom that keeps steady-state throughput below the pool's own saturation alert thresholds. The gradient term applies, and only ever divides the rate down, while it's above 1; at 1 or below it stays neutral.",
+      db_admission_burst: "Flat token-bucket burst: a spike of this many DB-bound requests is absorbed before the steady rate applies.\n\nDeliberately not rate-proportional, so the absorbed spike size stays stable as the rate adapts.",
+      db_admission_rejected_total: "Cumulative DB-bound requests rejected because the token bucket was empty.\n\nEach rejection window also raises a backpressure alert that self-resolves after 60s of quiet. **Nonzero means real load shedding occurred.**",
     },
   }
 
@@ -190,10 +191,30 @@
     return null
   }
 
+  // Fields in a section share an underscore-prefix (tcp_bp_*, db_admission_*)
+  // that just repeats the section header; strip it from every entry's own
+  // name so the card label carries only the distinguishing part.
+  function sectionLabelPrefix(sec: MetricSection): string[] {
+    const names = sec.scalars.map(s => s.name.split('_'))
+    if (names.length < 2) return []
+    const minLen = Math.min(...names.map(n => n.length))
+    const prefix: string[] = []
+    for (let i = 0; i < minLen - 1; i++) {
+      const seg = names[0][i]
+      if (names.every(n => n[i] === seg)) prefix.push(seg)
+      else break
+    }
+    return prefix
+  }
+
   // _us fields render their value via formatUs (µs/ms), so the label drops
   // the unit token instead of showing a redundant "us".
-  function scalarLabel(name: string): string {
-    return (name.endsWith('_us') ? name.slice(0, -3) : name).replaceAll('_', ' ')
+  function scalarLabel(name: string, prefix: string[] = []): string {
+    const parts = (name.endsWith('_us') ? name.slice(0, -3) : name).split('_')
+    const rest = prefix.length && prefix.length < parts.length && prefix.every((p, i) => parts[i] === p)
+      ? parts.slice(prefix.length)
+      : parts
+    return rest.join(' ')
   }
 
   function numVal(sec: MetricSection, key: string): number {
@@ -234,6 +255,12 @@
   const dbMaxIdleClosed = $derived(sv(sections, "DB Pool", "db_max_idle_closed"));
   const dbMaxIdleTimeClosed = $derived(sv(sections, "DB Pool", "db_max_idle_time_closed"));
   const dbMaxLifetimeClosed = $derived(sv(sections, "DB Pool", "db_max_lifetime_closed"));
+  // Node<->DB network round-trip (not query execution time), absent until
+  // the first sample (the section simply won't have the key -- sv yields 0,
+  // so gate display on the section carrying the key at all, not just a
+  // nonzero value).
+  const dbPingAvgUs = $derived(sv(sections, "DB Pool", "db_ping_avg_us"));
+  const hasDBPing = $derived(sections.some(s => s.name === "DB Pool" && s.scalars.some(sc => sc.name === "db_ping_avg_us")));
 
   const memAllocPct = $derived(
     memSys > 0 ? Math.round((memAlloc / memSys) * 100) : 0,
@@ -466,6 +493,12 @@
                   <span class="w-1.5 h-1.5 rounded-sm bg-muted border" style="opacity: 0.4"></span>
                   Free {dbMaxOpen - dbOpen}
                 </span>
+                {#if hasDBPing}
+                  <span class="flex items-center gap-1" style="color: {dbPingColor(dbPingAvgUs / 1000)}">
+                    <span class="w-1.5 h-1.5 rounded-sm" style="background: currentColor"></span>
+                    Ping {(dbPingAvgUs / 1000).toFixed(1)}ms
+                  </span>
+                {/if}
                 {#if dbWaitCount > 0}
                   <span class="text-warning flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-warning animate-pulse"></span>
@@ -743,11 +776,12 @@
       <CardTitle class="text-base inline-flex items-center gap-1">
         {sec.name}
         {#if SCALAR_SECTION_HINTS[sec.name]}
-          <InfoTip text={SCALAR_SECTION_HINTS[sec.name]} />
+          <InfoTip text={SCALAR_SECTION_HINTS[sec.name]} width={400} />
         {/if}
       </CardTitle>
     </CardHeader>
     <CardContent class="pt-0">
+      {@const labelPrefix = sectionLabelPrefix(sec)}
       <div class="grid grid-cols-1 gap-y-1.5 text-sm font-mono">
         {#each sec.scalars as entry}
           {@const isRaftNodes = sec.name === 'Raft' && entry.name === 'raft_cluster_nodes' && typeof entry.value === 'number'}
@@ -755,9 +789,9 @@
           {@const fieldHint = SCALAR_FIELD_HINTS[sec.name]?.[entry.name]}
           <div class="flex justify-between gap-2">
             <span class="text-muted-foreground shrink-0 scalar-label inline-flex items-center gap-1">
-              {scalarLabel(entry.name)}
+              {scalarLabel(entry.name, labelPrefix)}
               {#if fieldHint}
-                <InfoTip text={fieldHint} />
+                <InfoTip text={fieldHint} width={400} />
               {/if}
             </span>
             <span

@@ -319,6 +319,14 @@ export function pingRttColor(ms: number): string {
   if (ms < 500) return 'var(--warning)'
   return 'var(--destructive)'
 }
+// DB ping round-trip (node -> DB network latency, not query execution
+// time). Tighter bands than pingRttColor above: same-DC/private-network DB
+// traffic, not a client-facing network hop.
+export function dbPingColor(ms: number): string {
+  if (ms < 3) return 'var(--success)'
+  if (ms < 10) return 'var(--warning)'
+  return 'var(--destructive)'
+}
 // 5 visual steps within the reading bands below, built from opacity
 // variations of the 3 sanctioned status hues (success/warning/destructive)
 // per DESIGN.md's rationed-color rule -- no new hue families, just an

@@ -290,7 +290,7 @@
             <legend class="text-sm font-medium">Retention & Lifecycle</legend>
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="space-y-2">
-                <FieldLabel for="retentionPeriod" tooltip="Number of days back snapshot traversal can reach. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window.">
+                <FieldLabel for="retentionPeriod" tooltip={"Number of days back snapshot traversal can reach.\n\nBeyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window."}>
                   Day Retention Window (days)
                 </FieldLabel>
                 <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="30" min="0" max="366" aria-describedby="retentionPeriod-hint" />

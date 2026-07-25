@@ -892,7 +892,7 @@
           {#if editing}
             <div class="grid gap-4 md:grid-cols-2">
               <div class="space-y-1.5">
-                <FieldLabel for="edit-retention" tooltip="Number of days back snapshot traversal can reach. Beyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                <FieldLabel for="edit-retention" tooltip={"Number of days back snapshot traversal can reach.\n\nBeyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window."} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Day Retention Window (days)
                 </FieldLabel>
                 <Input id="edit-retention" type="number" bind:value={editRetention} placeholder="30" min="0" max="366" />

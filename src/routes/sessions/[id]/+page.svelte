@@ -333,11 +333,17 @@
           <div>
             <div class="detail-label flex items-center gap-0.5">
               Process Uptime
-              <InfoTip text={"**Process Uptime:** client-reported, how long this mount's process has been running.\n**Session Age:** server-tracked, how long the session row has been alive.\n\n**Drift signals:**\n• Uptime < Age → process restarted, session reused\n• Uptime > Age → late mount, warm process\n• Age frozen, Uptime advancing → heartbeats lost"} />
+              <InfoTip text={"**Process Uptime:** client-reported, how long this mount's process has been running.\n**Session Age:** server-tracked, how long the session row has been alive.\n\n**Drift signals:**\n• Uptime < Age → process restarted, session reused\n• Uptime > Age → late mount, warm process\n• Age frozen, Uptime advancing → heartbeats lost\n\nCheck Hot Upgrades below before assuming a restart drift means a crash — a graceful in-place binary swap resets Process Uptime too."} />
             </div>
             <p class="text-sm">{m.uptimeSeconds != null ? formatUptime(m.uptimeSeconds) : '·'}</p>
           </div>
           <div><p class="detail-label">Session Age</p><p class="text-sm tabular-nums">{sessionDuration(session)}</p></div>
+          {#if m.upgradeCount != null}
+            <div>
+              <p class="detail-label">Hot Upgrades</p>
+              <p class="text-sm">{formatNum(m.upgradeCount)}{#if m.lastUpgradeSeconds != null}<span class="text-muted-foreground"> (last {formatUptime(m.lastUpgradeSeconds)} ago)</span>{/if}</p>
+            </div>
+          {/if}
           <div><p class="detail-label">Connected</p><p class="text-sm flex items-center gap-0.5">{session.connectedAt ? formatRelative(session.connectedAt) : '·'}{#if session.connectedAt}<InfoTip text={formatDate(session.connectedAt)} />{/if}</p></div>
           <div><p class="detail-label">Last Heartbeat</p><p class="text-sm flex items-center gap-0.5">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}{#if session.lastHeartbeat}<InfoTip text={formatDate(session.lastHeartbeat)} />{/if}</p></div>
           {#if session.disconnectedAt}
@@ -444,7 +450,9 @@
             <div class="metric-group">
               <p class="detail-label">I/O</p>
               <div class="metric-row"><span>Reads</span><span>{formatNum(m.reads ?? 0)}</span></div>
+              <div class="metric-row"><span>Read Bytes</span><span>{formatBytes(m.readBytes ?? 0)}</span></div>
               <div class="metric-row"><span>Writes</span><span>{formatNum(m.writes ?? 0)}</span></div>
+              <div class="metric-row"><span>Write Bytes</span><span>{formatBytes(m.writeBytes ?? 0)}</span></div>
               <div class="metric-row"><span>Open Files</span><span>{formatNum(m.openFiles ?? 0)}</span></div>
               <div class="metric-row"><span>Meta Writes</span><span>{formatNum(m.metaWrites ?? 0)}</span></div>
               <div class="metric-row"><span>Downloaded</span><span>{formatBytes(m.downloaded ?? 0)}</span></div>
@@ -509,8 +517,14 @@
               <p class="detail-label">Object Store</p>
               <div class="metric-row"><span>GET Count</span><span>{formatNum(m.objectGetCount ?? 0)}</span></div>
               <div class="metric-row"><span>GET Bytes</span><span>{formatBytes(m.objectGetBytes ?? 0)}</span></div>
+              {#if (m.objectGetCount ?? 0) > 0}
+                <div class="metric-row"><span>GET Avg Latency</span><span style="color: {latencyColor(m.objectGetAvgUs ?? 0)}">{formatUs(m.objectGetAvgUs ?? 0)}</span></div>
+              {/if}
               <div class="metric-row"><span>PUT Count</span><span>{formatNum(m.objectPutCount ?? 0)}</span></div>
               <div class="metric-row"><span>PUT Bytes</span><span>{formatBytes(m.objectPutBytes ?? 0)}</span></div>
+              {#if (m.objectPutCount ?? 0) > 0}
+                <div class="metric-row"><span>PUT Avg Latency</span><span style="color: {latencyColor(m.objectPutAvgUs ?? 0)}">{formatUs(m.objectPutAvgUs ?? 0)}</span></div>
+              {/if}
               <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
               {#if m.s3RetryAttempts != null}
                 <div class="metric-row"><span>Retries</span><span>{formatNum(m.s3RetryAttempts ?? 0)}</span></div>
@@ -532,6 +546,11 @@
                 </span>
               </div>
               <div class="metric-row"><span>TCP Conns</span><span>{formatNum(m.tcpActiveConns ?? 0)}</span></div>
+              <div class="metric-row"><span>TCP Peak</span><span>{formatNum(m.tcpPeakActive ?? 0)}</span></div>
+              {#if m.connDroppedRequests != null}
+                <div class="metric-row"><span>Dropped Reqs</span><span>{formatNum(m.connDroppedRequests)}</span></div>
+                <div class="metric-row"><span>Dropped Avg Latency</span><span>{formatUs(m.connDroppedAvgLatencyUs ?? 0)}</span></div>
+              {/if}
               <div class="metric-row"><span>TCP Recv</span><span>{formatBytes(m.tcpBytesRecv ?? 0)}</span></div>
               <div class="metric-row"><span>TCP Sent</span><span>{formatBytes(m.tcpBytesSent ?? 0)}</span></div>
               <div class="metric-row"><span>Events Recv</span><span>{formatNum(m.tcpEventsRecv ?? 0)}</span></div>
@@ -541,6 +560,9 @@
               <p class="detail-label">Runtime</p>
               <div class="metric-row"><span>Goroutines</span><span>{formatNum(m.goroutines ?? 0)}</span></div>
               <div class="metric-row"><span>Mem Alloc</span><span style="color: {memAllocColor(m.memAlloc ?? 0)}">{formatBytes(m.memAlloc ?? 0)}</span></div>
+              <div class="metric-row"><span>Mem Sys</span><span>{formatBytes(m.memSys ?? 0)}</span></div>
+              <div class="metric-row"><span>GC Count</span><span>{formatNum(m.gcNum ?? 0)}</span></div>
+              <div class="metric-row"><span>CPU Time</span><span>{m.cpuSeconds != null ? formatUptime(m.cpuSeconds) : '·'}</span></div>
               <div class="metric-row"><span>RPC Count</span><span>{formatNum(m.rpcCount ?? 0)}</span></div>
               <div class="metric-row {(m.rpcErrors ?? 0) ? 'text-destructive' : ''}"><span>RPC Errors</span><span>{formatNum(m.rpcErrors ?? 0)}</span></div>
             </div>
