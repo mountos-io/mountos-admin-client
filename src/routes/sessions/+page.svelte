@@ -229,7 +229,10 @@
               </TableCell>
               <TableCell>
                 <div>
-                  <p class="text-sm font-medium truncate max-w-[200px]" title={session.hostname || session.ipAddr}>{session.hostname || session.ipAddr}</p>
+                  <div class="flex items-center gap-1.5">
+                    <p class="text-sm font-medium truncate max-w-[200px]" title={session.hostname || session.ipAddr}>{session.hostname || session.ipAddr}</p>
+                    {#if session.appVersion}<Badge variant="outline" class="font-mono shrink-0" title="App version">v{session.appVersion}</Badge>{/if}
+                  </div>
                   <p class="text-sm text-muted-foreground font-mono">{session.ipAddr} &middot; #{session.id}</p>
                 </div>
               </TableCell>
