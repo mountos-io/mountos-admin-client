@@ -46,6 +46,12 @@
   let editName = $state('')
   let editDescription = $state('')
   let editIconUrl = $state('')
+  // Retention is a policy object on the account; the storage representation is a
+  // server concern and never reaches this form. Held as a string and coerced on
+  // submit, matching the quota fields: binding a number directly yields null the
+  // moment the operator clears the input, which would post a null the server
+  // then has to interpret.
+  let editClientSessionDays = $state('')
   let editSubmitting = $state(false)
   let editIconError = $state(false)
   let editPreviewUrl = $state('')
@@ -73,12 +79,21 @@
     editName = account.name
     editDescription = account.description || ''
     editIconUrl = account.iconUrl || ''
+    editClientSessionDays = String(account.retention?.clientSessionDays ?? 90)
     editing = true
   }
 
   function cancelEdit() {
     editing = false
     if (editOnLoad) goto(`/accounts/${id}`, { replaceState: true })
+  }
+
+  // An empty or out-of-range box means "leave it alone", not "reset to default":
+  // omitting the policy is what the server treats as untouched.
+  function retentionPayload() {
+    const days = Number(editClientSessionDays)
+    if (!editClientSessionDays.trim() || isNaN(days) || days < 1 || days > 3650) return undefined
+    return { clientSessionDays: Math.round(days) }
   }
 
   async function handleUpdate(e: Event) {
@@ -90,6 +105,7 @@
         name: editName.trim(),
         description: editDescription.trim() || undefined,
         iconUrl: editIconUrl.trim() || undefined,
+        retention: retentionPayload(),
       })
       account = await store.getAccount(id)
       editing = false
@@ -207,6 +223,10 @@
               <div class="space-y-2">
                 <Label for="edit-iconUrl">Icon URL</Label>
                 <Input id="edit-iconUrl" bind:value={editIconUrl} placeholder="https://example.com/icon.png" autocomplete="url" />
+              </div>
+              <div class="space-y-2">
+                <Label for="edit-clientSessionDays">Client session retention (days)</Label>
+                <Input id="edit-clientSessionDays" type="number" min="1" max="3650" bind:value={editClientSessionDays} placeholder="90" />
               </div>
             </CardContent>
             <CardFooter class="gap-4">
