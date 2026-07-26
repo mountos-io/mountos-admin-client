@@ -232,7 +232,7 @@
         region: region.trim() || undefined,
         bucket: bucket.trim() || undefined,
         base: base.trim() || undefined,
-        blockSize: isBlock ? Number(blockSize) : undefined,
+        blockSize: Number(blockSize),
         members: isBlock
           ? members.map(m => ({ name: m.name.trim() || undefined, regionClusterId: Number(m.regionClusterId) }))
           : undefined,
@@ -308,12 +308,13 @@
           {#if storageType}
             <Separator />
 
-            {#if isBlock}
-              <div class="space-y-2">
-                <Label id="blockSize-label" for="blockSize">Block Size</Label>
-                <Select id="blockSize" ariaLabelledby="blockSize-label" bind:value={blockSize} options={BLOCK_SIZES} />
-              </div>
+            <div class="space-y-2">
+              <Label id="blockSize-label" for="blockSize">Block Size</Label>
+              <Select id="blockSize" ariaLabelledby="blockSize-label" bind:value={blockSize} options={BLOCK_SIZES} />
+              <p class="text-xs text-muted-foreground">Chunk size for segmenting data written to the backing object store.</p>
+            </div>
 
+            {#if isBlock}
               <div class="space-y-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>

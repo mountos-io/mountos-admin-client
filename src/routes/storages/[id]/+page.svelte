@@ -19,6 +19,7 @@
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
+  import { formatBytes } from '$lib/core/utils/format'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import CopyIcon from '@lucide/svelte/icons/copy'
@@ -276,10 +277,20 @@
             </div>
           {/if}
 
-          {#if storage.description}
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
-              <p class="mt-1 text-sm">{storage.description}</p>
+          {#if storage.description || storage.blockSize}
+            <div class="grid gap-4 md:grid-cols-2">
+              {#if storage.description}
+                <div>
+                  <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
+                  <p class="mt-1 text-sm">{storage.description}</p>
+                </div>
+              {/if}
+              {#if storage.blockSize}
+                <div>
+                  <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Block Size</span>
+                  <p class="mt-1 text-sm font-mono">{formatBytes(storage.blockSize)}</p>
+                </div>
+              {/if}
             </div>
           {/if}
 
