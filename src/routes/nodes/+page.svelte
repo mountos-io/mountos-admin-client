@@ -10,6 +10,8 @@
   import { usePreferences } from '$lib/stores/preferences.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Badge } from '$lib/components/ui/badge'
+  import UpdateIndicator from '$lib/components/shared/UpdateIndicator.svelte'
+  import { useReleases } from '$lib/core/stores/releases.svelte'
   import { Button } from '$lib/components/ui/button'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import Pagination from '$lib/components/shared/Pagination.svelte'
@@ -39,6 +41,7 @@
 
   const regionStore = useRegions()
   const nodeStore = useNodes()
+  const releases = useReleases()
   const clusterStore = useClusters()
   const accountStore = useAccounts()
   const auth = useAuth()
@@ -150,6 +153,14 @@
     const accountId = accountStore.selectedAccountId
     if (accountId == null) return
     clusterStore.fetchAllClusters(accountId).catch(() => { /* non-fatal */ })
+  })
+
+  // Release metadata for the update indicators. Fetched once; the server caches it and
+  // an unreachable bucket degrades to "no indicator" rather than a page error.
+  $effect(() => {
+    if (!releases.loaded && !releases.loading) {
+      releases.fetchReleases().catch(() => { /* indicator is additive, never fatal */ })
+    }
   })
 
   // Load the cross-region node view, scoped to the selected account, and refetch
@@ -292,7 +303,9 @@
             <TableCell class="font-mono text-sm">
               <a href="/nodes/{node.regionId}/{node.nodeId}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Node {node.nodeId}">{node.nodeId}</a>
               {#if node.binaryVersion != null}
-                <Badge variant="outline" class="relative z-10 ml-1.5 font-mono text-xs">{formatBinaryVersion(node.binaryVersion)}</Badge>
+                {@const running = formatBinaryVersion(node.binaryVersion)}
+                <Badge variant="outline" class="relative z-10 ml-1.5 font-mono text-xs">{running}</Badge>
+                <UpdateIndicator class="ml-1 align-middle" {running} status={releases.updateStatusFor(node.serviceType, running)} />
               {/if}
             </TableCell>
             {#if !selectedRegionId}

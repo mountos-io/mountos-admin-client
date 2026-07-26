@@ -9,6 +9,8 @@
   import { Card, CardContent } from '$lib/components/ui/card'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { Badge } from '$lib/components/ui/badge'
+  import UpdateIndicator from '$lib/components/shared/UpdateIndicator.svelte'
+  import { useReleases } from '$lib/core/stores/releases.svelte'
   import { Button } from '$lib/components/ui/button'
   import { Input } from '$lib/components/ui/input'
   import { Checkbox } from '$lib/components/ui/checkbox'
@@ -30,12 +32,22 @@
   import { pingRttColor } from '$lib/core/utils/metrics'
 
   const store = useSessions()
+  const releases = useReleases()
   const accountStore = useAccounts()
   const auth = useAuth()
   const account = $derived(accountStore.selectedAccount)
   const accountId = $derived(account?.id ?? null)
   const volumeIdParam = $derived($page.url.searchParams.get('volumeId'))
   let redirected = false
+
+
+  // Release metadata for the update indicators. Additive: a failure shows no indicator
+  // rather than an error.
+  $effect(() => {
+    if (!releases.loaded && !releases.loading) {
+      releases.fetchReleases().catch(() => { /* non-fatal */ })
+    }
+  })
 
   $effect(() => {
     if (auth.loading) return
@@ -231,7 +243,11 @@
                 <div>
                   <div class="flex items-center gap-1.5">
                     <p class="text-sm font-medium truncate max-w-[200px]" title={session.hostname || session.ipAddr}>{session.hostname || session.ipAddr}</p>
-                    {#if session.appVersion}<Badge variant="outline" class="font-mono shrink-0" title="App version">v{session.appVersion}</Badge>{/if}
+                    {#if session.appVersion}
+                      <Badge variant="outline" class="font-mono shrink-0" title="App version">v{session.appVersion}</Badge>
+                      <UpdateIndicator class="shrink-0" running={session.appVersion}
+                        status={releases.clientUpdateStatusFor(session.osName, session.appVersion)} />
+                    {/if}
                   </div>
                   <p class="text-sm text-muted-foreground font-mono">{session.ipAddr} &middot; #{session.id}</p>
                 </div>

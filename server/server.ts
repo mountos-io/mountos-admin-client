@@ -18,6 +18,7 @@ import { authz } from './authz'
 import { proxy } from './proxy'
 import { WebAuthnManager } from './webauthn'
 import { createStepUpMiddleware } from './stepup'
+import { getReleases } from './releases'
 import { createRateLimiter } from './ratelimit'
 import { createThrottle } from './throttle'
 import { registry, metricsMiddleware, authFailuresTotal, webauthnOpsTotal } from './metrics'
@@ -315,6 +316,13 @@ app.patch('/api/webauthn/credentials/:id', async (c) => {
   } catch {
     return c.json({ status: 'failure', message: 'rename failed' }, 400)
   }
+})
+
+// Published release metadata, for the "update available" indicators. Authenticated like
+// every other /api route (it is fetched by the dashboard, not by a service), served from
+// this server's cache so the browser never talks to the distribution bucket directly.
+app.get('/api/releases', async (c) => {
+  return c.json(await getReleases())
 })
 
 app.use('/api/*', stepUpMiddleware)

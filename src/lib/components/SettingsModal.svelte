@@ -18,16 +18,33 @@
   import ShieldCheck from '@lucide/svelte/icons/shield-check'
   import Info from '@lucide/svelte/icons/info'
   import ScrollText from '@lucide/svelte/icons/scroll-text'
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useLicense } from '$lib/core/stores/license.svelte'
+  import { useReleases, severityClass, severityLabel } from '$lib/core/stores/releases.svelte'
   import { Badge } from '$lib/components/ui/badge'
-  import { formatDate } from '$lib/core/utils/format'
+  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
+  import EmptyState from '$lib/components/shared/EmptyState.svelte'
+  import { formatDate, formatRelative } from '$lib/core/utils/format'
 
   const prefs = usePreferences()
   const modal = useSettingsModal()
   const accountStore = useAccounts()
   const auth = useAuth()
   const licenseStore = useLicense()
+  const releases = useReleases()
+
+  $effect(() => {
+    if (modal.tab === 'updates' && !releases.loaded && !releases.loading) {
+      releases.fetchReleases().catch(() => { /* rendered as the error state below */ })
+    }
+  })
+
+  // Each release unit is one row. A unit covers the binaries that must never drift apart:
+  // dataserv and gcserv share `dbserv` because they migrate the same database.
+  const releaseUnits = $derived(
+    Object.entries(releases.index?.units ?? {}).sort(([a], [b]) => a.localeCompare(b)),
+  )
 
   // Load-license (admin-only; the License tab is already gated by !auth.isUserRole)
   let licenseFiles = $state<FileList | undefined>(undefined)
@@ -77,6 +94,7 @@
     { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
     { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
     ...(!auth.isUserRole ? [{ id: 'license' as SettingsTab, label: 'License', icon: ShieldCheck }] : []),
+    ...(!auth.isUserRole ? [{ id: 'updates' as SettingsTab, label: 'Updates', icon: RefreshCw }] : []),
     { id: 'about', label: 'About', icon: Info },
   ])
 
@@ -537,6 +555,94 @@
               <p class="text-sm text-destructive" role="alert">{licenseUploadError}</p>
             {:else if licenseUploaded}
               <p class="text-sm text-success" role="status">License loaded.</p>
+            {/if}
+          </div>
+
+        {:else if modal.tab === 'updates'}
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-sm font-medium">Available versions</h3>
+              <p class="text-xs text-muted-foreground mt-1">Deployment-wide release information for every mountOS component.</p>
+            </div>
+            {#if !releases.enabled && releases.loaded}
+              <EmptyState title="Update checks are disabled"
+                description="MOUNTOS_UPDATE_CHECK is off, so this deployment does not contact the distribution service. Versions below are not available." />
+            {:else if releases.loading && !releases.index}
+              <p class="text-sm text-muted-foreground">Loading release information...</p>
+            {:else if !releases.index}
+              <EmptyState title="Release information unavailable"
+                description={releases.error || 'The distribution service could not be reached.'} />
+            {:else}
+              <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-muted-foreground">
+                <span>Release series <span class="font-mono text-foreground">{releases.index.suite}</span></span>
+                <span>DB schema level <span class="font-mono text-foreground">{releases.index.schema_version}</span></span>
+                <span>Wire protocol <span class="font-mono text-foreground">{releases.index.protocol_version}</span></span>
+                {#if releases.fetchedAt}
+                  <span class="ml-auto">Checked {formatRelative(releases.fetchedAt)}</span>
+                {/if}
+              </div>
+
+              {#if releases.error}
+                <p class="text-sm text-amber-600 dark:text-amber-500">
+                  Showing the last known data; the most recent check failed ({releases.error}).
+                </p>
+              {/if}
+
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Release unit</TableHead>
+                    <TableHead>Latest</TableHead>
+                    <TableHead>Severity</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {#each releaseUnits as [name, unit] (name)}
+                    <TableRow>
+                      <TableCell>
+                        <span class="font-medium">{name}</span>
+                        <div class="mt-0.5 flex flex-wrap gap-1">
+                          {#each unit.pkgs as pkg (pkg)}
+                            <Badge variant="outline" class="font-mono text-xs">{pkg}</Badge>
+                          {/each}
+                        </div>
+                      </TableCell>
+                      <TableCell class="align-top">
+                        <span class="font-mono text-sm">{unit.version}</span>
+                        <!-- A unit can version per platform (the CLI does, since each platform
+                             links a different set of mount backends). Show the split when it
+                             differs, so "latest" is never ambiguous. -->
+                        {#if Object.values(unit.platforms ?? {}).some(v => v !== unit.version)}
+                          <div class="mt-0.5 space-y-0.5 text-xs text-muted-foreground">
+                            {#each Object.entries(unit.platforms) as [plat, ver] (plat)}
+                              <div class="font-mono">{plat} {ver}</div>
+                            {/each}
+                          </div>
+                        {/if}
+                      </TableCell>
+                      <TableCell class="align-top">
+                        <span class={cn('text-sm', severityClass(unit.severity))}>{severityLabel(unit.severity)}</span>
+                        {#if unit.breaking}
+                          <div class="text-xs text-destructive">Breaking</div>
+                        {/if}
+                      </TableCell>
+                      <TableCell class="align-top text-sm text-muted-foreground">
+                        {unit.summary}
+                        {#if unit.action_required}
+                          <div class="mt-1 rounded bg-muted px-2 py-1 text-xs text-foreground">{unit.action_required}</div>
+                        {/if}
+                        {#if unit.requires_schema || unit.requires_protocol}
+                          <div class="mt-1 text-xs">
+                            {#if unit.requires_schema}Needs schema {unit.requires_schema}.{/if}
+                            {#if unit.requires_protocol} Speaks protocol {unit.requires_protocol}.{/if}
+                          </div>
+                        {/if}
+                      </TableCell>
+                    </TableRow>
+                  {/each}
+                </TableBody>
+              </Table>
             {/if}
           </div>
 
