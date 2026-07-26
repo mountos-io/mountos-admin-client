@@ -301,20 +301,20 @@
   const editDirty = $derived(
     volume != null && (
       editDesc !== (volume.description ?? '') ||
-      editRetention !== String(volume.retentionPeriod) ||
-      editGrace !== String(volume.gracePeriod) ||
-      editForkGrace !== String(volume.forkGracePeriod) ||
-      editEventLog !== String(volume.eventLogRetentionPeriod) ||
+      editRetention !== String(volume.retention?.dataDays ?? 0) ||
+      editGrace !== String(volume.retention?.graceDays ?? 0) ||
+      editForkGrace !== String(volume.retention?.forkGraceDays ?? 0) ||
+      editEventLog !== String(volume.retention?.eventLogDays ?? 0) ||
       editQuota !== String(bytesToGb(volume.quotaLimit))
     )
   )
 
   function syncEditFields(v: Volume) {
     editDesc = v.description ?? ''
-    editRetention = String(v.retentionPeriod)
-    editGrace = String(v.gracePeriod)
-    editForkGrace = String(v.forkGracePeriod)
-    editEventLog = String(v.eventLogRetentionPeriod)
+    editRetention = String(v.retention?.dataDays ?? 0)
+    editGrace = String(v.retention?.graceDays ?? 0)
+    editForkGrace = String(v.retention?.forkGraceDays ?? 0)
+    editEventLog = String(v.retention?.eventLogDays ?? 0)
     editQuota = String(bytesToGb(v.quotaLimit))
   }
 
@@ -391,10 +391,12 @@
       const quotaChanged = isAdmin && editQuota !== String(bytesToGb(volume.quotaLimit))
       await store.editVolume(id, {
         description: editDesc.trim() || undefined,
-        retentionPeriod: editRetention ? Number(editRetention) : undefined,
-        forkGracePeriod: editForkGrace ? Number(editForkGrace) : undefined,
-        eventLogRetentionPeriod: editEventLog ? Number(editEventLog) : undefined,
-        gracePeriod: isAdmin && editGrace ? Number(editGrace) : undefined,
+        retention: {
+          dataDays: editRetention ? Number(editRetention) : undefined,
+          forkGraceDays: editForkGrace ? Number(editForkGrace) : undefined,
+          eventLogDays: editEventLog ? Number(editEventLog) : undefined,
+          graceDays: isAdmin && editGrace ? Number(editGrace) : undefined,
+        },
       })
       if (quotaChanged) {
         const gb = Number(editQuota)
@@ -925,28 +927,28 @@
                   Day Retention Window
                   <InfoTip text={"Number of days back snapshot traversal can reach.\n\nAn active fork pinning older data may force the effective retention beyond the configured window."} />
                 </span>
-                <p class="text-sm">{volume.retentionPeriod} days</p>
+                <p class="text-sm">{volume.retention?.dataDays ?? 0} days</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Grace Period
                   <InfoTip text={"After deactivation, this is the window to reactivate the volume.\n\nOnce it expires, data is purged according to the cleanup options chosen at deactivation."} />
                 </span>
-                <p class="text-sm">{volume.gracePeriod} days</p>
+                <p class="text-sm">{volume.retention?.graceDays ?? 0} days</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Fork Grace Period
                   <InfoTip text="After a named fork is deactivated, the window to restore it before its data is permanently cleaned up." />
                 </span>
-                <p class="text-sm">{volume.forkGracePeriod} days</p>
+                <p class="text-sm">{volume.retention?.forkGraceDays ?? 0} days</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Event Log Retention
                   <InfoTip text="How many days of file/folder change events are kept for this volume. 0 disables change-event logging (saves resources)." />
                 </span>
-                <p class="text-sm">{volume.eventLogRetentionPeriod} days</p>
+                <p class="text-sm">{volume.retention?.eventLogDays ?? 0} days</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">

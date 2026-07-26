@@ -101,9 +101,10 @@ export function ceilDatetimeTz(d: Date, tz: string): string {
 // then clamped above the volume's root creation: nothing exists before the main
 // fork's bootstrap (root inode born_at), so retention can never reach earlier.
 // The main fork has no snapshot pin; its createdAt acts as the absolute floor.
-export function gcFloorMs(volume: Pick<Volume, 'retentionPeriod'> | null | undefined, forks: Fork[]): number {
+export function gcFloorMs(volume: Pick<Volume, 'retention'> | null | undefined, forks: Fork[]): number {
   if (!volume) return 0
-  const days = volume.retentionPeriod > 0 ? volume.retentionPeriod : DEFAULT_RETENTION_DAYS
+  const dataDays = volume.retention?.dataDays ?? 0
+  const days = dataDays > 0 ? dataDays : DEFAULT_RETENTION_DAYS
   let floor = Date.now() - days * 86400_000
   let volumeFloor = 0
   for (const f of forks) {
@@ -128,7 +129,7 @@ export function forkAnchorFloorMs(forks: Fork[], anchorName: string | undefined 
 }
 
 export function forkAsOfMin(
-  volume: Pick<Volume, 'retentionPeriod'> | null | undefined,
+  volume: Pick<Volume, 'retention'> | null | undefined,
   forks: Fork[],
   anchorName: string | null | undefined,
   tz: string,

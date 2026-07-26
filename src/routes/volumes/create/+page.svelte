@@ -158,10 +158,12 @@
         volumeType,
         encryption: encryption ? true : undefined,
         encryptionKey: (encryption && encryptionKey.trim()) ? encryptionKey.trim() : undefined,
-        retentionPeriod: retentionPeriod ? Number(retentionPeriod) : undefined,
-        forkGracePeriod: forkGracePeriod ? Number(forkGracePeriod) : undefined,
-        eventLogRetentionPeriod: eventLogRetentionPeriod ? Number(eventLogRetentionPeriod) : undefined,
-        gracePeriod: !auth.isUserRole && gracePeriod ? Number(gracePeriod) : undefined,
+        retention: {
+          dataDays: retentionPeriod ? Number(retentionPeriod) : undefined,
+          forkGraceDays: forkGracePeriod ? Number(forkGracePeriod) : undefined,
+          eventLogDays: eventLogRetentionPeriod ? Number(eventLogRetentionPeriod) : undefined,
+          graceDays: !auth.isUserRole && gracePeriod ? Number(gracePeriod) : undefined,
+        },
         quotaLimit: !auth.isUserRole && quotaLimit ? gbToBytes(Number(quotaLimit)) : undefined,
       })
       showSuccessToast('Volume created')
