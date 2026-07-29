@@ -14,7 +14,7 @@
   } = $props()
 
   const hasDiskUsage = $derived(samples.some(s => (s.diskTotalBytes ?? 0) > 0))
-  // DB metrics only arrive from DB-backed services (dataserv/gcserv/appserv).
+  // DB metrics only arrive from DB-backed services.
   const hasDB = $derived(samples.some(s => (s.dbConnsMax ?? 0) > 0))
   const dbConnsMax = $derived(Math.max(0, ...samples.map(s => s.dbConnsMax ?? 0)))
   const latestSample = $derived(samples.length > 0 ? samples[samples.length - 1] : null)

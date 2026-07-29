@@ -74,7 +74,7 @@ async function fetchReleases(): Promise<void> {
   }
 }
 
-/** Component-wise semver compare. Matches relver's ordering in mountos-servers. */
+/** Component-wise semver compare. Matches the server's ordering. */
 export function semverLess(a: string, b: string): boolean {
   const pa = a.split('.').map(Number)
   const pb = b.split('.').map(Number)

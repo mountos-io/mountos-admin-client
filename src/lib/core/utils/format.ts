@@ -117,7 +117,7 @@ export function formatQuota(used: number, limit: number): string {
   return `${formatBytes(used)} / ${formatBytes(limit)}`
 }
 
-// Inverse of identity.VersionNumber (mountos-servers): x*1_000_000 + y*1_000 + z -> "x.y.z".
+// Inverse of the server's packed version number: x*1_000_000 + y*1_000 + z -> "x.y.z".
 export function formatBinaryVersion(n: number): string {
   return `${Math.floor(n / 1_000_000)}.${Math.floor(n / 1_000) % 1_000}.${n % 1_000}`
 }

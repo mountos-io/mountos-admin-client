@@ -11,6 +11,7 @@
   import { Button } from '$lib/components/ui/button'
   import { Badge } from '$lib/components/ui/badge'
   import { Input } from '$lib/components/ui/input'
+  import { Select } from '$lib/components/ui/select'
   import { Textarea } from '$lib/components/ui/textarea'
   import { Label } from '$lib/components/ui/label'
   import { Separator } from '$lib/components/ui/separator'
@@ -295,8 +296,15 @@
   let editGrace = $state('')
   let editForkGrace = $state('')
   let editEventLog = $state('')
+  let editContentWindow = $state('')
   let editQuota = $state('')
   let editSaving = $state(false)
+
+  // Every window a volume can be set to (exact divisors of 60) so any
+  // sub-60s value re-floors cleanly to the fixed 60s grid metadata-only
+  // writes and fork/snapshot boundaries still use. Kept in lockstep with
+  // the server-side allow-list.
+  const CONTENT_WINDOW_OPTIONS = [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60]
 
   const editDirty = $derived(
     volume != null && (
@@ -305,6 +313,7 @@
       editGrace !== String(volume.retention?.graceDays ?? 0) ||
       editForkGrace !== String(volume.retention?.forkGraceDays ?? 0) ||
       editEventLog !== String(volume.retention?.eventLogDays ?? 0) ||
+      editContentWindow !== String(volume.versioning?.contentWindowSeconds ?? 60) ||
       editQuota !== String(bytesToGb(volume.quotaLimit))
     )
   )
@@ -315,6 +324,7 @@
     editGrace = String(v.retention?.graceDays ?? 0)
     editForkGrace = String(v.retention?.forkGraceDays ?? 0)
     editEventLog = String(v.retention?.eventLogDays ?? 0)
+    editContentWindow = String(v.versioning?.contentWindowSeconds ?? 60)
     editQuota = String(bytesToGb(v.quotaLimit))
   }
 
@@ -396,6 +406,9 @@
           forkGraceDays: editForkGrace ? Number(editForkGrace) : undefined,
           eventLogDays: editEventLog ? Number(editEventLog) : undefined,
           graceDays: isAdmin && editGrace ? Number(editGrace) : undefined,
+        },
+        versioning: {
+          contentWindowSeconds: editContentWindow ? Number(editContentWindow) : undefined,
         },
       })
       if (quotaChanged) {
@@ -897,27 +910,35 @@
                 <FieldLabel for="edit-retention" tooltip={"Number of days back snapshot traversal can reach.\n\nBeyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window."} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Day Retention Window (days)
                 </FieldLabel>
-                <Input id="edit-retention" type="number" bind:value={editRetention} placeholder="30" min="0" max="366" />
+                <Input id="edit-retention" type="number" class="w-[120px]" bind:value={editRetention} placeholder="30" min="0" max="366" />
               </div>
               {#if !auth.isUserRole}
                 <div class="space-y-1.5">
                   <FieldLabel for="edit-grace" tooltip="After deactivation, this is the window to reactivate the volume. Once it expires, data is purged according to the cleanup options chosen at deactivation." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                     Grace Period (days)
                   </FieldLabel>
-                  <Input id="edit-grace" type="number" bind:value={editGrace} placeholder="14" min="0" max="91" />
+                  <Input id="edit-grace" type="number" class="w-[120px]" bind:value={editGrace} placeholder="14" min="0" max="91" />
                 </div>
               {/if}
               <div class="space-y-1.5">
                 <FieldLabel for="edit-fork-grace" tooltip="After a named fork is deactivated, the window to restore it before its data is permanently cleaned up." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Fork Grace Period (days)
                 </FieldLabel>
-                <Input id="edit-fork-grace" type="number" bind:value={editForkGrace} placeholder="1" min="0" max="30" />
+                <Input id="edit-fork-grace" type="number" class="w-[120px]" bind:value={editForkGrace} placeholder="1" min="0" max="30" />
               </div>
               <div class="space-y-1.5">
                 <FieldLabel for="edit-event-log" tooltip="How many days of file/folder change events are kept for this volume. 0 disables change-event logging (saves resources)." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Event Log Retention (days)
                 </FieldLabel>
-                <Input id="edit-event-log" type="number" bind:value={editEventLog} placeholder="0" min="0" max="30" />
+                <Input id="edit-event-log" type="number" class="w-[120px]" bind:value={editEventLog} placeholder="0" min="0" max="30" />
+              </div>
+              <div class="space-y-1.5">
+                <FieldLabel id="edit-content-window-label" tooltip={"How finely content edits (writes/truncates) are versioned, in seconds.\n\nSmaller windows keep more, more-granular file-content versions, at the cost of more version rows and longer-retained storage. Metadata-only changes (rename, permissions) always version at the fixed 60s window regardless of this setting."} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                  Content Version Window
+                </FieldLabel>
+                <Select id="edit-content-window" ariaLabelledby="edit-content-window-label" class="w-[150px]" bind:value={editContentWindow}
+                  placeholder="Select window..."
+                  options={CONTENT_WINDOW_OPTIONS.map(n => ({ value: String(n), label: n === 60 ? '60s (default)' : `${n}s` }))} />
               </div>
             </div>
           {:else}
@@ -952,6 +973,13 @@
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Content Version Window
+                  <InfoTip text={"How finely content edits (writes/truncates) are versioned, in seconds.\n\nSmaller windows keep more, more-granular file-content versions, at the cost of more version rows and longer-retained storage. Metadata-only changes (rename, permissions) always version at the fixed 60s window regardless of this setting."} />
+                </span>
+                <p class="text-sm">{volume.versioning?.contentWindowSeconds ?? 60}s</p>
+              </div>
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Retention up to
                   <InfoTip text={"Earliest snapshot reachable: today minus the retention window, or the oldest active fork's snapshot, whichever is older."} />
                 </span>
@@ -975,7 +1003,7 @@
           {#if editing && !auth.isUserRole}
             <div class="space-y-1.5">
               <Label for="edit-quota" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota Limit (GB)</Label>
-              <Input id="edit-quota" type="number" bind:value={editQuota} placeholder="0 = unlimited" min="0" step="0.01" />
+              <Input id="edit-quota" type="number" class="w-[120px]" bind:value={editQuota} placeholder="0 = unlimited" min="0" step="0.01" />
             </div>
           {:else if !editing}
             <div class="flex flex-wrap gap-x-6 gap-y-2">

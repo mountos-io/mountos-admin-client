@@ -295,7 +295,7 @@
                 <FieldLabel for="retentionPeriod" tooltip={"Number of days back snapshot traversal can reach.\n\nBeyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window."}>
                   Day Retention Window (days)
                 </FieldLabel>
-                <Input id="retentionPeriod" type="number" bind:value={retentionPeriod} placeholder="30" min="0" max="366" aria-describedby="retentionPeriod-hint" />
+                <Input id="retentionPeriod" type="number" class="w-[120px]" bind:value={retentionPeriod} placeholder="30" min="0" max="366" aria-describedby="retentionPeriod-hint" />
                 <p id="retentionPeriod-hint" class="sr-only">Number of days back snapshot traversal can reach</p>
               </div>
               {#if !auth.isUserRole}
@@ -303,7 +303,7 @@
                   <FieldLabel for="gracePeriod" tooltip="After deactivation, this is the window to reactivate the volume. Once it expires, data is purged according to the cleanup options chosen at deactivation.">
                     Grace Period (days)
                   </FieldLabel>
-                  <Input id="gracePeriod" type="number" bind:value={gracePeriod} placeholder="14" min="0" max="91" aria-describedby="gracePeriod-hint" />
+                  <Input id="gracePeriod" type="number" class="w-[120px]" bind:value={gracePeriod} placeholder="14" min="0" max="91" aria-describedby="gracePeriod-hint" />
                   <p id="gracePeriod-hint" class="sr-only">After deactivation, this is the window to reactivate the volume</p>
                 </div>
               {/if}
@@ -311,14 +311,14 @@
                 <FieldLabel for="forkGracePeriod" tooltip="After a named fork is deactivated, the window to restore it before its data is permanently cleaned up.">
                   Fork Grace Period (days)
                 </FieldLabel>
-                <Input id="forkGracePeriod" type="number" bind:value={forkGracePeriod} placeholder="1" min="0" max="30" aria-describedby="forkGracePeriod-hint" />
+                <Input id="forkGracePeriod" type="number" class="w-[120px]" bind:value={forkGracePeriod} placeholder="1" min="0" max="30" aria-describedby="forkGracePeriod-hint" />
                 <p id="forkGracePeriod-hint" class="sr-only">After a named fork is deactivated, the window to restore it before its data is permanently cleaned up</p>
               </div>
               <div class="space-y-2">
                 <FieldLabel for="eventLogRetentionPeriod" tooltip="How many days of file/folder change events are kept for this volume. 0 disables change-event logging (saves resources).">
                   Event Log Retention (days)
                 </FieldLabel>
-                <Input id="eventLogRetentionPeriod" type="number" bind:value={eventLogRetentionPeriod} placeholder="0" min="0" max="30" aria-describedby="eventLogRetentionPeriod-hint" />
+                <Input id="eventLogRetentionPeriod" type="number" class="w-[120px]" bind:value={eventLogRetentionPeriod} placeholder="0" min="0" max="30" aria-describedby="eventLogRetentionPeriod-hint" />
                 <p id="eventLogRetentionPeriod-hint" class="sr-only">How many days of file/folder change events are kept for this volume. 0 disables change-event logging</p>
               </div>
             </div>
@@ -329,7 +329,7 @@
 
             <div class="space-y-2">
               <Label for="quotaLimit">Quota Limit (GB)</Label>
-              <Input id="quotaLimit" type="number" bind:value={quotaLimit} placeholder="0" min="0" step="0.01" aria-describedby="quotaLimit-hint" />
+              <Input id="quotaLimit" type="number" class="w-[120px]" bind:value={quotaLimit} placeholder="0" min="0" step="0.01" aria-describedby="quotaLimit-hint" />
               <p id="quotaLimit-hint" class="text-xs text-muted-foreground">0 means unlimited.</p>
             </div>
           {/if}
