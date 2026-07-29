@@ -298,6 +298,7 @@
   let editEventLog = $state('')
   let editContentWindow = $state('')
   let editQuota = $state('')
+  let editCompaction = $state('')
   let editSaving = $state(false)
 
   // Every window a volume can be set to (exact divisors of 60) so any
@@ -305,6 +306,38 @@
   // writes and fork/snapshot boundaries still use. Kept in lockstep with
   // the server-side allow-list.
   const CONTENT_WINDOW_OPTIONS = [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60]
+
+  // User-facing product names, not internal service names -- never show
+  // "gcserv" or "mfuse" in this UI. Kept in lockstep with the server-side
+  // enum (db.CompactionMode* in mountos-servers).
+  const COMPACTION_LABELS: Record<string, string> = {
+    off: 'Off',
+    server: 'GC Server',
+    client: 'mountOS client',
+  }
+  function compactionLabel(mode: string | undefined): string {
+    return COMPACTION_LABELS[mode ?? 'off'] ?? 'Off'
+  }
+  // "server" is admin-only to set (server-side workload capacity is an
+  // admin concern, not a per-volume-owner one); "client" is a no-op on an
+  // iceberg volume (no client-side iceberg-compaction path -- external
+  // engines already handle that case against the existing REST catalog),
+  // so it isn't offered as a choice there. A non-admin still sees "GC
+  // Server" listed when that's the volume's CURRENT mode (set by an admin
+  // earlier) so the dropdown reflects reality instead of silently not
+  // matching any option -- they just can't newly switch TO it.
+  const compactionOptions = $derived.by(() => {
+    const opts = [{ value: 'off', label: COMPACTION_LABELS.off }]
+    if (volume?.volumeType !== 'iceberg') opts.push({ value: 'client', label: COMPACTION_LABELS.client })
+    if (!auth.isUserRole || volume?.compaction === 'server') opts.push({ value: 'server', label: COMPACTION_LABELS.server })
+    return opts
+  })
+  const compactionTooltip = $derived(
+    "Who defragments this volume's storage.\n\n**Off:** nobody.\n**GC Server:** compacts it (admin-only to set).\n"
+    + (volume?.volumeType === 'iceberg'
+      ? "**External Engines (analytical):** can compact it directly against the catalog."
+      : "**mountOS client:** opportunistically compacts it while mounted (general volumes only).")
+  )
 
   const editDirty = $derived(
     volume != null && (
@@ -314,7 +347,8 @@
       editForkGrace !== String(volume.retention?.forkGraceDays ?? 0) ||
       editEventLog !== String(volume.retention?.eventLogDays ?? 0) ||
       editContentWindow !== String(volume.versioning?.contentWindowSeconds ?? 60) ||
-      editQuota !== String(bytesToGb(volume.quotaLimit))
+      editQuota !== String(bytesToGb(volume.quotaLimit)) ||
+      editCompaction !== (volume.compaction ?? 'off')
     )
   )
 
@@ -326,6 +360,7 @@
     editEventLog = String(v.retention?.eventLogDays ?? 0)
     editContentWindow = String(v.versioning?.contentWindowSeconds ?? 60)
     editQuota = String(bytesToGb(v.quotaLimit))
+    editCompaction = v.compaction ?? 'off'
   }
 
   let volFetchCtrl: AbortController | undefined
@@ -399,6 +434,12 @@
     try {
       const isAdmin = !auth.isUserRole
       const quotaChanged = isAdmin && editQuota !== String(bytesToGb(volume.quotaLimit))
+      // Belt-and-suspenders: the dropdown never renders "server" for a
+      // non-admin caller, but a non-admin request must not be able to smuggle
+      // it through even if it somehow were -- same defense-in-depth the
+      // server itself applies (a non-admin edit has "server" cleared and
+      // falls back to whatever is persisted, it isn't rejected outright).
+      const compaction = editCompaction === 'server' && !isAdmin ? undefined : (editCompaction || undefined)
       await store.editVolume(id, {
         description: editDesc.trim() || undefined,
         retention: {
@@ -410,6 +451,7 @@
         versioning: {
           contentWindowSeconds: editContentWindow ? Number(editContentWindow) : undefined,
         },
+        compaction,
       })
       if (quotaChanged) {
         const gb = Number(editQuota)
@@ -942,6 +984,14 @@
                   placeholder="Select window..."
                   options={CONTENT_WINDOW_OPTIONS.map(n => ({ value: String(n), label: n === 60 ? '60s (default)' : `${n}s` }))} />
               </div>
+              <div class="space-y-1.5">
+                <FieldLabel id="edit-compaction-label" tooltip={compactionTooltip} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                  Compaction
+                </FieldLabel>
+                <Select id="edit-compaction" ariaLabelledby="edit-compaction-label" class="w-[150px]" bind:value={editCompaction}
+                  placeholder="Select mode..."
+                  options={compactionOptions} />
+              </div>
             </div>
           {:else}
             <div class="flex flex-wrap gap-x-6 gap-y-2">
@@ -979,6 +1029,13 @@
                   <InfoTip text={"How finely content edits (writes/truncates) are versioned, in seconds.\n\nSmaller windows keep more, more-granular file-content versions, at the cost of more version rows and longer-retained storage. Metadata-only changes (rename, permissions) always version at the fixed 60s window regardless of this setting."} />
                 </span>
                 <p class="text-sm">{volume.versioning?.contentWindowSeconds ?? 60}s</p>
+              </div>
+              <div>
+                <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
+                  Compaction
+                  <InfoTip text={compactionTooltip} />
+                </span>
+                <p class="text-sm">{compactionLabel(volume.compaction)}</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
