@@ -988,7 +988,7 @@
                 <FieldLabel id="edit-compaction-label" tooltip={compactionTooltip} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Compaction
                 </FieldLabel>
-                <Select id="edit-compaction" ariaLabelledby="edit-compaction-label" class="w-[150px]" bind:value={editCompaction}
+                <Select id="edit-compaction" ariaLabelledby="edit-compaction-label" class="w-[190px]" bind:value={editCompaction}
                   placeholder="Select mode..."
                   options={compactionOptions} />
               </div>
