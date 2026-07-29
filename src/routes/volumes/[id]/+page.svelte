@@ -795,7 +795,9 @@
     <DetailSkeleton cards={[{ rows: 5, cols: 1 }]} />
   {:else if volume && activeTab === 'browse'}
     <div role="tabpanel" id="volume-tabpanel-browse" aria-labelledby="volume-tab-browse" tabindex={-1}>
-      {#await import('$lib/components/volume-tree/TreeTab.svelte') then { default: TreeTab }}
+      {#await import('$lib/components/volume-tree/TreeTab.svelte')}
+        <ListSkeleton rows={6} />
+      {:then { default: TreeTab }}
         <TreeTab volumeId={id} {volume} {forks} />
       {/await}
     </div>
@@ -905,7 +907,7 @@
             {/if}
           </div>
           {#if editing}
-            <div class="grid gap-4 md:grid-cols-2">
+            <div class="flex flex-wrap gap-x-8 gap-y-4">
               <div class="space-y-1.5">
                 <FieldLabel for="edit-retention" tooltip={"Number of days back snapshot traversal can reach.\n\nBeyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window."} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Day Retention Window (days)
@@ -1002,7 +1004,9 @@
           {/if}
           {#if editing && !auth.isUserRole}
             <div class="space-y-1.5">
-              <Label for="edit-quota" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Quota Limit (GB)</Label>
+              <FieldLabel for="edit-quota" tooltip="0 means unlimited." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                Quota Limit (GB)
+              </FieldLabel>
               <Input id="edit-quota" type="number" class="w-[120px]" bind:value={editQuota} placeholder="0 = unlimited" min="0" step="0.01" />
             </div>
           {:else if !editing}

@@ -290,7 +290,7 @@
 
           <fieldset class="space-y-2">
             <legend class="text-sm font-medium">Retention & Lifecycle</legend>
-            <div class="grid gap-4 sm:grid-cols-2">
+            <div class="flex flex-wrap gap-x-8 gap-y-4">
               <div class="space-y-2">
                 <FieldLabel for="retentionPeriod" tooltip={"Number of days back snapshot traversal can reach.\n\nBeyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window."}>
                   Day Retention Window (days)
