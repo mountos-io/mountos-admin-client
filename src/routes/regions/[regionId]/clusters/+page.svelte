@@ -117,7 +117,7 @@
       <TableHead class="hidden lg:table-cell">
         <span class="inline-flex items-center gap-1">
           Export ID
-          <InfoTip text="Set as env on service instances to pin them to this specific cluster within the region." />
+          <InfoTip text="Set `REGION_CLUSTER_ID` as env on service instances to pin them to this specific cluster within the region." />
         </span>
       </TableHead>
       <TableHead>State</TableHead>
@@ -132,7 +132,7 @@
         <CardTitle>
             <span class="inline-flex items-center gap-1">
               Region Clusters
-              <InfoTip text="Volumes can only be assigned once the cluster is marked ready." />
+              <InfoTip text="Volumes can only be assigned once the cluster is marked **ready**." />
             </span>
         </CardTitle>
         <p class="text-muted-foreground text-base">
@@ -195,7 +195,7 @@
                   {:else}
                     <Badge variant="warning">
                       not ready
-                      <InfoTip text="Auto-flips to ready when any instance heartbeats this cluster, or click set-ready manually." />
+                      <InfoTip text="Auto-flips to **ready** when any instance heartbeats this cluster, or click `set-ready` manually." />
                     </Badge>
                   {/if}
                   {#if !c.isActive}

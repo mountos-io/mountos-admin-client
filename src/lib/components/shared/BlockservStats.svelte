@@ -90,7 +90,7 @@
       <div class="flex items-center justify-between gap-2">
         <span class="text-sm font-mono text-muted-foreground tracking-wider uppercase inline-flex items-center gap-1">
           Sync Backlog
-          <InfoTip text={"Objects acked locally but not yet durable on the shared S3 floor.\n\nThe oldest age is the durability lag: alert when it exceeds the ~5-10 min sync SLA. Held objects are replica-side copies awaiting the owner's S3 upload."} width={400} />
+          <InfoTip text={"Objects acked locally but not yet durable on the shared **S3 floor**.\n\nThe oldest age is the **durability lag**: alert when it exceeds the ~5-10 min sync **SLA**. Held objects are replica-side copies awaiting the owner's S3 upload."} width={400} />
         </span>
         <span class="text-sm font-mono tabular-nums font-medium" style="color: {durability.color}">
           {unsyncedObjects === 0 ? 'all synced' : `oldest ${formatUptime(oldestAgeSec)}`}

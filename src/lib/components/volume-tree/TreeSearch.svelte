@@ -138,7 +138,7 @@
     </div>
     <div class="flex items-center gap-1.5 text-xs text-muted-foreground select-none min-h-[44px] sm:min-h-9">
       <Checkbox bind:checked={exact} label="Exact" />
-      <InfoTip text={"Off: name contains the query (case-insensitive prefix).\nOn: full name must equal the query."} />
+      <InfoTip text={"**Off:** name contains the query (case-insensitive prefix).\n**On:** full name must equal the query."} />
     </div>
     <Button variant="outline" size="sm" onclick={onsubmit} disabled={!draft || loading} class="min-h-[44px] sm:min-h-9">
       {loading ? 'Searching…' : 'Search'}

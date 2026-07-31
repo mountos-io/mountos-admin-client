@@ -263,7 +263,7 @@
             {/if}
           </div>
           <div class="space-y-2">
-            <FieldLabel for="volumeType" tooltip={"General: POSIX filesystem volume.\nIceberg: lake catalog for query engines."}>
+            <FieldLabel for="volumeType" tooltip={"**General:** POSIX filesystem volume.\n**Iceberg:** lake catalog for query engines."}>
               Volume Kind
             </FieldLabel>
             <Select id="volumeType" bind:value={volumeType} placeholder="Select kind..."

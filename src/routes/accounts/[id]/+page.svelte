@@ -356,14 +356,14 @@
       <div class="space-y-2">
         <Label for="edit-quota-limit" class="inline-flex items-center gap-1">
           Quota Limit (GB)
-          <InfoTip text="Account-wide hard cap in GB across all volumes. 0 = unlimited. Enforced on total volume, independent of per-volume quotas." />
+          <InfoTip text="Account-wide hard cap in GB across all volumes. **0** = **unlimited**. Enforced on total volume, independent of per-volume quotas." />
         </Label>
         <Input id="edit-quota-limit" bind:ref={quotaLimitInputEl} type="number" bind:value={editQuotaGb} placeholder="0 = unlimited" min="0" step="0.01" />
       </div>
       <div class="space-y-2">
         <Label for="edit-excess-pct" class="inline-flex items-center gap-1">
           Excess Allowed (%)
-          <InfoTip text="Whole-number percentage of headroom allowed above the limit before writes are blocked. 0 = no excess (hard cap exactly at limit)." />
+          <InfoTip text="Whole-number percentage of headroom allowed above the limit before writes are blocked. **0** = **no excess** (hard cap exactly at limit)." />
         </Label>
         <Input id="edit-excess-pct" type="number" bind:value={editExcessPct} placeholder="0" min="0" max="1000" step="1" />
       </div>

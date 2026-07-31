@@ -1026,7 +1026,7 @@
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Content Version Window
-                  <InfoTip text={"How finely content edits (writes/truncates) are versioned, in seconds.\n\nSmaller windows keep more, more-granular file-content versions, at the cost of more version rows and longer-retained storage. Metadata-only changes (rename, permissions) always version at the fixed 60s window regardless of this setting."} />
+                  <InfoTip text={"How finely content edits (`writes`/`truncates`) are versioned, in seconds.\n\nSmaller windows keep more, more-granular file-content versions, at the cost of more version rows and longer-retained storage. Metadata-only changes (`rename`, `permissions`) always version at the fixed **60s** window regardless of this setting."} />
                 </span>
                 <p class="text-sm">{volume.versioning?.contentWindowSeconds ?? 60}s</p>
               </div>
@@ -1061,7 +1061,7 @@
           {/if}
           {#if editing && !auth.isUserRole}
             <div class="space-y-1.5">
-              <FieldLabel for="edit-quota" tooltip="0 means unlimited." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+              <FieldLabel for="edit-quota" tooltip="**0** means **unlimited**." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                 Quota Limit (GB)
               </FieldLabel>
               <Input id="edit-quota" type="number" class="w-[120px]" bind:value={editQuota} placeholder="0 = unlimited" min="0" step="0.01" />
@@ -1085,7 +1085,7 @@
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Live
-                  <InfoTip text={"Sum of all files across forks for this volume.\n\nCan exceed total volume due to hard links, sparse files, etc.\nOnly live (non-deleted, current version) files are tracked."} />
+                  <InfoTip text={"Sum of all files across forks for this volume.\n\nCan exceed total volume due to **hard links**, **sparse files**, etc.\nOnly live (non-deleted, current version) files are tracked."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveVolume)}</p>
               </div>
@@ -1099,14 +1099,14 @@
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Total
-                  <InfoTip text={"Object / block storage space used.\n\nIncludes all versions and yet-to-be-discarded file segments, plus in-flight multipart uploads."} />
+                  <InfoTip text={"Object / block storage space used.\n\nIncludes all versions and yet-to-be-discarded file segments, plus in-flight **multipart uploads**."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.totalVolume)}</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Pending
-                  <InfoTip text={"In-flight multipart uploads not yet completed or aborted."} />
+                  <InfoTip text={"In-flight **multipart uploads** not yet completed or aborted."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.pendingVolume)}</p>
               </div>
@@ -1707,7 +1707,7 @@
           <Checkbox id="create-fork-asof" bind:checked={createForkAsOfEnabled} />
           <Label for="create-fork-asof" class="text-sm inline-flex items-center gap-1">
             Snapshot at past time <span class="text-xs text-muted-foreground font-mono">(UTC)</span>
-            <InfoTip text={"Off: snapshot the parent now.\nOn: snapshot at the chosen UTC timestamp. Reachable back to (now − retention), extended further if an existing fork's snapshot pins older data."} />
+            <InfoTip text={"**Off:** snapshot the parent now.\n**On:** snapshot at the chosen `UTC` timestamp. Reachable back to (now − retention), extended further if an existing fork's snapshot pins older data."} />
           </Label>
         </div>
         {#if createForkAsOfEnabled}
