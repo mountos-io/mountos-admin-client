@@ -107,11 +107,13 @@
   }
 
   // Session kind reported by the client under metadata.role. A gateway process
-  // has no FUSE mount (mount path "."); a utility is a one-shot tool. Absent or
-  // unknown reads as a regular mount.
-  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' {
+  // has no FUSE mount (mount path "."); a utility is a one-shot tool; an
+  // upload is a bulk-copy job (also no FUSE mount, metadata.upload carries
+  // its job id/paths/progress instead). Absent or unknown reads as a
+  // regular mount.
+  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' {
     const r = getMetaProp(s, 'role')
-    return r === 'gateway' || r === 'utility' ? r : 'mount'
+    return r === 'gateway' || r === 'utility' || r === 'upload' ? r : 'mount'
   }
 
   interface GatewayInfo { endpoints: Record<string, string> }
@@ -122,6 +124,13 @@
     const eps = (g as Record<string, unknown>).endpoints
     if (eps == null || typeof eps !== 'object' || Object.keys(eps as object).length === 0) return null
     return { endpoints: eps as Record<string, string> }
+  }
+
+  interface UploadInfo { jobId?: string; sourcePath?: string; destPath?: string; counts?: Record<string, number> }
+  // Upload job identity/progress reported under metadata.upload.
+  function getUploadInfo(s: ClientSession): UploadInfo | null {
+    const up = getMetaProp(s, 'upload')
+    return up != null && typeof up === 'object' ? (up as UploadInfo) : null
   }
 
   interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number; durationNs?: number; buckets?: number[] }
@@ -292,6 +301,7 @@
     {@const cd = getConnDropped(m)}
     {@const role = getSessionRole(session)}
     {@const gw = getGatewayInfo(session)}
+    {@const up = getUploadInfo(session)}
 
     {#if error}
       <div class="rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive" role="alert">Refresh failed: {error}</div>
@@ -314,7 +324,7 @@
             {#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="text-sm px-3 py-1 capitalize">{session.volume.type}</Badge>{/if}
             {#if session.mountMode}<Badge variant={isReadOnlyMountMode(session.mountMode) ? 'outline' : 'default'} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
             {#if session.forkName}<Badge variant="outline" class="text-sm px-3 py-1">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning" class="text-sm px-3 py-1">Temporary</Badge>{/if}{/if}
-            {#if role === 'gateway'}<Badge variant="primary" class="text-sm px-3 py-1" title="S3/HDFS gateway process, no FUSE mount">Gateway</Badge>{:else if role === 'utility'}<Badge variant="outline" class="text-sm px-3 py-1" title="One-shot utility session, not a mount">Utility</Badge>{/if}
+            {#if role === 'gateway'}<Badge variant="primary" class="text-sm px-3 py-1" title="S3/HDFS gateway process, no FUSE mount">Gateway</Badge>{:else if role === 'utility'}<Badge variant="outline" class="text-sm px-3 py-1" title="One-shot utility session, not a mount">Utility</Badge>{:else if role === 'upload'}<Badge variant="secondary" class="text-sm px-3 py-1" title="Bulk upload job, no FUSE mount">Upload</Badge>{/if}
             <Badge variant="secondary" class="text-sm px-3 py-1">{session.clientType}</Badge>
           </div>
         </div>
@@ -325,10 +335,15 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
           <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm">{session.account.name}</a></div>
           <div><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm">{session.volume.name || `#${session.volume.id}`}</a></div>
-          <div><p class="detail-label">Mount Path</p>{#if role === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
+          <div><p class="detail-label">Mount Path</p>{#if role === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else if role === 'upload'}<p class="text-sm text-muted-foreground" title="Upload job, no FUSE mount">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
           <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
           {#if session.forkName}
             <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
+          {/if}
+          {#if role === 'upload' && up}
+            {#if up.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={up.jobId}>{up.jobId}</p></div>{/if}
+            {#if up.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={up.sourcePath}>{up.sourcePath}</p></div>{/if}
+            {#if up.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={up.destPath}>{up.destPath}</p></div>{/if}
           {/if}
           <div>
             <div class="detail-label flex items-center gap-0.5">
@@ -447,36 +462,50 @@
         <div class="relative p-5">
           <h2 class="text-lg font-semibold mb-4">Metrics</h2>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-8 gap-y-5">
-            <div class="metric-group">
-              <p class="detail-label">I/O</p>
-              <div class="metric-row"><span>Reads</span><span>{formatNum(m.reads ?? 0)}</span></div>
-              <div class="metric-row"><span>Read Bytes</span><span>{formatBytes(m.readBytes ?? 0)}</span></div>
-              <div class="metric-row"><span>Writes</span><span>{formatNum(m.writes ?? 0)}</span></div>
-              <div class="metric-row"><span>Write Bytes</span><span>{formatBytes(m.writeBytes ?? 0)}</span></div>
-              <div class="metric-row"><span>Open Files</span><span>{formatNum(m.openFiles ?? 0)}</span></div>
-              <div class="metric-row"><span>Meta Writes</span><span>{formatNum(m.metaWrites ?? 0)}</span></div>
-              <div class="metric-row"><span>Downloaded</span><span>{formatBytes(m.downloaded ?? 0)}</span></div>
-              <div class="metric-row"><span>Uploaded</span><span>{formatBytes(m.uploaded ?? 0)}</span></div>
-              <div class="metric-row"><span>Created Files</span><span>{formatNum(m.createdFiles ?? 0)}</span></div>
-              <div class="metric-row"><span>Deleted Files</span><span>{formatNum(m.deletedFiles ?? 0)}</span></div>
-              <div class="metric-row"><span>Created Dirs</span><span>{formatNum(m.createdDir ?? 0)}</span></div>
-              <div class="metric-row"><span>Deleted Dirs</span><span>{formatNum(m.deletedDir ?? 0)}</span></div>
-            </div>
-            <div class="metric-group">
-              <p class="detail-label">Cache</p>
-              <div class="metric-row"><span>Hits</span><span>{formatNum(m.cacheHits ?? 0)}</span></div>
-              <div class="metric-row"><span>Misses</span><span>{formatNum(m.cacheMisses ?? 0)}</span></div>
-              <div class="metric-row"><span>Hit Bytes</span><span>{formatBytes(m.cacheHitBytes ?? 0)}</span></div>
-              <div class="metric-row"><span>Miss Bytes</span><span>{formatBytes(m.cacheMissBytes ?? 0)}</span></div>
-              <div class="metric-row"><span>Size</span><span>{formatBytes(m.cacheSize ?? 0)}</span></div>
-              {#if m.prefetchFetchedBlocks != null}
-                {@const pf = Number(m.prefetchFetchedBlocks ?? 0)}
-                {@const pw = Number(m.prefetchWastedBlocks ?? 0)}
-                {@const wastePct = pf > 0 ? (pw / pf) * 100 : 0}
-                <div class="metric-row"><span>Prefetch Used</span><span>{formatNum(m.prefetchUsedBlocks ?? 0)}</span></div>
-                <div class="metric-row {wastePct >= 50 ? 'text-destructive' : wastePct >= 30 ? 'text-amber-500' : ''}"><span>Prefetch Wasted</span><span>{formatNum(pw)} ({wastePct.toFixed(1)}%)</span></div>
+            {#if role === 'upload'}
+              {#if up?.counts}
+                <div class="metric-group">
+                  <p class="detail-label">Progress</p>
+                  <div class="metric-row"><span>Pending</span><span>{formatNum(up.counts.pending ?? 0)}</span></div>
+                  <div class="metric-row"><span>Uploading</span><span>{formatNum(up.counts.uploading ?? 0)}</span></div>
+                  <div class="metric-row"><span>Done</span><span>{formatNum(up.counts.done ?? 0)}</span></div>
+                  <div class="metric-row {(up.counts.failed ?? 0) ? 'text-destructive' : ''}"><span>Failed</span><span>{formatNum(up.counts.failed ?? 0)}</span></div>
+                  <div class="metric-row"><span>Skipped</span><span>{formatNum(up.counts.skipped ?? 0)}</span></div>
+                  <div class="metric-row"><span>Missing</span><span>{formatNum(up.counts.missing ?? 0)}</span></div>
+                </div>
               {/if}
-            </div>
+            {:else}
+              <div class="metric-group">
+                <p class="detail-label">I/O</p>
+                <div class="metric-row"><span>Reads</span><span>{formatNum(m.reads ?? 0)}</span></div>
+                <div class="metric-row"><span>Read Bytes</span><span>{formatBytes(m.readBytes ?? 0)}</span></div>
+                <div class="metric-row"><span>Writes</span><span>{formatNum(m.writes ?? 0)}</span></div>
+                <div class="metric-row"><span>Write Bytes</span><span>{formatBytes(m.writeBytes ?? 0)}</span></div>
+                <div class="metric-row"><span>Open Files</span><span>{formatNum(m.openFiles ?? 0)}</span></div>
+                <div class="metric-row"><span>Meta Writes</span><span>{formatNum(m.metaWrites ?? 0)}</span></div>
+                <div class="metric-row"><span>Downloaded</span><span>{formatBytes(m.downloaded ?? 0)}</span></div>
+                <div class="metric-row"><span>Uploaded</span><span>{formatBytes(m.uploaded ?? 0)}</span></div>
+                <div class="metric-row"><span>Created Files</span><span>{formatNum(m.createdFiles ?? 0)}</span></div>
+                <div class="metric-row"><span>Deleted Files</span><span>{formatNum(m.deletedFiles ?? 0)}</span></div>
+                <div class="metric-row"><span>Created Dirs</span><span>{formatNum(m.createdDir ?? 0)}</span></div>
+                <div class="metric-row"><span>Deleted Dirs</span><span>{formatNum(m.deletedDir ?? 0)}</span></div>
+              </div>
+              <div class="metric-group">
+                <p class="detail-label">Cache</p>
+                <div class="metric-row"><span>Hits</span><span>{formatNum(m.cacheHits ?? 0)}</span></div>
+                <div class="metric-row"><span>Misses</span><span>{formatNum(m.cacheMisses ?? 0)}</span></div>
+                <div class="metric-row"><span>Hit Bytes</span><span>{formatBytes(m.cacheHitBytes ?? 0)}</span></div>
+                <div class="metric-row"><span>Miss Bytes</span><span>{formatBytes(m.cacheMissBytes ?? 0)}</span></div>
+                <div class="metric-row"><span>Size</span><span>{formatBytes(m.cacheSize ?? 0)}</span></div>
+                {#if m.prefetchFetchedBlocks != null}
+                  {@const pf = Number(m.prefetchFetchedBlocks ?? 0)}
+                  {@const pw = Number(m.prefetchWastedBlocks ?? 0)}
+                  {@const wastePct = pf > 0 ? (pw / pf) * 100 : 0}
+                  <div class="metric-row"><span>Prefetch Used</span><span>{formatNum(m.prefetchUsedBlocks ?? 0)}</span></div>
+                  <div class="metric-row {wastePct >= 50 ? 'text-destructive' : wastePct >= 30 ? 'text-amber-500' : ''}"><span>Prefetch Wasted</span><span>{formatNum(pw)} ({wastePct.toFixed(1)}%)</span></div>
+                {/if}
+              </div>
+            {/if}
             {#if m.metaArenaCapacityBytes != null}
               <div class="metric-group">
                 <p class="detail-label">Meta Cache</p>
@@ -513,25 +542,27 @@
                 {/if}
               </div>
             {/if}
-            <div class="metric-group">
-              <p class="detail-label">Object Store</p>
-              <div class="metric-row"><span>GET Count</span><span>{formatNum(m.objectGetCount ?? 0)}</span></div>
-              <div class="metric-row"><span>GET Bytes</span><span>{formatBytes(m.objectGetBytes ?? 0)}</span></div>
-              {#if (m.objectGetCount ?? 0) > 0}
-                <div class="metric-row"><span>GET Avg Latency</span><span style="color: {latencyColor(m.objectGetAvgUs ?? 0)}">{formatUs(m.objectGetAvgUs ?? 0)}</span></div>
-              {/if}
-              <div class="metric-row"><span>PUT Count</span><span>{formatNum(m.objectPutCount ?? 0)}</span></div>
-              <div class="metric-row"><span>PUT Bytes</span><span>{formatBytes(m.objectPutBytes ?? 0)}</span></div>
-              {#if (m.objectPutCount ?? 0) > 0}
-                <div class="metric-row"><span>PUT Avg Latency</span><span style="color: {latencyColor(m.objectPutAvgUs ?? 0)}">{formatUs(m.objectPutAvgUs ?? 0)}</span></div>
-              {/if}
-              <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
-              {#if m.s3RetryAttempts != null}
-                <div class="metric-row"><span>Retries</span><span>{formatNum(m.s3RetryAttempts ?? 0)}</span></div>
-                <div class="metric-row {(m.s3RetryThrottled ?? 0) ? 'text-amber-500' : ''}"><span>Throttled</span><span>{formatNum(m.s3RetryThrottled ?? 0)}</span></div>
-                <div class="metric-row {(m.s3RetryExhausted ?? 0) ? 'text-destructive' : ''}"><span>Exhausted</span><span>{formatNum(m.s3RetryExhausted ?? 0)}</span></div>
-              {/if}
-            </div>
+            {#if role !== 'upload'}
+              <div class="metric-group">
+                <p class="detail-label">Object Store</p>
+                <div class="metric-row"><span>GET Count</span><span>{formatNum(m.objectGetCount ?? 0)}</span></div>
+                <div class="metric-row"><span>GET Bytes</span><span>{formatBytes(m.objectGetBytes ?? 0)}</span></div>
+                {#if (m.objectGetCount ?? 0) > 0}
+                  <div class="metric-row"><span>GET Avg Latency</span><span style="color: {latencyColor(m.objectGetAvgUs ?? 0)}">{formatUs(m.objectGetAvgUs ?? 0)}</span></div>
+                {/if}
+                <div class="metric-row"><span>PUT Count</span><span>{formatNum(m.objectPutCount ?? 0)}</span></div>
+                <div class="metric-row"><span>PUT Bytes</span><span>{formatBytes(m.objectPutBytes ?? 0)}</span></div>
+                {#if (m.objectPutCount ?? 0) > 0}
+                  <div class="metric-row"><span>PUT Avg Latency</span><span style="color: {latencyColor(m.objectPutAvgUs ?? 0)}">{formatUs(m.objectPutAvgUs ?? 0)}</span></div>
+                {/if}
+                <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
+                {#if m.s3RetryAttempts != null}
+                  <div class="metric-row"><span>Retries</span><span>{formatNum(m.s3RetryAttempts ?? 0)}</span></div>
+                  <div class="metric-row {(m.s3RetryThrottled ?? 0) ? 'text-amber-500' : ''}"><span>Throttled</span><span>{formatNum(m.s3RetryThrottled ?? 0)}</span></div>
+                  <div class="metric-row {(m.s3RetryExhausted ?? 0) ? 'text-destructive' : ''}"><span>Exhausted</span><span>{formatNum(m.s3RetryExhausted ?? 0)}</span></div>
+                {/if}
+              </div>
+            {/if}
             <div class="metric-group">
               <p class="detail-label">Network</p>
               <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '·'}</span></div>
@@ -767,7 +798,7 @@
 
 <style>
   .rpc-table { width: 100%; border-collapse: collapse; }
-  .rpc-table th { font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--primary); }
+  .rpc-table th { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; color: var(--muted-foreground); padding: 0.5rem 0.75rem; border-bottom: 2px solid var(--primary); }
   .rpc-table td { padding: 0.375rem 0.75rem; }
   .rpc-zebra { background: color-mix(in oklch, var(--muted) 40%, transparent); }
   .rpc-scroll-hint {
@@ -811,7 +842,7 @@
     align-items: center;
     gap: 0.375rem;
     padding: 0.125rem 0.5rem 0.125rem 0.375rem;
-    font-size: 0.8125rem;
+    font-size: 1rem;
     color: var(--muted-foreground);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);

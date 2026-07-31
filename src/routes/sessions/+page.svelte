@@ -90,11 +90,27 @@
   function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
 
   // Session kind reported under metadata.role: a gateway has no FUSE mount
-  // (path "."), a utility is a one-shot tool. Absent/unknown reads as a mount.
-  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' {
+  // (path "."), a utility is a one-shot tool, an upload is a bulk-copy job
+  // (also no FUSE mount, metadata.upload carries its job id/paths/progress
+  // instead). Absent/unknown reads as a mount.
+  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' {
     const md = s.metadata
     const r = md != null && typeof md === 'object' ? (md as Record<string, unknown>).role : undefined
-    return r === 'gateway' || r === 'utility' ? r : 'mount'
+    return r === 'gateway' || r === 'utility' || r === 'upload' ? r : 'mount'
+  }
+
+  interface UploadSessionDetails {
+    jobId?: string
+    sourcePath?: string
+    destPath?: string
+    counts?: Record<string, number>
+  }
+
+  function getUploadDetails(s: ClientSession): UploadSessionDetails | undefined {
+    const md = s.metadata
+    if (md == null || typeof md !== 'object') return undefined
+    const up = (md as Record<string, unknown>).upload
+    return up != null && typeof up === 'object' ? (up as UploadSessionDetails) : undefined
   }
   function clearVolumeFilter() { goto('/sessions') }
 
@@ -274,7 +290,7 @@
               </TableCell>
               <TableCell><Badge variant={statusVariant(session.status)}>{session.status}</Badge></TableCell>
               <TableCell class="hidden md:table-cell">
-                {#if getSessionRole(session) === 'gateway'}<Badge variant="primary" title="S3/HDFS gateway, no FUSE mount">Gateway</Badge>{:else if getSessionRole(session) === 'utility'}<Badge variant="outline" title="One-shot utility session, not a mount">Utility</Badge>{:else if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
+                {#if getSessionRole(session) === 'gateway'}<Badge variant="primary" title="S3/HDFS gateway, no FUSE mount">Gateway</Badge>{:else if getSessionRole(session) === 'utility'}<Badge variant="outline" title="One-shot utility session, not a mount">Utility</Badge>{:else if getSessionRole(session) === 'upload'}<Badge variant="secondary" title="Bulk upload job, no FUSE mount">Upload</Badge>{:else if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
               </TableCell>
               <TableCell class="text-sm tabular-nums hidden md:table-cell">{sessionDuration(session)}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</TableCell>
@@ -291,7 +307,7 @@
                     </a>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm" onclick={(e: MouseEvent) => e.stopPropagation()}>{session.account.name}</a></div>
-                        <div><p class="detail-label">Mount Path</p>{#if getSessionRole(session) === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
+                        <div><p class="detail-label">Mount Path</p>{#if getSessionRole(session) === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else if getSessionRole(session) === 'upload'}<p class="text-sm text-muted-foreground" title="Upload job, no FUSE mount">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
                         <div>
                           <div class="detail-label flex items-center gap-0.5">
@@ -312,6 +328,12 @@
                         {#if session.forkName}
                           <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
                         {/if}
+                        {#if getSessionRole(session) === 'upload'}
+                          {@const up = getUploadDetails(session)}
+                          {#if up?.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={up.jobId}>{up.jobId}</p></div>{/if}
+                          {#if up?.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={up.sourcePath}>{up.sourcePath}</p></div>{/if}
+                          {#if up?.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={up.destPath}>{up.destPath}</p></div>{/if}
+                        {/if}
                         <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
                         {#if session.appVersion}
                           <div><p class="detail-label">App Version</p><p class="text-sm font-mono">{session.appVersion}</p></div>
@@ -320,27 +342,41 @@
                     {#if m.reads !== undefined}
                       <div class="border-t border-border pt-3">
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2">
-                          <div class="metric-group">
-                            <p class="detail-label">I/O</p>
-                            <div class="metric-row"><span>Reads</span><span>{formatNum(m.reads ?? 0)}</span></div>
-                            <div class="metric-row"><span>Writes</span><span>{formatNum(m.writes ?? 0)}</span></div>
-                            <div class="metric-row"><span>Open Files</span><span>{formatNum(m.openFiles ?? 0)}</span></div>
-                            <div class="metric-row"><span>Downloaded</span><span>{formatBytes(m.downloaded ?? 0)}</span></div>
-                            <div class="metric-row"><span>Uploaded</span><span>{formatBytes(m.uploaded ?? 0)}</span></div>
-                          </div>
-                          <div class="metric-group">
-                            <p class="detail-label">Cache</p>
-                            <div class="metric-row"><span>Hits</span><span>{formatNum(m.cacheHits ?? 0)}</span></div>
-                            <div class="metric-row"><span>Misses</span><span>{formatNum(m.cacheMisses ?? 0)}</span></div>
-                            <div class="metric-row"><span>Hit Bytes</span><span>{formatBytes(m.cacheHitBytes ?? 0)}</span></div>
-                            <div class="metric-row"><span>Size</span><span>{formatBytes(m.cacheSize ?? 0)}</span></div>
-                          </div>
-                          <div class="metric-group">
-                            <p class="detail-label">Object Store</p>
-                            <div class="metric-row"><span>GET</span><span>{formatNum(m.objectGetCount ?? 0)} / {formatBytes(m.objectGetBytes ?? 0)}</span></div>
-                            <div class="metric-row"><span>PUT</span><span>{formatNum(m.objectPutCount ?? 0)} / {formatBytes(m.objectPutBytes ?? 0)}</span></div>
-                            <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
-                          </div>
+                          {#if getSessionRole(session) === 'upload'}
+                            {@const upCounts = getUploadDetails(session)?.counts}
+                            {#if upCounts}
+                              <div class="metric-group">
+                                <p class="detail-label">Progress</p>
+                                <div class="metric-row"><span>Pending</span><span>{formatNum(upCounts.pending ?? 0)}</span></div>
+                                <div class="metric-row"><span>Uploading</span><span>{formatNum(upCounts.uploading ?? 0)}</span></div>
+                                <div class="metric-row"><span>Done</span><span>{formatNum(upCounts.done ?? 0)}</span></div>
+                                <div class="metric-row {(upCounts.failed ?? 0) ? 'text-destructive' : ''}"><span>Failed</span><span>{formatNum(upCounts.failed ?? 0)}</span></div>
+                                <div class="metric-row"><span>Skipped</span><span>{formatNum(upCounts.skipped ?? 0)}</span></div>
+                              </div>
+                            {/if}
+                          {:else}
+                            <div class="metric-group">
+                              <p class="detail-label">I/O</p>
+                              <div class="metric-row"><span>Reads</span><span>{formatNum(m.reads ?? 0)}</span></div>
+                              <div class="metric-row"><span>Writes</span><span>{formatNum(m.writes ?? 0)}</span></div>
+                              <div class="metric-row"><span>Open Files</span><span>{formatNum(m.openFiles ?? 0)}</span></div>
+                              <div class="metric-row"><span>Downloaded</span><span>{formatBytes(m.downloaded ?? 0)}</span></div>
+                              <div class="metric-row"><span>Uploaded</span><span>{formatBytes(m.uploaded ?? 0)}</span></div>
+                            </div>
+                            <div class="metric-group">
+                              <p class="detail-label">Cache</p>
+                              <div class="metric-row"><span>Hits</span><span>{formatNum(m.cacheHits ?? 0)}</span></div>
+                              <div class="metric-row"><span>Misses</span><span>{formatNum(m.cacheMisses ?? 0)}</span></div>
+                              <div class="metric-row"><span>Hit Bytes</span><span>{formatBytes(m.cacheHitBytes ?? 0)}</span></div>
+                              <div class="metric-row"><span>Size</span><span>{formatBytes(m.cacheSize ?? 0)}</span></div>
+                            </div>
+                            <div class="metric-group">
+                              <p class="detail-label">Object Store</p>
+                              <div class="metric-row"><span>GET</span><span>{formatNum(m.objectGetCount ?? 0)} / {formatBytes(m.objectGetBytes ?? 0)}</span></div>
+                              <div class="metric-row"><span>PUT</span><span>{formatNum(m.objectPutCount ?? 0)} / {formatBytes(m.objectPutBytes ?? 0)}</span></div>
+                              <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
+                            </div>
+                          {/if}
                           <div class="metric-group">
                             <p class="detail-label">Network</p>
                             <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '·'}</span></div>
