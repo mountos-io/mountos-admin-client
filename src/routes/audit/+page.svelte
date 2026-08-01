@@ -35,6 +35,11 @@
     store.fetchLogs({ accountId, subject: appliedSubject || undefined, reset: true })
   })
 
+  function userInfo(log: { data?: unknown }): { user_name?: string; user_id?: string } {
+    const info = (log.data as { user_info?: { user_name?: string; user_id?: string } } | undefined)?.user_info
+    return info ?? {}
+  }
+
   function toggleRow(id: number) {
     const next = new Set(expanded)
     next.has(id) ? next.delete(id) : next.add(id)
@@ -109,7 +114,7 @@
               {/if}
             </TableCell>
             <TableCell><Badge variant={log.success ? 'default' : 'destructive'}>{log.success ? 'OK' : 'Fail'}</Badge></TableCell>
-            <TableCell class="text-sm text-muted-foreground">{log.createdBy ?? '·'}</TableCell>
+            <TableCell class="text-sm text-muted-foreground">{userInfo(log).user_name || log.createdBy || userInfo(log).user_id || '·'}</TableCell>
             <TableCell class="text-sm text-muted-foreground">{log.createdAt ? formatRelative(log.createdAt) : '·'}</TableCell>
           </TableRow>
           {#if expanded.has(log.id)}
