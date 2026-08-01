@@ -335,15 +335,12 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
           <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm">{session.account.name}</a></div>
           <div><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm">{session.volume.name || `#${session.volume.id}`}</a></div>
-          <div><p class="detail-label">Mount Path</p>{#if role === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else if role === 'upload'}<p class="text-sm text-muted-foreground" title="Upload job, no FUSE mount">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
+          {#if role !== 'upload'}
+            <div><p class="detail-label">Mount Path</p>{#if role === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
+          {/if}
           <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
           {#if session.forkName}
             <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
-          {/if}
-          {#if role === 'upload' && up}
-            {#if up.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={up.jobId}>{up.jobId}</p></div>{/if}
-            {#if up.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={up.sourcePath}>{up.sourcePath}</p></div>{/if}
-            {#if up.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={up.destPath}>{up.destPath}</p></div>{/if}
           {/if}
           <div>
             <div class="detail-label flex items-center gap-0.5">
@@ -394,6 +391,36 @@
               </div>
             {/each}
           </dl>
+        </div>
+      </div>
+    {/if}
+
+    {#if role === 'upload' && up}
+      <!-- Upload job (bulk-copy job identity + live progress; no FUSE mount) -->
+      <div class="corner-brackets relative border border-border/30 rounded-sm">
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
+        <div class="relative p-5 space-y-5">
+          <h2 class="text-lg font-semibold">Upload Job</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
+            {#if up.jobId}<div class="min-w-0"><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={up.jobId}>{up.jobId}</p></div>{/if}
+            {#if up.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={up.sourcePath}>{up.sourcePath}</p></div>{/if}
+            {#if up.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={up.destPath}>{up.destPath}</p></div>{/if}
+          </div>
+          {#if up.counts}
+            <div class="border-t border-border/40 pt-4">
+              <div class="metric-group">
+                <p class="detail-label">Progress</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-2">
+                  <div class="metric-row"><span>Pending</span><span>{formatNum(up.counts.pending ?? 0)}</span></div>
+                  <div class="metric-row"><span>Uploading</span><span>{formatNum(up.counts.uploading ?? 0)}</span></div>
+                  <div class="metric-row"><span>Done</span><span>{formatNum(up.counts.done ?? 0)}</span></div>
+                  <div class="metric-row {(up.counts.failed ?? 0) ? 'text-destructive' : ''}"><span>Failed</span><span>{formatNum(up.counts.failed ?? 0)}</span></div>
+                  <div class="metric-row"><span>Skipped</span><span>{formatNum(up.counts.skipped ?? 0)}</span></div>
+                  <div class="metric-row"><span>Missing</span><span>{formatNum(up.counts.missing ?? 0)}</span></div>
+                </div>
+              </div>
+            </div>
+          {/if}
         </div>
       </div>
     {/if}
@@ -462,19 +489,7 @@
         <div class="relative p-5">
           <h2 class="text-lg font-semibold mb-4">Metrics</h2>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-8 gap-y-5">
-            {#if role === 'upload'}
-              {#if up?.counts}
-                <div class="metric-group">
-                  <p class="detail-label">Progress</p>
-                  <div class="metric-row"><span>Pending</span><span>{formatNum(up.counts.pending ?? 0)}</span></div>
-                  <div class="metric-row"><span>Uploading</span><span>{formatNum(up.counts.uploading ?? 0)}</span></div>
-                  <div class="metric-row"><span>Done</span><span>{formatNum(up.counts.done ?? 0)}</span></div>
-                  <div class="metric-row {(up.counts.failed ?? 0) ? 'text-destructive' : ''}"><span>Failed</span><span>{formatNum(up.counts.failed ?? 0)}</span></div>
-                  <div class="metric-row"><span>Skipped</span><span>{formatNum(up.counts.skipped ?? 0)}</span></div>
-                  <div class="metric-row"><span>Missing</span><span>{formatNum(up.counts.missing ?? 0)}</span></div>
-                </div>
-              {/if}
-            {:else}
+            {#if role !== 'upload'}
               <div class="metric-group">
                 <p class="detail-label">I/O</p>
                 <div class="metric-row"><span>Reads</span><span>{formatNum(m.reads ?? 0)}</span></div>
