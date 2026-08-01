@@ -244,7 +244,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 1rem;
     font-weight: 300;
     line-height: 1;
     color: var(--bracket-color);
@@ -279,7 +279,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 1rem;
     font-weight: 300;
     line-height: 1;
     color: var(--bracket-color);
@@ -580,12 +580,16 @@
     background: linear-gradient(90deg, transparent, oklch(from var(--accent-glow-dark) l c h / 0.35), transparent);
   }
 
-  /* Cyberpunk table header labels; scan-line underline */
+  /* Cyberpunk table header labels; scan-line underline. 1rem, not 0.7rem:
+     same PRODUCT.md 16px floor as .mono-label (app.css), and the same fix --
+     tracking halves 0.2em -> 0.1em since it was tuned for 11px and is
+     relative to size, so carrying it up unchanged would push every header
+     ~45% wider for no legibility gain. */
   .th-cyber {
     position: relative;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
-    letter-spacing: 0.2em;
+    font-size: 1rem;
+    letter-spacing: 0.1em;
     color: var(--th-color);
     padding-bottom: 0.5rem !important;
   }

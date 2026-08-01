@@ -126,7 +126,17 @@
     return { endpoints: eps as Record<string, string> }
   }
 
-  interface UploadInfo { jobId?: string; sourcePath?: string; destPath?: string; counts?: Record<string, number> }
+  interface UploadInfo {
+    jobId?: string
+    sourcePath?: string
+    destPath?: string
+    counts?: Record<string, number>
+    // A live aggregate as of the client's last scan pass, not a fixed total
+    // -- a daemon-mode job keeps discovering more on every rescan, so this
+    // is only final once the session itself reports a settled state.
+    totalFiles?: number
+    totalBytes?: number
+  }
   // Upload job identity/progress reported under metadata.upload.
   function getUploadInfo(s: ClientSession): UploadInfo | null {
     const up = getMetaProp(s, 'upload')
@@ -405,6 +415,15 @@
             {#if up.jobId}<div class="min-w-0"><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={up.jobId}>{up.jobId}</p></div>{/if}
             {#if up.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={up.sourcePath}>{up.sourcePath}</p></div>{/if}
             {#if up.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={up.destPath}>{up.destPath}</p></div>{/if}
+            {#if up.totalFiles}
+              <div class="min-w-0">
+                <p class="detail-label">Total</p>
+                <p class="text-sm font-mono">
+                  {formatNum(up.totalFiles)} file{up.totalFiles === 1 ? '' : 's'}, {formatBytes(up.totalBytes ?? 0)}
+                  <span class="text-muted-foreground" title="A live aggregate as of the client's last scan pass -- a daemon-mode job keeps discovering more on every rescan, so this isn't final until the job settles.">(as of last scan)</span>
+                </p>
+              </div>
+            {/if}
           </div>
           {#if up.counts}
             <div class="border-t border-border/40 pt-4">
