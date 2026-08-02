@@ -67,8 +67,8 @@
 
   // Full data extent (epoch ms for X; minutes-of-day for Y stays 0..1440).
   // When a caller passes rangeMs (the selected day-range filter), the X
-  // domain is anchored to that window ending now -- not to the timestamps
-  // of whichever logs happened to come back -- so "7d" reliably covers the
+  // domain is anchored to that window ending now (not to the timestamps
+  // of whichever logs happened to come back), so "7d" reliably covers the
   // last 7 days regardless of how dense the log volume is. Floored to
   // MIN_X_SPAN so short windows still get a full day of plotting room.
   const dataExtent = $derived.by(() => {
@@ -325,7 +325,7 @@
   <!-- No overflow-hidden: points near the plot edges (near the y-extremes of
   a day, or the x-extremes of the date range) center a 44px hit-area within
   a couple px of the border, and clipping would silently cut off hover/focus
-  for the clipped portion -- unlike the visible bubble itself, which stays
+  for the clipped portion, unlike the visible bubble itself, which stays
   inset from the edge. -->
   <div class="relative border border-border rounded-sm bg-background" style="padding: 1.5rem 1.5rem 3rem 4rem; height: min(400px, 50vh); contain: layout;">
     <div class="tech-grid absolute inset-0 pointer-events-none"></div>

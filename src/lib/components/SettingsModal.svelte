@@ -603,7 +603,7 @@
                       <TableCell>
                         <span class="font-medium">{name}</span>
                         <div class="mt-0.5 flex flex-wrap gap-1">
-                          {#each unit.pkgs as pkg (pkg)}
+                          {#each unit.pkgs as pkg, i (i + ':' + pkg)}
                             <Badge variant="outline" class="font-mono text-xs">{pkg}</Badge>
                           {/each}
                         </div>

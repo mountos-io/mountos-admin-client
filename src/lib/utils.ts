@@ -32,7 +32,7 @@ export function isMacPlatform(): boolean {
 }
 
 // event.metaKey is the Cmd key on macOS but the Windows/Super key elsewhere,
-// which OS-level shortcuts already claim -- Windows/Linux users need ctrlKey
+// which OS-level shortcuts already claim; Windows/Linux users need ctrlKey
 // for an app shortcut to actually reach them.
 export function modKeyPressed(event: KeyboardEvent): boolean {
   return isMacPlatform() ? event.metaKey : event.ctrlKey

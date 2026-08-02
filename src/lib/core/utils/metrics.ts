@@ -329,7 +329,7 @@ export function dbPingColor(ms: number): string {
 }
 // 5 visual steps within the reading bands below, built from opacity
 // variations of the 3 sanctioned status hues (success/warning/destructive)
-// per DESIGN.md's rationed-color rule -- no new hue families, just an
+// per DESIGN.md's rationed-color rule, no new hue families, just an
 // intensity step within "tight" (two greens) and within "moderate" (two
 // ambers) before handing off to destructive red at the "high" threshold.
 export function cvClass(cv: number): string {

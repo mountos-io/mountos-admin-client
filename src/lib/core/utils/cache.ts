@@ -26,7 +26,7 @@ export function writeCached<T>(key: string, value: T): void {
     const entry: CachedEntry<T> = { v: value, t: Date.now() }
     localStorage.setItem(key, JSON.stringify(entry))
   } catch {
-    // Quota exceeded or storage disabled -- caching is a pure optimization,
+    // Quota exceeded or storage disabled, caching is a pure optimization,
     // not required for correctness, so fail silently.
   }
 }

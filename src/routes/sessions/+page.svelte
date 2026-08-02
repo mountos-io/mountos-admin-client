@@ -93,10 +93,10 @@
   // (path "."), a utility is a one-shot tool, an upload is a bulk-copy job
   // (also no FUSE mount, metadata.upload carries its job id/paths/progress
   // instead). Absent/unknown reads as a mount.
-  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' {
+  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' | 'download' {
     const md = s.metadata
     const r = md != null && typeof md === 'object' ? (md as Record<string, unknown>).role : undefined
-    return r === 'gateway' || r === 'utility' || r === 'upload' ? r : 'mount'
+    return r === 'gateway' || r === 'utility' || r === 'upload' || r === 'download' ? r : 'mount'
   }
 
   interface UploadSessionDetails {
@@ -111,6 +111,15 @@
     if (md == null || typeof md !== 'object') return undefined
     const up = (md as Record<string, unknown>).upload
     return up != null && typeof up === 'object' ? (up as UploadSessionDetails) : undefined
+  }
+
+  // Download job identity/progress reported under metadata.download, same
+  // shape as UploadSessionDetails, just a distinct field on metadata.
+  function getDownloadDetails(s: ClientSession): UploadSessionDetails | undefined {
+    const md = s.metadata
+    if (md == null || typeof md !== 'object') return undefined
+    const dl = (md as Record<string, unknown>).download
+    return dl != null && typeof dl === 'object' ? (dl as UploadSessionDetails) : undefined
   }
   function clearVolumeFilter() { goto('/sessions') }
 
@@ -290,7 +299,7 @@
               </TableCell>
               <TableCell><Badge variant={statusVariant(session.status)}>{session.status}</Badge></TableCell>
               <TableCell class="hidden md:table-cell">
-                {#if getSessionRole(session) === 'gateway'}<Badge variant="primary" title="S3/HDFS gateway, no FUSE mount">Gateway</Badge>{:else if getSessionRole(session) === 'utility'}<Badge variant="outline" title="One-shot utility session, not a mount">Utility</Badge>{:else if getSessionRole(session) === 'upload'}<Badge variant="secondary" title="Bulk upload job, no FUSE mount">Upload</Badge>{:else if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
+                {#if getSessionRole(session) === 'gateway'}<Badge variant="primary" title="S3/HDFS gateway, no FUSE mount">Gateway</Badge>{:else if getSessionRole(session) === 'utility'}<Badge variant="outline" title="One-shot utility session, not a mount">Utility</Badge>{:else if getSessionRole(session) === 'upload'}<Badge variant="secondary" title="Bulk upload job, no FUSE mount">Upload</Badge>{:else if getSessionRole(session) === 'download'}<Badge variant="secondary" title="Bulk download job, no FUSE mount">Download</Badge>{:else if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
               </TableCell>
               <TableCell class="text-sm tabular-nums hidden md:table-cell">{sessionDuration(session)}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</TableCell>
@@ -307,7 +316,7 @@
                     </a>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm" onclick={(e: MouseEvent) => e.stopPropagation()}>{session.account.name}</a></div>
-                        <div><p class="detail-label">Mount Path</p>{#if getSessionRole(session) === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else if getSessionRole(session) === 'upload'}<p class="text-sm text-muted-foreground" title="Upload job, no FUSE mount">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
+                        <div><p class="detail-label">Mount Path</p>{#if getSessionRole(session) === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else if getSessionRole(session) === 'upload'}<p class="text-sm text-muted-foreground" title="Upload job, no FUSE mount">N/A</p>{:else if getSessionRole(session) === 'download'}<p class="text-sm text-muted-foreground" title="Download job, no FUSE mount">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
                         <div>
                           <div class="detail-label flex items-center gap-0.5">
@@ -333,6 +342,11 @@
                           {#if up?.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={up.jobId}>{up.jobId}</p></div>{/if}
                           {#if up?.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={up.sourcePath}>{up.sourcePath}</p></div>{/if}
                           {#if up?.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={up.destPath}>{up.destPath}</p></div>{/if}
+                        {:else if getSessionRole(session) === 'download'}
+                          {@const dl = getDownloadDetails(session)}
+                          {#if dl?.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={dl.jobId}>{dl.jobId}</p></div>{/if}
+                          {#if dl?.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={dl.sourcePath}>{dl.sourcePath}</p></div>{/if}
+                          {#if dl?.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={dl.destPath}>{dl.destPath}</p></div>{/if}
                         {/if}
                         <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
                         {#if session.appVersion}
@@ -352,6 +366,19 @@
                                 <div class="metric-row"><span>Done</span><span>{formatNum(upCounts.done ?? 0)}</span></div>
                                 <div class="metric-row {(upCounts.failed ?? 0) ? 'text-destructive' : ''}"><span>Failed</span><span>{formatNum(upCounts.failed ?? 0)}</span></div>
                                 <div class="metric-row"><span>Skipped</span><span>{formatNum(upCounts.skipped ?? 0)}</span></div>
+                              </div>
+                            {/if}
+                          {:else if getSessionRole(session) === 'download'}
+                            {@const dlCounts = getDownloadDetails(session)?.counts}
+                            {#if dlCounts}
+                              <div class="metric-group">
+                                <p class="detail-label">Progress</p>
+                                <div class="metric-row"><span>Pending</span><span>{formatNum(dlCounts.pending ?? 0)}</span></div>
+                                <div class="metric-row"><span>Downloading</span><span>{formatNum(dlCounts.downloading ?? 0)}</span></div>
+                                <div class="metric-row"><span>Done</span><span>{formatNum(dlCounts.done ?? 0)}</span></div>
+                                <div class="metric-row {(dlCounts.retrying ?? 0) ? 'text-warning' : ''}" title="Self-clearing, retried automatically, no action needed"><span>Retrying</span><span>{formatNum(dlCounts.retrying ?? 0)}</span></div>
+                                <div class="metric-row {(dlCounts.failed ?? 0) ? 'text-destructive' : ''}" title="Won't clear on its own, needs Retry failed"><span>Failed</span><span>{formatNum(dlCounts.failed ?? 0)}</span></div>
+                                <div class="metric-row"><span>Skipped</span><span>{formatNum(dlCounts.skipped ?? 0)}</span></div>
                               </div>
                             {/if}
                           {:else}

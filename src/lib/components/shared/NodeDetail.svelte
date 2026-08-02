@@ -119,7 +119,7 @@
 
   // fetchEvents() reads goalFilter/sidFilter/sinceFilter/page synchronously
   // (before its first await), so calling it untracked keeps this effect's
-  // dependencies limited to isGCServ/regionId/nodeId -- otherwise every
+  // dependencies limited to isGCServ/regionId/nodeId; otherwise every
   // filter change (typed or selected) would itself be read as a dependency,
   // re-running this effect's cleanup (which resets those same filters) right
   // after the store's own setter just applied them. Same class of bug as
@@ -132,8 +132,8 @@
     return () => untrack(() => {
       store.reset()
       // sidFilterInput/sidFilterInvalid mirror the store's sidFilter locally
-      // (for invalid-keystroke feedback) and aren't covered by store.reset()
-      // -- this component is reused, not remounted, across a node/region
+      // (for invalid-keystroke feedback) and aren't covered by store.reset().
+      // This component is reused, not remounted, across a node/region
       // switch (no {#key}), so without this the box would keep showing a
       // filter value that no longer applies to the new node.
       sidFilterInput = ''
@@ -275,7 +275,7 @@
 
   // This component is reused (not remounted) across a node/region switch, so
   // a "just copied" indicator from the previous node must not survive onto
-  // the new one -- e.g. a metadata key with the same name on the new node
+  // the new one, e.g. a metadata key with the same name on the new node
   // would otherwise show a stale "copied" checkmark it never earned.
   $effect(() => {
     void nodeId

@@ -307,7 +307,7 @@
   // the server-side allow-list.
   const CONTENT_WINDOW_OPTIONS = [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60]
 
-  // User-facing product names, not internal service names -- never show
+  // User-facing product names, not internal service names; never show
   // "gcserv" or "mfuse" in this UI. Kept in lockstep with the server-side
   // enum (db.CompactionMode* in mountos-servers).
   const COMPACTION_LABELS: Record<string, string> = {
@@ -320,12 +320,12 @@
   }
   // "server" is admin-only to set (server-side workload capacity is an
   // admin concern, not a per-volume-owner one); "client" is a no-op on an
-  // iceberg volume (no client-side iceberg-compaction path -- external
+  // iceberg volume (no client-side iceberg-compaction path; external
   // engines already handle that case against the existing REST catalog),
   // so it isn't offered as a choice there. A non-admin still sees "GC
   // Server" listed when that's the volume's CURRENT mode (set by an admin
   // earlier) so the dropdown reflects reality instead of silently not
-  // matching any option -- they just can't newly switch TO it.
+  // matching any option, they just can't newly switch TO it.
   const compactionOptions = $derived.by(() => {
     const opts = [{ value: 'off', label: COMPACTION_LABELS.off }]
     if (volume?.volumeType !== 'iceberg') opts.push({ value: 'client', label: COMPACTION_LABELS.client })
@@ -436,7 +436,7 @@
       const quotaChanged = isAdmin && editQuota !== String(bytesToGb(volume.quotaLimit))
       // Belt-and-suspenders: the dropdown never renders "server" for a
       // non-admin caller, but a non-admin request must not be able to smuggle
-      // it through even if it somehow were -- same defense-in-depth the
+      // it through even if it somehow were, same defense-in-depth the
       // server itself applies (a non-admin edit has "server" cleared and
       // falls back to whatever is persisted, it isn't rejected outright).
       const compaction = editCompaction === 'server' && !isAdmin ? undefined : (editCompaction || undefined)

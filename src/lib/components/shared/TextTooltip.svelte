@@ -10,12 +10,12 @@
   import CheckIcon from '@lucide/svelte/icons/check'
 
   // Hover/focus tooltip for content that reveals itself (e.g. truncated
-  // table cells) rather than InfoTip's dedicated lightbulb trigger -- the
+  // table cells) rather than InfoTip's dedicated lightbulb trigger. The
   // wrapped content itself is the trigger. Shares InfoTip's portal/position/
   // dismiss mechanics (WCAG 1.4.13: hoverable, dismissible via Escape, closes
   // on scroll/resize instead of following stale coordinates).
   // align is a prop (applied via inline style), not a `text-left`-style
-  // Tailwind class in `class` -- the trigger renders as a <button>, and
+  // Tailwind class in `class`. The trigger renders as a <button>, and
   // browsers default buttons to `text-align: center` (Preflight resets
   // font/color inheritance for form elements but not this), so simply
   // omitting an alignment class would NOT fall through to the ambient

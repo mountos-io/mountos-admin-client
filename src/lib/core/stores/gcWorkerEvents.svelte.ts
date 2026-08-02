@@ -23,7 +23,7 @@ const UNBOUNDED_ASSUMED_WINDOW_MS = 30 * 86_400_000
 // The cache key folds in the node's reported gcserv binaryVersion, so a real
 // gcserv upgrade (the only thing that changes the goal set) busts the cache
 // immediately. This TTL is only the fallback for when binaryVersion is
-// unavailable -- kept short since it's then the sole staleness guard.
+// unavailable, kept short since it's then the sole staleness guard.
 const GOALS_CACHE_TTL_MS = 3 * 60 * 60 * 1000
 
 function sinceToISO(value: string): string | undefined {
@@ -67,7 +67,7 @@ export function useGCWorkerEvents(
   let histogramBucketSeconds = $state(bucketSecondsFor(undefined))
   let histogramCtrl: AbortController | null = null
 
-  // Real, observed goal values for the filter combobox -- fetched once per
+  // Real, observed goal values for the filter combobox, fetched once per
   // node (unscoped by time, so it doesn't need to re-fetch when since/goal/
   // sid change), not folded into fetchAll()/debouncedFetchAll().
   let knownGoals = $state<string[]>([])
@@ -82,7 +82,7 @@ export function useGCWorkerEvents(
   // goal/sid are typed live (per-keystroke via oninput); debounce their fetch
   // the same way sessions.svelte.ts's search box does, so typing doesn't fire
   // a request per character. Hand-rolled (not $lib/utils' debounce) so reset()
-  // can cancel a pending call -- a stale timer surviving a node/region switch
+  // can cancel a pending call. A stale timer surviving a node/region switch
   // would otherwise fire against the NEW getRegionId()/getNodeId() later and
   // abort whatever fetch that switch already started.
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -133,7 +133,7 @@ export function useGCWorkerEvents(
 
   // Buckets counts per goal instead of returning raw rows, so the density
   // chart stays a fixed-cost fetch (bounded by bucket count) regardless of
-  // how many raw events fall in the window -- unlike fetchEvents(), which is
+  // how many raw events fall in the window, unlike fetchEvents(), which is
   // one page of DISPLAY_PAGE_SIZE and can silently under-represent a busy
   // window/goal.
   async function fetchHistogram() {
@@ -160,7 +160,7 @@ export function useGCWorkerEvents(
     } catch (e) {
       if ((e as Error).name === 'AbortError') return
       // Density chart degrades to empty rather than surfacing a second error
-      // banner alongside fetchEvents()' -- the raw table/scatter remains the
+      // banner alongside fetchEvents()'; the raw table/scatter remains the
       // authoritative error signal for this feature.
       histogram = []
     } finally {

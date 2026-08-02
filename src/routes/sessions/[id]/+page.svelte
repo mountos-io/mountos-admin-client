@@ -108,12 +108,12 @@
 
   // Session kind reported by the client under metadata.role. A gateway process
   // has no FUSE mount (mount path "."); a utility is a one-shot tool; an
-  // upload is a bulk-copy job (also no FUSE mount, metadata.upload carries
-  // its job id/paths/progress instead). Absent or unknown reads as a
-  // regular mount.
-  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' {
+  // upload/download is a bulk-copy job (also no FUSE mount, metadata.upload
+  // or metadata.download carries its job id/paths/progress instead). Absent
+  // or unknown reads as a regular mount.
+  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' | 'download' {
     const r = getMetaProp(s, 'role')
-    return r === 'gateway' || r === 'utility' || r === 'upload' ? r : 'mount'
+    return r === 'gateway' || r === 'utility' || r === 'upload' || r === 'download' ? r : 'mount'
   }
 
   interface GatewayInfo { endpoints: Record<string, string> }
@@ -131,16 +131,41 @@
     sourcePath?: string
     destPath?: string
     counts?: Record<string, number>
-    // A live aggregate as of the client's last scan pass, not a fixed total
-    // -- a daemon-mode job keeps discovering more on every rescan, so this
+    // A live aggregate as of the client's last scan pass, not a fixed total.
+    // A daemon-mode job keeps discovering more on every rescan, so this
     // is only final once the session itself reports a settled state.
     totalFiles?: number
     totalBytes?: number
+    // Live log file path on the client machine while the job is running.
+    logPath?: string
   }
   // Upload job identity/progress reported under metadata.upload.
   function getUploadInfo(s: ClientSession): UploadInfo | null {
     const up = getMetaProp(s, 'upload')
     return up != null && typeof up === 'object' ? (up as UploadInfo) : null
+  }
+
+  interface DownloadInfo {
+    jobId?: string
+    sourcePath?: string
+    destPath?: string
+    // Status vocabulary differs from upload's: "downloading" (not
+    // "uploading"), plus a synthetic "retrying" bucket, pending rows
+    // cycling through backoff after a transient error, self-clearing and
+    // distinct from "failed" (won't clear on its own).
+    counts?: Record<string, number>
+    // A live aggregate as of the client's last scan pass, not a fixed total.
+    // A daemon-mode job keeps discovering more on every rescan, so this
+    // is only final once the session itself reports a settled state.
+    totalFiles?: number
+    totalBytes?: number
+    // Live log file path on the client machine while the job is running.
+    logPath?: string
+  }
+  // Download job identity/progress reported under metadata.download.
+  function getDownloadInfo(s: ClientSession): DownloadInfo | null {
+    const dp = getMetaProp(s, 'download')
+    return dp != null && typeof dp === 'object' ? (dp as DownloadInfo) : null
   }
 
   interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number; durationNs?: number; buckets?: number[] }
@@ -312,6 +337,7 @@
     {@const role = getSessionRole(session)}
     {@const gw = getGatewayInfo(session)}
     {@const up = getUploadInfo(session)}
+    {@const dl = getDownloadInfo(session)}
 
     {#if error}
       <div class="rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive" role="alert">Refresh failed: {error}</div>
@@ -332,9 +358,9 @@
             <Badge variant="secondary" class="text-sm px-3 py-1">{formatOs(session.osName)}</Badge>
             <Badge class="text-sm px-3 py-1">{session.region.name}</Badge>
             {#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="text-sm px-3 py-1 capitalize">{session.volume.type}</Badge>{/if}
-            {#if session.mountMode}<Badge variant={isReadOnlyMountMode(session.mountMode) ? 'outline' : 'default'} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
+            {#if session.mountMode && role !== 'upload' && role !== 'download'}<Badge variant={isReadOnlyMountMode(session.mountMode) ? 'outline' : 'default'} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
             {#if session.forkName}<Badge variant="outline" class="text-sm px-3 py-1">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning" class="text-sm px-3 py-1">Temporary</Badge>{/if}{/if}
-            {#if role === 'gateway'}<Badge variant="primary" class="text-sm px-3 py-1" title="S3/HDFS gateway process, no FUSE mount">Gateway</Badge>{:else if role === 'utility'}<Badge variant="outline" class="text-sm px-3 py-1" title="One-shot utility session, not a mount">Utility</Badge>{:else if role === 'upload'}<Badge variant="secondary" class="text-sm px-3 py-1" title="Bulk upload job, no FUSE mount">Upload</Badge>{/if}
+            {#if role === 'gateway'}<Badge variant="primary" class="text-sm px-3 py-1" title="S3/HDFS gateway process, no FUSE mount">Gateway</Badge>{:else if role === 'utility'}<Badge variant="outline" class="text-sm px-3 py-1" title="One-shot utility session, not a mount">Utility</Badge>{:else if role === 'upload'}<Badge variant="secondary" class="text-sm px-3 py-1" title="Bulk upload job, no FUSE mount">Upload</Badge>{:else if role === 'download'}<Badge variant="secondary" class="text-sm px-3 py-1" title="Bulk download job, no FUSE mount">Download</Badge>{/if}
             <Badge variant="secondary" class="text-sm px-3 py-1">{session.clientType}</Badge>
           </div>
         </div>
@@ -345,7 +371,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
           <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm">{session.account.name}</a></div>
           <div><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm">{session.volume.name || `#${session.volume.id}`}</a></div>
-          {#if role !== 'upload'}
+          {#if role !== 'upload' && role !== 'download'}
             <div><p class="detail-label">Mount Path</p>{#if role === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
           {/if}
           <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
@@ -415,12 +441,13 @@
             {#if up.jobId}<div class="min-w-0"><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={up.jobId}>{up.jobId}</p></div>{/if}
             {#if up.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={up.sourcePath}>{up.sourcePath}</p></div>{/if}
             {#if up.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={up.destPath}>{up.destPath}</p></div>{/if}
+            {#if up.logPath}<div class="min-w-0"><p class="detail-label">Log</p><p class="text-sm font-mono truncate" title={up.logPath}>{up.logPath}</p></div>{/if}
             {#if up.totalFiles}
               <div class="min-w-0">
                 <p class="detail-label">Total</p>
                 <p class="text-sm font-mono">
                   {formatNum(up.totalFiles)} file{up.totalFiles === 1 ? '' : 's'}, {formatBytes(up.totalBytes ?? 0)}
-                  <span class="text-muted-foreground" title="A live aggregate as of the client's last scan pass -- a daemon-mode job keeps discovering more on every rescan, so this isn't final until the job settles.">(as of last scan)</span>
+                  <span class="text-muted-foreground" title="A live aggregate as of the client's last scan pass. A daemon-mode job keeps discovering more on every rescan, so this isn't final until the job settles.">(as of last scan)</span>
                 </p>
               </div>
             {/if}
@@ -436,6 +463,59 @@
                   <div class="metric-row {(up.counts.failed ?? 0) ? 'text-destructive' : ''}"><span>Failed</span><span>{formatNum(up.counts.failed ?? 0)}</span></div>
                   <div class="metric-row"><span>Skipped</span><span>{formatNum(up.counts.skipped ?? 0)}</span></div>
                   <div class="metric-row"><span>Missing</span><span>{formatNum(up.counts.missing ?? 0)}</span></div>
+                </div>
+              </div>
+            </div>
+          {/if}
+        </div>
+      </div>
+    {/if}
+
+    {#if role === 'download' && dl}
+      <!-- Download job (bulk-copy job identity + live progress; no FUSE mount) -->
+      <div class="corner-brackets relative border border-border/30 rounded-sm">
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
+        <div class="relative p-5 space-y-5">
+          <h2 class="text-lg font-semibold">Download Job</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
+            {#if dl.jobId}<div class="min-w-0"><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={dl.jobId}>{dl.jobId}</p></div>{/if}
+            {#if dl.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={dl.sourcePath}>{dl.sourcePath}</p></div>{/if}
+            {#if dl.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={dl.destPath}>{dl.destPath}</p></div>{/if}
+            {#if dl.logPath}<div class="min-w-0"><p class="detail-label">Log</p><p class="text-sm font-mono truncate" title={dl.logPath}>{dl.logPath}</p></div>{/if}
+            {#if dl.totalFiles}
+              <div class="min-w-0">
+                <p class="detail-label">Total</p>
+                <p class="text-sm font-mono">
+                  {formatNum(dl.totalFiles)} file{dl.totalFiles === 1 ? '' : 's'}, {formatBytes(dl.totalBytes ?? 0)}
+                  <span class="text-muted-foreground" title="A live aggregate as of the client's last scan pass. A daemon-mode job keeps discovering more on every rescan, so this isn't final until the job settles.">(as of last scan)</span>
+                </p>
+              </div>
+            {/if}
+          </div>
+          {#if dl.counts}
+            <div class="border-t border-border/40 pt-4">
+              <div class="metric-group">
+                <p class="detail-label">Progress</p>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-2">
+                  <div class="metric-row"><span>Pending</span><span>{formatNum(dl.counts.pending ?? 0)}</span></div>
+                  <div class="metric-row"><span>Downloading</span><span>{formatNum(dl.counts.downloading ?? 0)}</span></div>
+                  <div class="metric-row"><span>Done</span><span>{formatNum(dl.counts.done ?? 0)}</span></div>
+                  <div class="metric-row {(dl.counts.retrying ?? 0) ? 'text-warning' : ''}">
+                    <span class="inline-flex items-center gap-0.5">
+                      Retrying
+                      <InfoTip text="Currently in backoff after a transient error (quota, volume lock, or a temporary read failure). Retried automatically as the job runs, self-clearing, no action needed." />
+                    </span>
+                    <span>{formatNum(dl.counts.retrying ?? 0)}</span>
+                  </div>
+                  <div class="metric-row {(dl.counts.failed ?? 0) ? 'text-destructive' : ''}">
+                    <span class="inline-flex items-center gap-0.5">
+                      Failed
+                      <InfoTip text="Won't clear on its own. The job gave up on this path. Fix the underlying cause, then use Retry failed, or accept the loss." />
+                    </span>
+                    <span>{formatNum(dl.counts.failed ?? 0)}</span>
+                  </div>
+                  <div class="metric-row"><span>Skipped</span><span>{formatNum(dl.counts.skipped ?? 0)}</span></div>
+                  <div class="metric-row"><span>Missing</span><span>{formatNum(dl.counts.missing ?? 0)}</span></div>
                 </div>
               </div>
             </div>
@@ -849,7 +929,7 @@
   .rpc-toggle-btn {
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-size: 0.7rem;
+    font-size: 1rem;
     padding: 0.25rem 0.625rem;
     cursor: pointer;
     background: transparent;

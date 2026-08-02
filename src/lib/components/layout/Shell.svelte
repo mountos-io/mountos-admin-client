@@ -47,7 +47,7 @@
   function handleKeydown(e: KeyboardEvent) {
     // e.metaKey is the Cmd key on macOS but the Windows/Super key elsewhere
     // (already claimed by the OS), so Windows/Linux users need ctrlKey for
-    // this to reach them at all -- swap which one counts as "the" modifier,
+    // this to reach them at all, swap which one counts as "the" modifier,
     // and which one disqualifies the combo, based on the actual platform.
     const mac = isMacPlatform()
     const modPressed = mac ? e.metaKey : e.ctrlKey

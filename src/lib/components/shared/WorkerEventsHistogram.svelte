@@ -37,7 +37,7 @@
     return out
   })
 
-  // Filters which legend rows are shown, not which goals are plotted -- a
+  // Filters which legend rows are shown, not which goals are plotted. A
   // goal stays selected/deselected across a search even while hidden from
   // the list, so clearing the search doesn't silently reset your picks.
   const filteredGoals = $derived.by(() => {
@@ -61,7 +61,7 @@
     disabledGoals = new Set()
   }
 
-  // Inverts the active/inactive set over allGoals (not just filteredGoals --
+  // Inverts the active/inactive set over allGoals (not just filteredGoals,
   // toggling shouldn't silently drop goals hidden by the current search).
   // Reproduces "unselect all" as the special case of toggling from a full
   // selection, and also inverts any custom hand-picked selection.

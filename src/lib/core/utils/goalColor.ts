@@ -1,6 +1,6 @@
 // Deterministic goal -> color, so the same goal always renders the same
 // color across renders/sessions and across the density/detail worker-event
-// charts, without a curated lookup table -- gcserv goals are an open set.
+// charts, without a curated lookup table, gcserv goals are an open set.
 function hashStr(s: string, seed: number): number {
   let h = seed
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0

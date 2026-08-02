@@ -256,7 +256,7 @@
   const dbMaxIdleTimeClosed = $derived(sv(sections, "DB Pool", "db_max_idle_time_closed"));
   const dbMaxLifetimeClosed = $derived(sv(sections, "DB Pool", "db_max_lifetime_closed"));
   // Node<->DB network round-trip (not query execution time), absent until
-  // the first sample (the section simply won't have the key -- sv yields 0,
+  // the first sample (the section simply won't have the key, sv yields 0,
   // so gate display on the section carrying the key at all, not just a
   // nonzero value).
   const dbPingAvgUs = $derived(sv(sections, "DB Pool", "db_ping_avg_us"));
