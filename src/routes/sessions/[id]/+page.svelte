@@ -106,6 +106,15 @@
     return m != null && typeof m === 'object' ? (m as Record<string, unknown>)[key] : undefined
   }
 
+  // Every client session carries a memorable "adjective-noun-xxxx" label
+  // under metadata.friendlyName (see mfuse's HealthReporter.SetFriendlyName),
+  // generated once per process and stable across an upload/download job's
+  // resumes. Preferred over the raw hostname for the header title.
+  function getFriendlyName(s: ClientSession): string | undefined {
+    const name = getMetaProp(s, 'friendlyName')
+    return typeof name === 'string' && name !== '' ? name : undefined
+  }
+
   // Session kind reported by the client under metadata.role. A gateway process
   // has no FUSE mount (mount path "."); a utility is a one-shot tool; an
   // upload/download is a bulk-copy job (also no FUSE mount, metadata.upload
@@ -350,8 +359,8 @@
         <!-- Host + badges -->
         <div class="flex flex-wrap items-center gap-4">
           <div class="min-w-0 flex-1">
-            <p class="text-xl font-bold truncate" title={session.hostname || session.ipAddr}>{session.hostname || session.ipAddr}</p>
-            <p class="text-sm text-muted-foreground font-mono">{session.ipAddr}</p>
+            <p class="text-xl font-bold truncate" title={getFriendlyName(session) || session.hostname || session.ipAddr}>{getFriendlyName(session) || session.hostname || session.ipAddr}</p>
+            <p class="text-sm text-muted-foreground font-mono">{#if getFriendlyName(session) && session.hostname}{session.hostname} &middot; {/if}{session.ipAddr}</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             {#if getPlatform(session)}<Badge variant="primary" class="text-sm px-3 py-1">{formatPlatform(getPlatform(session))}</Badge>{/if}

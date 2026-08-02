@@ -89,6 +89,19 @@
   function mountModeVariant(m: string) { return isReadOnlyMountMode(m) ? 'outline' as const : 'default' as const }
   function getMetrics(s: ClientSession) { return (s.metrics ?? {}) as Record<string, any> }
 
+  // Every client session (mount, gateway, utility, upload, download) carries
+  // a memorable "adjective-noun-xxxx" label under metadata.friendlyName,
+  // generated once per process and stable across an upload/download job's
+  // resumes (see mfuse's HealthReporter.SetFriendlyName). Preferred over the
+  // raw hostname as the row's headline label; hostname stays visible in the
+  // secondary line below it.
+  function getFriendlyName(s: ClientSession): string | undefined {
+    const md = s.metadata
+    if (md == null || typeof md !== 'object') return undefined
+    const name = (md as Record<string, unknown>).friendlyName
+    return typeof name === 'string' && name !== '' ? name : undefined
+  }
+
   // Session kind reported under metadata.role: a gateway has no FUSE mount
   // (path "."), a utility is a one-shot tool, an upload is a bulk-copy job
   // (also no FUSE mount, metadata.upload carries its job id/paths/progress
@@ -258,7 +271,7 @@
                 <button
                   type="button"
                   class="inline-flex items-center justify-center p-2 -m-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                  aria-label="{store.expanded.has(session.id) ? 'Collapse' : 'Expand'} session {session.hostname || session.ipAddr}"
+                  aria-label="{store.expanded.has(session.id) ? 'Collapse' : 'Expand'} session {getFriendlyName(session) || session.hostname || session.ipAddr}"
                   aria-expanded={store.expanded.has(session.id)}
                   onclick={(e: MouseEvent) => { e.stopPropagation(); store.toggleExpanded(session.id) }}>
                   {#if store.expanded.has(session.id)}<ChevronDown class="h-4 w-4" aria-hidden="true" />{:else}<ChevronRight class="h-4 w-4" aria-hidden="true" />{/if}
@@ -267,14 +280,14 @@
               <TableCell>
                 <div>
                   <div class="flex items-center gap-1.5">
-                    <p class="text-sm font-medium truncate max-w-[200px]" title={session.hostname || session.ipAddr}>{session.hostname || session.ipAddr}</p>
+                    <p class="text-sm font-medium truncate max-w-[200px]" title={getFriendlyName(session) || session.hostname || session.ipAddr}>{getFriendlyName(session) || session.hostname || session.ipAddr}</p>
                     {#if session.appVersion}
                       <Badge variant="outline" class="font-mono shrink-0" title="App version">v{session.appVersion}</Badge>
                       <UpdateIndicator class="shrink-0" running={session.appVersion}
                         status={releases.clientUpdateStatusFor(session.osName, session.appVersion)} />
                     {/if}
                   </div>
-                  <p class="text-sm text-muted-foreground font-mono">{session.ipAddr} &middot; #{session.id}</p>
+                  <p class="text-sm text-muted-foreground font-mono">{#if getFriendlyName(session) && session.hostname}{session.hostname} &middot; {/if}{session.ipAddr} &middot; #{session.id}</p>
                 </div>
               </TableCell>
               <TableCell>
