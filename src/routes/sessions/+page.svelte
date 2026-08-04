@@ -21,7 +21,7 @@
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
-  import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode } from '$lib/core/utils/format'
+  import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant } from '$lib/core/utils/format'
   import { SESSION_POLL_OPTIONS } from '$lib/core/utils/options'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
   import { showErrorToast } from '$lib/core/utils/toast'
@@ -29,7 +29,7 @@
   import ExternalLink from '@lucide/svelte/icons/external-link'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
-  import { pingRttColor } from '$lib/core/utils/metrics'
+  import { pingRttColor, formatTotalTime } from '$lib/core/utils/metrics'
 
   const store = useSessions()
   const releases = useReleases()
@@ -103,13 +103,15 @@
   }
 
   // Session kind reported under metadata.role: a gateway has no FUSE mount
-  // (path "."), a utility is a one-shot tool, an upload is a bulk-copy job
-  // (also no FUSE mount, metadata.upload carries its job id/paths/progress
-  // instead). Absent/unknown reads as a mount.
-  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' | 'download' {
+  // (path "."), a utility is a one-shot tool, an upload/download is a
+  // bulk-copy job (also no FUSE mount, metadata.upload/download carries its
+  // job id/paths/progress instead), a sink is an HLS-to-mountOS ingest
+  // process (also no FUSE mount, metadata.sink carries its job identity and
+  // live lag/rate progress). Absent/unknown reads as a mount.
+  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' | 'download' | 'sink' {
     const md = s.metadata
     const r = md != null && typeof md === 'object' ? (md as Record<string, unknown>).role : undefined
-    return r === 'gateway' || r === 'utility' || r === 'upload' || r === 'download' ? r : 'mount'
+    return r === 'gateway' || r === 'utility' || r === 'upload' || r === 'download' || r === 'sink' ? r : 'mount'
   }
 
   interface UploadSessionDetails {
@@ -134,6 +136,29 @@
     const dl = (md as Record<string, unknown>).download
     return dl != null && typeof dl === 'object' ? (dl as UploadSessionDetails) : undefined
   }
+
+  // Sink job identity + live progress reported under metadata.sink. Minimal
+  // projection like UploadSessionDetails; full shape is the detail page's
+  // SinkInfo.
+  interface SinkSessionDetails {
+    jobId?: string
+    source?: string
+    sinkTemplate?: string
+    state?: string
+    lagSegments?: number
+    lagSeconds?: number
+    walBytes?: number
+    walSegments?: number
+    discontinuities?: number
+  }
+
+  function getSinkDetails(s: ClientSession): SinkSessionDetails | undefined {
+    const md = s.metadata
+    if (md == null || typeof md !== 'object') return undefined
+    const sk = (md as Record<string, unknown>).sink
+    return sk != null && typeof sk === 'object' ? (sk as SinkSessionDetails) : undefined
+  }
+
   function clearVolumeFilter() { goto('/sessions') }
 
   // Duration covers both flavours: a still-active session shows wall-clock
@@ -312,7 +337,13 @@
               </TableCell>
               <TableCell><Badge variant={statusVariant(session.status)}>{session.status}</Badge></TableCell>
               <TableCell class="hidden md:table-cell">
-                {#if getSessionRole(session) === 'gateway'}<Badge variant="primary" title="S3/HDFS gateway, no FUSE mount">Gateway</Badge>{:else if getSessionRole(session) === 'utility'}<Badge variant="outline" title="One-shot utility session, not a mount">Utility</Badge>{:else if getSessionRole(session) === 'upload'}<Badge variant="secondary" title="Bulk upload job, no FUSE mount">Upload</Badge>{:else if getSessionRole(session) === 'download'}<Badge variant="secondary" title="Bulk download job, no FUSE mount">Download</Badge>{:else if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
+                {#if getSessionRole(session) === 'gateway'}<Badge variant="primary" title="S3/HDFS gateway, no FUSE mount">Gateway</Badge>{:else if getSessionRole(session) === 'utility'}<Badge variant="outline" title="One-shot utility session, not a mount">Utility</Badge>{:else if getSessionRole(session) === 'upload'}<Badge variant="secondary" title="Bulk upload job, no FUSE mount">Upload</Badge>{:else if getSessionRole(session) === 'download'}<Badge variant="secondary" title="Bulk download job, no FUSE mount">Download</Badge>{:else if getSessionRole(session) === 'sink'}
+                  {@const skState = getSinkDetails(session)?.state}
+                  <span class="inline-flex items-center gap-1">
+                    <Badge variant="secondary" title="HLS-to-mountOS ingest sink, no FUSE mount">Sink</Badge>
+                    {#if skState}<Badge variant={sinkStateVariant(skState)} class="font-mono text-xs" title="Sink state">{skState}</Badge>{/if}
+                  </span>
+                {:else if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
               </TableCell>
               <TableCell class="text-sm tabular-nums hidden md:table-cell">{sessionDuration(session)}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</TableCell>
@@ -329,7 +360,7 @@
                     </a>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm" onclick={(e: MouseEvent) => e.stopPropagation()}>{session.account.name}</a></div>
-                        <div><p class="detail-label">Mount Path</p>{#if getSessionRole(session) === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else if getSessionRole(session) === 'upload'}<p class="text-sm text-muted-foreground" title="Upload job, no FUSE mount">N/A</p>{:else if getSessionRole(session) === 'download'}<p class="text-sm text-muted-foreground" title="Download job, no FUSE mount">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
+                        <div><p class="detail-label">Mount Path</p>{#if getSessionRole(session) === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else if getSessionRole(session) === 'upload'}<p class="text-sm text-muted-foreground" title="Upload job, no FUSE mount">N/A</p>{:else if getSessionRole(session) === 'download'}<p class="text-sm text-muted-foreground" title="Download job, no FUSE mount">N/A</p>{:else if getSessionRole(session) === 'sink'}<p class="text-sm text-muted-foreground" title="Sink ingest process, no FUSE mount">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
                         <div>
                           <div class="detail-label flex items-center gap-0.5">
@@ -360,6 +391,11 @@
                           {#if dl?.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={dl.jobId}>{dl.jobId}</p></div>{/if}
                           {#if dl?.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={dl.sourcePath}>{dl.sourcePath}</p></div>{/if}
                           {#if dl?.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={dl.destPath}>{dl.destPath}</p></div>{/if}
+                        {:else if getSessionRole(session) === 'sink'}
+                          {@const sk = getSinkDetails(session)}
+                          {#if sk?.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={sk.jobId}>{sk.jobId}</p></div>{/if}
+                          {#if sk?.source}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={sk.source}>{sk.source}</p></div>{/if}
+                          {#if sk?.sinkTemplate}<div class="min-w-0"><p class="detail-label">Sink</p><p class="text-sm font-mono truncate" title={sk.sinkTemplate}>{sk.sinkTemplate}</p></div>{/if}
                         {/if}
                         <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
                         {#if session.appVersion}
@@ -392,6 +428,17 @@
                                 <div class="metric-row {(dlCounts.retrying ?? 0) ? 'text-warning' : ''}" title="Self-clearing, retried automatically, no action needed"><span>Retrying</span><span>{formatNum(dlCounts.retrying ?? 0)}</span></div>
                                 <div class="metric-row {(dlCounts.failed ?? 0) ? 'text-destructive' : ''}" title="Won't clear on its own, needs Retry failed"><span>Failed</span><span>{formatNum(dlCounts.failed ?? 0)}</span></div>
                                 <div class="metric-row"><span>Skipped</span><span>{formatNum(dlCounts.skipped ?? 0)}</span></div>
+                              </div>
+                            {/if}
+                          {:else if getSessionRole(session) === 'sink'}
+                            {@const sk = getSinkDetails(session)}
+                            {#if sk}
+                              <div class="metric-group">
+                                <p class="detail-label">Stream Health</p>
+                                <div class="metric-row"><span>State</span><span>{#if sk.state}<Badge variant={sinkStateVariant(sk.state)} class="font-mono text-xs">{sk.state}</Badge>{:else}·{/if}</span></div>
+                                <div class="metric-row"><span>Lag</span><span>{formatNum(sk.lagSegments ?? 0)} seg / {sk.lagSeconds ? formatTotalTime(sk.lagSeconds) : '0s'}</span></div>
+                                <div class="metric-row"><span>Buffered</span><span>{formatBytes(sk.walBytes ?? 0)} / {formatNum(sk.walSegments ?? 0)} seg</span></div>
+                                <div class="metric-row {(sk.discontinuities ?? 0) ? 'text-destructive' : ''}"><span>Discontinuities</span><span>{formatNum(sk.discontinuities ?? 0)}</span></div>
                               </div>
                             {/if}
                           {:else}

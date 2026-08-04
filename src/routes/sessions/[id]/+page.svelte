@@ -10,7 +10,7 @@
   import { api } from '$lib/core/stores/client.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode } from '$lib/core/utils/format'
+  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatBitrate, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant } from '$lib/core/utils/format'
   import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, memAllocColor, cvClass, bucketBarColor, estimateCV, fmtPercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
@@ -118,11 +118,13 @@
   // Session kind reported by the client under metadata.role. A gateway process
   // has no FUSE mount (mount path "."); a utility is a one-shot tool; an
   // upload/download is a bulk-copy job (also no FUSE mount, metadata.upload
-  // or metadata.download carries its job id/paths/progress instead). Absent
-  // or unknown reads as a regular mount.
-  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' | 'download' {
+  // or metadata.download carries its job id/paths/progress instead); a sink
+  // is an HLS-to-mountOS ingest process (also no FUSE mount, metadata.sink
+  // carries its job identity and live lag/rate progress). Absent or unknown
+  // reads as a regular mount.
+  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' | 'download' | 'sink' {
     const r = getMetaProp(s, 'role')
-    return r === 'gateway' || r === 'utility' || r === 'upload' || r === 'download' ? r : 'mount'
+    return r === 'gateway' || r === 'utility' || r === 'upload' || r === 'download' || r === 'sink' ? r : 'mount'
   }
 
   interface GatewayInfo { endpoints: Record<string, string> }
@@ -175,6 +177,42 @@
   function getDownloadInfo(s: ClientSession): DownloadInfo | null {
     const dp = getMetaProp(s, 'download')
     return dp != null && typeof dp === 'object' ? (dp as DownloadInfo) : null
+  }
+
+  // Sink job identity + live progress reported under metadata.sink. A sink
+  // has no bounded work list to count over (unlike upload/download): it
+  // ingests an unbounded live HLS stream, so its health is lag and rate,
+  // not pending/done/failed counts. `source` arrives already redacted by
+  // the server (auth token stripped from the query string) and is never
+  // re-derived or linked to here.
+  interface SinkInfo {
+    jobId?: string
+    source?: string
+    sinkTemplate?: string
+    variant?: string
+    fork?: string
+    logPath?: string
+    // Live progress, merged into metadata.sink on every heartbeat.
+    state?: string
+    lagSegments?: number
+    lagSeconds?: number
+    walBytes?: number
+    walSegments?: number
+    discontinuities?: number
+    segmentsFetched?: number
+    segmentsCommitted?: number
+    bytesCommitted?: number
+    fileSize?: number
+    sinkCurrent?: string
+    bitrateObserved?: number
+    fetchErrors?: number
+    commitRetries?: number
+    lastCommitAt?: number
+    lastSegmentAt?: number
+  }
+  function getSinkInfo(s: ClientSession): SinkInfo | null {
+    const sk = getMetaProp(s, 'sink')
+    return sk != null && typeof sk === 'object' ? (sk as SinkInfo) : null
   }
 
   interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number; durationNs?: number; buckets?: number[] }
@@ -347,6 +385,7 @@
     {@const gw = getGatewayInfo(session)}
     {@const up = getUploadInfo(session)}
     {@const dl = getDownloadInfo(session)}
+    {@const sk = getSinkInfo(session)}
 
     {#if error}
       <div class="rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive" role="alert">Refresh failed: {error}</div>
@@ -367,9 +406,9 @@
             <Badge variant="secondary" class="text-sm px-3 py-1">{formatOs(session.osName)}</Badge>
             <Badge class="text-sm px-3 py-1">{session.region.name}</Badge>
             {#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="text-sm px-3 py-1 capitalize">{session.volume.type}</Badge>{/if}
-            {#if session.mountMode && role !== 'upload' && role !== 'download'}<Badge variant={isReadOnlyMountMode(session.mountMode) ? 'outline' : 'default'} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
+            {#if session.mountMode && role !== 'upload' && role !== 'download' && role !== 'sink'}<Badge variant={isReadOnlyMountMode(session.mountMode) ? 'outline' : 'default'} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
             {#if session.forkName}<Badge variant="outline" class="text-sm px-3 py-1">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning" class="text-sm px-3 py-1">Temporary</Badge>{/if}{/if}
-            {#if role === 'gateway'}<Badge variant="primary" class="text-sm px-3 py-1" title="S3/HDFS gateway process, no FUSE mount">Gateway</Badge>{:else if role === 'utility'}<Badge variant="outline" class="text-sm px-3 py-1" title="One-shot utility session, not a mount">Utility</Badge>{:else if role === 'upload'}<Badge variant="secondary" class="text-sm px-3 py-1" title="Bulk upload job, no FUSE mount">Upload</Badge>{:else if role === 'download'}<Badge variant="secondary" class="text-sm px-3 py-1" title="Bulk download job, no FUSE mount">Download</Badge>{/if}
+            {#if role === 'gateway'}<Badge variant="primary" class="text-sm px-3 py-1" title="S3/HDFS gateway process, no FUSE mount">Gateway</Badge>{:else if role === 'utility'}<Badge variant="outline" class="text-sm px-3 py-1" title="One-shot utility session, not a mount">Utility</Badge>{:else if role === 'upload'}<Badge variant="secondary" class="text-sm px-3 py-1" title="Bulk upload job, no FUSE mount">Upload</Badge>{:else if role === 'download'}<Badge variant="secondary" class="text-sm px-3 py-1" title="Bulk download job, no FUSE mount">Download</Badge>{:else if role === 'sink'}<Badge variant="secondary" class="text-sm px-3 py-1" title="HLS-to-mountOS ingest sink, no FUSE mount">Sink</Badge>{/if}
             <Badge variant="secondary" class="text-sm px-3 py-1">{session.clientType}</Badge>
           </div>
         </div>
@@ -380,7 +419,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
           <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm">{session.account.name}</a></div>
           <div><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm">{session.volume.name || `#${session.volume.id}`}</a></div>
-          {#if role !== 'upload' && role !== 'download'}
+          {#if role !== 'upload' && role !== 'download' && role !== 'sink'}
             <div><p class="detail-label">Mount Path</p>{#if role === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
           {/if}
           <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
@@ -533,6 +572,54 @@
       </div>
     {/if}
 
+    {#if role === 'sink' && sk}
+      <!-- Sink job (HLS-to-mountOS ingest identity + live progress; no FUSE mount).
+           No bounded work list to count over, unlike upload/download: this ingests
+           an unbounded live stream, so health is lag and rate, not pending/done/
+           failed counts. Lag behind the live edge and buffered depth are the
+           two numbers that matter most; everything else is detail. -->
+      <div class="corner-brackets relative border border-border/30 rounded-sm">
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
+        <div class="relative p-5 space-y-5">
+          <h2 class="text-lg font-semibold">Sink Job</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
+            {#if sk.jobId}<div class="min-w-0"><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={sk.jobId}>{sk.jobId}</p></div>{/if}
+            {#if sk.source}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={sk.source}>{sk.source}</p></div>{/if}
+            {#if sk.sinkTemplate}<div class="min-w-0"><p class="detail-label">Sink</p><p class="text-sm font-mono truncate" title={sk.sinkTemplate}>{sk.sinkTemplate}</p></div>{/if}
+            {#if sk.variant}<div class="min-w-0"><p class="detail-label">Variant</p><p class="text-sm font-mono truncate" title={sk.variant}>{sk.variant}</p></div>{/if}
+            {#if sk.fork}<div class="min-w-0"><p class="detail-label">Fork</p><p class="text-sm font-mono truncate" title={sk.fork}>{sk.fork}</p></div>{/if}
+            {#if sk.logPath}<div class="min-w-0"><p class="detail-label">Log</p><p class="text-sm font-mono truncate" title={sk.logPath}>{sk.logPath}</p></div>{/if}
+          </div>
+          <div class="border-t border-border/40 pt-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
+              <div class="metric-group">
+                <p class="detail-label">Stream Health</p>
+                <div class="metric-row"><span>State</span><span>{#if sk.state}<Badge variant={sinkStateVariant(sk.state)} class="font-mono text-xs">{sk.state}</Badge>{:else}·{/if}</span></div>
+                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Lag (segments)<InfoTip text="How many segments behind the live edge. Growing means the sink is falling behind." /></span><span>{formatNum(sk.lagSegments ?? 0)}</span></div>
+                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Lag (time)<InfoTip text="How far behind the live edge, in wall-clock time." /></span><span>{sk.lagSeconds ? formatTotalTime(sk.lagSeconds) : '0s'}</span></div>
+                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Buffered Bytes<InfoTip text="Local buffer of segments not yet uploaded. Growing means uploads are falling behind or failing." /></span><span>{formatBytes(sk.walBytes ?? 0)}</span></div>
+                <div class="metric-row"><span>Buffered Segments</span><span>{formatNum(sk.walSegments ?? 0)}</span></div>
+                <div class="metric-row {(sk.discontinuities ?? 0) ? 'text-destructive' : ''}"><span>Discontinuities</span><span>{formatNum(sk.discontinuities ?? 0)}</span></div>
+              </div>
+              <div class="metric-group">
+                <p class="detail-label">Activity</p>
+                <div class="metric-row"><span>Segments Fetched</span><span>{formatNum(sk.segmentsFetched ?? 0)}</span></div>
+                <div class="metric-row"><span>Segments Committed</span><span>{formatNum(sk.segmentsCommitted ?? 0)}</span></div>
+                <div class="metric-row"><span>Bytes Committed</span><span>{formatBytes(sk.bytesCommitted ?? 0)}</span></div>
+                <div class="metric-row"><span>File Size</span><span>{formatBytes(sk.fileSize ?? 0)}</span></div>
+                {#if sk.sinkCurrent}<div class="metric-row"><span>Current Segment</span><span class="truncate max-w-[16rem]" title={sk.sinkCurrent}>{sk.sinkCurrent}</span></div>{/if}
+                {#if sk.bitrateObserved != null}<div class="metric-row"><span>Bitrate</span><span>{formatBitrate(sk.bitrateObserved)}</span></div>{/if}
+                <div class="metric-row {(sk.fetchErrors ?? 0) ? 'text-destructive' : ''}"><span>Fetch Errors</span><span>{formatNum(sk.fetchErrors ?? 0)}</span></div>
+                <div class="metric-row {(sk.commitRetries ?? 0) ? 'text-warning' : ''}"><span>Commit Retries</span><span>{formatNum(sk.commitRetries ?? 0)}</span></div>
+                {#if sk.lastCommitAt}<div class="metric-row"><span>Last Commit</span><span class="inline-flex items-center gap-0.5">{formatRelative(sk.lastCommitAt)}<InfoTip text={formatDate(sk.lastCommitAt)} /></span></div>{/if}
+                {#if sk.lastSegmentAt}<div class="metric-row"><span>Last Segment</span><span class="inline-flex items-center gap-0.5">{formatRelative(sk.lastSegmentAt)}<InfoTip text={formatDate(sk.lastSegmentAt)} /></span></div>{/if}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
     {@const cacheCfg = getMetaProp(session, 'cache') as Record<string, unknown> | undefined}
     {#if cacheCfg}
       <!-- Cache configuration (operator-facing knobs at mount time) -->
@@ -597,7 +684,7 @@
         <div class="relative p-5">
           <h2 class="text-lg font-semibold mb-4">Metrics</h2>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-8 gap-y-5">
-            {#if role !== 'upload'}
+            {#if role !== 'upload' && role !== 'sink'}
               <div class="metric-group">
                 <p class="detail-label">I/O</p>
                 <div class="metric-row"><span>Reads</span><span>{formatNum(m.reads ?? 0)}</span></div>

@@ -112,6 +112,25 @@ export function formatBytes(bytes: number): string {
   return `${val} ${sizes[i]}`
 }
 
+// Decimal (1000-base) bit rate, matching how network/stream throughput is
+// conventionally reported (bps/Kbps/Mbps), distinct from formatBytes' binary
+// (1024-base) byte units.
+export function formatBitrate(bitsPerSec: number): string {
+  if (!Number.isFinite(bitsPerSec) || bitsPerSec === 0) return '0 bps'
+  const k = 1000
+  const units = ['bps', 'Kbps', 'Mbps', 'Gbps', 'Tbps']
+  const sign = bitsPerSec < 0 ? -1 : 1
+  let mag = Math.abs(bitsPerSec)
+  let i = 0
+  while (mag >= k && i < units.length - 1) {
+    mag /= k
+    i++
+  }
+  let val = parseFloat(mag.toFixed(1))
+  if (val >= k && i < units.length - 1) { val = parseFloat((val / k).toFixed(1)); i++ }
+  return `${sign * val} ${units[i]}`
+}
+
 export function formatQuota(used: number, limit: number): string {
   if (limit === 0) return 'Unlimited'
   return `${formatBytes(used)} / ${formatBytes(limit)}`
@@ -212,6 +231,20 @@ const NODE_STATUS_MAP: Record<string, StatusVariant> = {
 
 export function nodeStatusVariant(status: string): StatusVariant {
   return NODE_STATUS_MAP[status] ?? 'secondary'
+}
+
+// Sink runner states (metadata.sink.state on a sink client session): running
+// is healthy, paused/draining are operator-initiated holds, halted is a stop
+// needing attention.
+const SINK_STATE_MAP: Record<string, StatusVariant> = {
+  running: 'success',
+  paused: 'warning',
+  draining: 'warning',
+  halted: 'destructive',
+}
+
+export function sinkStateVariant(state: string): StatusVariant {
+  return SINK_STATE_MAP[state] ?? 'secondary'
 }
 
 export interface PrometheusMetric {
