@@ -228,7 +228,7 @@
                     {@const active = preset.name === 'mountOS Light' ? !prefs.skin || prefs.skin === 'mountOS Light' : prefs.skin === preset.name}
                     <button
                       class="skin-swatch {active ? 'ring-2 ring-primary' : ''}"
-                      style="--sw-bg: {preset.colors.background}; --sw-fg: {preset.colors.primary};"
+                      style="--sw-bg: {preset.color('background')}; --sw-fg: {preset.color('primary')};"
                       onclick={() => prefs.skin = preset.name === 'mountOS Light' ? '' : preset.name}
                       aria-label={preset.name === 'mountOS Light' ? 'mountOS (default)' : preset.name}
                       aria-pressed={active}
@@ -249,7 +249,7 @@
                     {@const active = preset.name === 'mountOS Dark' ? !prefs.skin || prefs.skin === 'mountOS Dark' : prefs.skin === preset.name}
                     <button
                       class="skin-swatch {active ? 'ring-2 ring-primary' : ''}"
-                      style="--sw-bg: {preset.colors.background}; --sw-fg: {preset.colors.primary};"
+                      style="--sw-bg: {preset.color('background')}; --sw-fg: {preset.color('primary')};"
                       onclick={() => prefs.skin = preset.name === 'mountOS Dark' ? '' : preset.name}
                       aria-label={preset.name === 'mountOS Dark' ? 'mountOS (default)' : preset.name}
                       aria-pressed={active}

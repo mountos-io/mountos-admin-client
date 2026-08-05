@@ -71,7 +71,7 @@ function applySkinPreset() {
     clearSkin()
     if (mode === 'dark') {
       const mountOSDark = findPreset('mountOS Dark')
-      if (mountOSDark) { applySkin(mountOSDark.colors, 'dark'); return }
+      if (mountOSDark) { applySkin(mountOSDark); return }
     }
     return
   }
@@ -83,7 +83,7 @@ function applySkinPreset() {
   }
   if (!preset) { skin = ''; clearSkin(); return }
   clearSkin()
-  applySkin(preset.colors, preset.mode)
+  applySkin(preset)
 }
 
 function applyFontSize(fs: FontSize) {

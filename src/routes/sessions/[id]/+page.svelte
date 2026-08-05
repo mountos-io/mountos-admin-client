@@ -149,6 +149,19 @@
     totalBytes?: number
     // Live log file path on the client machine while the job is running.
     logPath?: string
+    // Present only when SOURCE was an external object store (S3-compatible,
+    // Azure Blob, GCS) rather than a local folder/profile manifest --
+    // sourcePath above already renders as the scheme://bucket/prefix form
+    // in that case (uploadExternalSourceURI, mountos-servers), these are
+    // the individually-typed identifiers behind it. Never the secret --
+    // mountOS never persists or reports that anywhere (see
+    // uploadDetailsForSession's own doc comment, mountos-servers).
+    sourceProvider?: string
+    sourceBucket?: string
+    sourcePrefix?: string
+    sourceEndpoint?: string
+    sourceRegion?: string
+    sourceAccount?: string
   }
   // Upload job identity/progress reported under metadata.upload.
   function getUploadInfo(s: ClientSession): UploadInfo | null {
@@ -487,8 +500,17 @@
           <h2 class="text-lg font-semibold">Upload Job</h2>
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
             {#if up.jobId}<div class="min-w-0"><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={up.jobId}>{up.jobId}</p></div>{/if}
-            {#if up.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={up.sourcePath}>{up.sourcePath}</p></div>{/if}
+            <div class="min-w-0">
+              <p class="detail-label">Source</p>
+              <p class="text-sm font-mono truncate" title={up.sourcePath}>
+                {up.sourcePath ?? '·'}
+                {#if up.sourceProvider}<Badge variant="outline" class="ml-1 align-middle">{up.sourceProvider}</Badge>{/if}
+              </p>
+            </div>
             {#if up.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={up.destPath}>{up.destPath}</p></div>{/if}
+            {#if up.sourceEndpoint}<div class="min-w-0"><p class="detail-label">Source Endpoint</p><p class="text-sm font-mono truncate" title={up.sourceEndpoint}>{up.sourceEndpoint}</p></div>{/if}
+            {#if up.sourceRegion}<div class="min-w-0"><p class="detail-label">Source Region</p><p class="text-sm font-mono truncate">{up.sourceRegion}</p></div>{/if}
+            {#if up.sourceAccount}<div class="min-w-0"><p class="detail-label">Source Account</p><p class="text-sm font-mono truncate">{up.sourceAccount}</p></div>{/if}
             {#if up.logPath}<div class="min-w-0"><p class="detail-label">Log</p><p class="text-sm font-mono truncate" title={up.logPath}>{up.logPath}</p></div>{/if}
             {#if up.totalFiles}
               <div class="min-w-0">
