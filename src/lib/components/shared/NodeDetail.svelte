@@ -330,7 +330,7 @@
   </div>
 
   {#if nodeStore.statsLastUpdated}
-    <div class="flex items-center gap-2 font-mono text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
+    <div class="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.15em] text-muted-foreground">
       <span class="inline-block h-1 w-1 rounded-full bg-primary/50 shrink-0"></span>
       Last updated: {formatDate(nodeStore.statsLastUpdated)}
       {#if nodeStore.statsLoading}
@@ -506,7 +506,7 @@
                     <div class="flex items-center gap-2">
                       {#if isCurrent}
                         <span class="font-medium">{memberName}</span>
-                        <Badge variant="outline" class="text-[0.65rem]">this node</Badge>
+                        <Badge variant="outline" class="text-xs">this node</Badge>
                       {:else}
                         <a href={`${basePath}/${regionId}/${m.nodeId}`}
                           class="font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"

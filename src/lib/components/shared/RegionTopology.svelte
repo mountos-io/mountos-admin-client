@@ -589,7 +589,7 @@
       >
         Alerts
         {#if alertStore.activeCount > 0}
-          <Badge variant="destructive" class="h-5 min-w-5 px-1 text-[10px] leading-none">{alertStore.activeCount}</Badge>
+          <Badge variant="destructive" class="h-5 min-w-5 px-1 text-xs leading-none">{alertStore.activeCount}</Badge>
         {/if}
       </button>
     {/if}
@@ -702,7 +702,7 @@
                     aria-selected={railMode === mode}
                     aria-controls="topo-rail-list"
                     tabindex={railMode === mode ? 0 : -1}
-                    class="flex-1 min-h-[36px] px-2 py-1 text-[11px] font-medium rounded transition-colors {railMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+                    class="flex-1 min-h-[36px] px-2 py-1 text-xs font-medium rounded transition-colors {railMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
                     onclick={() => railMode = mode as 'clusters' | 'storages'}
                     onkeydown={handleTabKeydown}
                   >{label}</button>
@@ -710,7 +710,7 @@
               </div>
             </div>
           {:else}
-            <div class="px-3 py-2 border-b border-border/40 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Clusters</div>
+            <div class="px-3 py-2 border-b border-border/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Clusters</div>
           {/if}
           {#if showStorages}
             <div id="topo-rail-list" class="flex flex-col gap-1 p-2 flex-1 overflow-y-auto" role="group" aria-label="Select storage to inspect">
@@ -730,9 +730,9 @@
                     style="background: {dotColor}; --led: {dotColor};"
                     aria-hidden="true"
                   ></span>
-                  <span class="min-w-0 flex-1 truncate font-mono text-[13px] font-medium">{s.label}</span>
-                  <span class="shrink-0 text-[10px] uppercase tracking-wider text-muted-foreground" aria-label="{s.clusterCount} clusters">{s.clusterCount}c</span>
-                  <span class="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground" aria-label="{s.healthyCount} healthy of {s.nodeCount} nodes">{s.healthyCount}/{s.nodeCount}</span>
+                  <span class="min-w-0 flex-1 truncate font-mono text-xs font-medium">{s.label}</span>
+                  <span class="shrink-0 text-xs uppercase tracking-wider text-muted-foreground" aria-label="{s.clusterCount} clusters">{s.clusterCount}c</span>
+                  <span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground" aria-label="{s.healthyCount} healthy of {s.nodeCount} nodes">{s.healthyCount}/{s.nodeCount}</span>
                 </button>
               {/each}
             </div>
@@ -756,9 +756,9 @@
                     aria-hidden="true"
                   ></span>
                   <span class="min-w-0 flex-1 truncate text-sm font-medium">{r.cluster.name}</span>
-                  {#if r.cluster.defaultCluster}<span aria-hidden="true" class="rounded-sm bg-muted px-1 text-[10px] uppercase tracking-wider opacity-80">def</span>{/if}
-                  {#if !r.cluster.isReady}<span aria-hidden="true" class="rounded-sm bg-warning/15 px-1 text-[10px] uppercase tracking-wider text-warning">prep</span>{/if}
-                  <span class="shrink-0 font-mono text-[11px] tabular-nums text-muted-foreground" aria-label="{r.healthyCount} healthy of {r.nodeCount} nodes">{r.healthyCount}/{r.nodeCount}</span>
+                  {#if r.cluster.defaultCluster}<span aria-hidden="true" class="rounded-sm bg-muted px-1 text-xs uppercase tracking-wider opacity-80">def</span>{/if}
+                  {#if !r.cluster.isReady}<span aria-hidden="true" class="rounded-sm bg-warning/15 px-1 text-xs uppercase tracking-wider text-warning">prep</span>{/if}
+                  <span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground" aria-label="{r.healthyCount} healthy of {r.nodeCount} nodes">{r.healthyCount}/{r.nodeCount}</span>
                 </button>
               {/each}
             </div>
@@ -774,7 +774,7 @@
                 <span class="font-semibold font-mono text-sm" title={storageDetail.storageId}>{storageDetail.label}</span>
                 <span class="font-mono text-xs text-muted-foreground tabular-nums">{storageDetail.nodeCount} {storageDetail.nodeCount === 1 ? 'node' : 'nodes'}</span>
                 {#if storageDetail.clustersCovered < storageDetail.clustersTotal}
-                  <Badge variant="warning" class="h-4 text-[9px] uppercase tracking-wider">{storageDetail.clustersCovered}/{storageDetail.clustersTotal} clusters</Badge>
+                  <Badge variant="warning" class="h-4 text-xs uppercase tracking-wider">{storageDetail.clustersCovered}/{storageDetail.clustersTotal} clusters</Badge>
                 {:else}
                   <span class="font-mono text-xs text-muted-foreground tabular-nums">{storageDetail.clustersCovered}/{storageDetail.clustersTotal} clusters</span>
                 {/if}
@@ -784,8 +784,8 @@
                   <div class="rounded-sm border border-border/50 overflow-hidden">
                     <div class="flex items-center gap-2 px-3 py-1.5 border-b border-border/30 bg-foreground/[0.02]">
                       <span class="text-sm font-medium">{pc.cluster.name}</span>
-                      {#if pc.cluster.defaultCluster}<Badge variant="outline" class="h-4 text-[9px] uppercase tracking-wider">default</Badge>{/if}
-                      <span class="ml-auto font-mono text-[11px] tabular-nums text-muted-foreground">{pc.nodes.length} {pc.nodes.length === 1 ? 'node' : 'nodes'}</span>
+                      {#if pc.cluster.defaultCluster}<Badge variant="outline" class="h-4 text-xs uppercase tracking-wider">default</Badge>{/if}
+                      <span class="ml-auto font-mono text-xs tabular-nums text-muted-foreground">{pc.nodes.length} {pc.nodes.length === 1 ? 'node' : 'nodes'}</span>
                     </div>
                     {#if pc.nodes.length === 0}
                       <div class="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground/70">
@@ -830,10 +830,10 @@
             <div class="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b border-border/40 shrink-0">
               <span class="font-semibold text-sm">{detailGroup.cluster.name}</span>
               {#if detailGroup.cluster.defaultCluster}
-                <Badge variant="outline" class="h-4 text-[9px] uppercase tracking-wider">default</Badge>
+                <Badge variant="outline" class="h-4 text-xs uppercase tracking-wider">default</Badge>
               {/if}
               {#if !detailGroup.cluster.isReady}
-                <Badge variant="warning" class="h-4 text-[9px] uppercase tracking-wider">not ready</Badge>
+                <Badge variant="warning" class="h-4 text-xs uppercase tracking-wider">not ready</Badge>
               {/if}
               <span class="font-mono text-xs text-muted-foreground tabular-nums">{detailGroup.nodeCount} nodes</span>
               <div class="ml-auto">{@render viewToggle()}</div>
@@ -960,8 +960,8 @@
                             onclick={linkable ? () => { railMode = 'storages'; detailStorage = sg.storageId } : undefined}
                           >
                             <Box class="size-3 shrink-0 text-muted-foreground" aria-hidden="true" />
-                            <span class="truncate font-mono text-[10px] text-muted-foreground">{storageName(sg.nodes, sg.storageId)}</span>
-                            <span class="ml-auto font-mono text-[10px] tabular-nums text-muted-foreground">{sg.nodes.length}</span>
+                            <span class="truncate font-mono text-xs text-muted-foreground">{storageName(sg.nodes, sg.storageId)}</span>
+                            <span class="ml-auto font-mono text-xs tabular-nums text-muted-foreground">{sg.nodes.length}</span>
                             {#if linkable}<ChevronRight class="size-3 shrink-0 text-muted-foreground/60" aria-hidden="true" />{/if}
                           </svelte:element>
                           {#each sg.nodes as node (node.id)}
@@ -1220,7 +1220,7 @@
                     <div class="flex flex-wrap items-center gap-1">
                       <Badge variant="outline" class="font-mono">{alert.source}</Badge>
                       {#if selectedCluster === null && alert.regionClusterId != null && clusterNameById[alert.regionClusterId]}
-                        <Badge variant="outline" class="font-mono text-[10px] uppercase tracking-wider">{clusterNameById[alert.regionClusterId]}</Badge>
+                        <Badge variant="outline" class="font-mono text-xs uppercase tracking-wider">{clusterNameById[alert.regionClusterId]}</Badge>
                       {/if}
                     </div>
                   </TableCell>
@@ -1345,7 +1345,7 @@
   }
 
   .svc-tag {
-    font-size: 9px;
+    font-size: 1rem;
     font-weight: 600;
     letter-spacing: 0.1em;
     padding: 1px 6px;
@@ -1355,7 +1355,7 @@
   }
 
   .svc-count {
-    font-size: 11px;
+    font-size: 1rem;
     font-weight: 700;
     padding: 0 6px;
     color: var(--tag-color);
@@ -1443,7 +1443,7 @@
     padding: 4px 10px;
     border: 1px solid var(--chip-accent, color-mix(in oklch, var(--muted-foreground) 20%, transparent));
     border-radius: var(--radius-md);
-    font-size: 0.875rem;
+    font-size: 1rem;
     cursor: pointer;
     transition: opacity 0.2s, filter 0.2s, border-color 0.2s;
     user-select: none;
@@ -1470,7 +1470,7 @@
 
   .legend-count {
     font-family: var(--font-mono, monospace);
-    font-size: 0.8rem;
+    font-size: 1rem;
     opacity: 0.6;
   }
 
