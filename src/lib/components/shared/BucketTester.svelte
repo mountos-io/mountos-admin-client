@@ -99,7 +99,7 @@
       <span class="text-sm font-medium">Bucket Verification</span>
     </div>
     {#if result}
-      <Badge variant={passed ? 'default' : successCount > 0 ? 'secondary' : 'destructive'}>
+      <Badge variant={passed ? 'default' : successCount > 0 ? 'warning' : 'destructive'}>
         {successCount}/{TEST_ITEMS.length} passed
       </Badge>
     {/if}

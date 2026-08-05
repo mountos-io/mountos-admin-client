@@ -203,7 +203,7 @@
       </div>
       <div class="mt-1 flex items-center gap-2 text-sm">
         <span class="font-mono text-muted-foreground">{region.name}</span>
-        <Badge variant={region.isActive ? 'success' : 'secondary'}>
+        <Badge variant={region.isActive ? 'success' : 'primary'}>
           {region.isActive ? 'Active' : 'Inactive'}
         </Badge>
       </div>

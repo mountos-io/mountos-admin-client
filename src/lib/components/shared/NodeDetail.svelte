@@ -400,7 +400,7 @@
           <div>
             <dt class="text-muted-foreground text-sm">Active</dt>
             <dd class="mt-0.5">
-              <Badge variant={node.isActive ? 'success' : 'secondary'}>{node.isActive ? 'Yes' : 'No'}</Badge>
+              <Badge variant={node.isActive ? 'success' : 'primary'}>{node.isActive ? 'Yes' : 'No'}</Badge>
             </dd>
           </div>
           {#if nodeProcessId != null}
@@ -533,7 +533,7 @@
                       <Badge variant={metaBool(m, 'ready') ? 'success' : 'warning'}>
                         {metaBool(m, 'ready') ? 'Ready' : 'Not ready'}
                       </Badge>
-                      <Badge variant={metaBool(m, 'ha_synced') ? 'success' : 'secondary'}>
+                      <Badge variant={metaBool(m, 'ha_synced') ? 'success' : 'warning'}>
                         {metaBool(m, 'ha_synced') ? 'Synced' : 'Unsynced'}
                       </Badge>
                     </div>

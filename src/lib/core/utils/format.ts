@@ -203,17 +203,17 @@ export function formatDuration(from: string | number | Date, to?: string | numbe
   return `${mins}m ${secs % 60}s`
 }
 
-type StatusVariant = 'success' | 'secondary' | 'warning' | 'destructive' | 'outline'
+type StatusVariant = 'success' | 'primary' | 'secondary' | 'warning' | 'destructive' | 'outline'
 
 const SESSION_STATUS_MAP: Record<string, { label: string; variant: StatusVariant }> = {
   connected: { label: 'Connected', variant: 'success' },
   active: { label: 'Active', variant: 'success' },
   degraded: { label: 'Degraded', variant: 'destructive' },
-  disconnected: { label: 'Disconnected', variant: 'secondary' },
+  disconnected: { label: 'Disconnected', variant: 'primary' },
   // expired: dead-sweep gave up after 15m of silence with no explicit
-  // disconnect. Terminal state, no longer recoverable; muted so it stops
-  // pulling attention like the live degraded alarm does.
-  expired: { label: 'Expired', variant: 'secondary' },
+  // disconnect. Terminal state, no longer recoverable; calm rather than
+  // alarming like the live degraded state.
+  expired: { label: 'Expired', variant: 'primary' },
   idle: { label: 'Idle', variant: 'warning' },
   error: { label: 'Error', variant: 'destructive' },
 }
@@ -224,13 +224,13 @@ export function formatSessionStatus(status: string): { label: string; variant: S
 
 const NODE_STATUS_MAP: Record<string, StatusVariant> = {
   healthy: 'success',
-  registered: 'secondary',
+  registered: 'primary',
   unhealthy: 'destructive',
   draining: 'warning',
 }
 
 export function nodeStatusVariant(status: string): StatusVariant {
-  return NODE_STATUS_MAP[status] ?? 'secondary'
+  return NODE_STATUS_MAP[status] ?? 'primary'
 }
 
 // Sink runner states (metadata.sink.state on a sink client session): running
@@ -244,7 +244,7 @@ const SINK_STATE_MAP: Record<string, StatusVariant> = {
 }
 
 export function sinkStateVariant(state: string): StatusVariant {
-  return SINK_STATE_MAP[state] ?? 'secondary'
+  return SINK_STATE_MAP[state] ?? 'primary'
 }
 
 export interface PrometheusMetric {

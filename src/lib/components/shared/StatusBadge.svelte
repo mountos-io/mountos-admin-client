@@ -12,6 +12,6 @@
   {:else if active}
     <Badge variant="success"><CheckCircle2 class="size-3 mr-1" aria-hidden="true" />Active</Badge>
   {:else}
-    <Badge variant="secondary"><CircleDashed class="size-3 mr-1" aria-hidden="true" />Inactive</Badge>
+    <Badge variant="primary"><CircleDashed class="size-3 mr-1" aria-hidden="true" />Inactive</Badge>
   {/if}
 </span>

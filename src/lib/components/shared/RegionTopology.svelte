@@ -453,7 +453,7 @@
     </Button>
     <h1 class="text-2xl font-bold tracking-tight">{region?.name ?? 'Region'}</h1>
     {#if region}
-      <Badge variant={region.isActive ? 'success' : 'secondary'}>
+      <Badge variant={region.isActive ? 'success' : 'primary'}>
         {region.isActive ? 'Active' : 'Inactive'}
       </Badge>
     {/if}

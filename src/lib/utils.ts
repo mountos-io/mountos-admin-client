@@ -21,7 +21,7 @@ export function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
-// A browser page (unlike mountos-gui, which has an authoritative platform
+// A browser page (unlike mountos-desktop, which has an authoritative platform
 // string from Rust) has no reliable signal beyond sniffing navigator itself.
 // userAgentData.platform is the modern (Chromium-only) source; navigator
 // .platform/.userAgent are the fallback for everything else.
