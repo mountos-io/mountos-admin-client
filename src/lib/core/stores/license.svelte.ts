@@ -33,7 +33,7 @@ async function fetchLicense() {
   }
 }
 
-// parsePayloads splits raw license text into one trimmed payload per non-empty line — the format the
+// parsePayloads splits raw license text into one trimmed payload per non-empty line, the format the
 // HUB accepts whether the text came from a file or a paste box.
 function parsePayloads(text: string): string[] {
   const out: string[] = []
@@ -60,7 +60,7 @@ async function uploadLicense(files: FileList | File[]) {
   await postPayloads(licenses)
 }
 
-// pasteLicense loads license payload(s) from pasted text — no file needed.
+// pasteLicense loads license payload(s) from pasted text; no file needed.
 async function pasteLicense(text: string) {
   const licenses = parsePayloads(text)
   if (!licenses.length) throw new Error('No license payload found in the pasted text')

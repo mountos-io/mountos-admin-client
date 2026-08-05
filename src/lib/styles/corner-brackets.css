@@ -108,6 +108,34 @@
     color: var(--bracket-color-dark);
   }
 
+  /* Diagonal two-corner accent (top-left + bottom-right only): a lighter,
+     "title"-weight mark for secondary/inline content nested inside a view's
+     one primary bracketed panel, so it doesn't compete with .corner-brackets
+     for the "one bracketed surface per view" role. */
+  .corner-accent {
+    position: relative;
+  }
+
+  .corner-accent::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    background:
+      /* Top-left corner */
+      linear-gradient(to right, currentColor 12px, transparent 12px) 0 0 / 12px 1.5px,
+      linear-gradient(to bottom, currentColor 12px, transparent 12px) 0 0 / 1.5px 12px,
+      /* Bottom-right corner */
+        linear-gradient(to left, currentColor 12px, transparent 12px) 100% 100% / 12px 1.5px,
+      linear-gradient(to top, currentColor 12px, transparent 12px) 100% 100% / 1.5px 12px;
+    background-repeat: no-repeat;
+    color: var(--bracket-color);
+    pointer-events: none;
+  }
+
+  .dark .corner-accent::before {
+    color: var(--bracket-color-dark);
+  }
+
   /* Large corner brackets */
   .corner-brackets-lg {
     position: relative;
@@ -301,7 +329,7 @@
     color: var(--bracket-hover-dark);
   }
 
-  /* Technical grid pattern background -- a subtle texture, not a real grid:
+  /* Technical grid pattern background, a subtle texture, not a real grid:
      --grid-line has no opacity of its own (its other uses, as an actual
      border, want full strength), so it's dampened here specifically. */
   .tech-grid {
@@ -532,6 +560,20 @@
     color: var(--bracket-hover-dark);
   }
 
+  /* clip-path clips an element's entire painted output, including any
+     box-shadow-based focus ring (every ui/* component's own
+     focus-visible:ring-*) that would otherwise extend past the border box.
+     Dropping the clip on :focus-visible trades a momentarily-square corner
+     for a focus ring that is actually visible. This is a real WCAG 2.4.7 fix, not
+     a style preference. Only -sm is covered: it's the only cyberpunk-skewed
+     variant actually used on button footers, and unclipping on :focus-within
+     instead for the larger, container-level variants would suppress their
+     chamfer for nearly a dialog's entire open lifetime, since something
+     inside is normally focused. */
+  .cyberpunk-skewed-sm:focus-visible {
+    clip-path: none;
+  }
+
   /* Cyberpunk card accent; top-edge glow + hover halo */
   .card-cyber {
     box-shadow: inset 0 1px 0 oklch(from var(--accent-glow) l c h / 0.2);
@@ -581,8 +623,8 @@
   }
 
   /* Cyberpunk table header labels; scan-line underline. 1rem, not 0.7rem:
-     same PRODUCT.md 16px floor as .mono-label (app.css), and the same fix --
-     tracking halves 0.2em -> 0.1em since it was tuned for 11px and is
+     same PRODUCT.md 16px floor as .mono-label (app.css), and the same fix.
+     Tracking halves 0.2em -> 0.1em since it was tuned for 11px and is
      relative to size, so carrying it up unchanged would push every header
      ~45% wider for no legibility gain. */
   .th-cyber {

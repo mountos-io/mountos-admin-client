@@ -61,7 +61,7 @@ function detectRecords(scalars: ScalarEntry[]): { records: MetricRecord[]; field
 
   // Strip the longest common leading token (e.g. "goal_") shared by every
   // entity so labels read as "blob defect orphan", not "goal blob defect
-  // orphan" — structural, not tied to today's specific section/prefix.
+  // orphan". This is structural, not tied to today's specific section/prefix.
   const entities = [...byEntity.keys()]
   let commonPrefix = entities[0]!
   for (const e of entities.slice(1)) {

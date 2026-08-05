@@ -60,8 +60,8 @@
   }
 
   // A source storage of type "block" moving onto an "object" target requires the
-  // source to already be in maintenance (directAccess) mode and fully drained —
-  // enforced server-side; this is a heads-up, not a client-side gate.
+  // source to already be in maintenance (directAccess) mode and fully drained.
+  // This is enforced server-side; this comment is a heads-up, not a client-side gate.
   function sourceNote(sourceType: string): string | null {
     if (sourceType === 'block' && storageType === 'object') {
       return 'Block → object: source must already be in maintenance mode and fully drained.'
@@ -80,7 +80,7 @@
     const volumeIds = [...selected]
     dialog.confirm(
       'Move volumes',
-      `Move ${volumeIds.length} ${volumeIds.length === 1 ? 'volume' : 'volumes'} onto this storage? This only repoints storage metadata — no data moves, since both storages share the same physical bucket.`,
+      `Move ${volumeIds.length} ${volumeIds.length === 1 ? 'volume' : 'volumes'} onto this storage? This only repoints storage metadata; no data moves, since both storages share the same physical bucket.`,
       async () => {
         moving = true
         try {
@@ -96,7 +96,7 @@
           moving = false
         }
         // Let a request-level failure (network/4xx/5xx) propagate untouched to
-        // ConfirmDialog's own catch, which already shows one toast — matching every
+        // ConfirmDialog's own catch, which already shows one toast. This matches every
         // other dialog.confirm() action in this codebase (e.g. DeactivateVolumeDialog),
         // rather than toasting here too and doubling up.
       },

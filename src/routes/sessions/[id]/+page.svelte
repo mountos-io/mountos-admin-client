@@ -429,7 +429,7 @@
           <div>
             <div class="detail-label flex items-center gap-0.5">
               Process Uptime
-              <InfoTip text={"**Process Uptime:** client-reported, how long this mount's process has been running.\n**Session Age:** server-tracked, how long the session row has been alive.\n\n**Drift signals:**\n• Uptime < Age → process restarted, session reused\n• Uptime > Age → late mount, warm process\n• Age frozen, Uptime advancing → heartbeats lost\n\nCheck Hot Upgrades below before assuming a restart drift means a crash — a graceful in-place binary swap resets Process Uptime too."} />
+              <InfoTip text={"**Process Uptime:** client-reported, how long this mount's process has been running.\n**Session Age:** server-tracked, how long the session row has been alive.\n\n**Drift signals:**\n• Uptime < Age → process restarted, session reused\n• Uptime > Age → late mount, warm process\n• Age frozen, Uptime advancing → heartbeats lost\n\nCheck Hot Upgrades below before assuming a restart drift means a crash: a graceful in-place binary swap resets Process Uptime too."} />
             </div>
             <p class="text-sm">{m.uptimeSeconds != null ? formatUptime(m.uptimeSeconds) : '·'}</p>
           </div>
@@ -671,7 +671,7 @@
           <p class="text-sm text-muted-foreground">
             {session.isActive
               ? 'No metrics available.'
-              : 'No metrics were ever reported — the session ended before sending its first heartbeat.'}
+              : 'No metrics were ever reported. The session ended before sending its first heartbeat.'}
           </p>
         </div>
       </div>

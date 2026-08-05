@@ -6,8 +6,8 @@
   export const buttonVariants = tv({
     // disabled:cursor-not-allowed, not pointer-events-none: pointer-events:none
     // removes the element from hit-testing entirely, so the browser shows
-    // whatever's underneath (default cursor) instead of not-allowed -- a
-    // disabled button already blocks clicks/keyboard activation natively,
+    // whatever's underneath (default cursor) instead of not-allowed. A
+    // disabled button already blocks clicks/keyboard activation natively;
     // this only needs to keep hit-testing alive for the cursor to render.
     base: "focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-sm text-sm font-medium outline-none transition-[color,background-color,border-color,transform,opacity] focus-visible:ring-[2px] disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
     variants: {
@@ -15,6 +15,11 @@
         default: "bg-transparent text-foreground border border-foreground/75 hover:bg-accent hover:border-foreground active:bg-primary/10 active:border-primary/30 active:scale-[0.98] transition-[color,background-color,border-color,transform,opacity] duration-150",
         primary: "bg-primary text-primary-foreground border border-primary hover:bg-primary/90 active:bg-primary/80 active:scale-[0.98] shadow-none",
         destructive: "bg-transparent border border-destructive text-destructive hover:bg-destructive/10 active:bg-destructive/20 active:scale-[0.98]",
+        // Filled destructive: the corner-bracket clip-path (cyberpunk-skewed-sm)
+        // needs an opaque background to read correctly, unlike the outline
+        // `destructive` variant above. Use this pairing on confirm buttons in
+        // destructive-action dialogs (e.g. DeactivateVolumeDialog), not bordered ones.
+        "destructive-solid": "bg-destructive text-destructive-foreground border border-destructive hover:bg-destructive/90 active:bg-destructive/80 active:scale-[0.98]",
         outline: "bg-transparent border border-foreground/75 hover:bg-accent hover:border-foreground hover:text-accent-foreground active:bg-primary/10 active:border-primary/30 active:scale-[0.98]",
         secondary: "bg-transparent text-foreground border border-foreground/75 hover:bg-accent/50 active:bg-primary/10 active:border-primary/30 active:scale-[0.98]",
         ghost: "border-transparent hover:bg-accent hover:text-accent-foreground active:bg-primary/10 active:scale-[0.98]",

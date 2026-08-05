@@ -83,7 +83,7 @@ async function testStorageBucket(id: number) {
 }
 
 // Other storages sharing this one's physicalFingerprint, each with its current
-// volumes — move-volumes candidates (fingerprint is a discovery index only;
+// volumes: move-volumes candidates (fingerprint is a discovery index only;
 // the server re-verifies raw fields before actually moving anything).
 async function listCompatibleStorages(id: number, signal?: AbortSignal) {
   return api.storages.listCompatible(id, signal)

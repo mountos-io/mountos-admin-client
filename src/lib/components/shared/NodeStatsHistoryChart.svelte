@@ -511,8 +511,8 @@
         <!-- All-metrics summary: consolidates every tile's value at the
              scrubbed instant into one panel instead of the 9 scattered
              per-tile boxes, so the full reading is visible at a glance.
-             Always lists every tile regardless of the focus filter above —
-             hiding a tile from the grid declutters the view, it doesn't
+             Always lists every tile regardless of the focus filter above.
+             Hiding a tile from the grid declutters the view; it doesn't
              mean the reader wants that metric missing from the full
              reading. Fixed to the viewport (not the grid) and portaled to
              body so it stays put while the page scrolls; desktop-only

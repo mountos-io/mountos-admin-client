@@ -33,7 +33,7 @@ const inflightGets = new Map<string, Inflight>()
 
 function dedupedGet<T>(path: string, run: (signal: AbortSignal) => Promise<T>, signal?: AbortSignal): Promise<T> {
   let entry = inflightGets.get(path)
-  // Never join a share whose controller is already aborted — it can only reject.
+  // Never join a share whose controller is already aborted, since it can only reject.
   if (entry?.controller.signal.aborted) entry = undefined
   if (!entry) {
     const controller = new AbortController()
