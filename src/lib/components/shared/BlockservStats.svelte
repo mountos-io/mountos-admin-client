@@ -90,7 +90,7 @@
       <div class="flex items-center justify-between gap-2">
         <span class="text-sm font-mono text-muted-foreground tracking-wider uppercase inline-flex items-center gap-1">
           Sync Backlog
-          <InfoTip text={"Objects acked locally but not yet durable on the shared **S3 floor**.\n\nThe oldest age is the **durability lag**: alert when it exceeds the ~5-10 min sync **SLA**. Held objects are replica-side copies awaiting the owner's S3 upload."} width={400} />
+          <InfoTip text={"These are objects committed locally but not yet durable on the shared **S3 floor**.\n\nThe oldest age is the **durability lag**. Alert when it exceeds the ~5-10 min sync **SLA**. Held objects are replica-side copies until the owner uploads them to S3."} width={400} />
         </span>
         <span class="text-sm font-mono tabular-nums font-medium" style="color: {durability.color}">
           {unsyncedObjects === 0 ? 'all synced' : `oldest ${formatUptime(oldestAgeSec)}`}
@@ -174,7 +174,7 @@
         <div class="flex items-center justify-between gap-2">
           <span class="text-sm font-mono text-muted-foreground tracking-wider uppercase inline-flex items-center gap-1">
             Replication
-            <InfoTip text={"Active-active HA health.\n\n**Member Ready:** discovery routes client reads here.\n**HA Synced:** this member's history is on the shared S3 floor.\n**Degraded:** a sibling replication link is down, so writes for its keys fall back to the S3 floor (one durable domain until it recovers)."} width={420} />
+            <InfoTip text={"Active-active HA health.\n\n• **Member Ready:** Discovery routes client reads to this member.\n• **HA Synced:** This member's history is on the shared S3 floor.\n• **Degraded:** A sibling replication link is down. Writes for its keys fall back to the S3 floor. This is the only durable domain until the link recovers."} width={420} />
           </span>
           <Badge variant={replication.variant}>{replication.label}</Badge>
         </div>

@@ -170,13 +170,13 @@
       <TableHead class="th-cyber hidden md:table-cell">
         <span class="inline-flex items-center gap-1">
           Live
-          <InfoTip text="Sum of all live files across volumes in this region" />
+          <InfoTip text="Total live files across volumes in this region" />
         </span>
       </TableHead>
       <TableHead class="th-cyber hidden md:table-cell">
         <span class="inline-flex items-center gap-1">
           Total
-          <InfoTip text="Total storage space used across volumes in this region" />
+          <InfoTip text="Storage used across volumes in this region" />
         </span>
       </TableHead>
       <TableHead class="th-cyber">Status</TableHead>

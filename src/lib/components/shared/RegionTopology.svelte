@@ -495,7 +495,7 @@
             <RefreshCw class="h-3.5 w-3.5 {resyncInFlight ? 'animate-spin' : ''}" />
             Vault Resync
           </Button>
-          <InfoTip text="When vault secrets change (**master keys**, **service verifier keys**), resync forces all services to drop cached values and fetch fresh copies. Use only when needed; services auto-refresh periodically." />
+          <InfoTip text="Resync clears every service's cached vault secrets (**master keys**, **service verifier keys**) and reloads them. Use Resync only when needed. Services already refresh periodically." />
         </span>
       {/if}
       {#if canEditRegion}

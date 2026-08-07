@@ -40,7 +40,7 @@
       </div>
     {/each}
     <span class="summary-divider hidden sm:block" aria-hidden="true"></span>
-    <InfoTip text={"Regions, Volumes, and Hosts count only sessions that are currently **active** (connected, active, or degraded) across the whole account.\n\nExpired and disconnected sessions aren't included, so these numbers won't match the full session total or every row in the table below."} />
+    <InfoTip text={"Regions, Volumes, and Hosts count only **active** sessions (connected, active, or degraded) across the whole account.\n\nThese counts exclude expired and disconnected sessions. They can differ from the total and from every row in the table below."} />
     <div class="summary-stat">
       <MapPin class="h-5 w-5 text-primary" />
       <span class="summary-val">{summary.regionCount}</span>

@@ -725,7 +725,7 @@
                   aria-invalid={sidFilterInvalid}
                   class="h-8 w-52 text-sm"
                 />
-                <InfoTip text="The volume's numeric ID. Shown as **#4** in its breadcrumb (Dashboard > Volumes > #4) or its URL." />
+                <InfoTip text="This is the volume's numeric ID. The breadcrumb (Dashboard > Volumes > #4) and the URL show it as **#4**." />
               </div>
               {#if sidFilterInvalid}
                 <span class="text-xs text-destructive">Enter a whole number ≥ 1</span>

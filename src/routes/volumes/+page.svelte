@@ -227,13 +227,13 @@
         <TableHead class="th-cyber hidden md:table-cell">
           <span class="inline-flex items-center gap-1">
             Live
-            <InfoTip text="Sum of all live files for this volume" />
+            <InfoTip text="Total live files in this volume" />
           </span>
         </TableHead>
         <TableHead class="th-cyber hidden md:table-cell">
           <span class="inline-flex items-center gap-1">
             Quota
-            <InfoTip text="Total volume usage vs allocated quota limit" />
+            <InfoTip text="Volume usage against the quota limit" />
           </span>
         </TableHead>
         <TableHead class="th-cyber">Status</TableHead>

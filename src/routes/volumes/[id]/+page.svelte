@@ -333,10 +333,10 @@
     return opts
   })
   const compactionTooltip = $derived(
-    "Who defragments this volume's storage.\n\n**Off:** nobody.\n**GC Server:** compacts it (admin-only to set).\n"
+    "Sets who compacts this volume's storage.\n\n• **Off:** no compaction runs.\n• **GC Server:** compacts it. Only an admin can set this option.\n"
     + (volume?.volumeType === 'iceberg'
-      ? "**External Engines (analytical):** can compact it directly against the catalog."
-      : "**mountOS client:** opportunistically compacts it while mounted (general volumes only).")
+      ? "• **External engines (analytical):** compact it directly against the catalog."
+      : "• **mountOS client:** compacts it while mounted, when resources allow (general volumes only).")
   )
 
   const editDirty = $derived(
@@ -998,35 +998,35 @@
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Day Retention Window
-                  <InfoTip text={"Number of days back snapshot traversal can reach.\n\nAn active fork pinning older data may force the effective retention beyond the configured window."} />
+                  <InfoTip text={"How far back you can browse snapshots.\n\nAn active fork pinning older data can extend this limit."} />
                 </span>
                 <p class="text-sm">{volume.retention?.dataDays ?? 0} days</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Grace Period
-                  <InfoTip text={"After deactivation, this is the window to reactivate the volume.\n\nOnce it expires, data is purged according to the cleanup options chosen at deactivation."} />
+                  <InfoTip text={"Reactivate the volume within this window after deactivation.\n\nAfter it ends, cleanup runs using the options chosen at deactivation."} />
                 </span>
                 <p class="text-sm">{volume.retention?.graceDays ?? 0} days</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Fork Grace Period
-                  <InfoTip text="After a named fork is deactivated, the window to restore it before its data is permanently cleaned up." />
+                  <InfoTip text="Restore a deactivated fork within this window. After it ends, cleanup deletes the fork's data permanently." />
                 </span>
                 <p class="text-sm">{volume.retention?.forkGraceDays ?? 0} days</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Event Log Retention
-                  <InfoTip text="How many days of file/folder change events are kept for this volume. 0 disables change-event logging (saves resources)." />
+                  <InfoTip text="mountOS keeps file and folder change events for this many days. Set 0 to disable logging and save resources." />
                 </span>
                 <p class="text-sm">{volume.retention?.eventLogDays ?? 0} days</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Content Version Window
-                  <InfoTip text={"How finely content edits (`writes`/`truncates`) are versioned, in seconds.\n\nSmaller windows keep more, more-granular file-content versions, at the cost of more version rows and longer-retained storage. Metadata-only changes (`rename`, `permissions`) always version at the fixed **60s** window regardless of this setting."} />
+                  <InfoTip text={"Sets version granularity, in seconds, for content edits (`writes`, `truncates`).\n\n• Smaller windows keep more file versions but need more storage.\n• Metadata-only changes (`rename`, `permissions`) always use the fixed **60s** window."} />
                 </span>
                 <p class="text-sm">{volume.versioning?.contentWindowSeconds ?? 60}s</p>
               </div>
@@ -1040,7 +1040,7 @@
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Retention up to
-                  <InfoTip text={"Earliest snapshot reachable: today minus the retention window, or the oldest active fork's snapshot, whichever is older."} />
+                  <InfoTip text={"The earliest reachable snapshot is today minus the retention window, or the oldest active fork's snapshot, whichever is older."} />
                 </span>
                 <p class="text-sm">{formatTimestamp(gcFloorMs(volume, forks))}</p>
               </div>
@@ -1050,7 +1050,7 @@
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                 Cleanup
-                <InfoTip text="Can be changed on deactivate" />
+                <InfoTip text="You set these flags when you deactivate the volume." />
               </span>
               <div class="mt-1 flex gap-2" role="list" aria-label="Cleanup flags">
                 <span role="listitem"><Badge variant={volume.isCleanupMetaEnabled ? 'default' : 'outline'} aria-label="Meta: {volume.isCleanupMetaEnabled ? 'enabled' : 'disabled'}">Meta</Badge></span>
@@ -1085,28 +1085,28 @@
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Live
-                  <InfoTip text={"Sum of all files across forks for this volume.\n\nCan exceed total volume due to **hard links**, **sparse files**, etc.\nOnly live (non-deleted, current version) files are tracked."} />
+                  <InfoTip text={"Sum of files across all forks.\n\nThis total can exceed volume size due to **hard links** and **sparse files**.\nOnly live (not deleted, current version) files count."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveVolume)}</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Inactive
-                  <InfoTip text={"Live volume from inactive (deleted) forks.\n\nThis data is pending cleanup and not accessible to clients."} />
+                  <InfoTip text={"Size of live files in inactive (deleted) forks.\n\nCleanup for this data is pending. Clients cannot access it."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveInactiveVolume)}</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Total
-                  <InfoTip text={"Object / block storage space used.\n\nIncludes all versions and yet-to-be-discarded file segments, plus in-flight **multipart uploads**."} />
+                  <InfoTip text={"Object or block storage space used.\n\nIncludes all versions, file segments not yet discarded, and **multipart uploads** in progress."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.totalVolume)}</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Pending
-                  <InfoTip text={"In-flight **multipart uploads** not yet completed or aborted."} />
+                  <InfoTip text={"**Multipart uploads** in progress, not yet completed or aborted."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.pendingVolume)}</p>
               </div>
@@ -1212,7 +1212,7 @@
                   {:else if node.status === 'cleanup_in_progress'}
                     <span class="inline-flex items-center gap-1">
                       <Badge variant="destructive" class="text-sm">Deleting (No Recovery)</Badge>
-                      <InfoTip text="Data cleanup is in progress. This fork cannot be restored." />
+                      <InfoTip text="Cleanup is in progress. This fork cannot be restored." />
                     </span>
                   {/if}
                   {#if node.fid !== 0 && node.snapshotTs}
@@ -1707,7 +1707,7 @@
           <Checkbox id="create-fork-asof" bind:checked={createForkAsOfEnabled} />
           <Label for="create-fork-asof" class="text-sm inline-flex items-center gap-1">
             Snapshot at past time <span class="text-xs text-muted-foreground font-mono">(UTC)</span>
-            <InfoTip text={"**Off:** snapshot the parent now.\n**On:** snapshot at the chosen `UTC` timestamp. Reachable back to (now − retention), extended further if an existing fork's snapshot pins older data."} />
+            <InfoTip text={"• **Off:** snapshot the parent now.\n• **On:** snapshot at the chosen `UTC` timestamp. Reachable back to now minus the retention window, or further if an existing fork's snapshot pins older data."} />
           </Label>
         </div>
         {#if createForkAsOfEnabled}

@@ -342,7 +342,7 @@ export function cvClass(cv: number): string {
 }
 
 // InfoTip copy for the σ/μ column header; thresholds mirror cvClass above
-export const CV_TOOLTIP_TEXT = "**σ/μ: coefficient of variation.** Ratio of the latency distribution's standard deviation (σ) to its mean (μ): 0 means every request took the same time; the higher it climbs, the more request latencies spread around the average. Estimated from the histogram's bucket midpoints weighted by bucket counts, so it's an approximation, not an exact sample σ.\n\n**Reading it:**\n• < 0.5 → tight, predictable latency\n• 0.5 – 1.0 → moderate spread\n• ≥ 1.0 → high variability: a long tail is pulling values away from the average, so the average alone understates worst-case latency"
+export const CV_TOOLTIP_TEXT = "**σ/μ: coefficient of variation.** The ratio of the latency distribution's standard deviation (σ) to its mean (μ). 0 means every request took the same time. A higher value means latencies spread further from the average. mountOS estimates σ/μ from the histogram's weighted bucket midpoints. This makes it an approximation, not an exact sample value.\n\nReading it:\n\n• < 0.5 → tight, predictable latency\n• 0.5 – 1.0 → moderate spread\n• ≥ 1.0 → high variability, worst case runs far above average"
 export function poolUtilColor(pct: number): string {
   if (pct < 50) return 'var(--success)'
   if (pct < 80) return 'var(--warning)'

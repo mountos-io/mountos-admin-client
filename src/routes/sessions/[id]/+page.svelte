@@ -458,7 +458,7 @@
           <div>
             <div class="detail-label flex items-center gap-0.5">
               Process Uptime
-              <InfoTip text={"**Process Uptime:** client-reported, how long this mount's process has been running.\n**Session Age:** server-tracked, how long the session row has been alive.\n\n**Drift signals:**\n• Uptime < Age → process restarted, session reused\n• Uptime > Age → late mount, warm process\n• Age frozen, Uptime advancing → heartbeats lost\n\nCheck Hot Upgrades below before assuming a restart drift means a crash: a graceful in-place binary swap resets Process Uptime too."} />
+              <InfoTip text={"**Process Uptime:** how long the client process has run.\n**Session Age:** how long the server has tracked this session.\n\nDrift signals:\n\n• Uptime < Age → process restarted, session reused\n• Uptime > Age → late mount, warm process\n• Age frozen, Uptime advancing → heartbeats lost\n\nCheck Hot Upgrades before you assume a crash. A hot upgrade also resets Process Uptime."} />
             </div>
             <p class="text-sm">{m.uptimeSeconds != null ? formatUptime(m.uptimeSeconds) : '·'}</p>
           </div>
@@ -589,14 +589,14 @@
                   <div class="metric-row {(dl.counts.retrying ?? 0) ? 'text-warning' : ''}">
                     <span class="inline-flex items-center gap-0.5">
                       Retrying
-                      <InfoTip text="Currently in backoff after a transient error (quota, volume lock, or a temporary read failure). Retried automatically as the job runs, self-clearing, no action needed." />
+                      <InfoTip text="The job retries this file after a temporary error (quota, volume lock, or read failure). It clears on its own." />
                     </span>
                     <span>{formatNum(dl.counts.retrying ?? 0)}</span>
                   </div>
                   <div class="metric-row {(dl.counts.failed ?? 0) ? 'text-destructive' : ''}">
                     <span class="inline-flex items-center gap-0.5">
                       Failed
-                      <InfoTip text="Won't clear on its own. The job gave up on this path. Fix the underlying cause, then use Retry failed, or accept the loss." />
+                      <InfoTip text="This status does not clear on its own. The job stopped retrying this path. Fix the cause, then use Retry failed, or accept the loss." />
                     </span>
                     <span>{formatNum(dl.counts.failed ?? 0)}</span>
                   </div>
@@ -633,9 +633,9 @@
               <div class="metric-group">
                 <p class="detail-label">Stream Health</p>
                 <div class="metric-row"><span>State</span><span>{#if sk.state}<Badge variant={sinkStateVariant(sk.state)} class="font-mono text-xs">{sk.state}</Badge>{:else}·{/if}</span></div>
-                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Lag (segments)<InfoTip text="How many segments behind the live edge. Growing means the sink is falling behind." /></span><span>{formatNum(sk.lagSegments ?? 0)}</span></div>
-                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Lag (time)<InfoTip text="How far behind the live edge, in wall-clock time." /></span><span>{sk.lagSeconds ? formatTotalTime(sk.lagSeconds) : '0s'}</span></div>
-                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Buffered Bytes<InfoTip text="Local buffer of segments not yet uploaded. Growing means uploads are falling behind or failing." /></span><span>{formatBytes(sk.walBytes ?? 0)}</span></div>
+                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Lag (segments)<InfoTip text="Segments behind the live edge. A rising count means the sink falls behind." /></span><span>{formatNum(sk.lagSegments ?? 0)}</span></div>
+                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Lag (time)<InfoTip text="Time behind the live edge, in wall-clock time." /></span><span>{sk.lagSeconds ? formatTotalTime(sk.lagSeconds) : '0s'}</span></div>
+                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Buffered Bytes<InfoTip text="Local buffer of segments not yet uploaded. A rising value means uploads fall behind or fail." /></span><span>{formatBytes(sk.walBytes ?? 0)}</span></div>
                 <div class="metric-row"><span>Buffered Segments</span><span>{formatNum(sk.walSegments ?? 0)}</span></div>
                 <div class="metric-row {(sk.discontinuities ?? 0) ? 'text-destructive' : ''}"><span>Discontinuities</span><span>{formatNum(sk.discontinuities ?? 0)}</span></div>
               </div>

@@ -366,7 +366,7 @@
                           <div class="detail-label flex items-center gap-0.5">
                             Process Uptime
                             <span onclick={(e: MouseEvent) => e.stopPropagation()} role="presentation">
-                              <InfoTip text={"**Process Uptime:** client-reported, how long this mount's process has been running.\n**Session Age:** server-tracked, how long the session row has been alive.\n\n**Drift signals:**\n• Uptime < Age → process restarted, session reused\n• Uptime > Age → late mount, warm process\n• Age frozen, Uptime advancing → heartbeats lost"} />
+                              <InfoTip text={"**Process Uptime:** how long the client process has run.\n**Session Age:** how long the server has tracked this session.\n\nDrift signals:\n\n• Uptime < Age → process restarted, session reused\n• Uptime > Age → late mount, warm process\n• Age frozen, Uptime advancing → heartbeats lost"} />
                             </span>
                           </div>
                           <p class="text-sm">{m.uptimeSeconds != null ? formatUptime(m.uptimeSeconds) : '·'}</p>
