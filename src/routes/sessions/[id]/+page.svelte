@@ -792,27 +792,29 @@
                 {/if}
               </div>
             {/if}
-            {#if role !== 'upload'}
-              <div class="metric-group">
-                <p class="detail-label">Object Store</p>
-                <div class="metric-row"><span>GET Count</span><span>{formatNum(m.objectGetCount ?? 0)}</span></div>
-                <div class="metric-row"><span>GET Bytes</span><span>{formatBytes(m.objectGetBytes ?? 0)}</span></div>
-                {#if (m.objectGetCount ?? 0) > 0}
-                  <div class="metric-row"><span>GET Avg Latency</span><span style="color: {latencyColor(m.objectGetAvgUs ?? 0)}">{formatUs(m.objectGetAvgUs ?? 0)}</span></div>
-                {/if}
-                <div class="metric-row"><span>PUT Count</span><span>{formatNum(m.objectPutCount ?? 0)}</span></div>
-                <div class="metric-row"><span>PUT Bytes</span><span>{formatBytes(m.objectPutBytes ?? 0)}</span></div>
-                {#if (m.objectPutCount ?? 0) > 0}
-                  <div class="metric-row"><span>PUT Avg Latency</span><span style="color: {latencyColor(m.objectPutAvgUs ?? 0)}">{formatUs(m.objectPutAvgUs ?? 0)}</span></div>
-                {/if}
-                <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
-                {#if m.s3RetryAttempts != null}
-                  <div class="metric-row"><span>Retries</span><span>{formatNum(m.s3RetryAttempts ?? 0)}</span></div>
-                  <div class="metric-row {(m.s3RetryThrottled ?? 0) ? 'text-amber-500' : ''}"><span>Throttled</span><span>{formatNum(m.s3RetryThrottled ?? 0)}</span></div>
-                  <div class="metric-row {(m.s3RetryExhausted ?? 0) ? 'text-destructive' : ''}"><span>Exhausted</span><span>{formatNum(m.s3RetryExhausted ?? 0)}</span></div>
-                {/if}
-              </div>
-            {/if}
+            <!-- Every role reaches object storage, including the jobs: an upload's
+                 PUTs and a download's GETs are the work itself, and the retry and
+                 throttle rows below are the only place a job's transfer trouble
+                 shows up. Progress counts entries settled, not bytes moved. -->
+            <div class="metric-group">
+              <p class="detail-label">Object Store</p>
+              <div class="metric-row"><span>GET Count</span><span>{formatNum(m.objectGetCount ?? 0)}</span></div>
+              <div class="metric-row"><span>GET Bytes</span><span>{formatBytes(m.objectGetBytes ?? 0)}</span></div>
+              {#if (m.objectGetCount ?? 0) > 0}
+                <div class="metric-row"><span>GET Avg Latency</span><span style="color: {latencyColor(m.objectGetAvgUs ?? 0)}">{formatUs(m.objectGetAvgUs ?? 0)}</span></div>
+              {/if}
+              <div class="metric-row"><span>PUT Count</span><span>{formatNum(m.objectPutCount ?? 0)}</span></div>
+              <div class="metric-row"><span>PUT Bytes</span><span>{formatBytes(m.objectPutBytes ?? 0)}</span></div>
+              {#if (m.objectPutCount ?? 0) > 0}
+                <div class="metric-row"><span>PUT Avg Latency</span><span style="color: {latencyColor(m.objectPutAvgUs ?? 0)}">{formatUs(m.objectPutAvgUs ?? 0)}</span></div>
+              {/if}
+              <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
+              {#if m.s3RetryAttempts != null}
+                <div class="metric-row"><span>Retries</span><span>{formatNum(m.s3RetryAttempts ?? 0)}</span></div>
+                <div class="metric-row {(m.s3RetryThrottled ?? 0) ? 'text-amber-500' : ''}"><span>Throttled</span><span>{formatNum(m.s3RetryThrottled ?? 0)}</span></div>
+                <div class="metric-row {(m.s3RetryExhausted ?? 0) ? 'text-destructive' : ''}"><span>Exhausted</span><span>{formatNum(m.s3RetryExhausted ?? 0)}</span></div>
+              {/if}
+            </div>
             <div class="metric-group">
               <p class="detail-label">Network</p>
               <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '·'}</span></div>

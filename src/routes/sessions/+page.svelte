@@ -464,6 +464,17 @@
                               <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
                             </div>
                           {/if}
+                          {#if getSessionRole(session) === 'upload' || getSessionRole(session) === 'download' || getSessionRole(session) === 'sink'}
+                            <!-- Jobs skip the mount branch above, so this is their only object-store
+                                 view. Progress counts entries the job has finished; these count what
+                                 actually moved, which is what diverges when a job is retrying. -->
+                            <div class="metric-group">
+                              <p class="detail-label">Object Store</p>
+                              <div class="metric-row"><span>GET</span><span>{formatNum(m.objectGetCount ?? 0)} / {formatBytes(m.objectGetBytes ?? 0)}</span></div>
+                              <div class="metric-row"><span>PUT</span><span>{formatNum(m.objectPutCount ?? 0)} / {formatBytes(m.objectPutBytes ?? 0)}</span></div>
+                              <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
+                            </div>
+                          {/if}
                           <div class="metric-group">
                             <p class="detail-label">Network</p>
                             <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '·'}</span></div>
