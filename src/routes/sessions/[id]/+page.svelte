@@ -283,8 +283,10 @@
 
   // Windows mountosio kernel-driver diagnostics: invariant-violation hits
   // (with per-site breakdown), suppressed IRP double completions, and
-  // dev-build fault injections. Sent only while the driver has counted
-  // something; absent on non-Windows clients and on healthy mounts.
+  // dev-build fault injections. The server sends this group, all-zero
+  // counters included, whenever the driver is queryable: presence alone
+  // confirms "Windows client, driver present, no issues". Omission means
+  // no driver (non-Windows, not installed, or inaccessible).
   interface DriverSnapshot {
     invariantTotal?: number
     irpDoubleCompletions?: number
@@ -292,10 +294,7 @@
     invariantSites?: Record<string, number>
   }
   function getDriverMetrics(m: Record<string, any>): DriverSnapshot | null {
-    const d = m.driver as DriverSnapshot | undefined
-    if (!d) return null
-    if (!d.invariantTotal && !d.irpDoubleCompletions && !d.faultInjections) return null
-    return d
+    return (m.driver as DriverSnapshot | undefined) ?? null
   }
 
   function toBuckets(raw?: number[]): HistBucket[] {
@@ -718,6 +717,8 @@
 
     <!-- Metrics -->
     {#if m.reads !== undefined}
+      {@const drv = getDriverMetrics(m)}
+      {@const driverSites = Object.entries(drv?.invariantSites ?? {}).sort(([a], [b]) => a.localeCompare(b))}
       <div class="corner-brackets relative border border-border/30 rounded-sm">
         <div class="tech-grid absolute inset-0 pointer-events-none"></div>
         <div class="relative p-5">
@@ -846,6 +847,18 @@
               <div class="metric-row"><span>RPC Count</span><span>{formatNum(m.rpcCount ?? 0)}</span></div>
               <div class="metric-row {(m.rpcErrors ?? 0) ? 'text-destructive' : ''}"><span>RPC Errors</span><span>{formatNum(m.rpcErrors ?? 0)}</span></div>
             </div>
+            {#if drv}
+              <!-- Windows mountosio kernel driver. Shown whenever the driver is present and queryable, all-zero counters included, so presence alone confirms the driver is healthy. -->
+              <div class="metric-group">
+                <p class="detail-label">Driver</p>
+                <div class="metric-row"><span>Invariant Hits</span><span>{formatNum(drv.invariantTotal ?? 0)}</span></div>
+                <div class="metric-row"><span>IRP Double Compl.</span><span>{formatNum(drv.irpDoubleCompletions ?? 0)}</span></div>
+                <div class="metric-row"><span>Fault Injections</span><span>{formatNum(drv.faultInjections ?? 0)}</span></div>
+                {#each driverSites as [site, count]}
+                  <div class="metric-row"><span class="truncate" title={site}>{site}</span><span>{formatNum(count)}</span></div>
+                {/each}
+              </div>
+            {/if}
           </div>
         </div>
       </div>
@@ -916,41 +929,6 @@
               <dt class="text-muted-foreground">invalidations</dt>
               <dd class="text-right">{formatNum(wt.invalidations ?? 0)}</dd>
             </dl>
-          </div>
-        </div>
-      {/if}
-
-    <!-- Kernel Driver Diagnostics: Windows mountosio driver invariant-violation hits, suppressed IRP double completions, and dev-build fault injections. -->
-    <!-- Shown only when the driver has counted something; absent on non-Windows clients and on healthy mounts. -->
-    {@const drv = getDriverMetrics(m)}
-      {#if drv}
-        {@const sites = Object.entries(drv.invariantSites ?? {}).sort(([a], [b]) => a.localeCompare(b))}
-        <div class="corner-brackets relative border border-border/30 rounded-sm">
-          <div class="tech-grid absolute inset-0 pointer-events-none"></div>
-          <div class="relative p-5">
-            <div class="flex flex-wrap items-center gap-3 mb-4">
-              <h2 class="text-lg font-semibold">Kernel Driver Diagnostics</h2>
-              <Badge variant="outline" class="font-mono text-xs">mountosio</Badge>
-            </div>
-            <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono max-w-sm">
-              <dt class="text-muted-foreground">invariant hits</dt>
-              <dd class="text-right">{formatNum(drv.invariantTotal ?? 0)}</dd>
-              <dt class="text-muted-foreground">IRP double completions</dt>
-              <dd class="text-right">{formatNum(drv.irpDoubleCompletions ?? 0)}</dd>
-              <dt class="text-muted-foreground">fault injections</dt>
-              <dd class="text-right">{formatNum(drv.faultInjections ?? 0)}</dd>
-            </dl>
-            {#if sites.length > 0}
-              <div class="mt-3 pt-3 border-t border-border/30">
-                <div class="text-xs text-muted-foreground uppercase tracking-wider mb-1.5">By Site</div>
-                <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono max-w-sm">
-                  {#each sites as [site, count]}
-                    <dt class="text-muted-foreground truncate" title={site}>{site}</dt>
-                    <dd class="text-right">{formatNum(count)}</dd>
-                  {/each}
-                </dl>
-              </div>
-            {/if}
           </div>
         </div>
       {/if}
