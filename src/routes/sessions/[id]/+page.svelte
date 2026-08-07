@@ -281,6 +281,23 @@
     return w
   }
 
+  // Windows mountosio kernel-driver diagnostics: invariant-violation hits
+  // (with per-site breakdown), suppressed IRP double completions, and
+  // dev-build fault injections. Sent only while the driver has counted
+  // something; absent on non-Windows clients and on healthy mounts.
+  interface DriverSnapshot {
+    invariantTotal?: number
+    irpDoubleCompletions?: number
+    faultInjections?: number
+    invariantSites?: Record<string, number>
+  }
+  function getDriverMetrics(m: Record<string, any>): DriverSnapshot | null {
+    const d = m.driver as DriverSnapshot | undefined
+    if (!d) return null
+    if (!d.invariantTotal && !d.irpDoubleCompletions && !d.faultInjections) return null
+    return d
+  }
+
   function toBuckets(raw?: number[]): HistBucket[] {
     if (!raw || raw.length !== HISTOGRAM_BOUNDS.length) return []
     return raw.map((count, i) => ({ le: formatUs(HISTOGRAM_BOUNDS[i]), leUs: HISTOGRAM_BOUNDS[i], count }))
@@ -899,6 +916,41 @@
               <dt class="text-muted-foreground">invalidations</dt>
               <dd class="text-right">{formatNum(wt.invalidations ?? 0)}</dd>
             </dl>
+          </div>
+        </div>
+      {/if}
+
+    <!-- Kernel Driver Diagnostics: Windows mountosio driver invariant-violation hits, suppressed IRP double completions, and dev-build fault injections. -->
+    <!-- Shown only when the driver has counted something; absent on non-Windows clients and on healthy mounts. -->
+    {@const drv = getDriverMetrics(m)}
+      {#if drv}
+        {@const sites = Object.entries(drv.invariantSites ?? {}).sort(([a], [b]) => a.localeCompare(b))}
+        <div class="corner-brackets relative border border-border/30 rounded-sm">
+          <div class="tech-grid absolute inset-0 pointer-events-none"></div>
+          <div class="relative p-5">
+            <div class="flex flex-wrap items-center gap-3 mb-4">
+              <h2 class="text-lg font-semibold">Kernel Driver Diagnostics</h2>
+              <Badge variant="outline" class="font-mono text-xs">mountosio</Badge>
+            </div>
+            <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono max-w-sm">
+              <dt class="text-muted-foreground">invariant hits</dt>
+              <dd class="text-right">{formatNum(drv.invariantTotal ?? 0)}</dd>
+              <dt class="text-muted-foreground">IRP double completions</dt>
+              <dd class="text-right">{formatNum(drv.irpDoubleCompletions ?? 0)}</dd>
+              <dt class="text-muted-foreground">fault injections</dt>
+              <dd class="text-right">{formatNum(drv.faultInjections ?? 0)}</dd>
+            </dl>
+            {#if sites.length > 0}
+              <div class="mt-3 pt-3 border-t border-border/30">
+                <div class="text-xs text-muted-foreground uppercase tracking-wider mb-1.5">By Site</div>
+                <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono max-w-sm">
+                  {#each sites as [site, count]}
+                    <dt class="text-muted-foreground truncate" title={site}>{site}</dt>
+                    <dd class="text-right">{formatNum(count)}</dd>
+                  {/each}
+                </dl>
+              </div>
+            {/if}
           </div>
         </div>
       {/if}
