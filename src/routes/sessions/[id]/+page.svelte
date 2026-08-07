@@ -854,9 +854,12 @@
                 <div class="metric-row"><span>Invariant Hits</span><span>{formatNum(drv.invariantTotal ?? 0)}</span></div>
                 <div class="metric-row"><span>IRP Double Compl.</span><span>{formatNum(drv.irpDoubleCompletions ?? 0)}</span></div>
                 <div class="metric-row"><span>Fault Injections</span><span>{formatNum(drv.faultInjections ?? 0)}</span></div>
-                {#each driverSites as [site, count]}
-                  <div class="metric-row"><span class="truncate" title={site}>{site}</span><span>{formatNum(count)}</span></div>
-                {/each}
+                {#if driverSites.length > 0}
+                  <p class="text-xs text-muted-foreground uppercase tracking-wider mt-1 pt-1 border-t border-border/30">Kernel Diagnostic Error Sites</p>
+                  {#each driverSites as [site, count]}
+                    <div class="metric-row"><span class="truncate" title={site}>{site}</span><span>{formatNum(count)}</span></div>
+                  {/each}
+                {/if}
               </div>
             {/if}
           </div>
