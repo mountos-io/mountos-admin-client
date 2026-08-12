@@ -54,16 +54,24 @@ fi
 # build.tar.gz is committed on purpose (see .gitignore) — one bundled archive,
 # not the raw build/ tree (content-hashed filenames rename on every build,
 # making a tracked directory an unreviewable diff). Deployed instances
-# extract it directly, skipping the build step. Regenerate + rebundle on
-# every commit so it never drifts from source; hard-fail the commit if the
-# build itself is broken.
-echo "pre-commit: regenerating build.tar.gz" >&2
-build_log="$(mktemp)"
-if ! NODE_OPTIONS="--max-old-space-size=3072" make export >"$build_log" 2>&1; then
-  echo "pre-commit: build FAILED — commit blocked. Output:" >&2
-  cat "$build_log" >&2
+# extract it directly, skipping the build step. Only rebuild when a staged
+# file actually feeds the build (source, static assets, build config, or
+# deps); re-read staged files since the lockfile regeneration above may have
+# added package-lock.json/bun.lock. Hard-fail the commit if the build breaks.
+BUILD_INPUT_PATTERN='^(src/|static/|svelte\.config\.js$|vite\.config\.ts$|tsconfig\.json$|scripts/gen-notices\.ts$|package\.json$|package-lock\.json$|bun\.lock$)'
+staged_now="$(git diff --cached --name-only)"
+
+if grep -qE "$BUILD_INPUT_PATTERN" <<<"$staged_now"; then
+  echo "pre-commit: build inputs changed, regenerating build.tar.gz" >&2
+  build_log="$(mktemp)"
+  if ! NODE_OPTIONS="--max-old-space-size=3072" make export >"$build_log" 2>&1; then
+    echo "pre-commit: build FAILED — commit blocked. Output:" >&2
+    cat "$build_log" >&2
+    rm -f "$build_log"
+    exit 1
+  fi
   rm -f "$build_log"
-  exit 1
+  git add build.tar.gz
+else
+  echo "pre-commit: no build-input changes staged, skipping build.tar.gz regeneration" >&2
 fi
-rm -f "$build_log"
-git add build.tar.gz
