@@ -43,11 +43,27 @@ Provider ──[ephemeral JWT 30-60s]──► Dashboard ──[session JWT 24h]
 | `PROVIDER2DASHBOARD_VERIFICATION_KEY` | Ed25519 public key (base64, 32 bytes) for verifying Provider ephemeral tokens | Provided by the Provider. The Provider generates an Ed25519 key pair and shares the public key. |
 | `DASHBOARD_SIGNING_KEY` | Ed25519 private seed (base64, 32 bytes) for signing session/refresh tokens | Generate with `openssl genpkey -algorithm ed25519 -outform DER \| tail -c 32 \| base64`. Store in vault. |
 | `DASHBOARD_VERIFICATION_KEY` | Ed25519 public key (base64, 32 bytes) for verifying session/refresh tokens | Derive from signing key: `openssl pkey -in <private.pem> -pubout -outform DER \| tail -c 32 \| base64`. Store in vault. |
-| `MOUNTOS_APPSERV_URL` | Appserv base URL for API proxying | Deployment-specific (e.g., `https://appserv.example.com`) |
+| `MOUNTOS_APPSERV_URL` | Appserv base URL for API proxying and SDK calls | Deployment-specific (e.g., `https://appserv.example.com`) |
+| `MOUNTOS_SDK_SIGNING_KEY` | Ed25519 private key (base64, 32 or 64 bytes) the admin server signs its appserv-bound service JWT with | Generate an Ed25519 key pair; register the public half with appserv. Store in vault. |
+| `REDIS_URL` | Redis connection string for session/refresh token storage | Deployment-specific (e.g., `redis://localhost:6379`) |
+| `DASHBOARD_USER_HMAC_KEY` | HMAC secret for signing the `X-MountOS-Dashboard-User` header sent to appserv | Must match appserv's own `DASHBOARD_USER_HMAC_KEY`. Store in vault. |
 
-All 4 are required; the server exits on startup if any are missing.
+All 7 are required; the server exits on startup if any are missing (`DASHBOARD_USER_HMAC_KEY` is checked separately, at proxy module load).
 
 Provider bootstrap (`src/provider/server/bootstrap.ts`) runs before env validation, allowing providers to load secrets from vault or other sources.
+
+### Optional Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PORT` | Port the admin server listens on | `3001` |
+| `NODE_ENV` | When set to `development`, session/refresh cookies are issued without the `secure` flag | unset (cookies are `secure`) |
+| `WEBAUTHN_RP_ID` | WebAuthn relying party ID | `local.mountos.io` if `.certs/cert.pem` exists, else `localhost` |
+| `WEBAUTHN_RP_NAME` | WebAuthn relying party display name | `mountOS Dashboard` |
+| `WEBAUTHN_ORIGIN` | Expected WebAuthn origin (trailing slashes stripped) | `https://<rpId>:5173` if local certs exist, else `http://localhost:5173` |
+| `MOUNTOS_DIST_URL` | Base URL to check for available mountOS release builds | `https://mountos.sh/install` |
+| `MOUNTOS_UPDATE_CHECK` | Set to `off` to disable the release update check | update check enabled |
+| `PROVIDER2DASHBOARD_SIGNING_KEY` | Ed25519 private seed (base64) used only by `make generate-test-token` to mint a Provider ephemeral token for local testing | none; required for that script only |
 
 ### Test Token Generation
 

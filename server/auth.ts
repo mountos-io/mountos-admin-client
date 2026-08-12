@@ -51,21 +51,30 @@ function requireEnv(name: string): string {
   return v
 }
 
-function assertEd25519Key(name: string, b64: string) {
-  if (b64.length !== 44) throw new Error(`${name}: expected 44-char base64 (32 bytes), got ${b64.length}`)
+// Public keys are always exactly 32 raw bytes (Ed25519 has no 64-byte public
+// form) — kept strict. Private keys accept 32 (bare seed) or 64 (Go's
+// seed||pubkey ed25519.PrivateKey, what mountos-servers' keygen and this
+// repo's own operator keygen produce); the trailing 32 bytes of the 64-byte
+// form are a cached copy of the derived public key, not independent secret
+// material, so the leading 32-byte seed alone reconstructs the same key.
+function decodeEd25519Base64(name: string, b64: string): Buffer {
   const bytes = Buffer.from(b64, 'base64')
-  if (bytes.length !== 32) throw new Error(`${name}: expected 32 raw bytes, got ${bytes.length}`)
+  if (bytes.length !== 32 && bytes.length !== 64) {
+    throw new Error(`${name}: expected a 32-byte or 64-byte Ed25519 key (base64), got ${bytes.length} bytes`)
+  }
   return bytes
 }
 
 function importEd25519PublicKey(name: string, b64: string) {
-  const bytes = assertEd25519Key(name, b64)
+  const bytes = decodeEd25519Base64(name, b64)
+  if (bytes.length !== 32) throw new Error(`${name}: expected a 32-byte Ed25519 public key, got ${bytes.length} bytes`)
   return jose.importSPKI(ed25519SpkiPemFromRaw(bytes), 'EdDSA')
 }
 
 function importEd25519PrivateKey(name: string, b64: string) {
-  const bytes = assertEd25519Key(name, b64)
-  return jose.importPKCS8(ed25519Pkcs8PemFromRaw(bytes), 'EdDSA')
+  const bytes = decodeEd25519Base64(name, b64)
+  const seed = bytes.length === 64 ? bytes.subarray(0, 32) : bytes
+  return jose.importPKCS8(ed25519Pkcs8PemFromRaw(Buffer.from(seed)), 'EdDSA')
 }
 
 function adminUserFromPayload(payload: jose.JWTPayload): AdminUser {

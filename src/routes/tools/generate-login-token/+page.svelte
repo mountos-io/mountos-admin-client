@@ -70,8 +70,15 @@
       } catch {
         throw new Error('Signing key is not valid base64')
       }
-      if (seed.length !== 32) {
-        throw new Error(`Signing key must decode to 32 bytes (got ${seed.length})`)
+      // Accepts the bare 32-byte seed or Go's 64-byte seed||pubkey
+      // ed25519.PrivateKey (what mountos-servers' keygen and this repo's own
+      // operator keygen produce) — the trailing 32 bytes of the 64-byte form
+      // are a cached copy of the derived public key, so the leading seed
+      // alone reconstructs the same signing key.
+      if (seed.length === 64) {
+        seed = seed.subarray(0, 32)
+      } else if (seed.length !== 32) {
+        throw new Error(`Signing key must decode to 32 or 64 bytes (got ${seed.length})`)
       }
 
       const pkcs8 = new Uint8Array(PKCS8_ED25519_PREFIX.length + seed.length)
