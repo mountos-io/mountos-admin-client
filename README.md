@@ -75,6 +75,11 @@ make generate-test-token
 
 Pass custom user details: `bun run gen/test-token.ts <sub> <name> <email>`
 
+A browser-based equivalent lives at `/tools/generate-login-token`. It signs the
+same token client-side (paste the `PROVIDER2DASHBOARD_SIGNING_KEY` seed into
+the page; the key never leaves the tab) and builds a login URL for whichever
+origin serves the page. Internal use only, not linked from the app.
+
 ## Code Generation
 
 The browser API client (`src/lib/core/api/client.gen.ts`) is generated from the
