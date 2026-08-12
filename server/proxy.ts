@@ -7,9 +7,15 @@ import { ROLE } from './types'
 
 const APPSERV_URL = process.env.MOUNTOS_APPSERV_URL ?? 'http://localhost:8080'
 const PRIVATE_KEY = process.env.MOUNTOS_SDK_SIGNING_KEY!
+// TokenSigner's own ed25519SeedFrom() already accepts either the 32-byte
+// seed (44-char base64) or the 64-byte seed||pubkey form (88-char base64,
+// what mountos-servers' keygen and every other service in this system
+// produce) and derives the seed itself — this pre-check was stricter than
+// the SDK it's guarding, rejecting a form the SDK already supports. Keep a
+// check, but match the SDK's own accepted lengths instead of a single one.
 const keyBytes = Buffer.from(PRIVATE_KEY, 'base64')
-if (PRIVATE_KEY.length !== 44 || keyBytes.length !== 32) {
-  throw new Error(`MOUNTOS_SDK_SIGNING_KEY: expected 44-char base64 (32 bytes), got ${PRIVATE_KEY.length} chars / ${keyBytes.length} bytes`)
+if (keyBytes.length !== 32 && keyBytes.length !== 64) {
+  throw new Error(`MOUNTOS_SDK_SIGNING_KEY: expected a 32-byte or 64-byte Ed25519 private key (base64), got ${keyBytes.length} bytes`)
 }
 
 const signer = new TokenSigner(PRIVATE_KEY)
