@@ -1,8 +1,14 @@
 .claude/
 node_modules/
 .svelte-kit/
-build/
 dist/
+# The raw build/ tree is NOT committed — content-hashed filenames rename on
+# every build, so a tracked directory is an unreviewable diff. build.tar.gz
+# (make export) IS committed instead: one archive, one reviewable blob.
+# Deployed instances (e.g. the AWS demo cloud-init) extract it directly,
+# skipping the build step (vite/esbuild's SSR bundling is too memory-heavy
+# for a small instance) entirely.
+build/
 .env
 .env.*
 !.env.example

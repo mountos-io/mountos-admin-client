@@ -11,6 +11,22 @@ make dev
 
 Use `make dev-all` to start both the dev server and the proxy server.
 
+## `build.tar.gz` is committed
+
+The production SvelteKit build is committed as a single bundled archive, `build.tar.gz`
+(`make export` = `make build` + tar), not as the raw `build/` tree — content-hashed
+filenames rename on every build, so a tracked directory would make every commit's diff
+enormous and unreviewable. One archive file is one reviewable blob instead.
+
+This lets a quick check or a deploy (e.g. cloud-init on a small instance) skip the build
+step entirely — `tar xzf build.tar.gz -C build && npm install --omit=dev && npm run proxy`
+— which matters because the build itself (vite/esbuild's SSR bundling) needs more memory
+than a small instance may have.
+
+It's kept in sync automatically: the pre-commit hook (`scripts/pre-commit.sh`, installed
+via `npm install`'s `prepare` script, or `make prepare`) runs `make export` on every commit
+and blocks the commit if the build itself fails.
+
 ## Authentication
 
 3-layer Ed25519 JWT auth:

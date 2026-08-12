@@ -4,16 +4,28 @@ TS_EXEC_deno  := deno run -A
 TS_EXEC_node  := npx tsx
 TS_EXEC       := $(or $(TS_EXEC_$(TS_RUNTIME)),$(TS_RUNTIME))
 
-.PHONY: help dev build check proxy dev-all gen generate-test-token test-auto-login clean setup-certs set-local-admin-sdk reset-local-admin-sdk
+.PHONY: help dev build check proxy dev-all gen generate-test-token test-auto-login clean setup-certs set-local-admin-sdk reset-local-admin-sdk prepare export
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
+
+prepare: ## Install the pre-commit hook (also runs automatically via `npm install`'s prepare lifecycle)
+	@mkdir -p .git/hooks
+	@cp -f scripts/pre-commit.sh .git/hooks/pre-commit
+	@chmod +x .git/hooks/pre-commit
+	@echo "installed .git/hooks/pre-commit"
 
 dev: ## Run dev server
 	NODE_OPTIONS=--disable-warning=DEP0205 npm run dev
 
 build: ## Build for production
 	npm run build
+
+export: build ## Bundle build/ into one tracked archive (build.tar.gz) — the raw tree's
+	## content-hashed filenames rename on every build, making a committed directory an
+	## unreviewable diff; one archive file is a single, reviewable blob instead.
+	tar -czf build.tar.gz -C build .
+	@echo "wrote build.tar.gz ($$(du -h build.tar.gz | cut -f1))"
 
 check: ## Type-check
 	npm run check
@@ -57,8 +69,7 @@ set-local-admin-sdk: ## Point @mountos-io/admin-sdk to local file: path for dev
 	@if [ ! -d "$(SDK_PATH)" ]; then echo "error: SDK path not found: $(SDK_PATH)" >&2; exit 1; fi
 	@jq --arg p "file:$(SDK_PATH)" '.dependencies["@mountos-io/admin-sdk"] = $$p' package.json > package.json.tmp && mv package.json.tmp package.json
 	@echo "set @mountos-io/admin-sdk → file:$(SDK_PATH)"
-	@cp -f scripts/pre-commit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
-	@echo "installed pre-commit hook"
+	@$(MAKE) prepare
 
 reset-local-admin-sdk: ## Revert @mountos-io/admin-sdk to ^<npm latest>
 	$(eval LATEST := $(shell npm view @mountos-io/admin-sdk version))
