@@ -45,7 +45,34 @@ const USER_SCOPED_QUERY_PATHS: RegExp[] = [
   /^\/api\/v1\/client-sessions\/(list|summary)$/,
 ]
 
+// Audit rows are attributed by created_by, so the audit list is scoped with
+// that param rather than userId. appserv treats createdBy as a plain filter and
+// applies no role policy to it, so this overwrite is the only thing standing
+// between a user-role caller and the account's whole operator trail. Unlike
+// client-sessions, appserv does NOT independently re-scope this endpoint.
+const AUDIT_LOG_LIST_PATH = /^\/api\/v1\/audit-logs\/list$/
+
+// appserv registers its list endpoints for GET and QUERY alike, and on a QUERY
+// request it reads params from the JSON body and ignores the URL query string
+// completely. A scoping param must therefore be pinned in whichever channel the
+// method actually reads, or it is silently dropped.
+const METHOD_QUERY = 'QUERY'
+
+function setBodyField(body: string | undefined, key: string, value: string): string {
+  let parsed: Record<string, unknown> = {}
+  if (body) {
+    try { parsed = JSON.parse(body) as Record<string, unknown> } catch { parsed = {} }
+  }
+  parsed[key] = value
+  return JSON.stringify(parsed)
+}
+
 const VOLUME_API_KEYS_REVOKE_BY_USER_PATH = /^\/api\/v1\/volumes\/(\d+)\/api-keys\/revoke-by-user$/
+// STT keys accept a "no user" (userId 0) mount for admins, so this one is
+// pinned for the user role only. appserv already refuses a user-role caller
+// asking for someone else's id; injecting keeps it consistent with the other
+// two key endpoints rather than relying on that check alone.
+const VOLUME_STT_KEY_GENERATE_PATH = /^\/api\/v1\/volumes\/(\d+)\/stt-key\/generate$/
 const CLIENT_SESSION_GET_PATH = /^\/api\/v1\/client-sessions\/(\d+)$/
 
 // Self-service token generation: the frontend never sends a userId;
@@ -111,10 +138,31 @@ proxy.all('/api/v1/*', async (c) => {
     body = r.body
   }
 
+  if (adminUser?.role === ROLE.user && method === 'POST' && VOLUME_STT_KEY_GENERATE_PATH.test(upstreamPath)) {
+    const r = injectGenerateApiKeysUserId(body, adminUser)
+    if (r.error) {
+      return c.json({ status: 'failure', message: r.error }, 400)
+    }
+    body = r.body
+  }
+
   // For user role, enforce userId from the session token on scoped list/aggregate endpoints;
   // overwrites whatever the client sent so a tampered client cannot read another user's data.
   if (adminUser?.role === ROLE.user && adminUser.userId != null && USER_SCOPED_QUERY_PATHS.some(p => p.test(upstreamPath))) {
     url.searchParams.set('userId', String(adminUser.userId))
+  }
+
+  if (adminUser?.role === ROLE.user && AUDIT_LOG_LIST_PATH.test(upstreamPath)) {
+    // Fail closed. A user-role session with no linked user id has no rows of
+    // its own to show, and leaving the filter off would return the account's
+    // entire trail instead.
+    if (adminUser.userId == null) {
+      return c.json({ status: 'failure', message: 'no linked user id on this account; cannot list audit logs' }, 403)
+    }
+    url.searchParams.set('createdBy', String(adminUser.userId))
+    if (method === METHOD_QUERY) {
+      body = setBodyField(body, 'createdBy', String(adminUser.userId))
+    }
   }
 
   try {
@@ -165,6 +213,22 @@ proxy.all('/api/v1/*', async (c) => {
     ) {
       const session = json.data as { user?: { id?: number } } | undefined
       if (session?.user?.id !== adminUser.userId) {
+        return c.json({ status: 'failure', message: 'forbidden' }, 403)
+      }
+    }
+
+    // The createdBy filter injected above only narrows the result if the
+    // upstream understands the param. An appserv that does not know it drops
+    // it and answers with the account's whole trail, so confirm every row
+    // really belongs to the caller instead of trusting the request side alone.
+    if (
+      adminUser?.role === ROLE.user &&
+      adminUser.userId != null &&
+      AUDIT_LOG_LIST_PATH.test(upstreamPath)
+    ) {
+      const page = json.data as { items?: { createdBy?: string }[] } | undefined
+      const actor = String(adminUser.userId)
+      if (page?.items?.some(row => row?.createdBy !== actor)) {
         return c.json({ status: 'failure', message: 'forbidden' }, 403)
       }
     }

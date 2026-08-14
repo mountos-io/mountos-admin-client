@@ -28,7 +28,14 @@
   const store = useClusters()
   const auth = useAuth()
 
-  $effect(() => { if (regionId) store.fetchClusters(regionId) })
+  $effect(() => {
+    if (!auth.loading && !auth.can('regions', 'read')) {
+      showErrorToast('Access denied')
+      goto('/', { replaceState: true })
+      return
+    }
+    if (regionId) store.fetchClusters(regionId)
+  })
 
   const clusters = $derived(store.clustersFor(regionId))
   const loading = $derived(store.isLoading(regionId))

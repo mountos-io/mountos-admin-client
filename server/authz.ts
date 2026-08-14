@@ -13,6 +13,14 @@
 // fork and change this policy. If you loosen or remove a check here, appserv
 // will NOT catch it for you (except account/volume scoping and the infra floor).
 //
+// Two different models live below, on purpose:
+//   - role "user" is DEFAULT-DENY against USER_ROLE_ALLOWED, an explicit
+//     (method, path) table. Capabilities are not consulted.
+//   - every other role is capability-gated per resource slug, which is
+//     default-allow for every path under a slug it holds a capability on.
+// Grant a capability to "user" and it leaks sideways to neighbouring paths
+// under the same slug; that is why this role does not use them.
+//
 // One thing appserv DOES validate: a signed dashboard-user header must be
 // well-formed (role non-empty; role="user" must carry accountId + userId) or it
 // rejects the request. So always sign a complete identity; a partial one is
@@ -44,13 +52,59 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
 
 const CREATE_SUFFIXES = ['/create', '/add']
 
-const USER_ROLE_RESOURCES = new Set(['volumes', 'auditLogs', 'dashboard', 'clientSessions', 'regions', 'storages'])
 // Resources not scoped to an account: exempt from the accountId-on-list
 // requirement. Regions, storages and clusters are now account-scoped (appserv
 // requires accountId), so nothing is exempt.
 const GLOBAL_RESOURCES = new Set<string>([])
-const API_KEY_PATH = /^\/api\/v1\/volumes\/(\d+)\/api-keys\/(generate|revoke(?:-by-user)?)$/
 const VOLUME_ID_PATH = /^\/api\/v1\/volumes\/(\d+)/
+
+// Role "user" is DEFAULT-DENY: a request must match an entry here or it is
+// rejected. Capabilities are deliberately not consulted for this role. A
+// resource-level grant leaks sideways. Granting `regions` so the volume create
+// form can populate its dropdown would otherwise also expose
+// /regions/:id/audit-logs and /regions/:id, which are operator surfaces.
+// Keep this table to what a permitted screen actually calls.
+const USER_ROLE_ALLOWED: Array<[method: string, path: RegExp]> = [
+  // Dashboard. Supplies user/volume/region/storage counts on its own, so no
+  // users or regions grant is needed to render them.
+  ['GET', /^\/api\/v1\/dashboard\/stats$/],
+  // Volume create form: region -> storage -> cluster pickers.
+  ['GET', /^\/api\/v1\/regions\/list$/],
+  ['GET', /^\/api\/v1\/regions\/\d+\/clusters\/list$/],
+  ['GET', /^\/api\/v1\/storages\/list$/],
+  ['GET', /^\/api\/v1\/storages\/\d+$/],
+  // Own audit trail. Account-scoped by appserv; narrowed to the caller's own
+  // rows by the createdBy param the proxy force-injects. appserv applies no
+  // role policy to that param, so the proxy overwrite is load-bearing.
+  ['GET', /^\/api\/v1\/audit-logs\/list$/],
+  // Own sessions. The proxy force-injects userId on list/summary.
+  ['GET', /^\/api\/v1\/client-sessions\/(list|summary|\d+)$/],
+  // Resolves creator/updater ids to names on volume and fork pages.
+  // Returns UserLite only (id, username, name); no email, no capabilities.
+  ['QUERY', /^\/api\/v1\/users\/bulk$/],
+]
+
+// Volumes are allowed as a group rather than enumerated, because appserv scopes
+// most of this namespace per volume itself (EnforceUserRoleVolumeAccess). That
+// is a property of the handlers, NOT of the path prefix: a volume sub-resource
+// that forgets the ownership gate is exposed account-wide by this blanket
+// allow. Audit a new /volumes/** endpoint for its own gate before relying on
+// this, and deny it below if it has none.
+//
+// Carved back out: quota is an allocation decision the operator owns
+// (quotaLimit is already in USER_ROLE_FORBIDDEN_VOLUME_FIELDS), and
+// move-cluster is infra placement, floored to system admin on the POST.
+const USER_ROLE_VOLUME_DENIED: RegExp[] = [
+  /^\/api\/v1\/volumes\/\d+\/quota$/,
+  /^\/api\/v1\/volumes\/\d+\/move-cluster(\/status)?$/,
+]
+
+function userRoleAllows(method: string, path: string): boolean {
+  if (path.startsWith('/api/v1/volumes/')) {
+    return !USER_ROLE_VOLUME_DENIED.some(p => p.test(path))
+  }
+  return USER_ROLE_ALLOWED.some(([m, p]) => m === method && p.test(path))
+}
 
 // A top-level account-resource list is `/api/v1/<slug>/list`. Region-scoped
 // sub-resource lists (e.g. /regions/:id/clusters/list, /regions/:id/audit-logs)
@@ -96,7 +150,7 @@ export const authz: MiddlewareHandler = async (c, next) => {
   if (!resource || !cap) return c.json({ status: 'failure', message: 'forbidden' }, 403)
 
   if (user.role === ROLE.user) {
-    if (!USER_ROLE_RESOURCES.has(resource)) {
+    if (!userRoleAllows(c.req.method, c.req.path)) {
       return c.json({ status: 'failure', message: 'forbidden' }, 403)
     }
     if (user.accountId != null) {
@@ -117,15 +171,16 @@ export const authz: MiddlewareHandler = async (c, next) => {
         return c.json({ status: 'failure', message: 'forbidden' }, 403)
       }
     }
+    // The allowlist is the whole policy for this role. Capabilities describe
+    // what the UI renders and are intentionally narrower in places. `users`
+    // stays 0 so the Users nav and pages stay hidden, while QUERY /users/bulk
+    // is allowed above purely to resolve ids to display names.
+    await next()
+    return
   }
 
   const caps = dashboardAuth.resolveCapabilities(user.role)
   if (((caps[resource] ?? 0) & cap) === 0) {
-    // Allow user role to access volume API key endpoints (generate/revoke)
-    if (user.role === ROLE.user && resource === 'volumes' && cap === Cap.U && API_KEY_PATH.test(c.req.path)) {
-      await next()
-      return
-    }
     return c.json({ status: 'failure', message: 'forbidden' }, 403)
   }
 

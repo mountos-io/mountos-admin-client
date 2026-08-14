@@ -25,6 +25,17 @@
   let appliedSubject = $state('')
   let expanded = $state<Set<number>>(new Set())
 
+  // A user-role operator reads only their own trail, so an empty result is the
+  // normal first state rather than a filter mistake. Pointing them at filters
+  // they never set sends them hunting for a control that will not help.
+  const emptyDescription = $derived(
+    appliedSubject
+      ? 'No entries match the current filters.'
+      : auth.isUserRole
+        ? 'Your activity appears here once you create or change a volume.'
+        : 'No activity recorded for this account yet.',
+  )
+
   $effect(() => {
     if (!auth.loading && !auth.can('auditLogs', 'read')) {
       showErrorToast('Access denied')
@@ -93,7 +104,7 @@
       ]}
     />
   {:else if store.logs.length === 0}
-    <EmptyState title="No audit logs" description="No entries match the current filters." />
+    <EmptyState title="No audit logs" description={emptyDescription} />
   {:else}
     <Table>
       <TableHeader>
@@ -103,7 +114,7 @@
         {#each store.logs as log (log.id)}
           <TableRow>
             <TableCell class="text-muted-foreground">
-              <button type="button" class="inline-flex items-center justify-center p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-expanded={expanded.has(log.id)} aria-label="Toggle details for {log.title}" onclick={() => toggleRow(log.id)}>{#if expanded.has(log.id)}<ChevronDown class="h-4 w-4" aria-hidden="true" />{:else}<ChevronRight class="h-4 w-4" aria-hidden="true" />{/if}</button>
+              <button type="button" class="inline-flex items-center justify-center p-2 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-expanded={expanded.has(log.id)} aria-controls={expanded.has(log.id) ? `audit-detail-${log.id}` : undefined} aria-label="Toggle details for {log.title}" onclick={() => toggleRow(log.id)}>{#if expanded.has(log.id)}<ChevronDown class="h-4 w-4" aria-hidden="true" />{:else}<ChevronRight class="h-4 w-4" aria-hidden="true" />{/if}</button>
             </TableCell>
             <TableCell class="font-medium">{log.title}</TableCell>
             <TableCell>
@@ -121,7 +132,7 @@
             <TableRow>
               <TableCell></TableCell>
               <TableCell colspan={5}>
-                <div class="audit-detail space-y-3 py-3">
+                <div id="audit-detail-{log.id}" class="audit-detail space-y-3 py-3">
                   {#if log.description}
                     <div class="audit-desc">{log.description}</div>
                   {/if}
@@ -150,7 +161,7 @@
 <style>
   .audit-desc {
     font-family: var(--font-mono);
-    font-size: 0.8125rem;
+    font-size: 1rem;
     letter-spacing: 0.04em;
     color: var(--primary);
     position: relative;
@@ -185,7 +196,7 @@
   }
 
   .audit-data {
-    font-size: 0.8125rem;
+    font-size: 1rem;
     padding: 0.75rem 1rem;
     overflow-x: auto;
     max-height: 12rem;
@@ -204,12 +215,14 @@
   .audit-subject {
     display: inline-block;
     font-family: var(--font-mono);
-    font-size: 0.6rem;
+    font-size: 1rem;
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    /* Matches .th-cyber: 0.1em, not 0.2em, because tracking scales with size
+       and the wider value inflates the chip for no legibility gain. */
+    letter-spacing: 0.1em;
     padding: 0.125rem 0.375rem;
     border: 1px solid var(--sc);
-    border-radius: 1px;
+    border-radius: 0;
     color: color-mix(in oklch, var(--sc) 80%, black);
     background: color-mix(in oklch, var(--sc) 15%, transparent);
   }

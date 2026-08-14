@@ -20,7 +20,12 @@ const defaults: DashboardAuthConfig = {
     [ROLE.superadmin]: allCaps(15), // CRUD
     [ROLE.l1admin]: { ...allCaps(14), vault: 0, metrics: 0 },    // CRU, no delete; vault/metrics: superadmin-only
     [ROLE.l2admin]: { ...allCaps(4), vault: 0, metrics: 0 },     // read-only; vault/metrics: superadmin-only
-    [ROLE.user]: { volumes: 15, auditLogs: 4, dashboard: 4, clientSessions: 4, regions: 4, storages: 4 }, // volumes: CRUD; rest: R-only
+    // For this role the capability map only drives what the UI renders; the
+    // enforced policy is the USER_ROLE_ALLOWED table in authz.ts. `regions`
+    // and `storages` are absent even though the volume create form reads both
+    // list endpoints: that form does not gate on capabilities, and granting
+    // them here would surface the storage/region screens in the UI.
+    [ROLE.user]: { volumes: 15, auditLogs: 4, dashboard: 4, clientSessions: 4 }, // volumes: CRUD; rest: R-only
   },
 }
 
