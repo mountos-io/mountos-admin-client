@@ -11,7 +11,7 @@
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatBitrate, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant } from '$lib/core/utils/format'
-  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, pingRttColor, memAllocColor, cvClass, bucketBarColor, estimateCV, fmtPercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
+  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, objectLatencyColor, pingRttColor, memAllocColor, cvClass, bucketBarColor, estimateCV, interpolatePercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
@@ -244,6 +244,19 @@
     return Object.entries(fl).sort((a, b) => b[1].count - a[1].count)
   }
 
+  // Object-store GET/PUT latency (mfuse only). Same wire shape again, so the
+  // breakdown snippet renders it too. This is the round trip to the object
+  // store, where the mean hides a tail measured in seconds; cache-served
+  // reads are excluded by the client so the percentiles cover real requests.
+  // Fixed GET-then-PUT order rather than by count: only two rows, and a
+  // stable order reads better than one that reorders between refreshes.
+  const OBJECT_OP_LABELS: [string, string][] = [['get', 'GET'], ['put', 'PUT']]
+  function getObjectLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
+    const ol = m.objectLatency as Record<string, RpcMethodLatency> | undefined
+    if (!ol) return []
+    return OBJECT_OP_LABELS.flatMap(([key, label]) => ol[key] ? [[label, ol[key]] as [string, RpcMethodLatency]] : [])
+  }
+
   // Embedded gateway counters reported by the client when the per-volume
   // S3 / WebHDFS gateway is running; rendered in the Gateway Activity
   // card below.
@@ -306,6 +319,8 @@
   let rpcMetricMode = $state<'minMax' | 'percentiles'>('percentiles')
   let fuseExpanded = $state<Set<string>>(new Set())
   let fuseMetricMode = $state<'minMax' | 'percentiles'>('percentiles')
+  let objectExpanded = $state<Set<string>>(new Set())
+  let objectMetricMode = $state<'minMax' | 'percentiles'>('percentiles')
 
   function toggleRpcExpand(method: string) {
     const next = new Set(rpcExpanded)
@@ -316,6 +331,11 @@
     const next = new Set(fuseExpanded)
     next.has(method) ? next.delete(method) : next.add(method)
     fuseExpanded = next
+  }
+  function toggleObjectExpand(method: string) {
+    const next = new Set(objectExpanded)
+    next.has(method) ? next.delete(method) : next.add(method)
+    objectExpanded = next
   }
 
   // TCP connection-drop breakdown. mfuse splits drops into benign pool
@@ -357,16 +377,49 @@
   // Group entries into latency bands for the header summary chips.
   // Pure derivation; replaces a forEach-into-mutable-const pattern that
   // Svelte 5 hoisting could legally re-order in the future.
-  interface LatencyBands { sub1ms: number; sub10ms: number; sub100ms: number; over100ms: number }
-  function latencyBands(entries: [string, RpcMethodLatency][]): LatencyBands {
-    return entries.reduce<LatencyBands>((b, [, l]) => {
-      if (l.avgUs < 1000) b.sub1ms++
-      else if (l.avgUs < 10000) b.sub10ms++
-      else if (l.avgUs < 100000) b.sub100ms++
-      else b.over100ms++
-      return b
-    }, { sub1ms: 0, sub10ms: 0, sub100ms: 0, over100ms: 0 })
+  //
+  // The scale is per-table because the subsystems differ by orders of
+  // magnitude. RPC and FUSE ops are microseconds to milliseconds; an
+  // object-store round trip is tens of milliseconds to seconds, so on the
+  // op scale every object row lands in the slowest band and the chips stop
+  // discriminating. maxUs is an exclusive upper bound; the last band must
+  // be Infinity so every entry finds a home.
+  interface LatencyBand { label: string; maxUs: number; variant: 'success' | 'outline' | 'warning' | 'destructive' }
+  // Bands and cell colour travel together as one scale, so a table can never
+  // chip a row as healthy while colouring its numbers red.
+  interface LatencyScale { bands: LatencyBand[]; color: (us: number) => string }
+  const OP_SCALE: LatencyScale = {
+    color: latencyColor,
+    bands: [
+      { label: '<1ms', maxUs: 1_000, variant: 'success' },
+      { label: '1-10ms', maxUs: 10_000, variant: 'outline' },
+      { label: '10-100ms', maxUs: 100_000, variant: 'warning' },
+      { label: '>100ms', maxUs: Infinity, variant: 'destructive' },
+    ],
   }
+  const OBJECT_SCALE: LatencyScale = {
+    color: objectLatencyColor,
+    bands: [
+      { label: '<10ms', maxUs: 10_000, variant: 'success' },
+      { label: '10-100ms', maxUs: 100_000, variant: 'outline' },
+      { label: '100ms-1s', maxUs: 1_000_000, variant: 'warning' },
+      { label: '>1s', maxUs: Infinity, variant: 'destructive' },
+    ],
+  }
+  function latencyBands(entries: [string, RpcMethodLatency][], bands: readonly LatencyBand[]): { band: LatencyBand; count: number }[] {
+    const tally = bands.map((band) => ({ band, count: 0 }))
+    for (const [, l] of entries) {
+      const i = bands.findIndex((b) => l.avgUs < b.maxUs)
+      tally[i < 0 ? tally.length - 1 : i].count++
+    }
+    return tally.filter((t) => t.count > 0)
+  }
+
+  // Per-table labels for the breakdown snippet, so a table of GET/PUT is not
+  // described as "methods".
+  interface LatencyTableLabels { items: string; column: string }
+  const OP_LABELS: LatencyTableLabels = { items: 'methods', column: 'Method' }
+  const OBJECT_LABELS: LatencyTableLabels = { items: 'operations', column: 'Operation' }
 </script>
 
 <svelte:head><title>Session #{isNaN(id) ? 'Invalid' : id} · mountOS Admin</title></svelte:head>
@@ -801,12 +854,12 @@
               <div class="metric-row"><span>GET Count</span><span>{formatNum(m.objectGetCount ?? 0)}</span></div>
               <div class="metric-row"><span>GET Bytes</span><span>{formatBytes(m.objectGetBytes ?? 0)}</span></div>
               {#if (m.objectGetCount ?? 0) > 0}
-                <div class="metric-row"><span>GET Avg Latency</span><span style="color: {latencyColor(m.objectGetAvgUs ?? 0)}">{formatUs(m.objectGetAvgUs ?? 0)}</span></div>
+                <div class="metric-row"><span>GET Avg Latency</span><span style="color: {objectLatencyColor(m.objectGetAvgUs ?? 0)}">{formatUs(m.objectGetAvgUs ?? 0)}</span></div>
               {/if}
               <div class="metric-row"><span>PUT Count</span><span>{formatNum(m.objectPutCount ?? 0)}</span></div>
               <div class="metric-row"><span>PUT Bytes</span><span>{formatBytes(m.objectPutBytes ?? 0)}</span></div>
               {#if (m.objectPutCount ?? 0) > 0}
-                <div class="metric-row"><span>PUT Avg Latency</span><span style="color: {latencyColor(m.objectPutAvgUs ?? 0)}">{formatUs(m.objectPutAvgUs ?? 0)}</span></div>
+                <div class="metric-row"><span>PUT Avg Latency</span><span style="color: {objectLatencyColor(m.objectPutAvgUs ?? 0)}">{formatUs(m.objectPutAvgUs ?? 0)}</span></div>
               {/if}
               <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
               {#if m.s3RetryAttempts != null}
@@ -938,24 +991,27 @@
         </div>
       {/if}
 
-      {#snippet latencyBreakdown(title: string, ariaLabel: string, entries: [string, RpcMethodLatency][], expanded: Set<string>, toggleExpand: (m: string) => void, metricMode: 'minMax' | 'percentiles', setMode: (m: 'minMax' | 'percentiles') => void)}
+      {#snippet latencyBreakdown(title: string, ariaLabel: string, entries: [string, RpcMethodLatency][], expanded: Set<string>, toggleExpand: (m: string) => void, metricMode: 'minMax' | 'percentiles', setMode: (m: 'minMax' | 'percentiles') => void, labels: LatencyTableLabels, scale: LatencyScale)}
         {@const totalHits = entries.reduce((s, [, l]) => s + l.count, 0)}
         {@const totalTimeSec = entries.reduce((s, [, l]) => s + (l.durationNs != null ? l.durationNs / 1e9 : (l.count * l.avgUs) / 1e6), 0)}
-        {@const bands = latencyBands(entries)}
+        {@const bands = latencyBands(entries, scale.bands)}
         {@const hasBuckets = entries.some(([, l]) => l.buckets?.some(c => c > 0))}
+        <!-- Without buckets there are no percentiles to show, and the mode toggle is
+             hidden, so honouring a 'percentiles' preference would strand the reader on
+             three empty columns while min/max sit unused in the same payload. -->
+        {@const mode = hasBuckets ? metricMode : 'minMax'}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
           <div class="tech-grid absolute inset-0 pointer-events-none"></div>
           <div class="relative p-5">
             <div class="flex flex-wrap items-center gap-3 mb-4">
               <h2 class="text-lg font-semibold">{title}</h2>
-              <span class="text-sm text-muted-foreground font-mono">{entries.length} methods</span>
+              <span class="text-sm text-muted-foreground font-mono">{entries.length} {labels.items}</span>
               <span class="text-sm text-muted-foreground font-mono">{formatNum(totalHits)} hits</span>
               <span class="text-sm text-muted-foreground font-mono">{formatTotalTime(totalTimeSec)} total</span>
               <div class="flex items-center gap-1.5 ml-auto">
-                {#if bands.sub1ms}<Badge variant="success" class="font-mono text-xs">&lt;1ms: {bands.sub1ms}</Badge>{/if}
-                {#if bands.sub10ms}<Badge variant="outline" class="font-mono text-xs">1-10ms: {bands.sub10ms}</Badge>{/if}
-                {#if bands.sub100ms}<Badge variant="warning" class="font-mono text-xs">10-100ms: {bands.sub100ms}</Badge>{/if}
-                {#if bands.over100ms}<Badge variant="destructive" class="font-mono text-xs">&gt;100ms: {bands.over100ms}</Badge>{/if}
+                {#each bands as { band, count } (band.label)}
+                  <Badge variant={band.variant} class="font-mono text-xs">{band.label}: {count}</Badge>
+                {/each}
                 {#if hasBuckets}
                   <div class="rpc-toggle-group flex items-center font-mono overflow-hidden ml-2" role="group" aria-label="{title} display mode">
                     <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={metricMode === 'minMax'} aria-pressed={metricMode === 'minMax'} onclick={() => setMode('minMax')}>Min/Max</button>
@@ -972,13 +1028,13 @@
                 <thead>
                   <tr>
                     {#if hasBuckets}<th scope="col" class="w-6"></th>{/if}
-                    <th scope="col" class="text-left">Method</th>
+                    <th scope="col" class="text-left">{labels.column}</th>
                     <th scope="col" class="text-right">Count</th>
                     <th scope="col" class="text-right">Ops/s</th>
                     <th scope="col" class="text-right">Total</th>
                     <th scope="col" class="text-right">Avg</th>
                     {#if hasBuckets}<th scope="col" class="text-right"><span class="inline-flex items-center justify-end gap-0.5">σ/μ<InfoTip text={CV_TOOLTIP_TEXT} width={420} /></span></th>{/if}
-                    {#if metricMode === 'minMax'}
+                    {#if mode === 'minMax'}
                       <th scope="col" class="text-right">Min</th>
                       <th scope="col" class="text-right">Max</th>
                     {:else}
@@ -1005,24 +1061,29 @@
                       <td class="text-right font-mono text-sm tabular-nums">{formatNum(lat.count)}</td>
                       <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{formatOpsPerSec(lat.avgUs)}</td>
                       <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{formatTotalTime(lat.durationNs != null ? lat.durationNs / 1e9 : (lat.count * lat.avgUs) / 1e6)}</td>
-                      <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.avgUs)}">{formatUs(lat.avgUs)}</td>
+                      <td class="text-right font-mono text-sm tabular-nums" style="color: {scale.color(lat.avgUs)}">{formatUs(lat.avgUs)}</td>
                       {#if hasBuckets}
                         <td class="text-right">
                           {#if cv >= 0}<Badge variant="outline" class="font-mono text-xs px-1 py-0 {cvClass(cv)}">{cv.toFixed(2)}</Badge>{/if}
                         </td>
                       {/if}
-                      {#if metricMode === 'minMax'}
-                        <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.minUs)}">{formatUs(lat.minUs)}</td>
-                        <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.maxUs)}">{formatUs(lat.maxUs)}</td>
+                      {#if mode === 'minMax'}
+                        <td class="text-right font-mono text-sm tabular-nums" style="color: {scale.color(lat.minUs)}">{formatUs(lat.minUs)}</td>
+                        <td class="text-right font-mono text-sm tabular-nums" style="color: {scale.color(lat.maxUs)}">{formatUs(lat.maxUs)}</td>
                       {:else}
-                        <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.avgUs)}">{fmtPercentile(bkts, 50)}</td>
-                        <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.avgUs)}">{fmtPercentile(bkts, 95)}</td>
-                        <td class="text-right font-mono text-sm tabular-nums" style="color: {latencyColor(lat.avgUs)}">{fmtPercentile(bkts, 99)}</td>
+                        <!-- Each percentile is coloured by its own value. Colouring all three
+                             by the mean hides the case the percentiles exist to expose: a fast
+                             average with a slow tail. Without buckets there is no percentile to
+                             colour, so the placeholder stays muted rather than reading as "fast". -->
+                        {@const pcts = bkts.length > 0 ? [interpolatePercentile(bkts, 50), interpolatePercentile(bkts, 95), interpolatePercentile(bkts, 99)] : null}
+                        <td class="text-right font-mono text-sm tabular-nums" style="color: {pcts ? scale.color(pcts[0]) : 'var(--muted-foreground)'}">{pcts ? formatUs(pcts[0]) : '-'}</td>
+                        <td class="text-right font-mono text-sm tabular-nums" style="color: {pcts ? scale.color(pcts[1]) : 'var(--muted-foreground)'}">{pcts ? formatUs(pcts[1]) : '-'}</td>
+                        <td class="text-right font-mono text-sm tabular-nums" style="color: {pcts ? scale.color(pcts[2]) : 'var(--muted-foreground)'}">{pcts ? formatUs(pcts[2]) : '-'}</td>
                       {/if}
                     </tr>
                     {#if isOpen && bkts.length > 0}
                       {@const totalCount = bkts.reduce((s, b) => s + b.count, 0)}
-                      {@const bktColspan = metricMode === 'minMax' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)}
+                      {@const bktColspan = mode === 'minMax' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)}
                       <tr>
                         <td colspan={bktColspan} class="p-0">
                           <div class="py-2 px-4 space-y-1 ml-6">
@@ -1053,12 +1114,17 @@
 
       {@const rpcEntries = getRpcLatency(m)}
       {#if rpcEntries.length > 0}
-        {@render latencyBreakdown('RPC Latency', 'RPC latency data', rpcEntries, rpcExpanded, toggleRpcExpand, rpcMetricMode, (v) => rpcMetricMode = v)}
+        {@render latencyBreakdown('RPC Latency', 'RPC latency data', rpcEntries, rpcExpanded, toggleRpcExpand, rpcMetricMode, (v) => rpcMetricMode = v, OP_LABELS, OP_SCALE)}
       {/if}
 
       {@const fuseEntries = getFuseLatency(m)}
       {#if fuseEntries.length > 0}
-        {@render latencyBreakdown('FUSE Latency', 'FUSE syscall latency data', fuseEntries, fuseExpanded, toggleFuseExpand, fuseMetricMode, (v) => fuseMetricMode = v)}
+        {@render latencyBreakdown('FUSE Latency', 'FUSE syscall latency data', fuseEntries, fuseExpanded, toggleFuseExpand, fuseMetricMode, (v) => fuseMetricMode = v, OP_LABELS, OP_SCALE)}
+      {/if}
+
+      {@const objectEntries = getObjectLatency(m)}
+      {#if objectEntries.length > 0}
+        {@render latencyBreakdown('Object Store Latency', 'Object store GET and PUT latency data', objectEntries, objectExpanded, toggleObjectExpand, objectMetricMode, (v) => objectMetricMode = v, OBJECT_LABELS, OBJECT_SCALE)}
       {/if}
   {/if}
 </div>

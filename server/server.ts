@@ -322,7 +322,7 @@ app.patch('/api/webauthn/credentials/:id', async (c) => {
 // every other /api route (it is fetched by the dashboard, not by a service), served from
 // this server's cache so the browser never talks to the distribution bucket directly.
 app.get('/api/releases', async (c) => {
-  return c.json(await getReleases())
+  return c.json({ status: 'success', message: 'ok', data: await getReleases() })
 })
 
 app.use('/api/*', stepUpMiddleware)

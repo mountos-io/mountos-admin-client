@@ -313,6 +313,16 @@ export function latencyColor(us: number): string {
   if (us < 100000) return 'var(--warning)'
   return 'var(--destructive)'
 }
+// Object-store round trips run two to three orders slower than a FUSE or RPC
+// op, so they need their own thresholds. On the op scale a healthy 40ms S3 GET
+// reads amber and a routine 300ms PUT reads red, which trains operators to
+// ignore the colour exactly where it should mean something.
+export function objectLatencyColor(us: number): string {
+  if (us < 10_000) return 'var(--success)'
+  if (us < 100_000) return 'var(--primary)'
+  if (us < 1_000_000) return 'var(--warning)'
+  return 'var(--destructive)'
+}
 export function pingRttColor(ms: number): string {
   if (ms < 30) return 'var(--success)'
   if (ms < 150) return 'var(--primary)'
