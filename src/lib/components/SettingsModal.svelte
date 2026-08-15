@@ -22,7 +22,7 @@
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useLicense } from '$lib/core/stores/license.svelte'
-  import { useReleases, severityClass, severityLabel } from '$lib/core/stores/releases.svelte'
+  import { useReleases, severityClass, severityLabel, semverLess } from '$lib/core/stores/releases.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
@@ -43,8 +43,16 @@
 
   // Each release unit is one row. A unit covers the binaries that must never drift apart:
   // dataserv and gcserv share `dbserv` because they migrate the same database.
+  // Newest version first, ties broken by name; capped so a growing unit count never
+  // reshapes the modal.
+  const MAX_RELEASE_UNITS = 8
   const releaseUnits = $derived(
-    Object.entries(releases.index?.units ?? {}).sort(([a], [b]) => a.localeCompare(b)),
+    Object.entries(releases.index?.units ?? {})
+      .sort(([an, au], [bn, bu]) => {
+        if (au.version !== bu.version) return semverLess(au.version, bu.version) ? 1 : -1
+        return an.localeCompare(bn)
+      })
+      .slice(0, MAX_RELEASE_UNITS),
   )
 
   // Load-license (admin-only; the License tab is already gated by !auth.isUserRole)
@@ -88,7 +96,7 @@
   }
 
   const maxWidth = providerSettingsModalSize?.maxWidth ?? '800px'
-  const minHeight = providerSettingsModalSize?.minHeight ?? '480px'
+  const modalHeight = providerSettingsModalSize?.height ?? '620px'
 
   const builtinTabs = $derived<{ id: SettingsTab; label: string; icon: typeof Sun }[]>([
     { id: 'appearance', label: 'Appearance', icon: Palette },
@@ -162,12 +170,12 @@
 </script>
 
 <Dialog.Dialog bind:open={modal.open}>
-  <Dialog.DialogContent class="p-0 gap-0 max-h-[calc(100vh-4rem)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden" style="max-width: {maxWidth}">
+  <Dialog.DialogContent class="p-0 gap-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden" style="max-width: {maxWidth}; height: min({modalHeight}, calc(100vh - 4rem)); max-height: calc(100vh - 4rem)">
     <Dialog.DialogHeader class="px-6 pt-6 pb-4 border-b">
       <Dialog.DialogTitle>Settings</Dialog.DialogTitle>
       <Dialog.DialogDescription class="sr-only">Application settings</Dialog.DialogDescription>
     </Dialog.DialogHeader>
-    <div class="flex flex-col sm:flex-row min-w-0 min-h-0" style="min-height: min({minHeight}, 100%)">
+    <div class="flex flex-col sm:flex-row min-w-0 min-h-0">
       <div
         bind:this={tablistEl}
         class="flex sm:w-44 shrink-0 border-b sm:border-b-0 sm:border-r overflow-x-auto sm:overflow-x-visible sm:flex-col p-1.5 sm:p-2 gap-0.5"

@@ -8,4 +8,4 @@ export interface ProviderSettingsTab {
 }
 
 export const providerSettingsTabs: ProviderSettingsTab[] = []
-export const providerSettingsModalSize: { maxWidth?: string; minHeight?: string } | undefined = undefined
+export const providerSettingsModalSize: { maxWidth?: string; height?: string } | undefined = undefined
