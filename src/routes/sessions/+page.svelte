@@ -308,8 +308,10 @@
                     <p class="text-sm font-medium truncate max-w-[200px]" title={getFriendlyName(session) || session.hostname || session.ipAddr}>{getFriendlyName(session) || session.hostname || session.ipAddr}</p>
                     {#if session.appVersion}
                       <Badge variant="outline" class="font-mono shrink-0" title="App version">v{session.appVersion}</Badge>
-                      <UpdateIndicator class="shrink-0" running={session.appVersion}
-                        status={releases.clientUpdateStatusFor(session.osName, session.appVersion)} />
+                      {#if session.status === 'active'}
+                        <UpdateIndicator class="shrink-0" running={session.appVersion}
+                          status={releases.clientUpdateStatusFor(session.osName, session.appVersion)} />
+                      {/if}
                     {/if}
                   </div>
                   <p class="text-sm text-muted-foreground font-mono">{#if getFriendlyName(session) && session.hostname}{session.hostname} &middot; {/if}{session.ipAddr} &middot; #{session.id}</p>

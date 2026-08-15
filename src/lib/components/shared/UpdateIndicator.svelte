@@ -36,7 +36,7 @@
         </button>
       {/snippet}
     </PopoverTrigger>
-    <PopoverContent class="w-80 text-sm" side="top" align="start">
+    <PopoverContent class="w-80 p-3 text-sm" side="top" align="start">
       <div class="space-y-2">
         <div class="flex items-baseline justify-between gap-2">
           <span class={cn('font-medium', severityClass(status.severity))}>{severityLabel(status.severity)}</span>
@@ -46,7 +46,10 @@
           running {running} &rarr; <span class="text-foreground">{status.latest}</span>
         </p>
         {#if status.summary}
-          <p class="text-muted-foreground">{status.summary}</p>
+          <div class="flex items-start gap-2">
+            <Badge variant="secondary" class="shrink-0 font-mono text-xs">{status.latest}</Badge>
+            <p class="text-muted-foreground">{status.summary}</p>
+          </div>
         {/if}
         {#if status.actionRequired}
           <p class="rounded bg-muted px-2 py-1 text-xs">{status.actionRequired}</p>
