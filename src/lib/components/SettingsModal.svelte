@@ -1,6 +1,7 @@
 <script lang="ts">
   import { usePreferences, type Theme, type FontSize } from '$lib/stores/preferences.svelte'
   import { presetsForMode, type SkinMode } from '$lib/core/themes'
+  import { ACCENT_PRESETS, MIN_ACCENT_CHROMA, MAX_ACCENT_CHROMA, DEFAULT_ACCENT_CHROMA, accentHueLabel, accentSwatchColor, defaultAccentHue, type AccentMode } from '$lib/core/accent-palette'
   import { useSettingsModal, type SettingsTab } from '$lib/stores/settings-modal.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { providerSettingsTabs, providerSettingsModalSize } from '$provider/config/settings'
@@ -120,6 +121,13 @@
   ]
 
   const pageSizes = [10, 20, 50]
+
+  // Gradient stops for the accent hue strip, swept across the full hue
+  // circle at the current saturation so the strip previews the real
+  // primary color rather than a separate paler stand-in.
+  function accentStripGradient(chroma: number, mode: AccentMode): string {
+    return Array.from({ length: 13 }, (_, i) => accentSwatchColor(i * 30, chroma, mode)).join(', ')
+  }
 
   const mac = isMacPlatform()
   const modKey = mac ? '⌘' : 'Ctrl'
@@ -259,6 +267,90 @@
                       <span class="sw-label">{preset.name === 'mountOS Dark' ? 'mountOS' : preset.name.replace(/ Dark$/, '')}</span>
                     </button>
                   {/each}
+                </div>
+              </div>
+            {/if}
+            {#if (prefs.theme === 'light' && (!prefs.skin || prefs.skin === 'mountOS Light')) || (prefs.theme === 'dark' && (!prefs.skin || prefs.skin === 'mountOS Dark'))}
+              {@const mode = prefs.theme === 'dark' ? 'dark' : 'light'}
+              {@const activeHue = prefs.accentHue}
+              {@const defaultHue = defaultAccentHue(mode)}
+              {@const strandHue = activeHue ?? defaultHue}
+              {@const customHue = prefs.accentCustomHue}
+              {@const chroma = prefs.accentChroma}
+              {@const gradient = accentStripGradient(chroma, mode)}
+              {@const saturationPct = Math.round(((chroma - MIN_ACCENT_CHROMA) / (MAX_ACCENT_CHROMA - MIN_ACCENT_CHROMA)) * 100)}
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <h3 class="text-sm font-medium">Accent Color</h3>
+                  {#if activeHue !== null || chroma !== DEFAULT_ACCENT_CHROMA}
+                    <button
+                      type="button"
+                      class="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      onclick={() => { prefs.accentHue = null; prefs.accentChroma = DEFAULT_ACCENT_CHROMA }}
+                    >Reset</button>
+                  {/if}
+                </div>
+                <div class="space-y-1.5">
+                  <input
+                    type="range" min="0" max="360" step="1"
+                    value={strandHue}
+                    oninput={(e) => {
+                      const hue = Number((e.target as HTMLInputElement).value)
+                      prefs.accentHue = hue
+                      prefs.accentCustomHue = hue
+                    }}
+                    aria-label="Accent hue"
+                    class="accent-strip w-full cursor-pointer"
+                    style="background: linear-gradient(to right, {gradient}); --aw-thumb: {accentSwatchColor(strandHue, chroma, mode)};"
+                  />
+                  <p class="text-xs text-muted-foreground">{activeHue === null ? 'Default' : accentHueLabel(strandHue)}</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    class="accent-swatch {activeHue === null ? 'is-active' : ''}"
+                    style="--aw-bg: {accentSwatchColor(defaultHue, DEFAULT_ACCENT_CHROMA, mode)};"
+                    onclick={() => { prefs.accentHue = null; prefs.accentChroma = DEFAULT_ACCENT_CHROMA }}
+                    aria-label="Default"
+                    aria-pressed={activeHue === null}
+                    title="Default (mountOS)"
+                  ><span class="accent-swatch-default-mark" aria-hidden="true"></span></button>
+                  {#each ACCENT_PRESETS as preset}
+                    {@const active = activeHue === preset.hue}
+                    <button
+                      type="button"
+                      class="accent-swatch {active ? 'is-active' : ''}"
+                      style="--aw-bg: {accentSwatchColor(preset.hue, chroma, mode)};"
+                      onclick={() => prefs.accentHue = preset.hue}
+                      aria-label={preset.name}
+                      aria-pressed={active}
+                      title={preset.name}
+                    ></button>
+                  {/each}
+                  {#if customHue !== null && !ACCENT_PRESETS.some((p) => p.hue === customHue)}
+                    <button
+                      type="button"
+                      class="accent-swatch {activeHue === customHue ? 'is-active' : ''}"
+                      style="--aw-bg: {accentSwatchColor(customHue, chroma, mode)};"
+                      onclick={() => prefs.accentHue = customHue}
+                      aria-label={accentHueLabel(customHue)}
+                      aria-pressed={activeHue === customHue}
+                      title={accentHueLabel(customHue)}
+                    ></button>
+                  {/if}
+                </div>
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs text-muted-foreground">Saturation</span>
+                    <span class="text-xs tabular-nums text-muted-foreground">{saturationPct}%</span>
+                  </div>
+                  <input
+                    type="range" min={MIN_ACCENT_CHROMA} max={MAX_ACCENT_CHROMA} step="0.01"
+                    value={chroma}
+                    oninput={(e) => prefs.accentChroma = Number((e.target as HTMLInputElement).value)}
+                    aria-label="Accent saturation"
+                    class="brightness-slider w-full cursor-pointer"
+                  />
                 </div>
               </div>
             {/if}
@@ -706,10 +798,114 @@
   }
 
   .sw-label {
-    font-size: 0.75rem;
+    font-size: var(--text-xs);
     font-weight: 500;
     color: var(--sw-fg);
     white-space: nowrap;
+  }
+
+  .accent-swatch {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--aw-bg);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  /* mix-blend-mode: difference reads against any fill color (light or dark
+     hue alike) without needing to know what that color is, so the "this is
+     the theme's own default" mark stays visible no matter which hue the
+     default itself renders as this mode. */
+  .accent-swatch-default-mark {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: white;
+    mix-blend-mode: difference;
+  }
+
+  .accent-swatch:hover {
+    transform: scale(1.12);
+  }
+
+  .accent-swatch:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* A fixed foreground/background double ring, not var(--ring) or
+     var(--primary) - both of those ARE the swatch's own color once an
+     accent is active, which would make the "selected" indicator blend into
+     the swatch it's marking instead of standing out from it. */
+  .accent-swatch.is-active {
+    box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--foreground);
+  }
+
+  .accent-strip {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 10px;
+    border-radius: var(--radius);
+    outline: none;
+  }
+
+  .accent-strip:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 4px;
+  }
+
+  .accent-strip::-webkit-slider-thumb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius);
+    background: var(--aw-thumb);
+    border: 2px solid var(--background);
+    box-shadow: 0 0 0 1px var(--border);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .accent-strip::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+  }
+
+  .accent-strip::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius);
+    background: var(--aw-thumb);
+    border: 2px solid var(--background);
+    box-shadow: 0 0 0 1px var(--border);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+
+  .accent-strip::-moz-range-thumb:hover {
+    transform: scale(1.1);
+  }
+
+  .accent-strip::-moz-range-track {
+    height: 10px;
+    border-radius: var(--radius);
+  }
+
+  @media (pointer: coarse) {
+    .accent-strip::-webkit-slider-thumb {
+      width: 26px;
+      height: 26px;
+    }
+
+    .accent-strip::-moz-range-thumb {
+      width: 26px;
+      height: 26px;
+    }
   }
 
   .brightness-slider {

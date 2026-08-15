@@ -1,4 +1,5 @@
 import { findPreset, applySkin, clearSkin, familyVariant, defaultSkin, type SkinMode } from '$lib/core/themes'
+import { applyAccent, DEFAULT_ACCENT_CHROMA } from '$lib/core/accent-palette'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type FontSize = 'standard' | 'medium' | 'large' | 'extra-large' | 'jumbo'
@@ -13,6 +14,12 @@ const KEYS = {
   grayscale: 'mountos-admin-grayscale',
   brightness: 'mountos-admin-brightness',
   alertSound: 'mountos-admin-alert-sound',
+  accentHueLight: 'mountos-admin-accent-hue-light',
+  accentHueDark: 'mountos-admin-accent-hue-dark',
+  accentCustomHueLight: 'mountos-admin-accent-custom-hue-light',
+  accentCustomHueDark: 'mountos-admin-accent-custom-hue-dark',
+  accentChromaLight: 'mountos-admin-accent-chroma-light',
+  accentChromaDark: 'mountos-admin-accent-chroma-dark',
 } as const
 
 function load<T>(key: string, fallback: T): T {
@@ -36,6 +43,19 @@ let sidebarCollapsed = $state<boolean>(load(KEYS.sidebarCollapsed, false))
 let grayscale = $state<boolean>(load(KEYS.grayscale, false))
 let brightness = $state<number>(load(KEYS.brightness, 100))
 let alertSound = $state<boolean>(load(KEYS.alertSound, false))
+// Pastel accent-hue override for the mountOS Light/Dark skins, tracked
+// separately per mode (a hue picked for light shouldn't silently reappear
+// on dark). null = theme default.
+let accentHueLight = $state<number | null>(load(KEYS.accentHueLight, null))
+let accentHueDark = $state<number | null>(load(KEYS.accentHueDark, null))
+// Last hue picked off the continuous strip, kept even after Reset or after
+// switching to a preset, so the user can return to it in one click.
+let accentCustomHueLight = $state<number | null>(load(KEYS.accentCustomHueLight, null))
+let accentCustomHueDark = $state<number | null>(load(KEYS.accentCustomHueDark, null))
+// Saturation dial for the accent override; independent of hue so Reset can
+// restore just the color while keeping the user's preferred intensity.
+let accentChromaLight = $state<number>(load(KEYS.accentChromaLight, DEFAULT_ACCENT_CHROMA))
+let accentChromaDark = $state<number>(load(KEYS.accentChromaDark, DEFAULT_ACCENT_CHROMA))
 
 const fontScaleMap: Record<FontSize, string> = {
   standard: '100%',
@@ -86,6 +106,24 @@ function applySkinPreset() {
   applySkin(preset)
 }
 
+// The accent-hue override only makes sense on the mountOS Light/Dark skins -
+// other skins bring their own hand-tuned accent. Every property applyAccent
+// touches is also one applySkin/clearSkin (run just before this, same tick)
+// fully owns and overwrites for the active skin - so when a non-mountOS
+// skin is active this must do nothing at all, not clear anything. Clearing
+// would remove the skin's own just-applied inline values (same property,
+// same element), not just ours.
+function applyAccentOverride() {
+  if (typeof document === 'undefined') return
+  const mode = resolvedMode()
+  const isMountOSDefault = mode === 'dark'
+    ? (!skin || skin === 'mountOS Dark')
+    : (!skin || skin === 'mountOS Light')
+  if (!isMountOSDefault) return
+  if (mode === 'dark') applyAccent(accentHueDark, accentChromaDark, 'dark')
+  else applyAccent(accentHueLight, accentChromaLight, 'light')
+}
+
 function applyFontSize(fs: FontSize) {
   if (typeof document === 'undefined') return
   document.documentElement.style.fontSize = fontScaleMap[fs]
@@ -102,6 +140,17 @@ function applyFilters() {
 $effect.root(() => {
   $effect(() => { save(KEYS.theme, theme); applyTheme(theme) })
   $effect(() => { save(KEYS.skin, skin); applySkinPreset() })
+  $effect(() => {
+    save(KEYS.accentHueLight, accentHueLight)
+    save(KEYS.accentHueDark, accentHueDark)
+    save(KEYS.accentChromaLight, accentChromaLight)
+    save(KEYS.accentChromaDark, accentChromaDark)
+    applyAccentOverride()
+  })
+  $effect(() => {
+    save(KEYS.accentCustomHueLight, accentCustomHueLight)
+    save(KEYS.accentCustomHueDark, accentCustomHueDark)
+  })
   $effect(() => { save(KEYS.fontSize, fontSize); applyFontSize(fontSize) })
   $effect(() => { save(KEYS.pageSize, pageSize) })
   $effect(() => { save(KEYS.defaultAccountId, defaultAccountId) })
@@ -143,5 +192,20 @@ export function usePreferences() {
     set brightness(v: number) { brightness = Math.max(50, Math.min(150, v)) },
     get alertSound() { return alertSound },
     set alertSound(v: boolean) { alertSound = v },
+    // Routed to the light/dark backing store by the currently resolved
+    // mode, so callers (the Appearance tab) don't need to branch themselves.
+    get accentHue() { return resolvedMode() === 'dark' ? accentHueDark : accentHueLight },
+    set accentHue(v: number | null) {
+      if (resolvedMode() === 'dark') accentHueDark = v; else accentHueLight = v
+    },
+    get accentCustomHue() { return resolvedMode() === 'dark' ? accentCustomHueDark : accentCustomHueLight },
+    set accentCustomHue(v: number | null) {
+      if (resolvedMode() === 'dark') accentCustomHueDark = v; else accentCustomHueLight = v
+    },
+    get accentChroma() { return resolvedMode() === 'dark' ? accentChromaDark : accentChromaLight },
+    set accentChroma(v: number) {
+      const clamped = Math.max(0.02, Math.min(0.24, v))
+      if (resolvedMode() === 'dark') accentChromaDark = clamped; else accentChromaLight = clamped
+    },
   }
 }
