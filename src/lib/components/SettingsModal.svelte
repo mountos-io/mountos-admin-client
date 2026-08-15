@@ -22,7 +22,7 @@
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useLicense } from '$lib/core/stores/license.svelte'
-  import { useReleases, severityClass, severityLabel, semverLess } from '$lib/core/stores/releases.svelte'
+  import { useReleases, severityClass, severityLabel, semverLess, type ReleaseUnit } from '$lib/core/stores/releases.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
@@ -41,19 +41,44 @@
     }
   })
 
-  // Each release unit is one row. A unit covers the binaries that must never drift apart:
-  // dataserv and gcserv share `dbserv` because they migrate the same database.
-  // Newest version first, ties broken by name; capped so a growing unit count never
-  // reshapes the modal.
-  const MAX_RELEASE_UNITS = 8
-  const releaseUnits = $derived(
-    Object.entries(releases.index?.units ?? {})
-      .sort(([an, au], [bn, bu]) => {
-        if (au.version !== bu.version) return semverLess(au.version, bu.version) ? 1 : -1
-        return an.localeCompare(bn)
+  // A release unit covers the binaries that must never drift apart (dataserv and gcserv
+  // share `dbserv` because they migrate the same database). Separate units that shipped
+  // the identical note in lockstep (same version, severity, and every other displayed
+  // field) are one row here, so a fix that landed in blockserv and dbserv together, or a
+  // desktop build that bundles the same CLI note across platforms, reads as one entry
+  // instead of duplicate text. Newest version first, ties broken by unit names; capped so
+  // a growing unit count never reshapes the modal.
+  interface ReleaseGroup {
+    names: string[]
+    pkgs: string[]
+    platforms: Record<string, string>
+    unit: ReleaseUnit
+  }
+  const MAX_RELEASE_ROWS = 8
+  const releaseGroups = $derived.by(() => {
+    const groups = new Map<string, ReleaseGroup>()
+    for (const [name, unit] of Object.entries(releases.index?.units ?? {})) {
+      const key = JSON.stringify([
+        unit.version, unit.severity, unit.breaking,
+        unit.requires_schema ?? '', unit.requires_protocol ?? '', unit.action_required ?? '',
+        unit.summary,
+      ])
+      let group = groups.get(key)
+      if (!group) {
+        group = { names: [], pkgs: [], platforms: {}, unit }
+        groups.set(key, group)
+      }
+      group.names.push(name)
+      for (const pkg of unit.pkgs) if (!group.pkgs.includes(pkg)) group.pkgs.push(pkg)
+      Object.assign(group.platforms, unit.platforms)
+    }
+    return Array.from(groups.values())
+      .sort((a, b) => {
+        if (a.unit.version !== b.unit.version) return semverLess(a.unit.version, b.unit.version) ? 1 : -1
+        return a.names.join('+').localeCompare(b.names.join('+'))
       })
-      .slice(0, MAX_RELEASE_UNITS),
-  )
+      .slice(0, MAX_RELEASE_ROWS)
+  })
 
   // Load-license (admin-only; the License tab is already gated by !auth.isUserRole)
   let licenseFiles = $state<FileList | undefined>(undefined)
@@ -698,44 +723,43 @@
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {#each releaseUnits as [name, unit] (name)}
+                  {#each releaseGroups as group (group.names.join('+'))}
                     <TableRow>
                       <TableCell>
-                        <span class="font-medium">{name}</span>
-                        <div class="mt-0.5 flex flex-wrap gap-1">
-                          {#each unit.pkgs as pkg, i (i + ':' + pkg)}
+                        <div class="flex flex-wrap gap-1">
+                          {#each group.pkgs as pkg, i (i + ':' + pkg)}
                             <Badge variant="outline" class="font-mono text-xs">{pkg}</Badge>
                           {/each}
                         </div>
                       </TableCell>
                       <TableCell class="align-top">
-                        <span class="font-mono text-sm">{unit.version}</span>
+                        <span class="font-mono text-sm">{group.unit.version}</span>
                         <!-- A unit can version per platform (the CLI does, since each platform
                              links a different set of mount backends). Show the split when it
                              differs, so "latest" is never ambiguous. -->
-                        {#if Object.values(unit.platforms ?? {}).some(v => v !== unit.version)}
+                        {#if Object.values(group.platforms).some(v => v !== group.unit.version)}
                           <div class="mt-0.5 space-y-0.5 text-xs text-muted-foreground">
-                            {#each Object.entries(unit.platforms) as [plat, ver] (plat)}
+                            {#each Object.entries(group.platforms) as [plat, ver] (plat)}
                               <div class="font-mono">{plat} {ver}</div>
                             {/each}
                           </div>
                         {/if}
                       </TableCell>
                       <TableCell class="align-top">
-                        <span class={cn('text-sm', severityClass(unit.severity))}>{severityLabel(unit.severity)}</span>
-                        {#if unit.breaking}
+                        <span class={cn('text-sm', severityClass(group.unit.severity))}>{severityLabel(group.unit.severity)}</span>
+                        {#if group.unit.breaking}
                           <div class="text-xs text-destructive">Breaking</div>
                         {/if}
                       </TableCell>
                       <TableCell class="align-top text-sm text-muted-foreground">
-                        {unit.summary}
-                        {#if unit.action_required}
-                          <div class="mt-1 rounded bg-muted px-2 py-1 text-xs text-foreground">{unit.action_required}</div>
+                        {group.unit.summary}
+                        {#if group.unit.action_required}
+                          <div class="mt-1 rounded bg-muted px-2 py-1 text-xs text-foreground">{group.unit.action_required}</div>
                         {/if}
-                        {#if unit.requires_schema || unit.requires_protocol}
+                        {#if group.unit.requires_schema || group.unit.requires_protocol}
                           <div class="mt-1 text-xs">
-                            {#if unit.requires_schema}Needs schema {unit.requires_schema}.{/if}
-                            {#if unit.requires_protocol} Speaks protocol {unit.requires_protocol}.{/if}
+                            {#if group.unit.requires_schema}Needs schema {group.unit.requires_schema}.{/if}
+                            {#if group.unit.requires_protocol} Speaks protocol {group.unit.requires_protocol}.{/if}
                           </div>
                         {/if}
                       </TableCell>
