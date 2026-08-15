@@ -309,7 +309,7 @@
                   <button
                     type="button"
                     class="accent-swatch {activeHue === null ? 'is-active' : ''}"
-                    style="--aw-bg: {accentSwatchColor(defaultHue, DEFAULT_ACCENT_CHROMA, mode)};"
+                    style="--aw-bg: {accentSwatchColor(defaultHue, DEFAULT_ACCENT_CHROMA, mode)}; --aw-mark: {mode === 'dark' ? 'oklch(0.15 0 0)' : 'oklch(1 0 0)'};"
                     onclick={() => { prefs.accentHue = null; prefs.accentChroma = DEFAULT_ACCENT_CHROMA }}
                     aria-label="Default"
                     aria-pressed={activeHue === null}
@@ -817,16 +817,17 @@
     transition: transform 0.15s;
   }
 
-  /* mix-blend-mode: difference reads against any fill color (light or dark
-     hue alike) without needing to know what that color is, so the "this is
-     the theme's own default" mark stays visible no matter which hue the
-     default itself renders as this mode. */
+  /* --aw-mark is the same fixed white/near-black pairing --primary-foreground
+     itself uses for this mode (white text on light's mid-tone default,
+     near-black on dark's bright default) - not a blend-mode trick, which
+     only collapses to true black/white against an actually-neutral
+     backdrop and reads as a stray hue (e.g. cyan) against any saturated
+     swatch fill like this one. */
   .accent-swatch-default-mark {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: white;
-    mix-blend-mode: difference;
+    background: var(--aw-mark);
   }
 
   .accent-swatch:hover {
