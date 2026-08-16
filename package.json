@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",
-    "@mountos-io/admin-sdk": "^1.5.0",
+    "@mountos-io/admin-sdk": "^1.6.0",
     "@simplewebauthn/server": "^13.3.0",
     "hono": "^4.12.15",
     "ioredis": "^5.10.1",
