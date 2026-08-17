@@ -301,6 +301,7 @@ The "no gradients" rule (§6) targets *gratuitous* gradients: hero-text fades, m
 - **`.card-cyber` inset top-edge glow**: resting-state warmth on opt-in cyber cards. Hairline only; not a drop shadow.
 - **LED ping shadows** (`.led-ping`): low-radius `box-shadow` glow on small live-status dots.
 - **Connection-flow dash animations** (`stroke-dasharray` cycling on RAFT/topology paths): SVG-stroke animation conveying traffic direction. Functional, keep.
+- **Off-pointer readout reveal** (`NodeStatsHistoryChart.svelte`): the all-metrics panel lands in a fixed screen corner, far from the chart under the pointer, so its arrival is announced by a 2px accent outline traced with `stroke-dashoffset` (720ms, then faded out) and a dashed accent tether from the scrubbed crosshair to the panel edge. Accent follows the hovered tile through the `--fork-N` ramp, matching the tile focus chips. Reveal only: the outline never rests on the panel, and the tether exists only while the pointer scrubs. Under `prefers-reduced-motion` the outline holds as a static frame and fades, an intentional override of the global 0.01ms clamp so the cue survives without travel.
 
 **Audit rule:** any new `linear-gradient`, `repeating-linear-gradient`, animated SVG stroke, or low-alpha glow must either fit one of the sanctioned patterns above or earn an explicit entry here. Default-deny; add when justified.
 
@@ -317,7 +318,7 @@ The "no gradients" rule (§6) targets *gratuitous* gradients: hero-text fades, m
 - **Do** use `.th-cyber` mono microlabels on table column heads. Tracking 0.2em, uppercase, paired with scan-line hover underline.
 - **Do** keep body type at 17–18px and headings tightened to -0.02em. Operators read for hours.
 - **Do** apply `min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8` to interactive elements in dense tables and card footers so mobile tap targets stay honest without bloating desktop.
-- **Do** respect `prefers-reduced-motion`: the global rule collapses transitions to 0.01ms and disables `.led-ping`; don't override it on individual components.
+- **Do** respect `prefers-reduced-motion`: the global rule collapses transitions to 0.01ms and disables `.led-ping`; don't override it on individual components. The single exception is a cue whose whole job is to report a state change the reader would otherwise miss (see the off-pointer readout reveal in §5): there the override replaces travel with a static, timed alternative, it never restores the motion.
 
 ### Don't:
 - **Don't** use rounded, bubbly, or playful aesthetics. `--radius` caps at 0.25rem and `rounded-sm` is a true 0px for a reason.

@@ -124,7 +124,7 @@
 
   // Portal the summary panel to document.body so `position: fixed` resolves
   // to the viewport (scroll-safe) instead of any positioned ancestor.
-  function portal(node: HTMLElement) {
+  function portal(node: Element) {
     document.body.appendChild(node)
     return {
       destroy() {
@@ -138,29 +138,44 @@
   let sharedIndex = $state<number | null>(null)
   let touchDismissTimer: ReturnType<typeof setTimeout> | undefined
 
-  function indexFromClientX(e: { clientX: number; currentTarget: EventTarget | null }): number {
-    const rect = (e.currentTarget as SVGSVGElement).getBoundingClientRect()
-    const px = ((e.clientX - rect.left) / rect.width) * W
+  function indexFromClientX(clientX: number, rect: DOMRect): number {
+    const px = ((clientX - rect.left) / rect.width) * W
     const ratio = Math.min(1, Math.max(0, (px - PX) / PW))
     return Math.round(ratio * (samples.length - 1))
   }
-  function onMove(e: MouseEvent) {
+  function onMove(e: MouseEvent, tile: string) {
     if (samples.length === 0) return
-    sharedIndex = indexFromClientX(e)
+    const svg = e.currentTarget as SVGSVGElement
+    const rect = svg.getBoundingClientRect()
+    sharedIndex = indexFromClientX(e.clientX, rect)
+    activeTile = tile
+    anchorSvg = svg
+    updateTether(rect)
+    showCrumb(e.clientX, e.clientY)
   }
   function onLeave() {
     sharedIndex = null
+    activeTile = null
+    anchorSvg = null
+    tetherFrom = null
+    crumb = null
   }
   // Touch: same crosshair, kept visible briefly after lift-off so a tap
   // (rather than hover) still gives the reader time to see the values.
   // touch-action: pan-y on the SVG keeps vertical swipes scrolling the page
   // while horizontal drags drive the crosshair (Svelte's delegated touch
   // handlers are passive, so preventDefault is not an option here).
-  function onTouch(e: TouchEvent) {
+  function onTouch(e: TouchEvent, tile: string) {
     if (samples.length === 0 || e.touches.length === 0) return
     clearTimeout(touchDismissTimer)
     const touch = e.touches[0]
-    sharedIndex = indexFromClientX({ clientX: touch.clientX, currentTarget: e.currentTarget })
+    const svg = e.currentTarget as SVGSVGElement
+    const rect = svg.getBoundingClientRect()
+    sharedIndex = indexFromClientX(touch.clientX, rect)
+    activeTile = tile
+    anchorSvg = svg
+    updateTether(rect)
+    showCrumb(touch.clientX, touch.clientY)
   }
   function onTouchEnd() {
     clearTimeout(touchDismissTimer)
@@ -168,7 +183,7 @@
   }
   // Keyboard: focused charts step the shared crosshair through samples, so
   // the same cross-tile correlation works without a pointer.
-  function onKey(e: KeyboardEvent) {
+  function onKey(e: KeyboardEvent, tile: string) {
     if (samples.length === 0) return
     if (e.key === 'Escape') {
       onLeave()
@@ -183,6 +198,9 @@
     else return
     e.preventDefault()
     sharedIndex = idx
+    activeTile = tile
+    anchorSvg = e.currentTarget as SVGSVGElement
+    updateTether()
   }
 
   const timeFmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -305,6 +323,92 @@
   // Clamped shared index for the all-metrics summary panel, mirroring each
   // tile's own validIndex so both stay in lockstep while scrubbing.
   const masterIndex = $derived(sharedIndex !== null && sharedIndex < samples.length ? sharedIndex : null)
+
+  // Reveal cues for the summary panel. It lands in a fixed corner far from the
+  // pointer, so its arrival is announced three ways: an accent outline that
+  // draws itself around the panel, a dashed tether back to the scrubbed point,
+  // and a one-shot chip at the pointer naming where the readings went. The
+  // accent follows the hovered tile, cycling the fork-N palette by tile index
+  // exactly as the focus chips do.
+  let activeTile = $state<string | null>(null)
+  let anchorSvg: SVGSVGElement | null = null
+  let tetherFrom = $state<{ x: number; y: number } | null>(null)
+  let panelBox = $state<{ left: number; top: number; height: number } | null>(null)
+  let crumb = $state<{ x: number; y: number } | null>(null)
+
+  const toneIndex = $derived(tiles.findIndex(t => t.tile === activeTile))
+  const activeTone = $derived(toneIndex >= 0 ? `var(--fork-${toneIndex % 8})` : 'var(--fork-0)')
+
+  // Anchors the tether at the crosshair of the tile under the pointer. Pointer
+  // handlers pass the rect they already measured; the scroll handler has none
+  // and re-reads it, which is what keeps the line attached while the page moves.
+  function updateTether(rect?: DOMRect) {
+    if (!anchorSvg || sharedIndex === null || samples.length === 0) {
+      tetherFrom = null
+      return
+    }
+    const r = rect ?? anchorSvg.getBoundingClientRect()
+    const ratio = xFor(Math.min(sharedIndex, samples.length - 1), samples.length) / W
+    tetherFrom = { x: r.left + ratio * r.width, y: r.top + r.height / 2 }
+  }
+
+  // The chip is a discovery aid, not a running commentary: one appearance per
+  // page visit is enough to teach where the readings land. The traced outline
+  // and the tether carry every later hover.
+  let crumbSpent = false
+  function showCrumb(x: number, y: number) {
+    if (crumbSpent) return
+    crumbSpent = true
+    crumb = { x, y }
+  }
+
+  // Scroll fires faster than paint, so the re-anchor rides a frame instead of
+  // reading layout on every event.
+  const scrubbing = $derived(sharedIndex !== null)
+  $effect(() => {
+    if (!scrubbing) return
+    let frame = 0
+    const onViewportChange = () => {
+      if (frame) return
+      frame = requestAnimationFrame(() => {
+        frame = 0
+        updateTether()
+      })
+    }
+    window.addEventListener('scroll', onViewportChange, { passive: true })
+    window.addEventListener('resize', onViewportChange)
+    return () => {
+      if (frame) cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onViewportChange)
+      window.removeEventListener('resize', onViewportChange)
+    }
+  })
+
+  // Sizes the outline to the panel it traces and records the panel's viewport
+  // box for the tether endpoint. Two triggers, two different causes: the panel
+  // grows when a metric appears mid-session (DB tiles arrive with the first
+  // DB-backed sample), and it slides horizontally when the viewport width
+  // changes under its right-anchored position.
+  function reveal(node: HTMLElement) {
+    const outline = node.querySelector('.trace-outline rect')
+    const read = () => {
+      const r = node.getBoundingClientRect()
+      panelBox = { left: r.left, top: r.top, height: r.height }
+      outline?.setAttribute('width', String(Math.max(0, r.width - 2)))
+      outline?.setAttribute('height', String(Math.max(0, r.height - 2)))
+    }
+    read()
+    const observer = new ResizeObserver(read)
+    observer.observe(node)
+    window.addEventListener('resize', read)
+    return {
+      destroy() {
+        observer.disconnect()
+        window.removeEventListener('resize', read)
+        panelBox = null
+      },
+    }
+  }
 </script>
 
 {#snippet chartTile(
@@ -367,8 +471,8 @@
             ? `${timeLabels[vi]}: ${visible.map(s => `${s.label} ${fmt(s.values[vi])}`).join(', ')}`
             : 'all series hidden'}
           class="w-full h-auto block select-none [touch-action:pan-y] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          onmousemove={onMove} onmouseleave={onLeave} onkeydown={onKey} onblur={onLeave}
-          ontouchstart={onTouch} ontouchmove={onTouch} ontouchend={onTouchEnd}>
+          onmousemove={e => onMove(e, tile)} onmouseleave={onLeave} onkeydown={e => onKey(e, tile)} onblur={onLeave}
+          ontouchstart={e => onTouch(e, tile)} ontouchmove={e => onTouch(e, tile)} ontouchend={onTouchEnd}>
           {#each [PY, H / 2, PY + PH] as gy (gy)}
             <line x1="0" y1={gy} x2={W} y2={gy} stroke="currentColor" opacity="0.08" />
           {/each}
@@ -519,8 +623,21 @@
              (matches the lg: two-column grid), clearing the sticky app
              header's 3.5rem height. Per-tile boxes still cover the
              single-column layout. -->
-        <div use:portal role="tooltip"
-          class="hidden lg:block fixed top-16 right-4 z-50 w-96 max-w-[85vw] pointer-events-none rounded-sm border border-border bg-popover shadow-sm font-mono text-xs">
+        {#if tetherFrom && panelBox}
+          <!-- Tether: leads the eye from the scrubbed point to the panel. It
+               sits below the sticky header (z-40) so a chart scrolled under
+               the header never draws a line across it. -->
+          <svg use:portal aria-hidden="true" style="--tone: {activeTone}"
+            class="hidden lg:block fixed inset-0 w-screen h-screen z-30 pointer-events-none">
+            <line x1={tetherFrom.x} y1={tetherFrom.y} x2={panelBox.left} y2={panelBox.top + Math.min(panelBox.height / 2, 60)}
+              stroke="var(--tone)" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.5" />
+            <circle cx={tetherFrom.x} cy={tetherFrom.y} r="3" fill="var(--tone)" opacity="0.8" />
+          </svg>
+        {/if}
+        <div use:portal use:reveal role="tooltip" style="--tone: {activeTone}"
+          class="reveal-panel hidden lg:block fixed top-16 right-4 z-50 w-96 max-w-[85vw] pointer-events-none rounded-sm border border-border bg-popover shadow-sm font-mono text-xs">
+          <!-- Outline traced on arrival, then faded out. Sized by the reveal action. -->
+          <svg class="trace-outline" aria-hidden="true"><rect x="1" y="1" pathLength="100" /></svg>
           <div class="px-3 py-2 border-b border-border text-muted-foreground">{timeLabels[masterIndex]}</div>
           <div class="max-h-[calc(100vh-6rem)] overflow-y-auto px-3 py-2 space-y-2.5">
             {#each tiles as t (t.tile)}
@@ -548,6 +665,16 @@
   </CardContent>
 </Card>
 
+{#if crumb}
+  <!-- One-shot chip at the pointer, naming where the full reading appeared.
+       Self-retiring: the fade-out end removes it. -->
+  <div use:portal aria-hidden="true" onanimationend={() => (crumb = null)}
+    style="left: {Math.min(crumb.x + 16, window.innerWidth - 200)}px; top: {Math.max(8, crumb.y - 32)}px; --tone: {activeTone}"
+    class="reveal-crumb hidden lg:block fixed z-50 pointer-events-none whitespace-nowrap rounded-sm border bg-popover px-2 py-0.5 font-mono text-xs text-muted-foreground shadow-sm">
+    All readings &#8599;
+  </div>
+{/if}
+
 <style>
   .series-chip {
     display: inline-flex;
@@ -563,4 +690,67 @@
     transition: opacity 0.15s;
   }
   .series-dimmed { opacity: 0.35; }
+
+  /* The panel mounts fresh for every scrub session, so these arrival
+     animations play once per session, not once per sample. */
+  .reveal-panel {
+    animation: panel-in 160ms ease-out both;
+  }
+  @keyframes panel-in {
+    from { opacity: 0; transform: translateX(8px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  .trace-outline {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+  .trace-outline rect {
+    fill: none;
+    stroke: var(--tone);
+    stroke-width: 2;
+    stroke-dasharray: 100;
+    animation: trace-draw 720ms ease-out both;
+  }
+  @keyframes trace-draw {
+    0% { stroke-dashoffset: 100; opacity: 1; }
+    55% { stroke-dashoffset: 0; opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 0; }
+  }
+
+  .reveal-crumb {
+    border-color: color-mix(in oklch, var(--tone) 55%, var(--border));
+    animation: crumb-in 900ms ease-out both;
+  }
+  @keyframes crumb-in {
+    0% { opacity: 0; transform: translateY(4px); }
+    18% { opacity: 1; transform: none; }
+    72% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Reduced motion keeps the cue and drops the travel: the outline holds as a
+     static accent frame, then fades. The global reduced-motion rule clamps
+     every animation to 0.01ms, so each override restates its own duration and
+     wins on class specificity. */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal-panel { animation: none !important; }
+    .trace-outline rect {
+      stroke-dasharray: none !important;
+      animation: trace-hold 900ms linear both !important;
+    }
+    .reveal-crumb { animation: crumb-hold 900ms linear both !important; }
+  }
+  @keyframes trace-hold {
+    0%, 60% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  @keyframes crumb-hold {
+    0%, 72% { opacity: 1; }
+    100% { opacity: 0; }
+  }
 </style>
