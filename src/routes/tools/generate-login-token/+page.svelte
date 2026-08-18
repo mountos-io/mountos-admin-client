@@ -37,7 +37,7 @@
   let email = $state('test@localhost')
   let role = $state<string>(ROLE.superadmin)
   let username = $state('')
-  let accountId = $state('')
+  let accountId = $state('1')
   let signingKey = $state('')
 
   let generatedUrl = $state('')
@@ -46,6 +46,23 @@
   let copied = $state(false)
 
   const isUserRole = $derived(role === ROLE.user)
+
+  // account_id rides the JWT as a decimal string but the session layer reads it
+  // back with Number(), so a non-numeric value silently becomes NaN and a value
+  // above MAX_SAFE_INTEGER silently loses precision. Reject both here.
+  const accountIdFormatError = $derived.by(() => {
+    const raw = accountId.trim()
+    if (!isUserRole || !raw) return ''
+    if (!/^\d+$/.test(raw)) return 'Account ID must be a whole number (digits only, no fractions)'
+    if (Number(raw) < 1) return 'Account ID must be at least 1'
+    if (Number(raw) > Number.MAX_SAFE_INTEGER) return `Account ID must be at most ${Number.MAX_SAFE_INTEGER}`
+    return ''
+  })
+  const accountIdError = $derived(
+    accountIdFormatError || (isUserRole && !accountId.trim() ? 'role=user requires an account id' : ''),
+  )
+  const usernameError = $derived(isUserRole && !username.trim() ? 'role=user requires a username' : '')
+  const canGenerate = $derived(!!signingKey.trim() && !accountIdError && !usernameError)
 
   function base64ToBytes(b64: string): Uint8Array {
     const norm = b64.trim().replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/')
@@ -60,9 +77,8 @@
     generating = true
     try {
       if (!signingKey.trim()) throw new Error('Signing key is required')
-      if (isUserRole && (!username.trim() || !accountId.trim())) {
-        throw new Error('role=user requires a username and account id')
-      }
+      if (usernameError) throw new Error(usernameError)
+      if (accountIdError) throw new Error(accountIdError)
 
       let seed: Uint8Array
       try {
@@ -86,9 +102,13 @@
       pkcs8.set(seed, PKCS8_ED25519_PREFIX.length)
       const privateKey = await crypto.subtle.importKey('pkcs8', pkcs8, { name: 'Ed25519' }, false, ['sign'])
 
+      // username/account_id belong to role=user, and only that role exposes the
+      // fields, so a leftover value never rides along in an admin-role token.
       const claims: Record<string, string> = { name, email, role }
-      if (username.trim()) claims.username = username.trim()
-      if (accountId.trim()) claims.account_id = accountId.trim()
+      if (isUserRole) {
+        claims.username = username.trim()
+        claims.account_id = accountId.trim()
+      }
 
       const token = await new jose.SignJWT(claims)
         .setProtectedHeader({ alg: 'EdDSA' })
@@ -184,7 +204,13 @@
             </div>
             <div class="space-y-2">
               <Label for="accountId">Account ID</Label>
-              <Input id="accountId" bind:value={accountId} placeholder="required for role=user" autocomplete="off" aria-required="true" />
+              <Input id="accountId" bind:value={accountId} placeholder="1" autocomplete="off"
+                inputmode="numeric" pattern="[0-9]*" min={1} step={1} aria-required="true"
+                aria-invalid={accountIdFormatError ? 'true' : undefined}
+                aria-describedby={accountIdFormatError ? 'accountId-error' : undefined} />
+              {#if accountIdFormatError}
+                <p id="accountId-error" class="text-xs text-destructive" role="alert">{accountIdFormatError}</p>
+              {/if}
             </div>
           {/if}
         </div>
@@ -194,7 +220,7 @@
         {/if}
 
         <div class="pt-1">
-          <Button variant="primary" class="cyberpunk-skewed-sm" onclick={generate} disabled={generating || !signingKey.trim()}>
+          <Button variant="primary" class="cyberpunk-skewed-sm" onclick={generate} disabled={generating || !canGenerate}>
             {generating ? 'Generating…' : generatedUrl ? 'Regenerate' : 'Generate login URL'}
           </Button>
         </div>
