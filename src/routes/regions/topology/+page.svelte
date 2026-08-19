@@ -648,24 +648,18 @@
 
   /* Node slot styling */
   .node-slot {
-    border-bottom: 1px dashed oklch(0.5 0 0 / 0.1);
+    border-bottom: 1px dashed color-mix(in oklch, var(--border) 60%, transparent);
     cursor: default;
-  }
-  :global(.dark) .node-slot {
-    border-bottom-color: oklch(0.5 0 0 / 0.2);
   }
   .node-slot-last {
     border-bottom: none;
   }
   .node-slot:hover {
-    background: oklch(0.5 0 0 / 0.03);
-  }
-  :global(.dark) .node-slot:hover {
-    background: oklch(0.5 0 0 / 0.08);
+    background: color-mix(in oklch, var(--accent) 50%, transparent);
   }
 
   .node-slot-card:hover {
-    background: oklch(0.5 0 0 / 0.03);
+    background: color-mix(in oklch, var(--accent) 50%, transparent);
   }
 
   .topo-node:focus-visible {
