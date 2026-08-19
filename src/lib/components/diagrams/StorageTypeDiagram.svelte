@@ -8,6 +8,8 @@
 <svg
   class="diagram-svg"
   viewBox="0 0 960 312"
+  width="960"
+  height="312"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
   aria-label="Two storage types over the same S3-compatible object store. Object: the client reads and writes objects directly against the object store. Block: the client does block I/O against a block-volume facade (the blockserv members), which hides the same object store behind it. The client never reaches the object store directly in block mode."

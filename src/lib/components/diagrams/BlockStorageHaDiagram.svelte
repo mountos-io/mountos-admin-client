@@ -17,6 +17,8 @@
 <svg
   class="diagram-svg"
   viewBox="0 0 1000 684"
+  width="1000"
+  height="684"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
   aria-label="A block storage has up to three active-active block volumes, each a blockserv node with its own attached volume in a distinct region cluster. Block volumes replicate peer-to-peer. A client discovers them via appserv and connects directly to any node. Every block volume is backed by the region's object storage. In direct-access maintenance mode the client bypasses blockserv and reads and writes the same object keys on the backing object storage directly."

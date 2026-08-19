@@ -7,6 +7,8 @@
 <svg
   class="diagram-svg"
   viewBox="-20 0 1240 806"
+  width="1240"
+  height="806"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
   aria-label="mountOS hierarchical topology: a client resolves its volume at the global HUB, then talks to the owning region cluster. Each region owns its database and vault, points at S3-compatible or Azure object storage, and is partitioned into one or more clusters that run dataserv and gcserv. A region also runs block storage as up to three block volumes that span distinct clusters, backed by the object storage."

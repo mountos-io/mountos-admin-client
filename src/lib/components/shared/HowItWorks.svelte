@@ -40,7 +40,7 @@
         </Button>
       {/snippet}
     </Dialog.Trigger>
-    <Dialog.Content class="sm:max-w-5xl w-full">
+    <Dialog.Content class="sm:max-w-[82vw] w-full">
       {@const Explainer = meta.component}
       <Dialog.Title class="text-base font-semibold">{meta.title}</Dialog.Title>
       <Dialog.Description class="text-sm text-muted-foreground">{meta.description}</Dialog.Description>

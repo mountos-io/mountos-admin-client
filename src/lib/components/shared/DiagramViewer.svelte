@@ -5,11 +5,13 @@
   import Maximize2 from '@lucide/svelte/icons/maximize-2'
   import type { Snippet } from 'svelte'
 
-  // Shared zoom frame for the "How it works" diagrams. Fits to width at 100%,
-  // zooms in for detail (scroll to pan), keyboard +/- to zoom and 0 to reset.
+  // Shared zoom frame for the "How it works" diagrams. Fits within the frame
+  // at 100% (bounded by both width and height, so it never needs a scrollbar
+  // at rest), zooms in for detail via transform (scroll to pan), keyboard
+  // +/- to zoom and 0 to reset.
   let { ariaLabel, children }: { ariaLabel: string; children: Snippet } = $props()
 
-  // Floor at 1 (fit-to-width). Below fit serves no purpose and would leave
+  // Floor at 1 (fitted). Below fit serves no purpose and would leave
   // whitespace; zoom only goes up, from the fitted default.
   const MIN = 1, MAX = 2.6, STEP = 0.2
   let scale = $state(1)
@@ -44,9 +46,8 @@
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="overflow-auto rounded-lg border bg-card p-3 sm:p-4"
-    style="max-height: min(60vh, 560px)"
     tabindex="0" role="group" aria-label={`${ariaLabel}, scrollable`} onkeydown={onKeydown}>
-    <div style="width: {scale * 100}%">
+    <div class="w-fit mx-auto" style="transform: scale({scale}); transform-origin: top center;">
       {@render children()}
     </div>
   </div>
