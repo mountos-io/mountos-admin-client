@@ -500,8 +500,7 @@
             <!-- Leader "L" marker -->
             {#if node.isRaftLeader}
               <text x={x} y={y + 4} text-anchor="middle"
-                font-size="11" font-weight="700" fill="var(--foreground)"
-                style="text-shadow: 0 1px 2px oklch(0 0 0 / 0.5);">L</text>
+                font-size="11" font-weight="700" fill="var(--foreground)">L</text>
             {/if}
 
             <!-- Node ID label -->

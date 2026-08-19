@@ -604,17 +604,17 @@
       <div class="relative flex flex-wrap items-end gap-x-6 gap-y-3">
         <div class="flex items-baseline gap-6">
           <div class="flex items-baseline gap-1.5">
-            <span class="hud-value text-2xl font-bold tabular-nums leading-none tracking-tight">{topoStats.total}</span>
+            <span class="text-2xl font-bold tabular-nums leading-none tracking-tight">{topoStats.total}</span>
             <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">nodes</span>
           </div>
           <div class="h-7 w-px bg-border/40"></div>
           <div class="flex items-baseline gap-1.5">
-            <span class="hud-value text-2xl font-bold tabular-nums leading-none tracking-tight" style="color: {STATUS_COLORS.healthy}; --hud-glow: {STATUS_COLORS.healthy};">{topoStats.healthy}</span>
+            <span class="text-2xl font-bold tabular-nums leading-none tracking-tight" style="color: {STATUS_COLORS.healthy};">{topoStats.healthy}</span>
             <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">healthy</span>
           </div>
           <div class="h-7 w-px bg-border/40"></div>
           <div class="flex items-baseline gap-1.5">
-            <span class="hud-value text-2xl font-bold tabular-nums leading-none tracking-tight">{topoStats.types}</span>
+            <span class="text-2xl font-bold tabular-nums leading-none tracking-tight">{topoStats.types}</span>
             <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">types</span>
           </div>
         </div>
@@ -888,7 +888,7 @@
           <section class="tier-column corner-brackets flex flex-col gap-3 w-full md:w-auto border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
               <div class="flex items-center gap-2">
                 <span
-                  class="tier-label-glow text-xs font-bold uppercase tracking-wider whitespace-nowrap"
+                  class="text-xs font-bold uppercase tracking-wider whitespace-nowrap"
                   style:color={tierColor}
                 >{tier.label}</span>
                 {#if tier.nodeCount > 0}
@@ -1332,10 +1332,6 @@
     );
   }
 
-  .hud-value {
-    text-shadow: 0 0 12px var(--hud-glow, color-mix(in oklch, var(--foreground) 15%, transparent));
-  }
-
   .hud-divider {
     position: relative;
     top: 8px;
@@ -1351,7 +1347,6 @@
     padding: 1px 6px;
     border: 1px solid var(--tag-color);
     color: var(--tag-color);
-    text-shadow: 0 0 8px var(--tag-color);
   }
 
   .svc-count {
@@ -1359,7 +1354,6 @@
     font-weight: 700;
     padding: 0 6px;
     color: var(--tag-color);
-    text-shadow: 0 0 8px var(--tag-color);
   }
 
   :global(.svc-card[data-slot="card"]) {
@@ -1380,10 +1374,6 @@
 
   .tier-infra-icon:hover {
     opacity: 0.8;
-  }
-
-  .tier-label-glow {
-    text-shadow: 0 0 10px currentColor;
   }
 
   .scanlines::after {
