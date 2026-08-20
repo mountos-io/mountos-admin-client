@@ -24,7 +24,7 @@
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import { formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes, formatClientType, formatSessionStatus, formatDuration, formatRelative } from '$lib/core/utils/format'
-  import { toDatetimeTz, parseDatetimeTz, forkAsOfMin, forkAsOfMax, gcFloorMs } from '$lib/core/utils/forkRetention'
+  import { toDatetimeTz, parseDatetimeTz, forkAsOfMin, forkAsOfMax, gcFloorMs, asOfCeilingMs, SNAPSHOT_FLOOR_MS } from '$lib/core/utils/forkRetention'
   import { tz } from '$lib/core/stores/tz.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
@@ -174,9 +174,18 @@
     createForkName = ''
     createForkParent = 'main'
     createForkAsOfEnabled = false
-    createForkAsOfLocal = toDatetimeTz(new Date(), tz.value)
+    createForkAsOfLocal = toDatetimeTz(new Date(asOfCeilingMs()), tz.value)
     createForkOpen = true
   }
+
+  // Mirrors createForkNameError's shape: empty string means valid.
+  const createForkAsOfError = $derived.by(() => {
+    if (!createForkAsOfEnabled || !createForkAsOfLocal) return ''
+    const parsed = parseDatetimeTz(createForkAsOfLocal, tz.value)
+    if (!Number.isFinite(parsed)) return `That wall-clock time does not exist in ${tz.value} (DST spring-forward gap)`
+    if (parsed > asOfCeilingMs()) return `Snapshot time must be at least ${SNAPSHOT_FLOOR_MS / 60_000} minutes in the past`
+    return ''
+  })
 
   const createForkSanitized = $derived(sanitizeForkName(createForkName.trim()))
   const createForkNameError = $derived.by(() => {
@@ -209,13 +218,16 @@
     // Use the derived error (includes duplicate-name check) to close the
     // race where forks refresh between derived recompute and submit.
     if (!finalName || createForkNameError) return
-    if (createForkAsOfEnabled && !createForkAsOfLocal) return
+    if (createForkAsOfEnabled && (!createForkAsOfLocal || createForkAsOfError)) return
     createForkLoading = true
     try {
       const req: CreateVolumeForkRequest = { name: finalName }
       if (createForkParent && createForkParent !== 'main') req.parentName = createForkParent
       if (createForkAsOfEnabled) {
-        req.asOf = parseDatetimeTz(createForkAsOfLocal, tz.value) * 1000
+        // Clamped here too, not only guarded by createForkAsOfError above:
+        // this is the actual request-construction site, the last point
+        // before the value leaves the client.
+        req.asOf = Math.min(parseDatetimeTz(createForkAsOfLocal, tz.value), asOfCeilingMs()) * 1000
       }
       req.volumeType = volume.volumeType
       await store.createFork(id, req)
@@ -1717,6 +1729,9 @@
             min={createForkAsOfMin}
             max={createForkAsOfMax}
           />
+          {#if createForkAsOfError}
+            <p id="create-fork-asof-error" class="text-xs text-destructive">{createForkAsOfError}</p>
+          {/if}
         {/if}
       </div>
     </div>
@@ -1727,7 +1742,7 @@
       <Button variant="outline" onclick={() => createForkOpen = false}>Cancel</Button>
       <Button
         variant="default"
-        disabled={createForkLoading || forksLoading || !createForkSanitized || !!createForkNameError || (createForkAsOfEnabled && !createForkAsOfLocal)}
+        disabled={createForkLoading || forksLoading || !createForkSanitized || !!createForkNameError || (createForkAsOfEnabled && (!createForkAsOfLocal || !!createForkAsOfError))}
         onclick={handleCreateFork}
       >
         {#if createForkLoading}

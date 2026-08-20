@@ -138,8 +138,20 @@ export function forkAsOfMin(
   return ceilDatetimeTz(new Date(Math.max(gcFloorMs(volume, forks), forkAnchorFloorMs(forks, anchorName))), tz)
 }
 
-// Upper bound is minute-floor(now): the current in-progress minute is
-// disallowed, matching server-side minuteNow checks.
+// A snapshot request must target a moment at least this far in the past.
+// Client-side defense in depth alongside the server's own clamp: keeps the
+// picker (and every asOf-carrying request built from it) from ever landing
+// inside the most-recent window, where dataserv's own state may still be in
+// flight.
+export const SNAPSHOT_FLOOR_MS = 15 * 60_000
+
+// Latest instant (ms) an asOf request may target: minute-floor(now - 15m).
+// Minute-floored for the same reason as before: the current in-progress
+// minute is disallowed, matching server-side minuteNow checks.
+export function asOfCeilingMs(now: number = Date.now()): number {
+  return Math.floor((now - SNAPSHOT_FLOOR_MS) / 60_000) * 60_000
+}
+
 export function forkAsOfMax(tz: string, now: number = Date.now()): string {
-  return toDatetimeTz(new Date(Math.floor(now / 60_000) * 60_000), tz)
+  return toDatetimeTz(new Date(asOfCeilingMs(now)), tz)
 }

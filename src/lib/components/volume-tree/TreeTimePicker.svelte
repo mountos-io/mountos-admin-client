@@ -5,6 +5,7 @@
   import { Button } from '$lib/components/ui/button'
   import {
     forkAsOfMin, forkAsOfMax, toDatetimeTz, parseDatetimeTz, gcFloorMs, forkAnchorFloorMs,
+    asOfCeilingMs, SNAPSHOT_FLOOR_MS,
   } from '$lib/core/utils/forkRetention'
   import { tz } from '$lib/core/stores/tz.svelte'
   import { formatTzShort } from '$lib/core/utils/format'
@@ -57,10 +58,10 @@
     return forkAsOfMax(tz.value)
   })
 
-  // Floor of valid range (ms), for clamping preset selections so we never
-  // fall outside the retention window.
+  // Floor/ceiling of valid range (ms), for clamping preset selections so we
+  // never fall outside the retention window or inside the snapshot floor.
   const minMs = $derived(volume ? Math.max(gcFloorMs(volume, forks), forkAnchorFloorMs(forks, forkName)) : 0)
-  const maxMs = $derived(Math.floor(nowTick / 60_000) * 60_000)
+  const maxMs = $derived(asOfCeilingMs(nowTick))
 
   $effect(() => {
     if (asOf == null) value = ''
@@ -72,25 +73,37 @@
     const seed = value || maxBound
     value = seed
     const parsed = parseDatetimeTz(seed, tz.value)
-    if (Number.isFinite(parsed)) onchange(parsed)
-    else warnInvalidWallClock()
+    if (!Number.isFinite(parsed)) { warnInvalidWallClock(); return }
+    if (parsed > asOfCeilingMs()) { warnTooRecent(); return }
+    onchange(parsed)
   }
   function apply(v: string) {
     if (!v) { value = v; return }
     const parsed = parseDatetimeTz(v, tz.value)
-    if (Number.isFinite(parsed)) {
-      value = v
-      onchange(parsed)
-    } else {
+    if (!Number.isFinite(parsed)) {
       warnInvalidWallClock()
       // Revert input to the last valid asOf so the picker doesn't pretend it
       // accepted a non-existent wall-clock.
       if (asOf != null) value = toDatetimeTz(new Date(asOf), tz.value)
+      return
     }
+    if (parsed > asOfCeilingMs()) {
+      warnTooRecent()
+      if (asOf != null) value = toDatetimeTz(new Date(asOf), tz.value)
+      else value = ''
+      return
+    }
+    value = v
+    onchange(parsed)
   }
   function warnInvalidWallClock() {
     showWarningToast(
       `That wall-clock time does not exist in ${tz.value} (DST spring-forward gap). Pick the adjacent minute.`
+    )
+  }
+  function warnTooRecent() {
+    showWarningToast(
+      `Snapshot time must be at least ${SNAPSHOT_FLOOR_MS / 60_000} minutes in the past.`
     )
   }
   function applyOffset(offsetMs: number) {
@@ -117,7 +130,7 @@
     { label: '-7d', offsetMs: 7  * 86400_000 },
   ]
   function presetDisabled(offsetMs: number): boolean {
-    return nowTick - offsetMs < minMs
+    return offsetMs < SNAPSHOT_FLOOR_MS || nowTick - offsetMs < minMs
   }
   function presetActive(offsetMs: number): boolean {
     if (asOf == null) return false
@@ -165,7 +178,11 @@
         onclick={() => applyOffset(p.offsetMs)}
         {disabled}
         aria-pressed={active}
-        title={disabled ? `${p.label} from now: outside retention window` : `Snapshot at ${p.label} from now`}
+        title={disabled
+          ? (p.offsetMs < SNAPSHOT_FLOOR_MS
+            ? `${p.label} from now: inside the ${SNAPSHOT_FLOOR_MS / 60_000}-minute snapshot floor`
+            : `${p.label} from now: outside retention window`)
+          : `Snapshot at ${p.label} from now`}
         class="h-7 px-3 min-h-[44px] sm:min-h-7 min-w-[44px] sm:min-w-0 rounded-sm border text-sm font-mono tabular-nums transition-colors
           {active ? 'border-primary bg-primary/15 text-primary'
           : disabled ? 'border-border/30 text-muted-foreground/40 cursor-not-allowed'

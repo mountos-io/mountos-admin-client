@@ -7,7 +7,7 @@
   } from '$lib/core/api/types'
   import { api } from '$lib/core/stores/client.svelte'
   import { ApiError } from '$lib/core/api/errors'
-  import { MAIN_FORK, gcFloorMs, forkAnchorFloorMs } from '$lib/core/utils/forkRetention'
+  import { MAIN_FORK, gcFloorMs, forkAnchorFloorMs, asOfCeilingMs } from '$lib/core/utils/forkRetention'
   import { showSuccessToast } from '$lib/core/utils/toast'
   import { debounce } from '$lib/utils'
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
@@ -50,8 +50,11 @@
 
   // URL stores asof in ms (human-readable, matches Date.now() conventions);
   // backend tree APIs operate in microseconds (matching mtime/ctime).
+  // Clamped to the snapshot floor here too (not only in the picker that
+  // produces `asof`): the URL param is reachable directly, so every
+  // asOf-carrying request is guarded at its own construction site.
   function asOfMicros(): number | undefined {
-    return asOf != null ? asOf * 1000 : undefined
+    return asOf != null ? Math.min(asOf, asOfCeilingMs()) * 1000 : undefined
   }
 
   function normalisePath(p: string): string {
@@ -256,7 +259,7 @@
     const next: Record<string, string | number | null> = { fork: value === MAIN_FORK ? null : value, path: '/' }
     if (asOf != null && volume) {
       const minMs = Math.max(gcFloorMs(volume, forks), forkAnchorFloorMs(forks, value))
-      const maxMs = Math.floor(Date.now() / 60_000) * 60_000
+      const maxMs = asOfCeilingMs()
       if (asOf < minMs || asOf > maxMs) {
         next.asof = null
         showSuccessToast(`Switched to live on ${value}: previous timestamp is outside this fork's retention window.`)
