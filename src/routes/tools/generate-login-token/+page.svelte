@@ -47,6 +47,16 @@
 
   const isUserRole = $derived(role === ROLE.user)
 
+  // Switching away from role=user must erase username/accountId, not just hide
+  // them: a stale value in state can otherwise ride into a later token if the
+  // exclusion guard in generate() is ever changed or bypassed.
+  $effect(() => {
+    if (!isUserRole) {
+      username = ''
+      accountId = ''
+    }
+  })
+
   // account_id rides the JWT as a decimal string but the session layer reads it
   // back with Number(), so a non-numeric value silently becomes NaN and a value
   // above MAX_SAFE_INTEGER silently loses precision. Reject both here.

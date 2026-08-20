@@ -46,11 +46,11 @@
         credentials: 'same-origin',
       })
       progress = 60
+      const data = await res.json().catch(() => null)
       if (!res.ok) {
-        exchangeError = 'Authentication failed'
+        exchangeError = (data && typeof data.message === 'string' && data.message) || 'Authentication failed'
         return
       }
-      const data = await res.json()
       progress = 80
       if (authAdapter instanceof TokenAuthAdapter) {
         authAdapter.storeTokens(data.token, data.refreshToken)
