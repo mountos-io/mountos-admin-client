@@ -52,6 +52,7 @@
   import ChevronsUpDown from "@lucide/svelte/icons/chevrons-up-down";
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
   import ArrowDown from "@lucide/svelte/icons/arrow-down";
+  import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
 
   import type { Snippet } from 'svelte';
 
@@ -301,6 +302,16 @@
 
   const hasArena = $derived(arenaSection != null && slotCapacity > 0);
   const totalProcess = $derived(memSys + regionSize);
+
+  // System RAM, read from the same live snapshot as regionSize, to flag an
+  // undersized arena. METAENGINE_ARENA_SIZE is a fixed upfront allocation
+  // (see internal/raft/config.go), so at least 50% of total RAM is the
+  // suggested floor.
+  const sysMemTotalBytes = $derived.by(() => {
+    const sec = sections.find(s => s.name === 'System' && s.kind === 'scalar');
+    return sec ? numVal(sec, 'sys_mem_total') : 0;
+  });
+  const arenaTooSmall = $derived(hasArena && sysMemTotalBytes > 0 && regionSize < sysMemTotalBytes * 0.5);
   const cacheTotal = $derived(lookupHits + lookupMisses + statHits + statMisses);
   const hitColor = $derived(cacheTotal === 0 ? 'var(--muted-foreground)' : cacheHitRatio > 0.9 ? 'var(--success)' : cacheHitRatio > 0.7 ? 'var(--warning)' : 'var(--destructive)');
 
@@ -409,6 +420,16 @@
             <div class="flex items-center gap-2">
               {#if hasArena}
                 <Badge variant="outline" class="font-mono">{formatBytes(totalProcess)} total</Badge>
+              {/if}
+              {#if arenaTooSmall}
+                <Badge
+                  variant="warning"
+                  class="font-mono inline-flex items-center gap-1"
+                  title="The arena size is {formatBytes(regionSize)}. Total RAM is {formatBytes(sysMemTotalBytes)}. Set METAENGINE_ARENA_SIZE to at least 50% of total RAM."
+                >
+                  <TriangleAlert class="size-3" aria-hidden="true" />
+                  arena low
+                </Badge>
               {/if}
               {#if dbDialect}
                 <Badge variant="outline" class="font-mono">{dbDialect}</Badge>
