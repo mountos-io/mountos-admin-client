@@ -308,7 +308,7 @@
         fmt: (v: number) => v >= 100 ? Math.round(v).toString() : v.toFixed(1),
       },
       {
-        tile: 'db-conns', title: 'DB Connections', unit: 'decayed avg',
+        tile: 'db-conns', title: 'DB Connections', unit: 'decayed interval peak',
         series: [
           { label: '1m', color: 'var(--fork-0)', values: samples.map(s => s.dbConnsInUse1m ?? 0) },
           { label: '5m', color: 'var(--fork-1)', values: samples.map(s => s.dbConnsInUse5m ?? 0) },

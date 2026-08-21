@@ -215,6 +215,7 @@ const scalarIdSuffixes = ['_port', '_id']
 const scalarDateFmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 export function fmtScalar(name: string, value: number | string): string {
   if (typeof value === 'string') {
+    if (name === 'tcp_bp_effective_rps_scope') return value.replaceAll('_', ' ')
     const d = Date.parse(value)
     if (!isNaN(d) && /^\d{4}-\d{2}-\d{2}/.test(value)) return scalarDateFmt.format(d)
     return value

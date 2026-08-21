@@ -139,7 +139,7 @@
   const SCALAR_SECTION_HINTS: Record<string, string> = {
     'Segment Retry': "These signals show S3 retry and budget activity in the shared object-storage reader/writer.\n\n**Retry Throttled** and **Retry Exhausted** show real friction on the S3 side. **Budget Starved Fetches** counts operations that start with under 2 seconds left on the caller's deadline, for example a table's compaction budget. This count warns you before an operation fails.",
     'Iceberg Compact Circuit Breaker': "This count shows Iceberg tables paused from compaction. A table pauses after it fails its **5-minute per-table budget** on **3 consecutive passes**.\n\nCompaction skips a paused table until a **periodic reset** gives it another chance. This stops compaction from wasting a cycle on a table that cannot finish in time.",
-    'TCP Backpressure': "This is self-tuning admission control for the node's TCP server. It applies gradient concurrency limiting, similar to TCP Vegas.\n\nThere is no fixed latency target. Connection and RPS ceilings shrink when recent DB latency degrades against its own 15-minute baseline. Below the ceiling, the system delays requests but never drops them.",
+    'TCP Backpressure': "This is self-tuning transport admission control, similar to TCP Vegas. The connection ceiling applies to the whole TCP server.\n\nThe per-connection RPS value normally protects only the authentication methods; authenticated data-plane RPCs bypass it and use their service-level admission controls. A license-expiry override is the deliberate exception and throttles all requests. The live **Effective RPS Scope** field shows which mode applies now.",
     'DB-Bound Admission Gate': "This gate uses a token bucket to limit requests that need the database. Cache-servable reads bypass this gate.\n\nUnlike TCP backpressure, which delays requests, this gate **rejects requests outright** once its budget is spent. The system never sets this rate manually. It recalculates the rate from Little's Law every 10s, then reduces it further by the end-to-end request-time gradient. See **Admission Target Rate** below for the exact formula.",
   }
 
@@ -149,11 +149,13 @@
       raft_cluster_nodes: "The ideal Raft cluster size is **3 instances** for quorum.\n\nFewer than 3 nodes reduces fault tolerance. More than 3 nodes adds coordination overhead, or means a node joined with the wrong cluster ID.",
     },
     'TCP Backpressure': {
+      tcp_bp_enabled: "**true**: transport backpressure is active.\n**false**: neither its connection-pressure delays nor its per-connection authentication rate applies.",
       tcp_bp_adaptive_connections: "**true**: the ceiling self-tunes from the latency gradient.\n**false**: the ceiling uses a fixed, operator-set value.",
       tcp_bp_effective_max_connections: "This connection ceiling applies now.\n\nWhen latency degrades, the adaptive ceiling shrinks by the gradient, up to **10×**. It never drops below **10%** of the structural default of **10,000**. The server refuses connections beyond the ceiling at accept.",
-      tcp_bp_adaptive_rps: "**true**: the per-connection rate self-tunes from the latency gradient.\n**false**: the rate uses a fixed, operator-set value.",
-      tcp_bp_effective_rps: "This is the requests-per-second cap per connection that applies now. The structural default is **1,000**.\n\nThe server refreshes this cap after every gradient recompute and pushes it to open connections. The server delays requests over the cap instead of dropping them.",
-      tcp_bp_gradient: "This is the ratio of the 1-minute EWMA of DB query latency to its 15-minute baseline. The system recomputes it every 10s.\n\n**≈1** stable · **>1** degrading, ceilings divide by the gradient, up to 10× · **<1** recovering, treated as neutral. Limits never grow above their defaults.",
+      tcp_bp_adaptive_rps: "**true**: the per-connection authentication rate self-tunes from the latency gradient.\n**false**: an operator-set authentication rate is configured.\n\nThis setting does not cap normal authenticated data-plane RPCs. A license override may temporarily broaden its scope to all requests.",
+      tcp_bp_effective_rps: "This is the effective per-connection authentication rate. The structural default is **1,000 RPS**.\n\nNormal authenticated data-plane RPCs bypass this limiter. If **Effective RPS Scope** says **all requests / license override**, the displayed rate temporarily applies to every request on the connection.",
+      tcp_bp_effective_rps_scope: "**authentication only**: only AuthRequest and AuthScopeRequest use the displayed RPS limiter; authenticated data-plane RPCs bypass it.\n\n**all requests / license override**: an expired-license policy deliberately applies the displayed rate to every RPC.\n\n**disabled**: TCP backpressure is off and this rate is not enforced.",
+      tcp_bp_gradient: "This is the ratio of the 1-minute EWMA of DB query latency to its 15-minute baseline. The system recomputes it every 10s.\n\n**≈1** stable · **>1** degrading, the connection ceiling and nominal authentication rate divide by the gradient, up to 10× · **<1** recovering, treated as neutral. It does not govern authenticated data-plane throughput.",
       tcp_bp_connections_rejected_total: "This counts TCP connections the server refused at accept because they crossed the effective max-connections ceiling. This is the only hard reject in this layer.\n\n**A nonzero value means the server turned clients away.**",
     },
     'DB-Bound Admission Gate': {
@@ -211,6 +213,12 @@
   // _us fields render their value via formatUs (µs/ms), so the label drops
   // the unit token instead of showing a redundant "us".
   function scalarLabel(name: string, prefix: string[] = []): string {
+    const labelOverrides: Record<string, string> = {
+      tcp_bp_adaptive_rps: 'adaptive auth throttle',
+      tcp_bp_effective_rps: 'effective auth rps',
+      tcp_bp_effective_rps_scope: 'effective rps scope',
+    }
+    if (labelOverrides[name]) return labelOverrides[name]
     const parts = (name.endsWith('_us') ? name.slice(0, -3) : name).split('_')
     const rest = prefix.length && prefix.length < parts.length && prefix.every((p, i) => parts[i] === p)
       ? parts.slice(prefix.length)
