@@ -16,7 +16,12 @@
   const hasDiskUsage = $derived(samples.some(s => (s.diskTotalBytes ?? 0) > 0))
   // DB metrics only arrive from DB-backed services.
   const hasDB = $derived(samples.some(s => (s.dbConnsMax ?? 0) > 0))
+  const hasDBDispatcher = $derived(samples.some(s => (s.dbDispatchTotalLaneCap ?? 0) > 0))
   const dbConnsMax = $derived(Math.max(0, ...samples.map(s => s.dbConnsMax ?? 0)))
+  const dispatchLiveLaneCap = $derived(Math.max(0, ...samples.map(s => s.dbDispatchLiveLaneCap ?? 0)))
+  const dispatchAsyncLaneCap = $derived(Math.max(0, ...samples.map(s => s.dbDispatchAsyncLaneCap ?? 0)))
+  const dispatchTotalLaneCap = $derived(Math.max(0, ...samples.map(s => s.dbDispatchTotalLaneCap ?? 0)))
+  const hasDispatchAny = $derived(samples.some(s => (s.dbDispatchAnyOutstanding ?? 0) > 0))
   const latestSample = $derived(samples.length > 0 ? samples[samples.length - 1] : null)
   const intervalLabel = $derived(intervalMs > 0 ? `${Math.round(intervalMs / 1000)}s` : '')
 
@@ -318,6 +323,22 @@
         ],
       },
     ] : []),
+    ...(hasDBDispatcher ? [{
+      tile: 'db-dispatch', title: 'DB Dispatcher Demand', unit: 'outstanding requests',
+      series: [
+        { label: 'live', color: 'var(--fork-0)', values: samples.map(s => s.dbDispatchLiveOutstanding ?? 0) },
+        { label: 'async', color: 'var(--fork-1)', values: samples.map(s => s.dbDispatchAsyncOutstanding ?? 0) },
+        ...(hasDispatchAny ? [{
+          label: 'unclassified', color: 'var(--fork-2)', values: samples.map(s => s.dbDispatchAnyOutstanding ?? 0),
+        }] : []),
+      ],
+      fmt: (v: number) => Math.round(v).toString(),
+      extra: [
+        { label: 'live reserved', value: String(dispatchLiveLaneCap) },
+        { label: 'async reserved', value: String(dispatchAsyncLaneCap) },
+        { label: 'live lane max', value: String(dispatchTotalLaneCap) },
+      ],
+    }] : []),
   ])
 
   // Clamped shared index for the all-metrics summary panel, mirroring each
