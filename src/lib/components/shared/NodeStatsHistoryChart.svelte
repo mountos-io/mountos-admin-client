@@ -2,6 +2,7 @@
   import { Button } from '$lib/components/ui/button'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Skeleton } from '$lib/components/ui/skeleton'
+  import TextTooltip from '$lib/components/shared/TextTooltip.svelte'
   import { formatBytes } from '$lib/core/utils/format'
   import type { NodeStatsSample } from '$lib/core/api/types'
 
@@ -211,6 +212,16 @@
   const timeFmt = new Intl.DateTimeFormat(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' })
   function timeLabel(ms: number): string {
     return timeFmt.format(ms)
+  }
+
+  function latestValueTooltip(tile: string, title: string, label: string, value: string): string {
+    const sampledAt = latestSample ? ` at ${timeLabel(latestSample.timestampMs)}` : ''
+    if (tile === 'db-qps') {
+      const window = intervalLabel ? `most recent ${intervalLabel} sampling interval` : 'most recent sampling interval'
+      return `Latest ${title}: ${value}, calculated from the query-count change during the ${window}${sampledAt}. This is not an average over the full visible chart.`
+    }
+    const series = label ? ` ${label}` : ''
+    return `Latest ${title}${series} value: ${value}${sampledAt}. This is the newest plotted sample, not an average over the full visible chart.`
   }
   // Formatted once per samples arrival; tooltips on every tile re-read these
   // at pointer-move frequency while hovering.
@@ -455,12 +466,17 @@
       <span class="text-xs font-mono text-muted-foreground tracking-[0.15em] uppercase">{title} <span class="tracking-normal">({unit})</span></span>
       <span class="flex items-center gap-3 font-mono tabular-nums text-base font-semibold">
         {#each visible as s, si (si)}
-          <span class="flex items-center gap-1.5">
+          {@const latestValue = fmt(s.values[s.values.length - 1] ?? 0)}
+          <TextTooltip
+            text={latestValueTooltip(tile, title, visible.length > 1 ? s.label : '', latestValue)}
+            class="flex items-center gap-1.5"
+            align="right"
+          >
             {#if visible.length > 1}
               <span class="inline-block h-2 w-2 rounded-sm shrink-0" style="background: {s.color}"></span>
             {/if}
-            {fmt(s.values[s.values.length - 1] ?? 0)}
-          </span>
+            {latestValue}
+          </TextTooltip>
         {/each}
         {#if extra.length > 0}
           <!-- Current point-in-time stats, not plotted as lines (e.g. DB
