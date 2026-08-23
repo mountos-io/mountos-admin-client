@@ -227,7 +227,7 @@
         <TableHead class="th-cyber hidden md:table-cell">
           <span class="inline-flex items-center gap-1">
             Live
-            <InfoTip text="Total live files in this volume" />
+            <InfoTip text={"Total live files in this volume.\n\nThis total can exceed volume size due to **clones**, **hard links**, and **sparse files**."} />
           </span>
         </TableHead>
         <TableHead class="th-cyber hidden md:table-cell">

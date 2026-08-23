@@ -1097,7 +1097,7 @@
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Live
-                  <InfoTip text={"Sum of files across all forks.\n\nThis total can exceed volume size due to **hard links** and **sparse files**.\nOnly live (not deleted, current version) files count."} />
+                  <InfoTip text={"Sum of files across all forks.\n\nThis total can exceed volume size due to **clones**, **hard links**, and **sparse files**.\nOnly live (not deleted, current version) files count."} />
                 </span>
                 <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveVolume)}</p>
               </div>
