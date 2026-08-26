@@ -310,6 +310,29 @@
     return (m.driver as DriverSnapshot | undefined) ?? null
   }
 
+  // TCP connection-pool health per dataserv node this mount talks to
+  // (mfuse's HealthReporter.collectPoolHealthMetrics, sourced from
+  // client.Manager.GetPoolStats -- the same state .network_diagnostics and
+  // the .stats "Connection Pool Health" section expose locally). One entry
+  // per pool; a single-dataserv mount reports one. reconnectBackoff is the
+  // client's own formatted duration string ("5s"), not a raw number.
+  interface PoolHealthEntry {
+    node?: number
+    totalConnections?: number
+    healthy?: number
+    authenticated?: number
+    pending?: number
+    serverDown?: boolean
+    congestionActive?: boolean
+    serverDownCount?: number
+    reconnectBackoff?: string
+    lastDownAt?: string
+  }
+  function getPoolHealth(m: Record<string, any>): PoolHealthEntry[] {
+    const p = m.poolHealth
+    return Array.isArray(p) ? (p as PoolHealthEntry[]) : []
+  }
+
   function toBuckets(raw?: number[]): HistBucket[] {
     if (!raw || raw.length !== HISTOGRAM_BOUNDS.length) return []
     return raw.map((count, i) => ({ le: formatUs(HISTOGRAM_BOUNDS[i]), leUs: HISTOGRAM_BOUNDS[i], count }))
@@ -772,6 +795,7 @@
     {#if m.reads !== undefined}
       {@const drv = getDriverMetrics(m)}
       {@const driverSites = Object.entries(drv?.invariantSites ?? {}).sort(([a], [b]) => a.localeCompare(b))}
+      {@const poolHealth = getPoolHealth(m)}
       <div class="corner-brackets relative border border-border/30 rounded-sm">
         <div class="tech-grid absolute inset-0 pointer-events-none"></div>
         <div class="relative p-5">
@@ -915,6 +939,29 @@
                     <div class="metric-row"><span class="truncate" title={site}>{site}</span><span>{formatNum(count)}</span></div>
                   {/each}
                 {/if}
+              </div>
+            {/if}
+            {#if poolHealth.length > 0}
+              <!-- TCP connection-pool health, same data as Driver above but for the network layer rather than the kernel driver -- shown alongside it. -->
+              <div class="metric-group">
+                <p class="detail-label">Pool Health</p>
+                {#each poolHealth as node, i (node.node ?? i)}
+                  {#if poolHealth.length > 1}
+                    <p class="text-xs text-muted-foreground uppercase tracking-wider {i > 0 ? 'mt-1 pt-1 border-t border-border/30' : ''}">Node {node.node ?? i}</p>
+                  {/if}
+                  <div class="metric-row"><span>Connections</span><span>{formatNum(node.healthy ?? 0)}/{formatNum(node.totalConnections ?? 0)}</span></div>
+                  <div class="metric-row"><span>Authenticated</span><span>{formatNum(node.authenticated ?? 0)}</span></div>
+                  <div class="metric-row"><span>Pending</span><span>{formatNum(node.pending ?? 0)}</span></div>
+                  <div class="metric-row {node.serverDown ? 'text-destructive' : ''}"><span>Server Down</span><span>{node.serverDown ? 'yes' : 'no'}</span></div>
+                  <div class="metric-row {node.congestionActive ? 'text-amber-500' : ''}"><span>Congestion</span><span>{node.congestionActive ? 'active' : 'none'}</span></div>
+                  <div class="metric-row {(node.serverDownCount ?? 0) ? 'text-amber-500' : ''}"><span>Down Events</span><span>{formatNum(node.serverDownCount ?? 0)}</span></div>
+                  {#if node.serverDown && node.reconnectBackoff}
+                    <div class="metric-row"><span>Reconnect Backoff</span><span>{node.reconnectBackoff}</span></div>
+                  {/if}
+                  {#if node.lastDownAt}
+                    <div class="metric-row"><span>Last Down</span><span class="inline-flex items-center gap-0.5">{formatRelative(node.lastDownAt)}<InfoTip text={formatDate(node.lastDownAt)} /></span></div>
+                  {/if}
+                {/each}
               </div>
             {/if}
           </div>
