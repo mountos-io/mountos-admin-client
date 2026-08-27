@@ -5,7 +5,7 @@ export const MAIN_FORK = 'main'
 
 // Fallback retention when the volume has no plan-level retention set,
 // so picker bounds match server-side cutoffs.
-export const DEFAULT_RETENTION_DAYS = 30
+export const DEFAULT_RETENTION_DAYS = 7
 
 // Picker values are authored in the operator's chosen display timezone.
 // datetime-local strings are tz-naive, so we render via Intl using the
