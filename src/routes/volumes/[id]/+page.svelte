@@ -313,11 +313,19 @@
   let editCompaction = $state('')
   let editSaving = $state(false)
 
-  // Every window a volume can be set to (exact divisors of 60) so any
-  // sub-60s value re-floors cleanly to the fixed 60s grid metadata-only
-  // writes and fork/snapshot boundaries still use. Kept in lockstep with
-  // the server-side allow-list.
-  const CONTENT_WINDOW_OPTIONS = [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60]
+  // Every window a volume can be set to: sub-minute divisors of 60 (finer
+  // than the default) plus whole-minute multiples of 60 up to 1h (coarser,
+  // collapses more content-edit churn into fewer versions). Kept in
+  // lockstep with the server-side allow-list (db.validContentWindowSeconds).
+  const CONTENT_WINDOW_OPTIONS = [1, 2, 3, 4, 5, 6, 10, 12, 15, 20, 30, 60, 120, 300, 600, 900, 1800, 3600]
+
+  // Human-readable label for a content-window value in seconds: "1s" below
+  // a minute, "1m"/"2m"/... up to an hour, "1h" at the ceiling.
+  function formatContentWindow(seconds) {
+    if (seconds < 60) return `${seconds}s`
+    if (seconds < 3600) return `${seconds / 60}m`
+    return `${seconds / 3600}h`
+  }
 
   // User-facing product names, not internal service names; never show
   // "gcserv" or "mfuse" in this UI. Kept in lockstep with the server-side
@@ -989,12 +997,12 @@
                 <Input id="edit-event-log" type="number" class="w-[120px]" bind:value={editEventLog} placeholder="0" min="0" max="30" />
               </div>
               <div class="space-y-1.5">
-                <FieldLabel id="edit-content-window-label" tooltip={"How finely content edits (writes/truncates) are versioned, in seconds.\n\nSmaller windows keep more, more-granular file-content versions, at the cost of more version rows and longer-retained storage. Metadata-only changes (rename, permissions) always version at the fixed 60s window regardless of this setting."} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
+                <FieldLabel id="edit-content-window-label" tooltip={"How content edits (writes/truncates) are grouped into versions.\n\nSmaller windows (down to 1s) keep more, more-granular file-content versions, at the cost of more version rows and longer-retained storage. Larger windows (up to 1h) collapse more repeated edits into a single version. Metadata-only changes (rename, permissions) always version at the fixed 1m window regardless of this setting."} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Content Version Window
                 </FieldLabel>
                 <Select id="edit-content-window" ariaLabelledby="edit-content-window-label" class="w-[150px]" bind:value={editContentWindow}
                   placeholder="Select window..."
-                  options={CONTENT_WINDOW_OPTIONS.map(n => ({ value: String(n), label: n === 60 ? '60s (default)' : `${n}s` }))} />
+                  options={CONTENT_WINDOW_OPTIONS.map(n => ({ value: String(n), label: n === 60 ? `${formatContentWindow(n)} (default)` : formatContentWindow(n) }))} />
               </div>
               <div class="space-y-1.5">
                 <FieldLabel id="edit-compaction-label" tooltip={compactionTooltip} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
@@ -1040,7 +1048,7 @@
                   Content Version Window
                   <InfoTip text={"Sets version granularity, in seconds, for content edits (`writes`, `truncates`).\n\n• Smaller windows keep more file versions but need more storage.\n• Metadata-only changes (`rename`, `permissions`) always use the fixed **60s** window."} />
                 </span>
-                <p class="text-sm">{volume.versioning?.contentWindowSeconds ?? 60}s</p>
+                <p class="text-sm">{formatContentWindow(volume.versioning?.contentWindowSeconds ?? 60)}</p>
               </div>
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
