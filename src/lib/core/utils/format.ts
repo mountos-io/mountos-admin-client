@@ -317,6 +317,12 @@ export function formatNum(n: number): string {
   return n.toLocaleString()
 }
 
+// Unpacks a big-endian uint32 IPv4 address (server encoding: internal/utils.NodeID
+// in mountos-servers) into dotted-quad form, e.g. 167772161 -> "10.0.0.1".
+export function formatIPv4(addr: number): string {
+  return [(addr >>> 24) & 0xff, (addr >>> 16) & 0xff, (addr >>> 8) & 0xff, addr & 0xff].join('.')
+}
+
 export function formatLatency(us: number): string {
   if (!Number.isFinite(us) || us <= 0) return '·'
   if (us < 1) return '< 1 μs'

@@ -10,7 +10,7 @@
   import { api } from '$lib/core/stores/client.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatBitrate, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant } from '$lib/core/utils/format'
+  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatBitrate, formatNum, formatIPv4, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant } from '$lib/core/utils/format'
   import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, objectLatencyColor, pingRttColor, memAllocColor, cvClass, bucketBarColor, estimateCV, interpolatePercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
@@ -248,9 +248,10 @@
   // breakdown snippet renders it too. This is the round trip to the object
   // store, where the mean hides a tail measured in seconds; cache-served
   // reads are excluded by the client so the percentiles cover real requests.
-  // Fixed GET-then-PUT order rather than by count: only two rows, and a
-  // stable order reads better than one that reorders between refreshes.
-  const OBJECT_OP_LABELS: [string, string][] = [['get', 'GET'], ['put', 'PUT']]
+  // Fixed GET/TTFB/PUT order rather than by count: the rows stay stable
+  // between refreshes and make the provider wait visible separately from
+  // payload transfer.
+  const OBJECT_OP_LABELS: [string, string][] = [['get', 'GET'], ['get_ttfb', 'GET TTFB'], ['put', 'PUT']]
   function getObjectLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
     const ol = m.objectLatency as Record<string, RpcMethodLatency> | undefined
     if (!ol) return []
@@ -318,6 +319,7 @@
   // client's own formatted duration string ("5s"), not a raw number.
   interface PoolHealthEntry {
     node?: number
+    addr?: number
     totalConnections?: number
     healthy?: number
     authenticated?: number
@@ -331,6 +333,13 @@
   function getPoolHealth(m: Record<string, any>): PoolHealthEntry[] {
     const p = m.poolHealth
     return Array.isArray(p) ? (p as PoolHealthEntry[]) : []
+  }
+
+  // "addr" is a big-endian uint32 IPv4 the server packs the pool's dataserv
+  // address into (see mountos-servers cmd/mfuse HealthReporter.poolHealthEntry);
+  // an older server omits it and the UI falls back to the plain node index.
+  function poolNodeLabel(node: PoolHealthEntry, i: number): string {
+    return node.addr != null ? formatIPv4(node.addr) : `Node ${node.node ?? i}`
   }
 
   function toBuckets(raw?: number[]): HistBucket[] {
@@ -879,6 +888,9 @@
               <div class="metric-row"><span>GET Bytes</span><span>{formatBytes(m.objectGetBytes ?? 0)}</span></div>
               {#if (m.objectGetCount ?? 0) > 0}
                 <div class="metric-row"><span>GET Avg Latency</span><span style="color: {objectLatencyColor(m.objectGetAvgUs ?? 0)}">{formatUs(m.objectGetAvgUs ?? 0)}</span></div>
+                {#if (m.objectGetTTFBAvgUs ?? 0) > 0}
+                  <div class="metric-row"><span>GET Avg TTFB</span><span style="color: {objectLatencyColor(m.objectGetTTFBAvgUs ?? 0)}">{formatUs(m.objectGetTTFBAvgUs ?? 0)}</span></div>
+                {/if}
               {/if}
               <div class="metric-row"><span>PUT Count</span><span>{formatNum(m.objectPutCount ?? 0)}</span></div>
               <div class="metric-row"><span>PUT Bytes</span><span>{formatBytes(m.objectPutBytes ?? 0)}</span></div>
@@ -941,29 +953,25 @@
                 {/if}
               </div>
             {/if}
-            {#if poolHealth.length > 0}
-              <!-- TCP connection-pool health, same data as Driver above but for the network layer rather than the kernel driver -- shown alongside it. -->
+            <!-- TCP connection-pool health, same data as Driver above but for the network layer rather than the kernel driver.
+                 One card per node, so each node lands in its own grid cell instead of stacking inside a single tall card. -->
+            {#each poolHealth as node, i (node.node ?? i)}
               <div class="metric-group">
-                <p class="detail-label">Pool Health</p>
-                {#each poolHealth as node, i (node.node ?? i)}
-                  {#if poolHealth.length > 1}
-                    <p class="text-xs text-muted-foreground uppercase tracking-wider {i > 0 ? 'mt-1 pt-1 border-t border-border/30' : ''}">Node {node.node ?? i}</p>
-                  {/if}
-                  <div class="metric-row"><span>Connections</span><span>{formatNum(node.healthy ?? 0)}/{formatNum(node.totalConnections ?? 0)}</span></div>
-                  <div class="metric-row"><span>Authenticated</span><span>{formatNum(node.authenticated ?? 0)}</span></div>
-                  <div class="metric-row"><span>Pending</span><span>{formatNum(node.pending ?? 0)}</span></div>
-                  <div class="metric-row {node.serverDown ? 'text-destructive' : ''}"><span>Server Down</span><span>{node.serverDown ? 'yes' : 'no'}</span></div>
-                  <div class="metric-row {node.congestionActive ? 'text-amber-500' : ''}"><span>Congestion</span><span>{node.congestionActive ? 'active' : 'none'}</span></div>
-                  <div class="metric-row {(node.serverDownCount ?? 0) ? 'text-amber-500' : ''}"><span>Down Events</span><span>{formatNum(node.serverDownCount ?? 0)}</span></div>
-                  {#if node.serverDown && node.reconnectBackoff}
-                    <div class="metric-row"><span>Reconnect Backoff</span><span>{node.reconnectBackoff}</span></div>
-                  {/if}
-                  {#if node.lastDownAt}
-                    <div class="metric-row"><span>Last Down</span><span class="inline-flex items-center gap-0.5">{formatRelative(node.lastDownAt)}<InfoTip text={formatDate(node.lastDownAt)} /></span></div>
-                  {/if}
-                {/each}
+                <p class="detail-label">Pool Health{poolHealth.length > 1 ? ` · ${poolNodeLabel(node, i)}` : ''}</p>
+                <div class="metric-row"><span>Connections</span><span>{formatNum(node.healthy ?? 0)}/{formatNum(node.totalConnections ?? 0)}</span></div>
+                <div class="metric-row"><span>Authenticated</span><span>{formatNum(node.authenticated ?? 0)}</span></div>
+                <div class="metric-row"><span>Pending</span><span>{formatNum(node.pending ?? 0)}</span></div>
+                <div class="metric-row {node.serverDown ? 'text-destructive' : ''}"><span>Server Down</span><span>{node.serverDown ? 'yes' : 'no'}</span></div>
+                <div class="metric-row {node.congestionActive ? 'text-amber-500' : ''}"><span>Congestion</span><span>{node.congestionActive ? 'active' : 'none'}</span></div>
+                <div class="metric-row {(node.serverDownCount ?? 0) ? 'text-amber-500' : ''}"><span>Down Events</span><span>{formatNum(node.serverDownCount ?? 0)}</span></div>
+                {#if node.serverDown && node.reconnectBackoff}
+                  <div class="metric-row"><span>Reconnect Backoff</span><span>{node.reconnectBackoff}</span></div>
+                {/if}
+                {#if node.lastDownAt}
+                  <div class="metric-row"><span>Last Down</span><span class="inline-flex items-center gap-0.5">{formatRelative(node.lastDownAt)}<InfoTip text={formatDate(node.lastDownAt)} /></span></div>
+                {/if}
               </div>
-            {/if}
+            {/each}
           </div>
         </div>
       </div>
@@ -1171,7 +1179,7 @@
 
       {@const objectEntries = getObjectLatency(m)}
       {#if objectEntries.length > 0}
-        {@render latencyBreakdown('Object Store Latency', 'Object store GET and PUT latency data', objectEntries, objectExpanded, toggleObjectExpand, objectMetricMode, (v) => objectMetricMode = v, OBJECT_LABELS, OBJECT_SCALE)}
+        {@render latencyBreakdown('Object Store Latency', 'Object store GET, GET TTFB, and PUT latency data', objectEntries, objectExpanded, toggleObjectExpand, objectMetricMode, (v) => objectMetricMode = v, OBJECT_LABELS, OBJECT_SCALE)}
       {/if}
   {/if}
 </div>
