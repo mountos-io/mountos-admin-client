@@ -138,20 +138,40 @@ export function forkAsOfMin(
   return ceilDatetimeTz(new Date(Math.max(gcFloorMs(volume, forks), forkAnchorFloorMs(forks, anchorName))), tz)
 }
 
-// A snapshot request must target a moment at least this far in the past.
-// Client-side defense in depth alongside the server's own clamp: keeps the
-// picker (and every asOf-carrying request built from it) from ever landing
-// inside the most-recent window, where dataserv's own state may still be in
-// flight.
+// A snapshot request must target a moment at least this far in the past by
+// default. Client-side defense in depth alongside the server's own clamp:
+// keeps the picker (and every asOf-carrying request built from it) from
+// ever landing inside the most-recent window, where dataserv's own state
+// may still be in flight. Only a fork creation needs the volume's actual
+// content-edit versioning window (see asOfCeilingMs's `volume` param): a
+// persisted fork boundary must never retroactively see a same-window
+// in-place content-edit update, where a read-only historical view (browsing
+// the tree at a point in time) has no such permanence to protect. Callers
+// browsing history (TreeTab/TreeTimePicker) intentionally omit `volume` and
+// keep this fixed 15m default.
 export const SNAPSHOT_FLOOR_MS = 15 * 60_000
 
-// Latest instant (ms) an asOf request may target: minute-floor(now - 15m).
-// Minute-floored for the same reason as before: the current in-progress
-// minute is disallowed, matching server-side minuteNow checks.
-export function asOfCeilingMs(now: number = Date.now()): number {
-  return Math.floor((now - SNAPSHOT_FLOOR_MS) / 60_000) * 60_000
+// Latest instant (ms) an asOf request may target: minute-floor(now - floor),
+// where floor is SNAPSHOT_FLOOR_MS by default, or the volume's actual
+// configured content-edit versioning window when that's wider (pass
+// `volume` for a fork-creation call site; omit it for a read-only
+// historical view - see SNAPSHOT_FLOOR_MS). Minute-floored for the same
+// reason as before: the current in-progress minute is disallowed, matching
+// server-side minuteNow checks.
+export function asOfCeilingMs(now: number = Date.now(), volume?: Pick<Volume, 'versioning'> | null): number {
+  const contentWindowMs = (volume?.versioning?.contentWindowSeconds ?? 0) * 1000
+  const floorMs = Math.max(SNAPSHOT_FLOOR_MS, contentWindowMs)
+  return Math.floor((now - floorMs) / 60_000) * 60_000
 }
 
-export function forkAsOfMax(tz: string, now: number = Date.now()): string {
-  return toDatetimeTz(new Date(asOfCeilingMs(now)), tz)
+export function forkAsOfMax(tz: string, now: number = Date.now(), volume?: Pick<Volume, 'versioning'> | null): string {
+  return toDatetimeTz(new Date(asOfCeilingMs(now, volume)), tz)
+}
+
+// Effective snapshot floor in minutes for the given volume (or the plain
+// SNAPSHOT_FLOOR_MS default when omitted) - what asOfCeilingMs actually
+// enforced, for display in an error message instead of a hardcoded "15".
+export function asOfFloorMinutes(volume?: Pick<Volume, 'versioning'> | null): number {
+  const contentWindowMs = (volume?.versioning?.contentWindowSeconds ?? 0) * 1000
+  return Math.max(SNAPSHOT_FLOOR_MS, contentWindowMs) / 60_000
 }

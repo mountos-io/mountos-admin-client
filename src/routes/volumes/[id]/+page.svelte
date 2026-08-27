@@ -24,7 +24,7 @@
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
   import { formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes, formatClientType, formatSessionStatus, formatDuration, formatRelative } from '$lib/core/utils/format'
-  import { toDatetimeTz, parseDatetimeTz, forkAsOfMin, forkAsOfMax, gcFloorMs, asOfCeilingMs, SNAPSHOT_FLOOR_MS } from '$lib/core/utils/forkRetention'
+  import { toDatetimeTz, parseDatetimeTz, forkAsOfMin, forkAsOfMax, gcFloorMs, asOfCeilingMs, asOfFloorMinutes } from '$lib/core/utils/forkRetention'
   import { tz } from '$lib/core/stores/tz.svelte'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import Pagination from '$lib/components/shared/Pagination.svelte'
@@ -174,7 +174,7 @@
     createForkName = ''
     createForkParent = 'main'
     createForkAsOfEnabled = false
-    createForkAsOfLocal = toDatetimeTz(new Date(asOfCeilingMs()), tz.value)
+    createForkAsOfLocal = toDatetimeTz(new Date(asOfCeilingMs(Date.now(), volume)), tz.value)
     createForkOpen = true
   }
 
@@ -183,7 +183,7 @@
     if (!createForkAsOfEnabled || !createForkAsOfLocal) return ''
     const parsed = parseDatetimeTz(createForkAsOfLocal, tz.value)
     if (!Number.isFinite(parsed)) return `That wall-clock time does not exist in ${tz.value} (DST spring-forward gap)`
-    if (parsed > asOfCeilingMs()) return `Snapshot time must be at least ${SNAPSHOT_FLOOR_MS / 60_000} minutes in the past`
+    if (parsed > asOfCeilingMs(Date.now(), volume)) return `Snapshot time must be at least ${asOfFloorMinutes(volume)} minutes in the past`
     return ''
   })
 
@@ -227,7 +227,7 @@
         // Clamped here too, not only guarded by createForkAsOfError above:
         // this is the actual request-construction site, the last point
         // before the value leaves the client.
-        req.asOf = Math.min(parseDatetimeTz(createForkAsOfLocal, tz.value), asOfCeilingMs()) * 1000
+        req.asOf = Math.min(parseDatetimeTz(createForkAsOfLocal, tz.value), asOfCeilingMs(Date.now(), volume)) * 1000
       }
       req.volumeType = volume.volumeType
       await store.createFork(id, req)
@@ -321,7 +321,7 @@
 
   // Human-readable label for a content-window value in seconds: "1s" below
   // a minute, "1m"/"2m"/... up to an hour, "1h" at the ceiling.
-  function formatContentWindow(seconds) {
+  function formatContentWindow(seconds: number) {
     if (seconds < 60) return `${seconds}s`
     if (seconds < 3600) return `${seconds / 60}m`
     return `${seconds / 3600}h`
@@ -578,7 +578,7 @@
   let forksLoading = $state(false)
 
   const createForkAsOfMin = $derived(forkAsOfMin(volume, forks, createForkParent, tz.value))
-  const createForkAsOfMax = $derived(forkAsOfMax(tz.value))
+  const createForkAsOfMax = $derived(forkAsOfMax(tz.value, Date.now(), volume))
 
   type VolumeTabId = 'overview' | 'browse' | 'forks' | 'sessions' | 'apikeys'
   const TAB_IDS: ReadonlyArray<VolumeTabId> = ['overview', 'browse', 'forks', 'sessions', 'apikeys']
