@@ -120,7 +120,7 @@
       aria-label="Pick timezone"
       onkeydown={handlePanelKey}
       class="absolute right-0 z-50 mt-1 w-72 max-w-[calc(100vw-1rem)] rounded-sm border border-border/60 bg-popover shadow-md overflow-hidden">
-      <div class="px-2 py-1.5 border-b border-border/40 text-[11px] uppercase tracking-wider text-muted-foreground/80">
+      <div class="px-2 py-1.5 border-b border-border/40 text-xs uppercase tracking-wider text-muted-foreground/80">
         Display timezone <span class="text-muted-foreground/60 normal-case">· {ALL_TZ.length} zones</span>
       </div>
       <div class="p-2 border-b border-border/40">
@@ -153,10 +153,10 @@
               <span class="font-mono truncate">{z}</span>
               <span class="flex items-center gap-1 shrink-0">
                 {#if abbr}
-                  <span class="px-1.5 py-0.5 rounded-sm border border-border/40 bg-muted/40 text-[10px] font-mono tabular-nums text-muted-foreground">{abbr}</span>
+                  <span class="px-1.5 py-0.5 rounded-sm border border-border/40 bg-muted/40 text-[0.7rem] font-mono tabular-nums text-muted-foreground">{abbr}</span>
                 {/if}
-                {#if isLocal}<span class="text-[10px] uppercase tracking-wider text-muted-foreground/70">local</span>{/if}
-                {#if sel}<span class="text-primary text-[10px]">●</span>{/if}
+                {#if isLocal}<span class="text-xs uppercase tracking-wider text-muted-foreground/70">local</span>{/if}
+                {#if sel}<span class="text-primary text-[0.7rem]" aria-hidden="true">●</span>{/if}
               </span>
             </button>
           </li>

@@ -465,15 +465,15 @@
     <h1 class="text-2xl font-bold tracking-tight">Session #{isNaN(id) ? 'Invalid' : id}</h1>
     {#if session}
       <Badge variant={statusVariant(session.status)}>{session.status}</Badge>
-      {#if session.regionCluster}
+      {#if session.metadataCluster}
         <a
-          href="/regions/{session.region.id}?cluster={session.regionCluster.id}"
+          href="/regions/{session.region.id}?cluster={session.metadataCluster.id}"
           class="session-cluster-chip"
-          aria-label="View region {session.region.name} scoped to cluster {session.regionCluster.name}"
-          title="Cluster {session.regionCluster.name} in region {session.region.name}"
+          aria-label="View region {session.region.name} scoped to cluster {session.metadataCluster.name}"
+          title="Cluster {session.metadataCluster.name} in region {session.region.name}"
         >
           <Layers class="h-3.5 w-3.5" aria-hidden="true" />
-          <span class="font-mono">{session.regionCluster.name}</span>
+          <span class="font-mono">{session.metadataCluster.name}</span>
         </a>
       {/if}
     {/if}
@@ -840,6 +840,30 @@
                   <div class="metric-row"><span>Prefetch Used</span><span>{formatNum(m.prefetchUsedBlocks ?? 0)}</span></div>
                   <div class="metric-row {wastePct >= 50 ? 'text-destructive' : wastePct >= 30 ? 'text-amber-500' : ''}"><span>Prefetch Wasted</span><span>{formatNum(pw)} ({wastePct.toFixed(1)}%)</span></div>
                 {/if}
+              </div>
+            {/if}
+            <!-- Block-storage auto-degrade circuit breaker. blockDirectFallbackOps (the
+                 direct_access S3-miss fallback) is reported by any block-backed mount;
+                 blockAutoDegraded/blockAutoDegradeOps report only when the auto-degrade
+                 breaker itself is enabled on this mount. -->
+            {#if m.blockDirectFallbackOps != null}
+              {@const blockDegraded = m.blockAutoDegraded === true}
+              <div class="metric-group">
+                <p class="detail-label">Block Storage</p>
+                {#if m.blockAutoDegradeOps != null}
+                  <div class="metric-row {blockDegraded ? 'text-warning' : ''}">
+                    <span>Status</span>
+                    <span>
+                      {#if blockDegraded}
+                        <Badge variant="warning" class="font-mono text-xs" title="This mount is bypassing blockserv, using direct S3 only.">Auto-Degraded</Badge>
+                      {:else}
+                        <span class="text-muted-foreground">Normal</span>
+                      {/if}
+                    </span>
+                  </div>
+                  <div class="metric-row"><span>Ops Served Degraded</span><span>{formatNum(m.blockAutoDegradeOps ?? 0)}</span></div>
+                {/if}
+                <div class="metric-row"><span>Direct S3 Fallback Ops</span><span>{formatNum(m.blockDirectFallbackOps ?? 0)}</span></div>
               </div>
             {/if}
             {#if m.metaArenaCapacityBytes != null}

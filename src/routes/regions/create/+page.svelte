@@ -57,6 +57,7 @@
 <svelte:head><title>Create Region · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-lg space-y-6">
+  <h1 class="sr-only">Create Region</h1>
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before creating a region." />
   {:else}

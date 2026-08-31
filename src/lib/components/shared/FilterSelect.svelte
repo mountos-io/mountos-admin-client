@@ -27,6 +27,7 @@
     {#snippet child({ props })}
       <Button {...props} variant="outline" size="sm"
         aria-haspopup="listbox"
+        aria-expanded={open}
         aria-label={label ?? placeholder}
         aria-controls={controls}
         class={cn(

@@ -97,7 +97,7 @@
                 <Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize">{volume.volumeType}</Badge>
               </TableCell>
               <TableCell class="text-sm text-muted-foreground hidden md:table-cell">{volume.region.name}</TableCell>
-              <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.regionCluster?.name || '(not set)'}</TableCell>
+              <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.metadataCluster?.name || '(not set)'}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono">{formatBytes(volume.liveVolume)}</TableCell>
               <TableCell><StatusBadge active={volume.isActive} locked={volume.locked} /></TableCell>
             </TableRow>

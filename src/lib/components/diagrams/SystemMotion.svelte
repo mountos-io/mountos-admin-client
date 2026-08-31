@@ -67,7 +67,7 @@
       { id: 'gwb', c: COLORS.block, n: 1, s: 90, ph: 0.0, bidi: true },
       { id: 'gwo', c: COLORS.object, n: 2, s: 110, ph: 0.3, bidi: true },
       { id: 'raft', c: COLORS.repl, n: 3, s: 70, ph: 0.0 },
-      { id: 'peer', c: COLORS.repl, n: 3, s: 70, ph: 0.0 },
+      { id: 'peer', c: COLORS.repl, n: 2, s: 70, ph: 0.0, bidi: true },
       { id: 'rdb1', c: COLORS.repl, n: 1, s: 50, ph: 0.0 },
       { id: 'rdb2', c: COLORS.repl, n: 1, s: 50, ph: 0.5 },
       { id: 'adb1', c: COLORS.repl, n: 1, s: 45, ph: 0.0 },
@@ -166,7 +166,7 @@
     viewBox="0 -130 1680 1075"
     xmlns="http://www.w3.org/2000/svg"
     role="img"
-    aria-label="Animated mountOS system diagram: partner systems and the admin system drive the HUB through the SDK, clients and apps reach the region services, a region holds the dataserv raft cluster, region database, vaults, and block storage peer mesh, all backed by object storage. Apps without a mount reach the same data through the optional gateway embedded in the client"
+    aria-label="Animated mountOS system diagram: partner systems and the admin system drive the HUB through the SDK, clients and apps reach the region services, a region holds the dataserv raft cluster, region database, vaults, and block storage, all backed by object storage. Block storage is a shared pool of 2-node active-active copysets (one shown); a volume draws its own working set of copysets from that pool rather than the whole pool, so volumes commonly share a copyset. Apps without a mount reach the same data through the optional gateway embedded in the client"
   >
     <defs>
       <marker id="sm-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -181,7 +181,7 @@
     <rect class="frame" x="556" y="224" width="760" height="630" rx="14" opacity="0.3" />
     <rect class="frame" x="548" y="232" width="760" height="630" rx="14" opacity="0.55" />
     <rect class="frame" x="540" y="240" width="760" height="630" rx="14" />
-    <rect class="subframe" x="600" y="600" width="460" height="230" rx="10" />
+    <rect class="subframe" x="600" y="600" width="460" height="140" rx="10" />
 
     <!-- visible edges -->
     <g>
@@ -209,7 +209,7 @@
       <path class="edge" d="M150,372 V338" />
       <path class="edge" d="M150,436 V462" />
       <path class="edge" d="M608,292 H1032 A20,20 0 0 1 1052,312 V362 A20,20 0 0 1 1032,382 H608 A20,20 0 0 1 588,362 V312 A20,20 0 0 1 608,292 Z" />
-      <path class="edge" d="M700,657 L960,657 L830,767 Z" />
+      <path class="edge" d="M700,657 H960" />
       <path class="edge" d="M600,-46 H672" />
       <path class="edge" d="M880,-46 H808" />
       <path class="edge" d="M600,-80 H872" marker-end="url(#sm-arr)" />
@@ -273,7 +273,7 @@
       <path data-g="capp1" class="guide" d="M150,372 V332" />
       <path data-g="capp2" class="guide" d="M150,436 V468" />
       <path data-g="raft" class="guide" d="M608,292 H1032 A20,20 0 0 1 1052,312 V362 A20,20 0 0 1 1032,382 H608 A20,20 0 0 1 588,362 V312 A20,20 0 0 1 608,292 Z" />
-      <path data-g="peer" class="guide" d="M700,657 L960,657 L830,767 Z" />
+      <path data-g="peer" class="guide" d="M700,657 H960" />
       <path data-g="rdb1" class="guide" d="M1198,325 H1210 V312 H1234" />
       <path data-g="rdb2" class="guide" d="M1198,345 H1210 V364 H1234" />
       <path data-g="adb1" class="guide" d="M1015,66 H1034" />
@@ -301,7 +301,7 @@
 
       <rect class="box-outer" x="680" y="-70" width="120" height="48" rx="3" />
       <rect class="box-inner" x="684" y="-66" width="112" height="40" rx="2" />
-      <text class="t-box" x="740" y="-50" text-anchor="middle" style="font-size:12px">SDK</text>
+      <text class="t-box" x="740" y="-50" text-anchor="middle" style="font-size:0.7rem">SDK</text>
       <text class="t-boxsm" x="740" y="-34" text-anchor="middle">ts · go · rust</text>
 
       <text class="t-lbl" x="736" y="-88" text-anchor="middle">delegation · ?token=xxx</text>
@@ -368,21 +368,21 @@
     <g>
       <rect class="box-outer" x="600" y="303" width="120" height="68" rx="3" />
       <rect class="box-inner" x="604" y="307" width="112" height="60" rx="2" />
-      <text class="t-box" x="660" y="322" text-anchor="middle" style="font-size:12px">dataserv</text>
+      <text class="t-box" x="660" y="322" text-anchor="middle" style="font-size:0.7rem">dataserv</text>
       <text class="t-boxsm" x="660" y="337" text-anchor="middle">meta</text>
       <path class="divider" d="M612,345 H708" />
       <text class="t-boxsm" x="660" y="360" text-anchor="middle">+ gcserv</text>
 
       <rect class="box-outer" x="760" y="303" width="120" height="68" rx="3" />
       <rect class="box-inner" x="764" y="307" width="112" height="60" rx="2" />
-      <text class="t-box" x="820" y="322" text-anchor="middle" style="font-size:12px">dataserv</text>
+      <text class="t-box" x="820" y="322" text-anchor="middle" style="font-size:0.7rem">dataserv</text>
       <text class="t-boxsm" x="820" y="337" text-anchor="middle">meta</text>
       <path class="divider" d="M772,345 H868" />
       <text class="t-boxsm" x="820" y="360" text-anchor="middle">+ gcserv</text>
 
       <rect class="box-outer" x="920" y="303" width="120" height="68" rx="3" />
       <rect class="box-inner" x="924" y="307" width="112" height="60" rx="2" />
-      <text class="t-box" x="980" y="322" text-anchor="middle" style="font-size:12px">dataserv</text>
+      <text class="t-box" x="980" y="322" text-anchor="middle" style="font-size:0.7rem">dataserv</text>
       <text class="t-boxsm" x="980" y="337" text-anchor="middle">meta</text>
       <path class="divider" d="M932,345 H1028" />
       <text class="t-boxsm" x="980" y="360" text-anchor="middle">+ gcserv</text>
@@ -410,10 +410,13 @@
       <text class="t-boxsm" x="1185" y="556" text-anchor="middle">aws sm · azure kv · gcp · hashicorp</text>
     </g>
 
-    <!-- block storage -->
+    <!-- block storage: one copyset (2-node, active-active) shown from the
+         storage's shared pool of K copysets - a volume draws its own working
+         set of copysets from that pool, so volumes commonly share one -->
     <g>
       <text class="t-lbl t-cyan" x="612" y="622">BLOCK STORAGE</text>
-      <text class="t-lbl" x="1048" y="850" text-anchor="end">active-active</text>
+      <text class="t-lbl" x="1048" y="722" text-anchor="end">copyset · active-active · 1 of K</text>
+      <text class="t-lbl" x="1048" y="736" text-anchor="end">volumes draw a working set from the pool</text>
 
       <path class="attach" d="M700,684 V696" />
       <rect class="ssd" x="672" y="696" width="56" height="22" rx="3" />
@@ -423,24 +426,15 @@
       <rect class="ssd" x="932" y="696" width="56" height="22" rx="3" />
       <text class="t-ssd" x="960" y="711" text-anchor="middle">SSD</text>
 
-      <path class="attach" d="M830,794 V804" />
-      <rect class="ssd" x="802" y="804" width="56" height="22" rx="3" />
-      <text class="t-ssd" x="830" y="819" text-anchor="middle">SSD</text>
-
       <rect class="box-outer" x="640" y="630" width="120" height="54" rx="3" />
       <rect class="box-inner" x="644" y="634" width="112" height="46" rx="2" />
-      <text class="t-box" x="700" y="652" text-anchor="middle" style="font-size:12px">BLOCK VOL</text>
+      <text class="t-box" x="700" y="652" text-anchor="middle" style="font-size:0.7rem">BLOCK VOL</text>
       <text class="t-boxsm" x="700" y="670" text-anchor="middle">cluster a</text>
 
       <rect class="box-outer" x="900" y="630" width="120" height="54" rx="3" />
       <rect class="box-inner" x="904" y="634" width="112" height="46" rx="2" />
-      <text class="t-box" x="960" y="652" text-anchor="middle" style="font-size:12px">BLOCK VOL</text>
+      <text class="t-box" x="960" y="652" text-anchor="middle" style="font-size:0.7rem">BLOCK VOL</text>
       <text class="t-boxsm" x="960" y="670" text-anchor="middle">cluster b</text>
-
-      <rect class="box-outer" x="770" y="740" width="120" height="54" rx="3" />
-      <rect class="box-inner" x="774" y="744" width="112" height="46" rx="2" />
-      <text class="t-box" x="830" y="762" text-anchor="middle" style="font-size:12px">BLOCK VOL</text>
-      <text class="t-boxsm" x="830" y="780" text-anchor="middle">cluster c</text>
     </g>
 
     <!-- object storage -->
@@ -492,72 +486,72 @@
 <style>
   .system-motion {
     /* light theme tokens */
-    --sm-bg: #f6f7f9;
-    --sm-ink: #22292f;
-    --sm-dim: #5f6a74;
-    --sm-line: #a3abb4;
-    --sm-dot: #8a939c;
-    --sm-green: #159552;
-    --sm-blue: #3b76d1;
-    --sm-amber: #a1701a;
-    --sm-panel: #ffffff;
-    --sm-hub-fill: #ecf7f0;
-    --sm-cyl-fill: #edf2fa;
-    --sm-vault-fill: #faf3e0;
-    --sm-ssd-fill: #eef0f3;
-    --sm-frame: #bfc7cf;
-    --sm-frame-fill: rgba(90, 110, 140, 0.05);
-    --sm-subframe: #c2c9d0;
-    --sm-subframe-fill: rgba(14, 140, 160, 0.04);
-    --sm-box-stroke: #98a1aa;
-    --sm-box-inner: #b0b8c0;
-    --sm-border: #dfe3e8;
-    --sm-bright: #444e58;
-    --sm-cyan-lbl: #0f7285;
-    --sm-c-meta: #414c57;
-    --sm-c-block: #0b93a6;
-    --sm-c-object: #2f6fdb;
-    --sm-c-ctrl: #189948;
-    --sm-c-repl: #7443e0;
-    --sm-c-secret: #cf8a0a;
-    --sm-c-gw: #dd2e5e;
+    --sm-bg: oklch(0.98 0 0);
+    --sm-ink: oklch(0.28 0.01 244);
+    --sm-dim: oklch(0.52 0.02 246);
+    --sm-line: oklch(0.74 0.02 251);
+    --sm-dot: oklch(0.66 0.02 248);
+    --sm-green: oklch(0.59 0.14 153);
+    --sm-blue: oklch(0.57 0.15 259);
+    --sm-amber: oklch(0.58 0.11 76);
+    --sm-panel: oklch(1 0 0);
+    --sm-hub-fill: oklch(0.97 0.01 158);
+    --sm-cyl-fill: oklch(0.96 0.01 260);
+    --sm-vault-fill: oklch(0.96 0.03 90);
+    --sm-ssd-fill: oklch(0.95 0 0);
+    --sm-frame: oklch(0.83 0.01 248);
+    --sm-frame-fill: oklch(0.53 0.05 258 / 0.05);
+    --sm-subframe: oklch(0.83 0.01 248);
+    --sm-subframe-fill: oklch(0.59 0.1 213 / 0.04);
+    --sm-box-stroke: oklch(0.7 0.02 248);
+    --sm-box-inner: oklch(0.78 0.01 248);
+    --sm-border: oklch(0.91 0.01 254);
+    --sm-bright: oklch(0.42 0.02 248);
+    --sm-cyan-lbl: oklch(0.51 0.09 215);
+    --sm-c-meta: oklch(0.41 0.02 248);
+    --sm-c-block: oklch(0.61 0.1 211);
+    --sm-c-object: oklch(0.56 0.18 260);
+    --sm-c-ctrl: oklch(0.6 0.16 150);
+    --sm-c-repl: oklch(0.53 0.22 291);
+    --sm-c-secret: oklch(0.69 0.14 73);
+    --sm-c-gw: oklch(0.59 0.21 11);
     position: relative;
     margin: 0 0 24px;
     padding: 8px;
     background: var(--sm-bg);
-    border-radius: 10px;
+    border-radius: var(--radius-xl);
     border: 1px solid var(--sm-border);
   }
   :global(.dark) .system-motion {
-    --sm-bg: #0a0c0f;
-    --sm-ink: #e7eaee;
-    --sm-dim: #8a929c;
-    --sm-line: #4a5158;
-    --sm-dot: #5a6169;
-    --sm-green: #2bd877;
-    --sm-blue: #6aa7f8;
-    --sm-amber: #e8b34b;
-    --sm-panel: #0f1318;
-    --sm-hub-fill: #0d1712;
-    --sm-cyl-fill: #0e1420;
-    --sm-vault-fill: #17130b;
-    --sm-ssd-fill: #12161b;
-    --sm-frame: #3e454e;
-    --sm-frame-fill: rgba(120, 140, 170, 0.025);
-    --sm-subframe: #39434c;
-    --sm-subframe-fill: rgba(90, 215, 232, 0.02);
-    --sm-box-stroke: #565b63;
-    --sm-box-inner: #7a828c;
-    --sm-border: #22272e;
-    --sm-bright: #aab2bc;
-    --sm-cyan-lbl: #79b8c2;
-    --sm-c-meta: #edf1f5;
-    --sm-c-block: #5ad7e8;
-    --sm-c-object: #6aa7f8;
-    --sm-c-ctrl: #4ade80;
-    --sm-c-repl: #a78bfa;
-    --sm-c-secret: #e8b34b;
-    --sm-c-gw: #fb7185;
+    --sm-bg: oklch(0.15 0.01 258);
+    --sm-ink: oklch(0.94 0.01 255);
+    --sm-dim: oklch(0.66 0.02 254);
+    --sm-line: oklch(0.43 0.01 248);
+    --sm-dot: oklch(0.49 0.02 252);
+    --sm-green: oklch(0.78 0.19 152);
+    --sm-blue: oklch(0.72 0.13 256);
+    --sm-amber: oklch(0.8 0.13 81);
+    --sm-panel: oklch(0.18 0.01 254);
+    --sm-hub-fill: oklch(0.19 0.02 162);
+    --sm-cyl-fill: oklch(0.19 0.03 264);
+    --sm-vault-fill: oklch(0.19 0.02 84);
+    --sm-ssd-fill: oklch(0.2 0.01 254);
+    --sm-frame: oklch(0.39 0.02 255);
+    --sm-frame-fill: oklch(0.64 0.05 258 / 0.025);
+    --sm-subframe: oklch(0.38 0.02 246);
+    --sm-subframe-fill: oklch(0.82 0.11 208 / 0.02);
+    --sm-box-stroke: oklch(0.47 0.01 260);
+    --sm-box-inner: oklch(0.6 0.02 254);
+    --sm-border: oklch(0.27 0.01 257);
+    --sm-bright: oklch(0.76 0.02 254);
+    --sm-cyan-lbl: oklch(0.74 0.07 208);
+    --sm-c-meta: oklch(0.96 0.01 248);
+    --sm-c-block: oklch(0.82 0.11 208);
+    --sm-c-object: oklch(0.72 0.13 256);
+    --sm-c-ctrl: oklch(0.8 0.18 152);
+    --sm-c-repl: oklch(0.71 0.16 294);
+    --sm-c-secret: oklch(0.8 0.13 81);
+    --sm-c-gw: oklch(0.72 0.17 13);
   }
   .system-motion svg {
     width: 100%;
@@ -604,15 +598,15 @@
     }
   }
   text {
-    font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    font-family: ui-monospace, Menlo, monospace;
   }
-  .t-title { fill: var(--sm-ink); font-size: 24px; font-weight: 700; letter-spacing: 2px; }
-  .t-sub   { fill: var(--sm-dim); font-size: 11px; letter-spacing: 1px; }
-  .t-box   { fill: var(--sm-ink); font-size: 14px; font-weight: 600; letter-spacing: 2px; }
-  .t-boxsm { fill: var(--sm-dim); font-size: 10px; letter-spacing: 1px; }
-  .t-lbl   { fill: var(--sm-dim); font-size: 10px; letter-spacing: 1px; }
-  .t-hub   { fill: var(--sm-green); font-size: 16px; font-weight: 700; letter-spacing: 3px; }
-  .t-ssd   { fill: var(--sm-dim); font-size: 9px; letter-spacing: 2px; }
+  .t-title { fill: var(--sm-ink); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px; }
+  .t-sub   { fill: var(--sm-dim); font-size: 0.7rem; letter-spacing: 1px; }
+  .t-box   { fill: var(--sm-ink); font-size: 1rem; font-weight: 600; letter-spacing: 2px; }
+  .t-boxsm { fill: var(--sm-dim); font-size: 0.7rem; letter-spacing: 1px; }
+  .t-lbl   { fill: var(--sm-dim); font-size: 0.7rem; letter-spacing: 1px; }
+  .t-hub   { fill: var(--sm-green); font-size: 1rem; font-weight: 700; letter-spacing: 3px; }
+  .t-ssd   { fill: var(--sm-dim); font-size: 0.7rem; letter-spacing: 2px; }
   .t-amber { fill: var(--sm-amber); }
   .t-bright { fill: var(--sm-bright); }
   .t-cyan  { fill: var(--sm-cyan-lbl); }

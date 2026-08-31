@@ -378,7 +378,7 @@
                       {/if}
                     </div>
                   {:else}
-                    <span class="text-muted-foreground/30 text-sm">--</span>
+                    <span class="text-muted-foreground text-sm">--</span>
                   {/if}
                 </TableCell>
               {/each}

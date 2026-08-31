@@ -143,7 +143,7 @@
   <CardContent class="pt-0 space-y-5">
     {#each groups as g (g.title)}
       <section aria-label={g.title}>
-        <h3 class="font-mono text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground mb-2">{g.title}</h3>
+        <h3 class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-muted-foreground mb-2">{g.title}</h3>
         <dl class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm sm:grid-cols-3">
           {#each g.entries as e (e.key)}
             <div class={e.wide ? 'col-span-full' : ''}>
@@ -178,7 +178,7 @@
 
     {#if securityGroups.length > 0}
       <section aria-label="Security Groups">
-        <h3 class="font-mono text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground mb-2">Security Groups</h3>
+        <h3 class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-muted-foreground mb-2">Security Groups</h3>
         <div class="flex flex-wrap gap-1.5">
           {#each securityGroups as sg (sg)}
             <Badge variant="secondary" class="font-mono">{sg}</Badge>
@@ -192,7 +192,7 @@
     {/if}
 
     {#if capturedAt}
-      <p class="font-mono text-[0.65rem] uppercase tracking-[0.15em] text-muted-foreground">
+      <p class="font-mono text-[0.7rem] uppercase tracking-[0.15em] text-muted-foreground">
         Captured {formatDate(capturedAt)}
       </p>
     {/if}

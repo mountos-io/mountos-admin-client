@@ -99,13 +99,13 @@
             <TableCell>
               <div class="flex justify-end gap-1">
                 {#if auth.can('accounts', 'update')}
-                  <Button variant="ghost" size="sm" href="/accounts/{account.id}?edit" title="Edit" aria-label="Edit">
+                  <Button variant="ghost" size="sm" class="min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8" href="/accounts/{account.id}?edit" title="Edit" aria-label="Edit">
                     <Pencil class="size-3.5" aria-hidden="true" />
                   </Button>
                 {/if}
                 {#if account.id !== store.selectedAccountId}
                   <Button
-                    variant="ghost" size="sm"
+                    variant="ghost" size="sm" class="min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8"
                     title="Switch to this account" aria-label="Switch to this account"
                     onclick={() => store.selectAccount(account.id)}
                   >

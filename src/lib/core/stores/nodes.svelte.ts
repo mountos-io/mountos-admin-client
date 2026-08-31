@@ -12,7 +12,7 @@ let allNodesAccountId = $state<number | null>(null)
 let serviceType = $state('')
 let statusFilter = $state('')
 let inactiveHoursFilter = $state<number | undefined>(undefined)
-let regionClusterFilter = $state<number | undefined>(undefined)
+let metadataClusterFilter = $state<number | undefined>(undefined)
 let fetchCtrl: AbortController | null = null
 
 let stats = $state<Map<string, PrometheusMetric[]>>(new Map())
@@ -40,12 +40,12 @@ const nodesByType = $derived.by(() => {
   return map
 })
 
-async function fetchNodes(regionId: number, opts: { regionClusterId?: number } = {}) {
+async function fetchNodes(regionId: number, opts: { metadataClusterId?: number } = {}) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   selectedRegionId = regionId
   // Sync state so refetch() and getters reflect the active filter.
-  if (opts.regionClusterId !== undefined) regionClusterFilter = opts.regionClusterId
+  if (opts.metadataClusterId !== undefined) metadataClusterFilter = opts.metadataClusterId
   loading = true
   try {
     nodes = await api.serviceNodes.list(
@@ -53,7 +53,7 @@ async function fetchNodes(regionId: number, opts: { regionClusterId?: number } =
       serviceType || undefined,
       statusFilter || undefined,
       inactiveHoursFilter,
-      regionClusterFilter,
+      metadataClusterFilter,
       ctrl.signal,
     )
   } catch (e) {
@@ -176,8 +176,8 @@ function setInactiveHours(hours: number | undefined) {
   refetch()
 }
 
-function setRegionCluster(id: number | undefined) {
-  regionClusterFilter = id
+function setMetadataCluster(id: number | undefined) {
+  metadataClusterFilter = id
   refetch()
 }
 
@@ -185,7 +185,7 @@ function clearFilters() {
   serviceType = ''
   statusFilter = ''
   inactiveHoursFilter = undefined
-  regionClusterFilter = undefined
+  metadataClusterFilter = undefined
 }
 
 function resetFilters() {
@@ -201,7 +201,7 @@ export function useNodes() {
     get serviceType() { return serviceType },
     get status() { return statusFilter },
     get inactiveHours() { return inactiveHoursFilter },
-    get regionCluster() { return regionClusterFilter },
+    get metadataCluster() { return metadataClusterFilter },
     get nodesByType() { return nodesByType },
     get stats() { return stats },
     get statsRaw() { return statsRaw },
@@ -224,7 +224,7 @@ export function useNodes() {
     setServiceType,
     setStatus,
     setInactiveHours,
-    setRegionCluster,
+    setMetadataCluster,
     clearFilters,
     resetFilters,
   }

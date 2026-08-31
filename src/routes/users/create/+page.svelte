@@ -56,6 +56,7 @@
 <svelte:head><title>Add User · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-lg space-y-6">
+  <h1 class="sr-only">Add User</h1>
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before adding a user." />
   {:else}

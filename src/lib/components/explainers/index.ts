@@ -21,7 +21,7 @@ export const EXPLAINERS: Record<
   },
   'block-storage': {
     title: 'How block storage works',
-    description: 'A block storage is up to three active-active members, each a blockserv node with its own block volume, for high availability.',
+    description: "A storage's copysets form a shared pool, admin-adjustable in count. Each volume draws its own working set from that pool, so volumes can share copysets.",
     component: BlockStorageExplainer,
   },
   'storage-type': {

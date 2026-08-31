@@ -302,7 +302,7 @@
     background: transparent;
     border: none;
     padding: 2px 6px;
-    border-radius: 3px;
+    border-radius: var(--radius-md);
     transition: color 0.15s, background 0.15s;
   }
 

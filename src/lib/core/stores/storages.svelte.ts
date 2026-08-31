@@ -1,4 +1,4 @@
-import type { Storage, CreateStorageRequest, EditStorageRequest, TestStorageNewBucketRequest, MoveStorageVolumesRequest } from '$lib/core/api/types'
+import type { Storage, CreateStorageRequest, EditStorageRequest, TestStorageNewBucketRequest, MoveStorageVolumesRequest, RegisterStorageMemberRequest } from '$lib/core/api/types'
 import { api } from './client.svelte'
 
 let storages = $state<Storage[]>([])
@@ -93,6 +93,44 @@ async function moveVolumes(id: number, req: MoveStorageVolumesRequest) {
   return api.storages.moveVolumes(id, req)
 }
 
+// Sets the target copyset count (k) for this block storage's HA placement.
+async function updateConfig(id: number, k: number) {
+  return api.storages.updateConfig(id, { k })
+}
+
+async function getConfig(id: number, signal?: AbortSignal) {
+  return api.storages.getConfig(id, signal)
+}
+
+async function listCopysets(id: number, signal?: AbortSignal) {
+  return api.storages.listCopysets(id, undefined, undefined, signal)
+}
+
+async function getCopysetStatus(id: number, copysetId: string, signal?: AbortSignal) {
+  return api.storages.getCopysetStatus(id, copysetId, signal)
+}
+
+async function drainCopyset(id: number, copysetId: string) {
+  return api.storages.drainCopyset(id, copysetId)
+}
+
+async function cancelDrain(id: number, copysetId: string) {
+  return api.storages.cancelDrain(id, copysetId)
+}
+
+async function registerMember(id: number, req: RegisterStorageMemberRequest) {
+  return api.storages.registerMember(id, req)
+}
+
+async function reactivateMember(id: number, blockVolumeId: string) {
+  return api.storages.reactivateMember(id, blockVolumeId)
+}
+
+// Permanently deregisters a detached pool member.
+async function removeMember(id: number, blockVolumeId: string) {
+  return api.storages.removeMember(id, blockVolumeId)
+}
+
 export function useStorages() {
   return {
     get storages() { return storages },
@@ -110,5 +148,14 @@ export function useStorages() {
     testStorageBucket,
     listCompatibleStorages,
     moveVolumes,
+    updateConfig,
+    getConfig,
+    listCopysets,
+    getCopysetStatus,
+    drainCopyset,
+    cancelDrain,
+    registerMember,
+    reactivateMember,
+    removeMember,
   }
 }

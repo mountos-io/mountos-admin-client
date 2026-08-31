@@ -124,10 +124,10 @@
       <svg viewBox="0 0 {W} {H}" class="w-full h-auto select-none" onmousemove={onMove} onmouseleave={onLeave} role="img" aria-label="Volume size over time. {srSummary}">
         {#each yTicks as t}
           <line x1={PAD_L} y1={t.y} x2={W - PAD_R} y2={t.y} stroke="currentColor" opacity="0.25" stroke-dasharray="2 4" />
-          <text x={PAD_L - 6} y={t.y} text-anchor="end" dominant-baseline="central" font-size="7" font-family="monospace" fill="currentColor" opacity="0.6">{t.label}</text>
+          <text x={PAD_L - 6} y={t.y} text-anchor="end" dominant-baseline="central" font-size="11.2" font-family="monospace" fill="currentColor" opacity="0.6">{t.label}</text>
         {/each}
         {#each xTicks as t}
-          <text x={t.x} y={H - 8} text-anchor="middle" font-size="7" font-family="monospace" fill="currentColor" opacity="0.6">{t.label}</text>
+          <text x={t.x} y={H - 8} text-anchor="middle" font-size="11.2" font-family="monospace" fill="currentColor" opacity="0.6">{t.label}</text>
         {/each}
         {#each seriesDefs as s}
           {#if !disabled.has(s.key)}
@@ -146,7 +146,7 @@
       {#if hover && hover.idx < sorted.length}
         {@const p = sorted[hover.idx]}
         {@const flip = hover.x / W > 0.65}
-        <div class="absolute pointer-events-none rounded-sm border border-border bg-popover px-2.5 py-1.5 text-[12px] font-mono space-y-0.5 max-w-[16rem]"
+        <div class="absolute pointer-events-none rounded-sm border border-border bg-popover px-2.5 py-1.5 text-[0.7rem] font-mono space-y-0.5 max-w-[16rem]"
           role="tooltip"
           style={flip
             ? `right: calc(${100 - (hover.x / W) * 100}% + 8px); top: 8px;`
@@ -184,7 +184,7 @@
     padding: 3px 10px;
     border: 1px solid var(--chip-accent, currentColor);
     border-radius: 4px;
-    font-size: 0.8125rem;
+    font-size: 1rem;
     cursor: pointer;
     background: transparent;
     color: inherit;

@@ -76,6 +76,7 @@
 <svelte:head><title>Edit Region · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-lg space-y-6">
+  <h1 class="sr-only">Edit Region</h1>
   {#if loading && !region}
     <FormSkeleton fields={2} />
   {:else if !region}

@@ -164,7 +164,7 @@
     if (!showPerClusterGrouping) return []
     return clusters
       .map(c => {
-        const cn = nodeStore.nodes.filter(n => n.regionClusterId === c.id)
+        const cn = nodeStore.nodes.filter(n => n.metadataClusterId === c.id)
         return { cluster: c, tierData: buildTierData(cn), nodeCount: cn.length }
       })
       .filter(g => g.nodeCount > 0)
@@ -178,7 +178,7 @@
     return clusters
       .filter(c => c.isActive)
       .map(c => {
-        const cn = nodeStore.nodes.filter(n => n.regionClusterId === c.id)
+        const cn = nodeStore.nodes.filter(n => n.metadataClusterId === c.id)
         return {
           cluster: c,
           nodeCount: cn.length,
@@ -235,7 +235,7 @@
       nodes: sg.nodes,
       nodeCount: sg.nodes.length,
       healthyCount: sg.nodes.filter(n => n.status === 'healthy').length,
-      clusterCount: new Set(sg.nodes.map(n => n.regionClusterId)).size,
+      clusterCount: new Set(sg.nodes.map(n => n.metadataClusterId)).size,
     }))
   })
 
@@ -252,7 +252,7 @@
     const activeClusters = clusters.filter(c => c.isActive)
     const perCluster = activeClusters.map(c => ({
       cluster: c,
-      nodes: group.nodes.filter(n => n.regionClusterId === c.id),
+      nodes: group.nodes.filter(n => n.metadataClusterId === c.id),
     }))
     return {
       ...group,
@@ -346,7 +346,7 @@
     const cluster = selectedCluster
     untrack(() => {
       nodeStore.clearFilters()
-      nodeStore.fetchNodes(regionId, { regionClusterId: cluster ?? undefined })
+      nodeStore.fetchNodes(regionId, { metadataClusterId: cluster ?? undefined })
     })
   })
 
@@ -373,7 +373,7 @@
         regionAudit.fetchLogs(regionId, {
           limit: 200,
           reset: true,
-          regionClusterId: cluster ?? undefined,
+          metadataClusterId: cluster ?? undefined,
         })
       })
     } else if (!clustersReady) {
@@ -911,7 +911,7 @@
 
               {#if tier.groups.length === 0}
                 <div class="flex items-center justify-center rounded-sm border border-dashed border-border/30 px-6 py-8 md:w-[420px] md:max-w-full">
-                  <span class="text-xs uppercase tracking-wider text-muted-foreground/40">no nodes</span>
+                  <span class="text-xs uppercase tracking-wider text-muted-foreground">no nodes</span>
                 </div>
               {/if}
               {#each tier.groups as group (group.type)}
@@ -1037,7 +1037,7 @@
                   <div class="flex items-center justify-center gap-2 py-16 text-sm text-destructive">
                     <span>Failed to load audit logs</span>
                     <Button variant="ghost" size="sm" class="h-7 px-2 min-h-[44px] sm:min-h-0 text-xs"
-                      onclick={() => regionAudit.fetchLogs(regionId, { limit: 200, reset: true, regionClusterId: selectedCluster ?? undefined })}>Retry</Button>
+                      onclick={() => regionAudit.fetchLogs(regionId, { limit: 200, reset: true, metadataClusterId: selectedCluster ?? undefined })}>Retry</Button>
                   </div>
                 {:else if regionAudit.logs.length === 0}
                   <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No regional audit activity</div>
@@ -1057,7 +1057,7 @@
                     loading={regionAudit.loading}
                     hasMore={regionAudit.hasMore}
                     {clusterNameById}
-                    onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200, regionClusterId: selectedCluster ?? undefined })}
+                    onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200, metadataClusterId: selectedCluster ?? undefined })}
                   />
                 {/if}
               </div>
@@ -1090,7 +1090,7 @@
           loading={regionAudit.loading}
           hasMore={regionAudit.hasMore}
           {clusterNameById}
-          onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200, regionClusterId: selectedCluster ?? undefined })}
+          onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200, metadataClusterId: selectedCluster ?? undefined })}
         />
       {/if}
     </div>
@@ -1219,8 +1219,8 @@
                   <TableCell class="hidden lg:table-cell">
                     <div class="flex flex-wrap items-center gap-1">
                       <Badge variant="outline" class="font-mono">{alert.source}</Badge>
-                      {#if selectedCluster === null && alert.regionClusterId != null && clusterNameById[alert.regionClusterId]}
-                        <Badge variant="outline" class="font-mono text-xs uppercase tracking-wider">{clusterNameById[alert.regionClusterId]}</Badge>
+                      {#if selectedCluster === null && alert.metadataClusterId != null && clusterNameById[alert.metadataClusterId]}
+                        <Badge variant="outline" class="font-mono text-xs uppercase tracking-wider">{clusterNameById[alert.metadataClusterId]}</Badge>
                       {/if}
                     </div>
                   </TableCell>

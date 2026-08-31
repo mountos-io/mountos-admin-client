@@ -8,7 +8,7 @@
     },
     {
       title: 'Data plane',
-      body: 'Metadata flows to the dataserv raft cluster, block reads and writes to the block storage members, and content chunks go directly to object storage.',
+      body: 'Metadata flows to the dataserv raft cluster, block reads and writes go to the resolved copyset, and content chunks go directly to object storage.',
     },
     {
       title: 'Gateways',
@@ -16,7 +16,7 @@
     },
     {
       title: 'Durability',
-      body: 'Object storage is the source of truth. Databases and vaults run highly available, and block storage members replicate as an active-active mesh.',
+      body: 'Object storage is the source of truth. Databases and vaults run highly available, and each block volume replicates through 2-node copysets, active-active within each copyset.',
     },
   ]
 </script>

@@ -80,7 +80,7 @@
               <div class="flex items-center gap-2 flex-wrap">
                 <span class="text-sm font-medium truncate">{log.title}</span>
                 {#if log.subject}
-                  <span class="feed-subject rounded-sm px-1.5 py-px text-[0.6rem] font-mono uppercase tracking-wider border"
+                  <span class="feed-subject rounded-sm px-1.5 py-px text-[0.7rem] font-mono uppercase tracking-wider border"
                     style="border-color: {m.color}; color: {m.color}">
                     {log.subject}
                   </span>
@@ -96,11 +96,11 @@
                 {#if log.createdBy}
                   <span>&middot; {log.createdBy}</span>
                 {/if}
-                {#if clusterNameById && log.regionClusterId != null && clusterNameById[log.regionClusterId]}
+                {#if clusterNameById && log.metadataClusterId != null && clusterNameById[log.metadataClusterId]}
                   <span class="inline-flex items-center gap-1">
                     <span aria-hidden="true">&middot;</span>
                     <span class="sr-only">cluster </span>
-                    <span class="font-mono text-[11px] uppercase tracking-wider rounded-sm border border-border/50 px-1 py-px">{clusterNameById[log.regionClusterId]}</span>
+                    <span class="font-mono text-[0.7rem] uppercase tracking-wider rounded-sm border border-border/50 px-1 py-px">{clusterNameById[log.metadataClusterId]}</span>
                   </span>
                 {/if}
               </div>

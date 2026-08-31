@@ -5,6 +5,10 @@ export type {
   Region,
   Storage,
   BlockVolume,
+  Copyset,
+  CopysetState,
+  UpdateConfigResult,
+  PoolMember,
   Volume,
   Fork,
   AuditLog,
@@ -23,11 +27,11 @@ export type {
   EditUserRequest,
   CreateRegionRequest,
   EditRegionRequest,
-  RegionCluster,
-  CreateRegionClusterRequest,
-  EditRegionClusterRequest,
-  SetRegionClusterReadyRequest,
-  RegionClusterListOptions,
+  MetadataCluster,
+  CreateMetadataClusterRequest,
+  EditMetadataClusterRequest,
+  SetMetadataClusterReadyRequest,
+  MetadataClusterListOptions,
   CreateStorageRequest,
   EditStorageRequest,
   TestStorageNewBucketRequest,
@@ -35,6 +39,8 @@ export type {
   CompatibleVolume,
   MoveStorageVolumesRequest,
   MoveVolumeFailure,
+  UpdateStorageConfigRequest,
+  RegisterStorageMemberRequest,
   CreateVolumeRequest,
   EditVolumeRequest,
   GenerateVolumeAPIKeysRequest,
@@ -43,6 +49,9 @@ export type {
   RevokeVolumeAPIKeysByUserRequest,
   DeactivateVolumeRequest,
   UpdateVolumeQuotaRequest,
+  UpdateVolumeCopysetConfigRequest,
+  VolumeBlockPlacementConfig,
+  VolumeBlockPlacementResizeResult,
   ListOptions,
   PaginatedResponse,
   CursorPaginatedResponse,
@@ -90,12 +99,8 @@ import type { NodeStatsSample as SDKNodeStatsSample } from '@mountos-io/admin-sd
 // backward-compatible: every added field is optional and old samples continue
 // to render unchanged.
 export type NodeStatsSample = SDKNodeStatsSample & {
-  dbDispatchLiveOutstanding?: number
-  dbDispatchAsyncOutstanding?: number
-  dbDispatchAnyOutstanding?: number
-  dbDispatchLiveLaneCap?: number
-  dbDispatchAsyncLaneCap?: number
-  dbDispatchTotalLaneCap?: number
+  dbDispatchOutstanding?: number
+  dbDispatchLaneCap?: number
 }
 
 export { ApiError } from './errors.js'

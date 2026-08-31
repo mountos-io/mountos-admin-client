@@ -106,10 +106,10 @@
     min-width: 18px;
     height: 18px;
     padding: 0 4px;
-    border-radius: 9px;
+    border-radius: var(--radius-xl);
     background: var(--destructive);
     color: var(--destructive-foreground);
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 600;
     line-height: 1;
     font-variant-numeric: tabular-nums;
@@ -121,7 +121,7 @@
     transform: none;
     min-width: 16px;
     height: 16px;
-    font-size: 0.6rem;
+    font-size: 0.7rem;
   }
 
   .bell-ring {

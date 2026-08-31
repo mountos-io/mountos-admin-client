@@ -62,9 +62,9 @@
 <style>
   .summary-stats { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
   .summary-stat { display: flex; align-items: center; gap: 0.5rem; }
-  .summary-val { font-size: 2rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .summary-val { font-size: 1.875rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
   .summary-sub { font-size: 1rem; font-weight: 400; color: var(--muted-foreground); }
-  .summary-label { font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); }
+  .summary-label { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted-foreground); }
   .summary-divider { width: 1px; height: 2.5rem; background: var(--border); flex-shrink: 0; }
   .summary-loading { padding: 0.5rem; }
 </style>

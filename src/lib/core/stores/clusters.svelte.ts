@@ -1,8 +1,8 @@
 import type {
-  RegionCluster,
-  CreateRegionClusterRequest,
-  EditRegionClusterRequest,
-  SetRegionClusterReadyRequest,
+  MetadataCluster,
+  CreateMetadataClusterRequest,
+  EditMetadataClusterRequest,
+  SetMetadataClusterReadyRequest,
 } from '$lib/core/api/types'
 import { api } from './client.svelte'
 
@@ -10,7 +10,7 @@ import { api } from './client.svelte'
 // UI, so we cache by regionId rather than holding one global list. fetchCtrl
 // is keyed by regionId too so an in-flight request for region A doesn't get
 // aborted by a fetch for region B.
-let clustersByRegion = $state<Record<number, RegionCluster[]>>({})
+let clustersByRegion = $state<Record<number, MetadataCluster[]>>({})
 let loadingByRegion = $state<Record<number, boolean>>({})
 let allLoading = $state(false)
 const fetchCtrls: Record<number, AbortController | null> = {}
@@ -27,7 +27,7 @@ async function fetchAllClusters(accountId: number, opts: { isActive?: boolean } 
   allCtrl = ctrl
   allLoading = true
   try {
-    const grouped: Record<number, RegionCluster[]> = {}
+    const grouped: Record<number, MetadataCluster[]> = {}
     let page = 1
     for (;;) {
       const res = await api.clusters.list({ accountId, page, limit: 1000, isActive: opts.isActive }, ctrl.signal)
@@ -50,7 +50,7 @@ async function fetchClusters(regionId: number, opts: { page?: number; limit?: nu
   fetchCtrls[regionId] = ctrl
   loadingByRegion[regionId] = true
   try {
-    const res = await api.regionClusters.list(regionId, {
+    const res = await api.metadataClusters.list(regionId, {
       page: opts.page ?? 1,
       limit: opts.limit ?? 50,
       isActive: opts.isActive,
@@ -64,36 +64,36 @@ async function fetchClusters(regionId: number, opts: { page?: number; limit?: nu
   }
 }
 
-async function createCluster(regionId: number, req: CreateRegionClusterRequest) {
-  const r = await api.regionClusters.create(regionId, req)
+async function createCluster(regionId: number, req: CreateMetadataClusterRequest) {
+  const r = await api.metadataClusters.create(regionId, req)
   await fetchClusters(regionId)
   return r
 }
 
-async function editCluster(regionId: number, clusterId: number, req: EditRegionClusterRequest) {
-  const r = await api.regionClusters.edit(regionId, clusterId, req)
+async function editCluster(regionId: number, clusterId: number, req: EditMetadataClusterRequest) {
+  const r = await api.metadataClusters.edit(regionId, clusterId, req)
   await fetchClusters(regionId)
   return r
 }
 
 async function getCluster(regionId: number, clusterId: number) {
-  return api.regionClusters.get(regionId, clusterId)
+  return api.metadataClusters.get(regionId, clusterId)
 }
 
 async function setDefault(regionId: number, clusterId: number) {
-  const r = await api.regionClusters.setDefault(regionId, clusterId)
+  const r = await api.metadataClusters.setDefault(regionId, clusterId)
   await fetchClusters(regionId)
   return r
 }
 
-async function setReady(regionId: number, clusterId: number, req: SetRegionClusterReadyRequest) {
-  const r = await api.regionClusters.setReady(regionId, clusterId, req)
+async function setReady(regionId: number, clusterId: number, req: SetMetadataClusterReadyRequest) {
+  const r = await api.metadataClusters.setReady(regionId, clusterId, req)
   await fetchClusters(regionId)
   return r
 }
 
 async function deactivate(regionId: number, clusterId: number) {
-  const r = await api.regionClusters.deactivate(regionId, clusterId)
+  const r = await api.metadataClusters.deactivate(regionId, clusterId)
   await fetchClusters(regionId)
   return r
 }

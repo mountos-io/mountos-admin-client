@@ -4,7 +4,7 @@
 
 <!-- Storage type contrast. The object store is the SAME in both rows. The only
      difference is that block hides it behind a block-volume facade (blockserv
-     members), so the client never reaches the object store directly. -->
+     copysets), so the client never reaches the object store directly. -->
 <svg
   class="diagram-svg"
   viewBox="0 0 960 312"
@@ -12,7 +12,7 @@
   height="312"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
-  aria-label="Two storage types over the same S3-compatible object store. Object: the client reads and writes objects directly against the object store. Block: the client does block I/O against a block-volume facade (the blockserv members), which hides the same object store behind it. The client never reaches the object store directly in block mode."
+  aria-label="Two storage types over the same S3-compatible object store. Object: the client reads and writes objects directly against the object store. Block: the client does block I/O against a block-volume facade (the blockserv copysets), which hides the same object store behind it. The client never reaches the object store directly in block mode."
 >
   <defs>
     <marker id="st-bi-start" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -65,7 +65,7 @@
   <g transform="translate(300,188)">
     <rect class="n-core" x="0" y="0" width="240" height="88" rx="8" />
     <text x="16" y="28" class="t-title" style="font-size:13px">Block volume</text>
-    <text x="16" y="50" class="t-small" style="font-size:10px">blockserv members · active-active</text>
+    <text x="16" y="50" class="t-small" style="font-size:10px">blockserv copysets · active-active</text>
     <text x="16" y="70" class="t-small" style="font-size:10px">fronts object store · caches parts</text>
   </g>
 

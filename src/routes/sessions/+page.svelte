@@ -331,8 +331,8 @@
               </TableCell>
               <TableCell><span class="session-region">{session.region.name}</span></TableCell>
               <TableCell class="hidden lg:table-cell max-w-[140px]">
-                {#if session.regionCluster}
-                  <a href="/regions/{session.region.id}?cluster={session.regionCluster.id}" class="session-cluster truncate max-w-full" onclick={(e: MouseEvent) => e.stopPropagation()} aria-label="View region {session.region.name} scoped to cluster {session.regionCluster.name}" title={session.regionCluster.name}>{session.regionCluster.name}</a>
+                {#if session.metadataCluster}
+                  <a href="/regions/{session.region.id}?cluster={session.metadataCluster.id}" class="session-cluster truncate max-w-full" onclick={(e: MouseEvent) => e.stopPropagation()} aria-label="View region {session.region.name} scoped to cluster {session.metadataCluster.name}" title={session.metadataCluster.name}>{session.metadataCluster.name}</a>
                 {:else}
                   <span class="text-muted-foreground text-sm">·</span>
                 {/if}
@@ -375,8 +375,8 @@
                         </div>
                         <div><p class="detail-label">Session Age</p><p class="text-sm tabular-nums">{sessionDuration(session)}</p></div>
                         <div class="min-w-0"><p class="detail-label">Volume</p><span class="inline-flex items-center gap-1.5 min-w-0"><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate" title={session.volume.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volume.name || `#${session.volume.id}`}</a>{#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="shrink-0 capitalize">{session.volume.type}</Badge>{/if}</span></div>
-                      {#if session.regionCluster}
-                        <div class="min-w-0"><p class="detail-label">Cluster</p><a href="/regions/{session.region.id}?cluster={session.regionCluster.id}" class="detail-link text-sm font-mono truncate inline-block max-w-full" aria-label="View region {session.region.name} scoped to cluster {session.regionCluster.name}" title={session.regionCluster.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.regionCluster.name}</a></div>
+                      {#if session.metadataCluster}
+                        <div class="min-w-0"><p class="detail-label">Cluster</p><a href="/regions/{session.region.id}?cluster={session.metadataCluster.id}" class="detail-link text-sm font-mono truncate inline-block max-w-full" aria-label="View region {session.region.name} scoped to cluster {session.metadataCluster.name}" title={session.metadataCluster.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.metadataCluster.name}</a></div>
                       {/if}
                         <div class="min-w-0"><p class="detail-label">User</p>{#if session.user}<a href="/users/{session.user.id}" class="detail-link text-sm font-mono truncate" title={session.user.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.user.name || `#${session.user.id}`}</a>{:else}<p class="text-sm font-mono">·</p>{/if}</div>
                         <div><p class="detail-label">Client Type</p><Badge variant="outline">{session.clientType}</Badge></div>

@@ -20,7 +20,7 @@
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
   import { isClusterNameValid, clusterNameErrorMessage } from '$lib/core/utils/validation'
-  import type { RegionCluster } from '$lib/core/api/types'
+  import type { MetadataCluster } from '$lib/core/api/types'
   import Copy from '@lucide/svelte/icons/copy'
   import MoreVertical from '@lucide/svelte/icons/more-vertical'
 
@@ -41,11 +41,11 @@
   const loading = $derived(store.isLoading(regionId))
 
   let openMenuId = $state<number | null>(null)
-  let renameTarget = $state<RegionCluster | null>(null)
+  let renameTarget = $state<MetadataCluster | null>(null)
   let renameDraft = $state('')
   let renameSubmitting = $state(false)
   let renameInputEl = $state<HTMLInputElement | null>(null)
-  let deactivateTarget = $state<RegionCluster | null>(null)
+  let deactivateTarget = $state<MetadataCluster | null>(null)
 
   const renameError = $derived(clusterNameErrorMessage(renameDraft))
   const renameValid = $derived(isClusterNameValid(renameDraft))
@@ -59,7 +59,7 @@
     }
   }
 
-  async function openRename(c: RegionCluster) {
+  async function openRename(c: MetadataCluster) {
     openMenuId = null
     renameTarget = c
     renameDraft = c.name
@@ -82,7 +82,7 @@
     }
   }
 
-  async function makeDefault(c: RegionCluster) {
+  async function makeDefault(c: MetadataCluster) {
     openMenuId = null
     try {
       await store.setDefault(regionId, c.id)
@@ -92,7 +92,7 @@
     }
   }
 
-  async function toggleReady(c: RegionCluster, target: boolean) {
+  async function toggleReady(c: MetadataCluster, target: boolean) {
     openMenuId = null
     try {
       await store.setReady(regionId, c.id, { ready: target })
@@ -102,7 +102,7 @@
     }
   }
 
-  function openDeactivate(c: RegionCluster) {
+  function openDeactivate(c: MetadataCluster) {
     openMenuId = null
     deactivateTarget = c
   }

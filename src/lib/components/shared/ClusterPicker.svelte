@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { RegionCluster } from '$lib/core/api/types'
+  import type { MetadataCluster } from '$lib/core/api/types'
   import * as Dialog from '$lib/components/ui/dialog'
   import { Input } from '$lib/components/ui/input'
   import { Badge } from '$lib/components/ui/badge'
@@ -8,7 +8,7 @@
   import Check from '@lucide/svelte/icons/check'
 
   type Props = {
-    clusters: RegionCluster[]
+    clusters: MetadataCluster[]
     value: number | null
     onchange: (v: number | null) => void
     pillLimit?: number
@@ -42,9 +42,9 @@
 
   // Priority pills: default, currently-selected (if not already in), then in sort order up to limit.
   const partitioned = $derived.by(() => {
-    if (sorted.length <= pillLimit + 1) return { visible: sorted, overflow: [] as RegionCluster[] }
+    if (sorted.length <= pillLimit + 1) return { visible: sorted, overflow: [] as MetadataCluster[] }
     const seen = new Set<number>()
-    const visible: RegionCluster[] = []
+    const visible: MetadataCluster[] = []
     const def = sorted.find(c => c.defaultCluster)
     if (def) { visible.push(def); seen.add(def.id) }
     if (value != null && !seen.has(value)) {
@@ -64,7 +64,7 @@
     onchange(v)
   }
 
-  function pillAria(c: RegionCluster): string {
+  function pillAria(c: MetadataCluster): string {
     const tags: string[] = []
     if (c.defaultCluster) tags.push('default')
     if (!c.isReady && c.isActive) tags.push('preparing')
@@ -76,13 +76,13 @@
 {#if clusters.length >= 2}
   <div class="flex flex-wrap items-center gap-1.5" role="group" aria-label="Cluster filter">
     <Layers class="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-    <span class="mr-1 text-[10px] uppercase tracking-wider text-muted-foreground" aria-hidden="true">cluster</span>
+    <span class="mr-1 text-xs uppercase tracking-wider text-muted-foreground" aria-hidden="true">cluster</span>
 
     <button
       type="button"
       aria-pressed={value === null}
       aria-label="Show all clusters"
-      class="min-h-[44px] sm:min-h-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {value === null ? 'border-primary bg-primary/15 text-foreground' : 'border-border/60 text-muted-foreground hover:text-foreground hover:border-border'}"
+      class="min-h-[44px] sm:min-h-0 rounded-sm border px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {value === null ? 'border-primary bg-primary/15 text-foreground' : 'border-border/60 text-muted-foreground hover:text-foreground hover:border-border'}"
       onclick={() => select(null)}
     >All</button>
 
@@ -95,20 +95,20 @@
         aria-disabled={unselectable}
         title={unselectable ? (c.isActive ? 'Cluster is not ready; no nodes heartbeat here yet' : 'Cluster is deactivated') : undefined}
         disabled={unselectable}
-        class="min-h-[44px] sm:min-h-0 rounded-full border px-3 py-1 text-xs font-medium transition-colors inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 {value === c.id ? 'border-primary bg-primary/15 text-foreground' : unselectable ? 'border-border/40 text-muted-foreground/60' : 'border-border/60 text-muted-foreground hover:text-foreground hover:border-border'}"
+        class="min-h-[44px] sm:min-h-0 rounded-sm border px-3 py-1 text-xs font-medium transition-colors inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 {value === c.id ? 'border-primary bg-primary/15 text-foreground' : unselectable ? 'border-border/40 text-muted-foreground/60' : 'border-border/60 text-muted-foreground hover:text-foreground hover:border-border'}"
         onclick={() => select(c.id)}
       >
         <span class="truncate max-w-[160px]">{c.name}</span>
-        {#if c.defaultCluster}<span aria-hidden="true" class="rounded-sm bg-muted px-1 text-[11px] uppercase tracking-wider opacity-80">default</span>{/if}
-        {#if !c.isReady && c.isActive}<span aria-hidden="true" class="rounded-sm bg-warning/15 px-1 text-[11px] uppercase tracking-wider text-warning">prep</span>{/if}
-        {#if !c.isActive}<span aria-hidden="true" class="rounded-sm bg-destructive/10 px-1 text-[11px] uppercase tracking-wider text-destructive">off</span>{/if}
+        {#if c.defaultCluster}<span aria-hidden="true" class="rounded-sm bg-muted px-1 text-xs uppercase tracking-wider opacity-80">default</span>{/if}
+        {#if !c.isReady && c.isActive}<span aria-hidden="true" class="rounded-sm bg-warning/15 px-1 text-xs uppercase tracking-wider text-warning">prep</span>{/if}
+        {#if !c.isActive}<span aria-hidden="true" class="rounded-sm bg-destructive/10 px-1 text-xs uppercase tracking-wider text-destructive">off</span>{/if}
       </button>
     {/each}
 
     {#if partitioned.overflow.length > 0}
       <button
         type="button"
-        class="min-h-[44px] sm:min-h-0 rounded-full border border-dashed border-border/60 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        class="min-h-[44px] sm:min-h-0 rounded-sm border border-dashed border-border/60 px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:border-border inline-flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Show {partitioned.overflow.length} more clusters"
         aria-haspopup="dialog"
         aria-expanded={overflowOpen}
@@ -151,9 +151,9 @@
               >
                 <Check class="h-3.5 w-3.5 shrink-0 {value === c.id ? 'opacity-100' : 'opacity-0'}" aria-hidden="true" />
                 <span class="flex-1 truncate text-left">{c.name}</span>
-                {#if c.defaultCluster}<Badge variant="secondary" class="h-4 text-[11px] uppercase tracking-wider" aria-hidden="true">default</Badge>{/if}
-                {#if !c.isReady && c.isActive}<Badge variant="warning" class="h-4 text-[11px] uppercase tracking-wider" aria-hidden="true">prep</Badge>{/if}
-                {#if !c.isActive}<Badge variant="destructive" class="h-4 text-[11px] uppercase tracking-wider" aria-hidden="true">off</Badge>{/if}
+                {#if c.defaultCluster}<Badge variant="secondary" class="h-4 text-xs uppercase tracking-wider" aria-hidden="true">default</Badge>{/if}
+                {#if !c.isReady && c.isActive}<Badge variant="warning" class="h-4 text-xs uppercase tracking-wider" aria-hidden="true">prep</Badge>{/if}
+                {#if !c.isActive}<Badge variant="destructive" class="h-4 text-xs uppercase tracking-wider" aria-hidden="true">off</Badge>{/if}
               </button>
             {:else}
               <p class="px-2 py-6 text-center text-sm text-muted-foreground">No clusters match “{modalQuery}”</p>

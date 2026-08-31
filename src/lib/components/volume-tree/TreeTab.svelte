@@ -402,7 +402,7 @@
         onclick={toggleSearch}>
         <SearchIcon class="h-3.5 w-3.5" aria-hidden="true" />
         Search
-        <kbd class="ml-1 text-[10px] opacity-70 font-mono">/</kbd>
+        <kbd class="ml-1 text-[0.7rem] opacity-70 font-mono">/</kbd>
       </Button>
     </div>
   </CardHeader>

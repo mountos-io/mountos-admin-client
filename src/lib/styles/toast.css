@@ -104,11 +104,19 @@
   border: 1px solid var(--border) !important;
   background: transparent !important;
   color: var(--muted-foreground) !important;
-  border-radius: 1px !important;
+  border-radius: var(--radius-sm) !important;
   opacity: 0.5;
-  transition: all 0.15s ease;
-  min-width: 28px !important;
-  min-height: 28px !important;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  min-width: 32px !important;
+  min-height: 32px !important;
+}
+
+/* comfortable tap target on touch devices */
+@media (pointer: coarse) {
+  [data-sonner-toast] button[data-close-button] {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
 }
 
 [data-sonner-toast] button[data-close-button]:hover {
@@ -123,5 +131,5 @@
   background: var(--primary) !important;
   color: var(--primary-foreground) !important;
   font-weight: 500;
-  border-radius: 1px !important;
+  border-radius: var(--radius-sm) !important;
 }

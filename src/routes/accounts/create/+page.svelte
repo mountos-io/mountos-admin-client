@@ -64,6 +64,7 @@
 <svelte:head><title>Create Account · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-xl">
+  <h1 class="sr-only">Create Account</h1>
   <Card cornerBrackets>
     <form onsubmit={handleSubmit}>
       <CardHeader>
@@ -83,7 +84,7 @@
                 onerror={() => { iconError = true }}
               />
             {:else}
-              <span class="text-muted-foreground/40 text-xl">?</span>
+              <span class="text-muted-foreground text-xl">?</span>
             {/if}
           </div>
         </div>

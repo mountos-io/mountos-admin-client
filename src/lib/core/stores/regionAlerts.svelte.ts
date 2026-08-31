@@ -18,7 +18,7 @@ function sinceToISO(value: string): string | undefined {
 export function useRegionAlerts(
   getRegionId: () => number,
   getNodeId?: () => string | undefined,
-  getRegionClusterId?: () => number | null,
+  getMetadataClusterId?: () => number | null,
 ) {
   let activeCount = $state(0)
   let recentCount = $state(0)
@@ -45,7 +45,7 @@ export function useRegionAlerts(
     const regionId = getRegionId()
     if (!regionId) return
     try {
-      const clusterId = getRegionClusterId?.() ?? 0
+      const clusterId = getMetadataClusterId?.() ?? 0
       const res = await api.regionAlerts.count(regionId, clusterId, signal)
       if (activeCount !== res.active) activeCount = res.active
       if (recentCount !== res.recent) recentCount = res.recent
@@ -82,13 +82,13 @@ export function useRegionAlerts(
     loading = true
     error = null
 
-    const clusterId = getRegionClusterId?.()
+    const clusterId = getMetadataClusterId?.()
     const opts: RegionAlertListOptions = {
       active: activeFilter,
       severity: severityFilter,
       category: categoryFilter || undefined,
       nodeId: getNodeId?.(),
-      regionClusterId: clusterId ?? undefined,
+      metadataClusterId: clusterId ?? undefined,
       since: sinceToISO(sinceFilter),
       page,
       limit: DISPLAY_PAGE_SIZE,

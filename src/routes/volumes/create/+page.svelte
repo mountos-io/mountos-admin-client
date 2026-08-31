@@ -43,7 +43,7 @@
   let description = $state('')
   let regionId = $state('')
   let storageId = $state('')
-  let regionClusterId = $state('')
+  let metadataClusterId = $state('')
   let volumeType = $state('general')
   let encryption = $state(false)
   let encryptionKey = $state('')
@@ -119,7 +119,7 @@
     const rid = regionId
     if (rid === lastClusterRegion) return
     lastClusterRegion = rid
-    regionClusterId = ''
+    metadataClusterId = ''
     if (rid) clusterStore.fetchClusters(Number(rid), { isActive: true })
   })
 
@@ -133,9 +133,9 @@
 
   // Preselect the region's default cluster so the prior default-only behaviour is preserved.
   $effect(() => {
-    if (regionClusterId || !clusterOptions.length) return
+    if (metadataClusterId || !clusterOptions.length) return
     const def = clusterStore.clustersFor(Number(regionId)).find(c => c.defaultCluster && c.isActive && c.isReady)
-    regionClusterId = String(def?.id ?? clusterOptions[0].value)
+    metadataClusterId = String(def?.id ?? clusterOptions[0].value)
   })
 
   $effect(() => {
@@ -152,7 +152,7 @@
       const result = await volumeStore.createVolume({
         accountId,
         storageId: Number(storageId),
-        regionClusterId: regionClusterId ? Number(regionClusterId) : undefined,
+        metadataClusterId: metadataClusterId ? Number(metadataClusterId) : undefined,
         name: name.trim(),
         description: description.trim() || undefined,
         volumeType,
@@ -192,6 +192,7 @@
 <svelte:head><title>Create Volume · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-2xl space-y-6">
+  <h1 class="sr-only">{createResult ? 'Volume Created' : 'Create Volume'}</h1>
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before creating a volume." />
   {:else if !regionsLoaded}
@@ -258,7 +259,7 @@
             {:else if clusterOptions.length === 0}
               <p class="text-sm text-muted-foreground">No ready clusters in this region; the default placement is used.</p>
             {:else}
-              <Select id="cluster" ariaLabelledby="cluster-label" bind:value={regionClusterId}
+              <Select id="cluster" ariaLabelledby="cluster-label" bind:value={metadataClusterId}
                 placeholder="Select cluster..." options={clusterOptions} />
             {/if}
           </div>

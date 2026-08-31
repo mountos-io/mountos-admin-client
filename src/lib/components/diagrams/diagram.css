@@ -47,13 +47,13 @@
 
 .diagram-svg text {
   fill: var(--d-text);
-  font-size: 13px;
+  font-size: 1rem;
   letter-spacing: -0.01em;
 }
 
-.diagram-svg .t-small { font-size: 11px; fill: var(--d-text-muted); }
-.diagram-svg .t-mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
-.diagram-svg .t-title { font-weight: 600; font-size: 13px; }
+.diagram-svg .t-small { font-size: 0.7rem; fill: var(--d-text-muted); }
+.diagram-svg .t-mono { font-family: ui-monospace, Menlo, monospace; font-size: 0.7rem; }
+.diagram-svg .t-title { font-weight: 600; font-size: 1rem; }
 .diagram-svg .t-label { font-weight: 500; }
 .diagram-svg .t-muted { fill: var(--d-text-muted); }
 

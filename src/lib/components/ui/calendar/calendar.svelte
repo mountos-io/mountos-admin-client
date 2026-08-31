@@ -74,7 +74,7 @@
         <CalendarPrimitive.GridHead>
           <CalendarPrimitive.GridRow class="flex w-full">
             {#each weekdays as day}
-              <CalendarPrimitive.HeadCell class="flex-1 text-[0.65rem] uppercase tracking-wider font-medium text-muted-foreground/70 text-center pb-1">
+              <CalendarPrimitive.HeadCell class="flex-1 font-mono text-[0.7rem] uppercase tracking-wider font-medium text-muted-foreground/70 text-center pb-1">
                 {day.slice(0, 2)}
               </CalendarPrimitive.HeadCell>
             {/each}

@@ -68,9 +68,9 @@
   // Volume Group card uses for blockserv-only metadata.
   const isGCServ = $derived(node?.serviceType === 'gcserv')
   const clusterLabel = $derived.by(() => {
-    if (!node?.regionClusterId) return null
-    const c = clusterStore.clustersFor(regionId).find(x => x.id === node.regionClusterId)
-    return c?.name ?? `#${node.regionClusterId}`
+    if (!node?.metadataClusterId) return null
+    const c = clusterStore.clustersFor(regionId).find(x => x.id === node.metadataClusterId)
+    return c?.name ?? `#${node.metadataClusterId}`
   })
 
   let pollValue = $state('')
@@ -148,7 +148,7 @@
     return () => auditStore.reset()
   })
 
-  // Cluster list is needed to translate node.regionClusterId → name.
+  // Cluster list is needed to translate node.metadataClusterId → name.
   // Hub regions don't carry clusters; this is a no-op for them.
   $effect(() => {
     if (regionId && node && node.serviceType !== 'hub') {
@@ -248,9 +248,9 @@
   function metaStr(n: ServiceNode, k: string): string { return String(n.metadata?.[k] ?? '') }
   function metaBool(n: ServiceNode, k: string): boolean { return n.metadata?.[k] === true }
   function memberClusterName(n: ServiceNode): string | null {
-    if (!n.regionClusterId) return null
-    const c = clusterStore.clustersFor(regionId).find((x) => x.id === n.regionClusterId)
-    return c?.name ?? `#${n.regionClusterId}`
+    if (!n.metadataClusterId) return null
+    const c = clusterStore.clustersFor(regionId).find((x) => x.id === n.metadataClusterId)
+    return c?.name ?? `#${n.metadataClusterId}`
   }
   const volumeGroup = $derived.by<ServiceNode[]>(() => {
     if (!nodeStorageId) return []
@@ -357,7 +357,7 @@
               <dt class="text-muted-foreground text-sm">Cluster</dt>
               <dd class="mt-0.5">
                 <a
-                  href={`/regions/${regionId}?cluster=${node.regionClusterId}`}
+                  href={`/regions/${regionId}?cluster=${node.metadataClusterId}`}
                   aria-label="View region filtered by cluster {clusterLabel}"
                   class="inline-flex items-center font-mono text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                 >{clusterLabel}</a>
@@ -518,9 +518,9 @@
                     {/if}
                   </TableCell>
                   <TableCell class="hidden sm:table-cell">
-                    {#if cluster && m.regionClusterId}
+                    {#if cluster && m.metadataClusterId}
                       <a
-                        href={`/regions/${regionId}?cluster=${m.regionClusterId}`}
+                        href={`/regions/${regionId}?cluster=${m.metadataClusterId}`}
                         aria-label="View region filtered by cluster {cluster}"
                         class="font-mono text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
                       >{cluster}</a>

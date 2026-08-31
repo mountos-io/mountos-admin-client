@@ -176,7 +176,7 @@
                   {/if}
                   <span class="font-mono text-xs truncate flex-1">
                     {#each highlight(m.path, draft) as part, p (p)}
-                      {#if part.match}<mark class="bg-warning/30 text-foreground rounded-[1px]">{part.value}</mark>
+                      {#if part.match}<mark class="bg-warning/30 text-foreground rounded-sm">{part.value}</mark>
                       {:else}{part.value}{/if}
                     {/each}
                   </span>

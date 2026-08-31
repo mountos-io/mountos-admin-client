@@ -224,7 +224,7 @@
             <TableCell>
               <div class="flex justify-end gap-1">
               {#if region.name !== HUB_REGION_NAME && auth.can("storages", "create")}
-                <Button variant="ghost" size="sm" class="relative z-10"
+                <Button variant="ghost" size="sm" class="relative z-10 min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8"
                   href="/storages/create?regionId={region.id}"
                   title="Create Storage" aria-label="Create Storage">
                   <HardDriveIcon class="size-3.5" aria-hidden="true" />
@@ -234,7 +234,7 @@
                 <Button
                   variant="ghost"
                   size="sm"
-                  class="relative z-10"
+                  class="relative z-10 min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8"
                   title="Deactivate {region.name}"
                   aria-label="Deactivate {region.name}"
                   onclick={() => deactivate(region)}

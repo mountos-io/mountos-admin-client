@@ -46,6 +46,7 @@
 <svelte:head><title>Create Cluster · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-lg space-y-6">
+  <h1 class="sr-only">Create region cluster</h1>
   <Card cornerBrackets>
     <CardHeader>
       <CardTitle>Create region cluster</CardTitle>

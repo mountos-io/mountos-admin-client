@@ -321,12 +321,12 @@
             <TableCell class="hidden lg:table-cell">
               {#if isHubRegion(node.regionId)}
                 <span class="text-muted-foreground text-sm font-mono">{HUB_REGION_NAME}</span>
-              {:else if node.regionClusterId}
+              {:else if node.metadataClusterId}
                 <a
-                  href="/regions/{node.regionId}?cluster={node.regionClusterId}"
+                  href="/regions/{node.regionId}?cluster={node.metadataClusterId}"
                   class="relative z-10 text-sm font-mono hover:underline rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  {clusterNameMap.get(`${node.regionId}:${node.regionClusterId}`) ?? `#${node.regionClusterId}`}
+                  {clusterNameMap.get(`${node.regionId}:${node.metadataClusterId}`) ?? `#${node.metadataClusterId}`}
                 </a>
               {:else}
                 <span class="text-muted-foreground text-sm">N/A</span>

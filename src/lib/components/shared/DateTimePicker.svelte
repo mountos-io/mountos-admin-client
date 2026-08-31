@@ -219,7 +219,7 @@
       </div>
       <div class="flex items-center gap-2 border-t border-border px-3 py-2.5">
         <ClockIcon class="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
-        <span class="text-[0.65rem] uppercase tracking-wider text-muted-foreground/70">Time</span>
+        <span class="text-xs uppercase tracking-wider text-muted-foreground/70">Time</span>
         <div class="ml-auto inline-flex items-center gap-1.5">
           <div class={cn(
             'inline-flex items-stretch border rounded-sm overflow-hidden transition-colors',

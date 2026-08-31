@@ -163,7 +163,7 @@
       style:width={`${panelPos.width}px`}
       style:transform={panelPos.openUp ? 'translateY(-100%)' : 'none'}
       class="z-[60] rounded-sm border border-border/60 bg-popover shadow-md overflow-hidden">
-      <div class="px-2 py-1.5 border-b border-border/40 text-[11px] uppercase tracking-wider text-muted-foreground/80">
+      <div class="px-2 py-1.5 border-b border-border/40 text-xs uppercase tracking-wider text-muted-foreground/80">
         Fork <span class="text-muted-foreground/60 normal-case">· {options.length} {options.length === 1 ? 'entry' : 'entries'}</span>
       </div>
       <div class="p-2 border-b border-border/40">
@@ -191,7 +191,7 @@
               tabindex={focused === i ? 0 : -1}
               class="w-full text-left px-2 py-1.5 min-h-[44px] sm:min-h-[36px] flex items-center justify-between gap-2 hover:bg-accent focus-visible:bg-accent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring {sel ? 'bg-accent/60' : ''} {focused === i ? 'bg-accent/40' : ''}">
               <span class="font-mono truncate">{o.label}</span>
-              {#if sel}<span class="text-primary text-[10px] shrink-0">●</span>{/if}
+              {#if sel}<span class="text-primary text-[0.7rem] shrink-0" aria-hidden="true">●</span>{/if}
             </button>
           </li>
         {:else}

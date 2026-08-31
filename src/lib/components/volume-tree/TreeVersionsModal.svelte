@@ -76,7 +76,7 @@
               <div class="min-w-0">
                 {#if v.mtime}
                   <p class="text-xs tabular-nums">{formatTzFull(v.mtime / 1_000_000, tz.value)}</p>
-                  <p class="text-[11px] text-muted-foreground tabular-nums">{formatRelative(v.mtime / 1_000_000)}</p>
+                  <p class="text-xs text-muted-foreground tabular-nums">{formatRelative(v.mtime / 1_000_000)}</p>
                 {/if}
                 {#if v.updaterId}
                   <p class="text-xs text-muted-foreground" title={`user#${v.updaterId}`}>

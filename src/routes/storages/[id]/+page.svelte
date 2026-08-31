@@ -12,7 +12,7 @@
   import Label from '$lib/components/ui/label/label.svelte'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
-  import StorageMembers from '$lib/components/shared/StorageMembers.svelte'
+  import BlockCopysets from '$lib/components/shared/BlockCopysets.svelte'
   import StorageVolumes from '$lib/components/shared/StorageVolumes.svelte'
   import CompatibleStorages from '$lib/components/shared/CompatibleStorages.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
@@ -28,6 +28,7 @@
   import FlaskConical from '@lucide/svelte/icons/flask-conical'
   import Loader2 from '@lucide/svelte/icons/loader-2'
   import DatabaseIcon from '@lucide/svelte/icons/database'
+  import ServerIcon from '@lucide/svelte/icons/server'
   import Wrench from '@lucide/svelte/icons/wrench'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import type { Storage, EditStorageRequest } from '$lib/core/api/types'
@@ -146,6 +147,11 @@
   const isBlock = $derived(storage?.storageType === 'block')
   const maintenanceOn = $derived(!!storage?.directAccess)
   let maintenanceSubmitting = $state(false)
+
+  // Opens BlockCopysets' servers-list register dialog from this page's top-level action row,
+  // reusing that same dialog rather than duplicating its form.
+  let addServerOpen = $state(false)
+  let clustersAvailable = $state(true)
 
   // Maintenance mode ("direct access") makes a block storage bypass blockserv and hit its
   // backing object store directly, so blockserv can be safely stopped/upgraded. Flipping it
@@ -359,6 +365,14 @@
               Create Volume
             </Button>
           {/if}
+          {#if isBlock && auth.can('storages', 'update')}
+            <Button variant="outline" size="sm" class="gap-1.5" disabled={!clustersAvailable}
+              title={clustersAvailable ? undefined : 'No active, ready cluster in this region to register into'}
+              onclick={() => { addServerOpen = true }}>
+              <ServerIcon class="h-4 w-4" />
+              Add Server
+            </Button>
+          {/if}
           {#if isBlock && storage.isActive && auth.can('storages', 'update')}
             <Button variant={maintenanceOn ? 'primary' : 'outline'} size="sm" class="gap-1.5"
               disabled={maintenanceSubmitting} onclick={toggleMaintenance}>
@@ -387,12 +401,14 @@
       {/if}
     </Card>
 
-    {#key volumesRefreshKey}
-      <StorageVolumes storageId={storage.id} accountId={storage.account.id} />
-    {/key}
-
-    {#if !isObject}
-      <StorageMembers storageId={storage.id} regionId={storage.regionInfo.id} directAccess={maintenanceOn} />
+    {#if isObject}
+      {#key volumesRefreshKey}
+        <StorageVolumes storageId={storage.id} accountId={storage.account.id} />
+      {/key}
+    {:else}
+      <BlockCopysets storageId={storage.id} regionId={storage.regionInfo.id} accountId={storage.account.id} directAccess={maintenanceOn}
+        canUpdate={auth.can('storages', 'update')} {volumesRefreshKey}
+        bind:addServerOpen bind:clustersAvailable />
     {/if}
 
     {#if storage.physicalFingerprint}

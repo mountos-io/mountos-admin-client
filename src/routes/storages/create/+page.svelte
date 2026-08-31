@@ -19,6 +19,7 @@
   import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
   import BucketTester from '$lib/components/shared/BucketTester.svelte'
   import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
+  import InfoTip from '$lib/components/shared/InfoTip.svelte'
   import Copy from '@lucide/svelte/icons/copy'
   import Check from '@lucide/svelte/icons/check'
   import Plus from '@lucide/svelte/icons/plus'
@@ -35,9 +36,11 @@
   const regionStore = useRegions()
   const clusterStore = useClusters()
   const accountStore = useAccounts()
-  const MAX_BLOCK_MEMBERS = 3
   const auth = useAuth()
   const accountId = $derived(accountStore.selectedAccountId)
+  // Members added here seed the storage's member pool; this is a convenience for the common
+  // small case, not a capacity limit. Register more members and set the copyset count on
+  // the storage detail page afterward to grow the pool and form more copysets.
 
   $effect(() => {
     if (!auth.loading && !auth.can('storages', 'create')) {
@@ -65,6 +68,10 @@
       .filter(r => r.name !== HUB_REGION_NAME)
       .map(r => ({ value: String(r.id), label: r.name }))
   )
+  // Matches the server's request-size guard on the members payload; a malformed-request
+  // bound, not a capacity limit (members can always be registered into the pool later).
+  const MAX_BLOCK_MEMBERS = 100
+
   const BLOCK_SIZES = [
     { value: '65536', label: '64 KiB' },
     { value: '131072', label: '128 KiB' },
@@ -146,15 +153,15 @@
   const hasReadyClusters = $derived(clusterOptions.length > 0)
   const clustersLoading = $derived(!!regionId && clusterStore.isLoading(Number(regionId)))
   const membersComplete = $derived(members.every(m => !!m.regionClusterId))
-  const duplicateClusterMembers = $derived.by(() => {
-    const seen = new Set<string>()
-    for (const m of members) {
-      if (!m.regionClusterId) continue
-      if (seen.has(m.regionClusterId)) return true
-      seen.add(m.regionClusterId)
-    }
-    return false
-  })
+  const atMemberCap = $derived(members.length >= MAX_BLOCK_MEMBERS)
+  // Copyset formation always draws from the two lowest-numbered clusters holding pool
+  // members, so several members legitimately share a cluster once more than one copyset is
+  // in play. What actually blocks copyset formation is having fewer than two distinct
+  // clusters represented at all.
+  const filledClusterIds = $derived(members.map(m => m.regionClusterId).filter(Boolean))
+  const insufficientClusterDiversity = $derived(
+    filledClusterIds.length > 1 && new Set(filledClusterIds).size < 2
+  )
 
   // Block-volume IDs are returned in member order. Label each with its block volume name,
   // falling back to the placement cluster's name when the member was left unnamed.
@@ -167,7 +174,8 @@
   )
 
   function addMember() {
-    if (members.length < MAX_BLOCK_MEMBERS) members = [...members, { id: memberSeq++, name: '', regionClusterId: '' }]
+    if (atMemberCap) return
+    members = [...members, { id: memberSeq++, name: '', regionClusterId: '' }]
   }
   function removeMember(i: number) {
     if (members.length > 1) members = members.filter((_, idx) => idx !== i)
@@ -272,6 +280,7 @@
 <svelte:head><title>Create Storage · mountOS Admin</title></svelte:head>
 
 <div class="mx-auto max-w-2xl space-y-6">
+  <h1 class="sr-only">Create Storage</h1>
   {#if !accountId}
     <EmptyState title="Select an account" description="Choose an account before creating a storage." />
   {:else if !regionsLoaded}
@@ -318,13 +327,16 @@
               <div class="space-y-3">
                 <div class="flex items-center justify-between gap-3">
                   <div>
-                    <p class="text-sm font-medium">Block Volume Members</p>
-                    <p class="text-xs text-muted-foreground">Each member is a blockserv node with its own block volume, an active-active peer. Add members for high availability (up to {MAX_BLOCK_MEMBERS}).</p>
+                    <div class="flex items-center gap-1">
+                      <p class="text-sm font-medium">Block Volume Members</p>
+                      <InfoTip text="A copyset provides High Availability (HA): two nodes holding identical copies." />
+                    </div>
+                    <p class="text-xs text-muted-foreground">Each member is a blockserv node with its own block volume. Members go into a pool; after creation, register more members and set how many copysets to form from that pool.</p>
                   </div>
                   <div class="flex items-center gap-2 shrink-0">
                     <HowItWorks topic="block-storage" />
                     <Button variant="outline" size="sm" type="button" class="gap-1.5 shrink-0"
-                      onclick={addMember} disabled={members.length >= MAX_BLOCK_MEMBERS || !hasReadyClusters}>
+                      onclick={addMember} disabled={!hasReadyClusters || atMemberCap}>
                       <Plus class="size-4" aria-hidden="true" /> Add member
                     </Button>
                   </div>
@@ -366,10 +378,10 @@
                     </div>
                   {/each}
 
-                  {#if duplicateClusterMembers}
+                  {#if insufficientClusterDiversity}
                     <div class="flex items-start gap-2 rounded-md border border-warning/30 bg-warning/10 p-2.5 text-xs text-warning">
                       <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
-                      <p>Two or more members share the same cluster (same availability boundary), which reduces fault isolation.</p>
+                      <p>All members are in the same cluster. Forming a copyset needs members in at least two different clusters; place at least one member in a different cluster.</p>
                     </div>
                   {/if}
                 {/if}

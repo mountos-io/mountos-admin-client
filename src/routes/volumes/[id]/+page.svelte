@@ -30,8 +30,10 @@
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import { api } from '$lib/core/stores/client.svelte'
   import { userCache } from '$lib/core/stores/user-cache.svelte'
-  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint, VolumeApiKey } from '$lib/core/api/types'
+  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint, VolumeApiKey, VolumeBlockPlacementConfig } from '$lib/core/api/types'
+  import { ApiError } from '$lib/core/api/errors'
   import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
+  import VolumeCopysetCountControl from '$lib/components/shared/VolumeCopysetCountControl.svelte'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
@@ -391,6 +393,7 @@
     const ctrl = volFetchCtrl
     volSessions = []; sessionsTotal = 0; sessionsTotalPages = 0; sessionsPage = 1
     apiKeysCtrl?.abort(); apiKeys = []; apiKeysKnown = false; newKeyName = ''
+    copysetConfigCtrl?.abort()
     loading = true
     store.getVolume(id).then(v => {
       if (ctrl.signal.aborted) return
@@ -399,10 +402,11 @@
       fetchVolumeSessions()
       fetchForks()
       fetchApiKeys()
+      fetchCopysetConfig()
     }).catch(() => { if (!ctrl.signal.aborted) volume = null }).finally(() => { if (!ctrl.signal.aborted) loading = false })
   })
 
-  onDestroy(() => { volFetchCtrl?.abort(); sessionsCtrl?.abort(); sizeCtrl?.abort(); apiKeysCtrl?.abort() })
+  onDestroy(() => { volFetchCtrl?.abort(); sessionsCtrl?.abort(); sizeCtrl?.abort(); apiKeysCtrl?.abort(); copysetConfigCtrl?.abort() })
 
   async function reload() {
     const v = await store.getVolume(id)
@@ -422,7 +426,7 @@
   const moveClusterCandidates = $derived(
     volume?.region?.id
       ? clusterStore.clustersFor(volume.region.id).filter(c =>
-          c.isActive && c.isReady && c.id !== (volume?.regionCluster?.id ?? 0))
+          c.isActive && c.isReady && c.id !== (volume?.metadataCluster?.id ?? 0))
       : [],
   )
 
@@ -576,6 +580,40 @@
 
   let forks = $state<Fork[]>([])
   let forksLoading = $state(false)
+
+  // Volume-scoped block placement: a block-backed volume's own copyset working set,
+  // distinct from the storage-level K shown on the storage detail page. Block-backed only;
+  // a config row is missing (404) for a volume never bootstrapped into placement, rendered
+  // as "not set" rather than a fabricated value.
+  let copysetConfig = $state<VolumeBlockPlacementConfig | null>(null)
+  let copysetConfigLoading = $state(false)
+  let copysetConfigCtrl: AbortController | null = null
+
+  async function fetchCopysetConfig() {
+    if (!volume || volume.storageType !== 'block') { copysetConfig = null; return }
+    copysetConfigCtrl?.abort()
+    const ctrl = copysetConfigCtrl = new AbortController()
+    copysetConfigLoading = true
+    try {
+      const config = await store.getCopysetConfig(id, ctrl.signal)
+      if (copysetConfigCtrl === ctrl) copysetConfig = config
+    } catch (e: unknown) {
+      if ((e as Error).name === 'AbortError') return
+      if (copysetConfigCtrl === ctrl) {
+        copysetConfig = e instanceof ApiError && e.status === 404
+          ? { id, targetCopysetCount: 0, currentEpoch: 0, copysetIds: [] }
+          : null
+      }
+    } finally {
+      if (copysetConfigCtrl === ctrl) copysetConfigLoading = false
+    }
+  }
+
+  async function handleCopysetConfigSave(targetCopysetCount: number) {
+    const result = await store.updateCopysetConfig(id, targetCopysetCount)
+    await fetchCopysetConfig()
+    return result
+  }
 
   const createForkAsOfMin = $derived(forkAsOfMin(volume, forks, createForkParent, tz.value))
   const createForkAsOfMax = $derived(forkAsOfMax(tz.value, Date.now(), volume))
@@ -943,15 +981,15 @@
                 </div>
               </div>
             {/if}
-            {#if volume.regionCluster?.id}
+            {#if volume.metadataCluster?.id}
               <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Cluster</span>
                 <div class="mt-1">
                   <a
-                    href="/regions/{volume.region.id}?cluster={volume.regionCluster.id}"
-                    aria-label="View region {volume.region.name} scoped to cluster {volume.regionCluster.name}"
+                    href="/regions/{volume.region.id}?cluster={volume.metadataCluster.id}"
+                    aria-label="View region {volume.region.name} scoped to cluster {volume.metadataCluster.name}"
                     class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                  >{volume.regionCluster.name}</a>
+                  >{volume.metadataCluster.name}</a>
                 </div>
               </div>
             {/if}
@@ -1156,6 +1194,31 @@
       </Card>
 
     </div>
+
+    {#if volume.storageType === 'block'}
+      <Card cornerBrackets>
+        <CardHeader>
+          <div class="flex items-center gap-1">
+            <CardTitle>Copysets</CardTitle>
+            <InfoTip text="A copyset provides High Availability (HA): two nodes holding identical copies." />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {#if copysetConfigLoading && !copysetConfig}
+            <p class="text-sm text-muted-foreground">Loading copysets…</p>
+          {:else if copysetConfig}
+            <VolumeCopysetCountControl
+              targetCopysetCount={copysetConfig.targetCopysetCount}
+              copysetCount={copysetConfig.copysetIds.length}
+              canUpdate={!!canEdit}
+              onSave={handleCopysetConfigSave}
+            />
+          {:else}
+            <p class="text-sm text-destructive">Failed to load copyset config.</p>
+          {/if}
+        </CardContent>
+      </Card>
+    {/if}
 
     <Card cornerBrackets>
       <CardHeader>

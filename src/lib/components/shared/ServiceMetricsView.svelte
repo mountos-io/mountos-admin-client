@@ -1110,7 +1110,7 @@
               {#if cv > 0}
                 <Badge
                   variant="outline"
-                  class="font-mono text-[0.65rem] px-1 py-0 {cvClass(cv)}"
+                  class="font-mono text-[0.7rem] px-1 py-0 {cvClass(cv)}"
                   >{cv.toFixed(2)}</Badge
                 >
               {/if}
@@ -1368,7 +1368,7 @@
         <span
           >σ/μ <Badge
             variant="outline"
-            class="font-mono text-[0.65rem] px-1 py-0 {cvClass(cv)}">{cv.toFixed(2)}</Badge
+            class="font-mono text-[0.7rem] px-1 py-0 {cvClass(cv)}">{cv.toFixed(2)}</Badge
           ></span
         >
       {/if}
@@ -1552,7 +1552,7 @@
   .toggle-btn {
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    font-size: 0.6rem;
+    font-size: 0.7rem;
     display: inline-flex;
     align-items: center;
   }
@@ -1584,7 +1584,7 @@
 
   .gauge-lbl {
     font-family: var(--font-mono);
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.15em;
     color: var(--muted-foreground);
@@ -1600,7 +1600,7 @@
 
   .gauge-sub {
     font-family: var(--font-mono);
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     color: var(--muted-foreground);
   }
 

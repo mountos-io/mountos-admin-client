@@ -16,7 +16,7 @@ type FetchVolumesParams = {
   page?: number
   limit?: number
   regionId?: number
-  regionClusterId?: number
+  metadataClusterId?: number
   storageId?: number
   volumeType?: string
   locked?: boolean
@@ -25,13 +25,13 @@ type FetchVolumesParams = {
 
 async function fetchVolumes({
   accountId, page = 1, limit = 20,
-  regionId, regionClusterId, storageId, volumeType, locked, isActive,
+  regionId, metadataClusterId, storageId, volumeType, locked, isActive,
 }: FetchVolumesParams) {
   fetchCtrl?.abort()
   const ctrl = fetchCtrl = new AbortController()
   loading = true
   try {
-    const res = await api.volumes.list({ accountId, page, limit, regionId, regionClusterId, storageId, volumeType, locked, isActive }, ctrl.signal)
+    const res = await api.volumes.list({ accountId, page, limit, regionId, metadataClusterId, storageId, volumeType, locked, isActive }, ctrl.signal)
     volumes = res.items
     totalPages = res.pagination?.totalPages ?? 0
     currentPage = res.pagination?.page ?? 1
@@ -91,6 +91,14 @@ async function updateQuota({ volumeId, quotaLimit }: { volumeId: number; quotaLi
   return api.volumes.updateQuota(volumeId, { quotaLimit })
 }
 
+async function getCopysetConfig(volumeId: number, signal?: AbortSignal) {
+  return api.volumes.getCopysetConfig(volumeId, signal)
+}
+
+async function updateCopysetConfig(volumeId: number, targetCopysetCount: number) {
+  return api.volumes.updateCopysetConfig(volumeId, { targetCopysetCount })
+}
+
 async function listForks(volumeId: number, volumeType?: string) {
   return api.volumes.listForks(volumeId, volumeType)
 }
@@ -134,6 +142,8 @@ export function useVolumes() {
     revokeApiKey,
     revokeApiKeysByUser,
     updateQuota,
+    getCopysetConfig,
+    updateCopysetConfig,
     listForks,
     listAllForks,
     createFork,

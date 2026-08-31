@@ -11,7 +11,7 @@
   height="806"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
-  aria-label="mountOS hierarchical topology: a client resolves its volume at the global HUB, then talks to the owning region cluster. Each region owns its database and vault, points at S3-compatible or Azure object storage, and is partitioned into one or more clusters that run dataserv and gcserv. A region also runs block storage as up to three block volumes that span distinct clusters, backed by the object storage."
+  aria-label="mountOS hierarchical topology: a client resolves its volume at the global HUB, then talks to the owning region cluster. Each region owns its database and vault, points at S3-compatible or Azure object storage, and is partitioned into one or more clusters that run dataserv and gcserv. A region also runs block storage as independent 2-node copysets, admin-adjustable in count, each copyset spanning distinct clusters, backed by the object storage."
 >
   <defs>
     <marker id="rc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -175,20 +175,20 @@
     <path class="edge-muted" d="M 386 284 C 360 297, 360 297, 360 310" marker-end="url(#rc-arrow-muted)" />
     <path class="edge-muted" d="M 574 284 L 612 310" marker-end="url(#rc-arrow-muted)" />
 
-    <!-- Block storage: a region runs any number of them; shown as a pile -->
+    <!-- Block storage: a region runs any number of them, each K independent
+         2-node copysets; shown as a pile with one copyset as the example -->
     <g transform="translate(22,406)">
       <rect x="12" y="-8" width="730" height="68" rx="8" fill="var(--d-surface-alt)" stroke="var(--d-accent)" stroke-width="1.25" stroke-dasharray="6 3" />
       <rect x="6" y="-4" width="730" height="68" rx="8" fill="var(--d-surface-alt)" stroke="var(--d-accent)" stroke-width="1.25" stroke-dasharray="6 3" />
       <rect x="0" y="0" width="730" height="68" rx="8" fill="var(--d-surface-alt)" stroke="var(--d-accent)" stroke-width="1.25" stroke-dasharray="6 3" />
       <text x="14" y="22" class="t-title" style="font-size:12px">Block storage</text>
-      <text x="716" y="22" text-anchor="end" class="t-small t-muted" style="font-size:10px">block volumes span distinct clusters · one of many per region</text>
+      <text x="716" y="22" text-anchor="end" class="t-small t-muted" style="font-size:10px">one copyset shown · admin sets K copysets per storage</text>
       <g transform="translate(14,30)">
-        <rect class="n-edge" x="0" y="0" width="230" height="28" rx="5" />
-        <text x="115" y="18" text-anchor="middle" class="t-small" style="font-size:10px">block volume · cluster default</text>
-        <rect class="n-edge" x="244" y="0" width="230" height="28" rx="5" />
-        <text x="359" y="18" text-anchor="middle" class="t-small" style="font-size:10px">block volume · cluster-2</text>
-        <rect class="n-edge" x="488" y="0" width="218" height="28" rx="5" stroke-dasharray="3 2" />
-        <text x="597" y="18" text-anchor="middle" class="t-small t-muted" style="font-size:10px">block volume · 3rd (HA)</text>
+        <rect class="n-edge" x="0" y="0" width="320" height="28" rx="5" />
+        <text x="160" y="18" text-anchor="middle" class="t-small" style="font-size:10px">member · cluster default</text>
+        <line x1="326" y1="14" x2="368" y2="14" class="edge-accent" marker-start="url(#rc-bi-start)" marker-end="url(#rc-bi-end)" />
+        <rect class="n-edge" x="374" y="0" width="320" height="28" rx="5" />
+        <text x="534" y="18" text-anchor="middle" class="t-small" style="font-size:10px">member · cluster-2</text>
       </g>
     </g>
   </g>
@@ -229,7 +229,7 @@
       <rect x="6" y="-6" width="334" height="34" rx="6" fill="var(--d-surface-alt)" stroke="var(--d-accent)" stroke-width="1.25" stroke-dasharray="6 3" />
       <rect x="3" y="-3" width="334" height="34" rx="6" fill="var(--d-surface-alt)" stroke="var(--d-accent)" stroke-width="1.25" stroke-dasharray="6 3" />
       <rect x="0" y="0" width="334" height="34" rx="6" fill="var(--d-surface-alt)" stroke="var(--d-accent)" stroke-width="1.25" stroke-dasharray="6 3" />
-      <text x="14" y="22" class="t-small" style="font-size:11px">Block storage · block volumes span clusters</text>
+      <text x="14" y="22" class="t-small" style="font-size:11px">Block storage · K independent 2-node copysets</text>
     </g>
     <text x="189" y="414" text-anchor="middle" class="t-small t-muted" style="font-size:10px">independent DB, vault, and storage</text>
     <text x="189" y="430" text-anchor="middle" class="t-small t-muted" style="font-size:10px">no data crosses a region boundary</text>

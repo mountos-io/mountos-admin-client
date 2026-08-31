@@ -328,7 +328,7 @@
     {#if auth.can('auditLogs', 'read')}
       <div class="grid gap-6">
         <Card>
-          <CardHeader><CardTitle class="text-base font-mono">Activity</CardTitle></CardHeader>
+          <CardHeader><CardTitle class="text-base">Activity</CardTitle></CardHeader>
           <CardContent class="pt-0">
             <ActivityFeed
               logs={auditStore.logs}

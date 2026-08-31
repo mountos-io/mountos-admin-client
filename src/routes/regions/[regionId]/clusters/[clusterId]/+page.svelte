@@ -17,14 +17,14 @@
   import { copyText } from '$lib/core/utils/clipboard'
   import Copy from '@lucide/svelte/icons/copy'
   import { isClusterNameValid, clusterNameErrorMessage } from '$lib/core/utils/validation'
-  import type { RegionCluster } from '$lib/core/api/types'
+  import type { MetadataCluster } from '$lib/core/api/types'
 
   const regionId = $derived(Number($page.params.regionId))
   const clusterId = $derived(Number($page.params.clusterId))
   const store = useClusters()
   const auth = useAuth()
 
-  let cluster = $state<RegionCluster | null>(null)
+  let cluster = $state<MetadataCluster | null>(null)
   let loading = $state(false)
   let editing = $state(false)
   let nameDraft = $state('')
