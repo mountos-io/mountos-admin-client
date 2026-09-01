@@ -33,7 +33,6 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     canUpdate: true,
     onDrain: vi.fn(),
     onCancelDrain: vi.fn(),
-    onReactivate: vi.fn(),
     onRegisterCopyset: vi.fn(),
     onRegisterCopysetsBulk: vi.fn(),
     onRemove: vi.fn(),
@@ -107,15 +106,26 @@ describe('ServersList', () => {
     await waitFor(() => expect(showSuccessToast).toHaveBeenCalledWith('Server ID copied'))
   })
 
-  it('shows unsynced/drain-ready badges only under directAccess', () => {
+  it('shows the unsynced badge regardless of directAccess: a real backlog matters during a normal drain too', () => {
     const nodesByVolume = new Map([
       ['bv-a', [sn('node-a', 'up', { metadata: { unsynced_objects: 4 } })]],
     ])
     const { rerender } = render(ServersList, { props: baseProps({ nodesByVolume, directAccess: false }) })
-    expect(screen.queryByText(/unsynced/)).not.toBeInTheDocument()
+    expect(screen.getByText('4 unsynced')).toBeInTheDocument()
 
     rerender(baseProps({ nodesByVolume, directAccess: true }))
     expect(screen.getByText('4 unsynced')).toBeInTheDocument()
+  })
+
+  it('shows the drain-ready badge only under directAccess, and only once there is no unsynced backlog', () => {
+    const nodesByVolume = new Map([
+      ['bv-a', [sn('node-a', 'up', { metadata: { drain_ready: true } })]],
+    ])
+    const { rerender } = render(ServersList, { props: baseProps({ nodesByVolume, directAccess: false }) })
+    expect(screen.queryByText(/drain.ready/)).not.toBeInTheDocument()
+
+    rerender(baseProps({ nodesByVolume, directAccess: true }))
+    expect(screen.getByText(/drain.ready/)).toBeInTheDocument()
   })
 
   it('drain: opens a confirm dialog, then calls onDrain and toasts on confirm', async () => {
@@ -145,25 +155,6 @@ describe('ServersList', () => {
     render(ServersList, { props: baseProps({ copysets: [copyset({ state: 'draining', pendingSyncJobsA: 2, pendingSyncJobsB: 5 })] }) })
     expect(screen.getByText('2 pending')).toBeInTheDocument()
     expect(screen.getByText('5 pending')).toBeInTheDocument()
-  })
-
-  it('reactivate: calls onReactivate with the server id and toasts', async () => {
-    const onReactivate = vi.fn().mockResolvedValue(undefined)
-    const blockVolumesById = new Map([['bv-detached', bv('bv-detached', { memberState: 'detached', copysetId: undefined })]])
-    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById, onReactivate }) })
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }))
-    await waitFor(() => expect(onReactivate).toHaveBeenCalledWith('bv-detached'))
-    await waitFor(() => expect(showSuccessToast).toHaveBeenCalled())
-  })
-
-  it('routes a failed reactivate through handleApiError', async () => {
-    const onReactivate = vi.fn().mockRejectedValue(new Error('conflict'))
-    const blockVolumesById = new Map([['bv-detached', bv('bv-detached', { memberState: 'detached', copysetId: undefined })]])
-    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById, onReactivate }) })
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }))
-    await waitFor(() => expect(handleApiError).toHaveBeenCalled())
   })
 
   it('remove: opens a confirm dialog, then calls onRemove and toasts on confirm', async () => {
@@ -303,7 +294,7 @@ describe('ServersList', () => {
     expect(screen.queryByRole('button', { name: 'Add copyset' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Add multiple' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Drain' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument()
     expect(screen.getByText('bv-detached')).toBeInTheDocument()
   })
 

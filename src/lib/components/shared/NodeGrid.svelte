@@ -22,7 +22,7 @@
   import { CardTitle } from '$lib/components/ui/card'
   import { api } from '$lib/core/stores/client.svelte'
   import { formatBytes } from '$lib/core/utils/format'
-  import { nodeHealthVariant, nodeHealthLabel, worstNodeHealthVariant, type NodeHealthVariant } from '$lib/core/utils/node-health'
+  import { nodeHealthVariant, nodeHealthLabel, worstNodeHealthVariant, nodeConverging, type NodeHealthVariant } from '$lib/core/utils/node-health'
   import { COPYSET_STATE_LABEL, COPYSET_STATE_VARIANT, COPYSET_STATE_TITLE } from '$lib/core/utils/copyset-state'
   import { isCopysetState } from '$lib/core/api/copyset-ui-types'
   import type { Copyset, BlockVolume, ServiceNode, NodeStatsSample } from '$lib/core/api/types'
@@ -66,7 +66,7 @@
     const volume = volumeId ? blockVolumesById.get(volumeId) : undefined
     const servers = volumeId ? nodesByVolume.get(volumeId) ?? [] : []
     const primary = servers[0]
-    const variant = worstNodeHealthVariant(servers.map(s => nodeHealthVariant(s.status)))
+    const variant = worstNodeHealthVariant(servers.map(s => nodeHealthVariant(s.status, nodeConverging(s))))
     const name = memberVolumeName(volume, volumeId)
     let title: string
     if (!volumeId) {
@@ -74,17 +74,17 @@
     } else if (servers.length === 0) {
       title = `Member ${label} (${name}): no blockserv registered yet, uncertain`
     } else if (servers.length === 1) {
-      title = `Member ${label} (${name}): ${nodeHealthLabel(servers[0].status)}, ${servers[0].nodeId}`
+      title = `Member ${label} (${name}): ${nodeHealthLabel(servers[0].status, nodeConverging(servers[0]))}, ${servers[0].nodeId}`
     } else {
-      title = `Member ${label} (${name}): ${servers.length} blockserv registered, worst status ${nodeHealthLabel(worstStatusAmong(servers))}`
+      title = `Member ${label} (${name}): ${servers.length} blockserv registered, worst status ${nodeHealthLabel(worstStatusAmong(servers), servers.some(nodeConverging))}`
     }
     return { label, volume, servers, primary, variant, title }
   }
 
   function worstStatusAmong(servers: ServiceNode[]): string {
-    const byVariant = new Map(servers.map(s => [s.nodeId, nodeHealthVariant(s.status)] as const))
+    const byVariant = new Map(servers.map(s => [s.nodeId, nodeHealthVariant(s.status, nodeConverging(s))] as const))
     const worst = worstNodeHealthVariant([...byVariant.values()])
-    return servers.find(s => nodeHealthVariant(s.status) === worst)?.status ?? 'unknown'
+    return servers.find(s => nodeHealthVariant(s.status, nodeConverging(s)) === worst)?.status ?? 'unknown'
   }
 
   const cells = $derived.by((): GridCell[] => copysets.map((copyset): GridCell => {

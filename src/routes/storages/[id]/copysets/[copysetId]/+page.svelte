@@ -196,8 +196,8 @@
           <p class="text-sm text-muted-foreground">Fully synced. Ready to retire.</p>
         {:else if copyset.state === 'retired'}
           <p class="text-sm text-muted-foreground">
-            Retired. Members are detached; reactivate them in Pool Members on the storage page
-            to return to the pool.
+            Retired. Members are detached; find them in Pool Members on the storage page to
+            remove them or pair them into a different copyset.
           </p>
         {/if}
       </CardHeader>

@@ -117,10 +117,6 @@ async function registerCopysetsBulk(id: number, req: RegisterStorageCopysetsBulk
   return api.storages.registerCopysetsBulk(id, req)
 }
 
-async function reactivateMember(id: number, blockVolumeId: string) {
-  return api.storages.reactivateMember(id, blockVolumeId)
-}
-
 // Permanently deregisters a detached pool member.
 async function removeMember(id: number, blockVolumeId: string) {
   return api.storages.removeMember(id, blockVolumeId)
@@ -149,7 +145,6 @@ export function useStorages() {
     cancelDrain,
     registerCopyset,
     registerCopysetsBulk,
-    reactivateMember,
     removeMember,
   }
 }

@@ -3,6 +3,7 @@
   import { page } from '$app/stores'
   import { goto } from '$app/navigation'
   import { useVolumes } from '$lib/core/stores/volumes.svelte'
+  import { useStorages } from '$lib/core/stores/storages.svelte'
   import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { useUsers } from '$lib/core/stores/users.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
@@ -30,7 +31,10 @@
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import { api } from '$lib/core/stores/client.svelte'
   import { userCache } from '$lib/core/stores/user-cache.svelte'
-  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint, VolumeApiKey, VolumeBlockPlacementConfig } from '$lib/core/api/types'
+  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint, VolumeApiKey, VolumeBlockPlacementConfig, Copyset } from '$lib/core/api/types'
+  import CopysetStateBadge from '$lib/components/shared/CopysetStateBadge.svelte'
+  import { isCopysetState } from '$lib/core/api/copyset-ui-types'
+  import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right'
   import { ApiError } from '$lib/core/api/errors'
   import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
   import VolumeCopysetCountControl from '$lib/components/shared/VolumeCopysetCountControl.svelte'
@@ -59,6 +63,7 @@
   import { sanitizeForkName, forkNameErrorMessage } from '$lib/core/utils/validation'
 
   const store = useVolumes()
+  const storagesStore = useStorages()
   const clusterStore = useClusters()
   const userStore = useUsers()
   const auth = useAuth()
@@ -401,11 +406,11 @@
       fetchVolumeSessions()
       fetchForks()
       fetchApiKeys()
-      fetchCopysetConfig()
+      fetchCopysetConfig().then(fetchVolumeCopysets)
     }).catch(() => { if (!ctrl.signal.aborted) volume = null }).finally(() => { if (!ctrl.signal.aborted) loading = false })
   })
 
-  onDestroy(() => { volFetchCtrl?.abort(); sessionsCtrl?.abort(); sizeCtrl?.abort(); apiKeysCtrl?.abort(); copysetConfigCtrl?.abort() })
+  onDestroy(() => { volFetchCtrl?.abort(); sessionsCtrl?.abort(); sizeCtrl?.abort(); apiKeysCtrl?.abort(); copysetConfigCtrl?.abort(); volumeCopysetsCtrl?.abort() })
 
   async function reload() {
     const v = await store.getVolume(id)
@@ -608,9 +613,37 @@
     }
   }
 
+  // Resolves this volume's working-set copyset ids to their name/state, so they can be
+  // shown as links with a state badge instead of a bare count. Storage-scoped (all of a
+  // volume's copysets belong to its own storage's pool), fetched once copysetConfig has ids
+  // to resolve. Missing from the resolved map just falls back to the bare id in the markup.
+  let volumeCopysetsById = $state<Map<string, Copyset>>(new Map())
+  let volumeCopysetsLoading = $state(false)
+  let volumeCopysetsCtrl: AbortController | null = null
+
+  async function fetchVolumeCopysets() {
+    if (!volume || !copysetConfig || copysetConfig.copysetIds.length === 0) {
+      volumeCopysetsById = new Map()
+      return
+    }
+    volumeCopysetsCtrl?.abort()
+    const ctrl = volumeCopysetsCtrl = new AbortController()
+    volumeCopysetsLoading = true
+    try {
+      const list = await storagesStore.listCopysets(volume.storage.id, ctrl.signal)
+      if (volumeCopysetsCtrl === ctrl) volumeCopysetsById = new Map(list.map((c) => [c.id, c]))
+    } catch (e: unknown) {
+      if ((e as Error).name === 'AbortError') return
+      if (volumeCopysetsCtrl === ctrl) volumeCopysetsById = new Map()
+    } finally {
+      if (volumeCopysetsCtrl === ctrl) volumeCopysetsLoading = false
+    }
+  }
+
   async function handleCopysetConfigSave(targetCopysetCount: number) {
     const result = await store.updateCopysetConfig(id, targetCopysetCount)
     await fetchCopysetConfig()
+    await fetchVolumeCopysets()
     return result
   }
 
@@ -1208,12 +1241,40 @@
           {#if copysetConfigLoading && !copysetConfig}
             <p class="text-sm text-muted-foreground">Loading copysets…</p>
           {:else if copysetConfig}
-            <VolumeCopysetCountControl
-              targetCopysetCount={copysetConfig.targetCopysetCount}
-              copysetCount={copysetConfig.copysetIds.length}
-              canUpdate={!!canEdit}
-              onSave={handleCopysetConfigSave}
-            />
+            <div class="space-y-3">
+              <VolumeCopysetCountControl
+                targetCopysetCount={copysetConfig.targetCopysetCount}
+                copysetCount={copysetConfig.copysetIds.length}
+                canUpdate={!!canEdit}
+                onSave={handleCopysetConfigSave}
+              />
+              {#if copysetConfig.copysetIds.length > 0}
+                <ul class="space-y-1">
+                  {#each copysetConfig.copysetIds as cid (cid)}
+                    {@const c = volumeCopysetsById.get(cid)}
+                    <li class="flex items-center gap-1.5 text-sm">
+                      {#if c}
+                        {#if isCopysetState(c.state)}
+                          <CopysetStateBadge state={c.state} />
+                        {:else}
+                          <Badge variant="destructive">{c.state}</Badge>
+                        {/if}
+                        <a href={`/storages/${volume?.storage.id}/copysets/${cid}`}
+                          class="inline-flex items-center gap-0.5 font-mono text-xs text-muted-foreground hover:text-primary hover:underline">
+                          {c.name || cid}<ArrowUpRight class="size-3" aria-hidden="true" />
+                        </a>
+                      {:else}
+                        <Badge variant="outline" class={volumeCopysetsLoading ? 'animate-pulse' : ''}>{volumeCopysetsLoading ? 'loading' : 'unknown'}</Badge>
+                        <a href={`/storages/${volume?.storage.id}/copysets/${cid}`}
+                          class="inline-flex items-center gap-0.5 font-mono text-xs text-muted-foreground hover:text-primary hover:underline">
+                          {cid}<ArrowUpRight class="size-3" aria-hidden="true" />
+                        </a>
+                      {/if}
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+            </div>
           {:else}
             <p class="text-sm text-destructive">Failed to load copyset config.</p>
           {/if}

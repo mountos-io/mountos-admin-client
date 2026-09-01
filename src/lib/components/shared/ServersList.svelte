@@ -1,9 +1,9 @@
 <script lang="ts">
   // Unified per-server view for a block storage's copyset pool:
   // one row per registered block-volume server, whether it's currently serving a copyset
-  // (paired) or needs reactivation (detached). Driven primarily by `copysets` (for paired
-  // rows) and `blockVolumesById` (the source of truth for a server's current state,
-  // including any server a retired copyset's members fell back to).
+  // (paired) or unpaired (detached, awaiting removal or a fresh pairing). Driven primarily
+  // by `copysets` (for paired rows) and `blockVolumesById` (the source of truth for a
+  // server's current state, including any server a retired copyset's members fell back to).
   import { tick } from 'svelte'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Badge } from '$lib/components/ui/badge'
@@ -17,6 +17,7 @@
   import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import { nodeStatusVariant } from '$lib/core/utils/format'
+  import { nodeConverging } from '$lib/core/utils/node-health'
   import { copyText } from '$lib/core/utils/clipboard'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import { isCopysetState } from '$lib/core/api/copyset-ui-types'
@@ -32,7 +33,7 @@
   let {
     copysets, storageId, blockVolumesById, nodesByVolume, directAccess = false, canUpdate,
     staleStatus = false, nodesStale = false, registering = $bindable(false),
-    onDrain, onCancelDrain, onReactivate, onRegisterCopyset, onRegisterCopysetsBulk, onRemove,
+    onDrain, onCancelDrain, onRegisterCopyset, onRegisterCopysetsBulk, onRemove,
   }: {
     copysets: Copyset[]
     storageId: number
@@ -49,7 +50,6 @@
     registering?: boolean
     onDrain: (copysetId: string) => Promise<void>
     onCancelDrain: (copysetId: string) => Promise<void>
-    onReactivate: (blockVolumeId: string) => Promise<unknown>
     // Creates a whole new copyset (both members atomically, names derived from name);
     // returns the copyset so its memberA/memberB ids can be shown to the operator as
     // BLOCK_VOLUME_ID env values.
@@ -66,9 +66,17 @@
     name: string
     servers: ServiceNode[]
     copysetId?: string
+    copysetName?: string
     copysetState?: CopysetState
     pendingSyncJobs?: number
     detached: boolean
+    // 'A' or 'B' for a paired row (which slot it fills in its copyset); undefined for a
+    // detached/unpaired row, which belongs to no copyset. Drives the visual grouping band
+    // and label, purely presentational - never used to pick which member to act on.
+    slot?: 'A' | 'B'
+    // Alternates per copyset so consecutive A/B rows share a background tint and the next
+    // pair reads as visually distinct; unset (no tint) for detached/unpaired rows.
+    groupParity?: 0 | 1
   }
 
   // Retired copysets contribute no rows of their own: a retired copyset's members are already
@@ -79,7 +87,9 @@
     const list: ServerRow[] = []
     const seen = new Set<string>()
 
-    function pushMember(volumeId: string | undefined, copyset: Copyset, pendingSyncJobs: number | undefined) {
+    let groupParity: 0 | 1 = 0
+
+    function pushMember(volumeId: string | undefined, copyset: Copyset, pendingSyncJobs: number | undefined, slot: 'A' | 'B') {
       if (!volumeId) return
       seen.add(volumeId)
       const vol = blockVolumesById.get(volumeId)
@@ -88,16 +98,20 @@
         name: vol?.name || volumeId,
         servers: nodesByVolume.get(volumeId) ?? [],
         copysetId: copyset.id,
+        copysetName: copyset.name,
         copysetState: copyset.state,
         pendingSyncJobs,
         detached: false,
+        slot,
+        groupParity,
       })
     }
 
     for (const copyset of copysets) {
       if (copyset.state === 'retired') continue
-      pushMember(copyset.memberA, copyset, copyset.pendingSyncJobsA)
-      pushMember(copyset.memberB, copyset, copyset.pendingSyncJobsB)
+      pushMember(copyset.memberA, copyset, copyset.pendingSyncJobsA, 'A')
+      pushMember(copyset.memberB, copyset, copyset.pendingSyncJobsB, 'B')
+      groupParity = groupParity === 0 ? 1 : 0
     }
     for (const vol of blockVolumesById.values()) {
       if (seen.has(vol.id)) continue
@@ -115,7 +129,6 @@
 
   let name = $state('')
   let submitting = $state(false)
-  let reactivatingId = $state<string | null>(null)
   let removingId = $state<string | null>(null)
   // Set once registration succeeds: the two generated BLOCK_VOLUME_IDs, shown for the
   // operator to copy into the launch config of the two instances they're about to start.
@@ -210,18 +223,6 @@
     }
   }
 
-  async function handleReactivate(row: ServerRow) {
-    reactivatingId = row.id
-    try {
-      await onReactivate(row.id)
-      showSuccessToast(`${row.name} reactivated`)
-    } catch (err: unknown) {
-      handleApiError(err, 'Failed to reactivate server')
-    } finally {
-      reactivatingId = null
-    }
-  }
-
   async function doRemove(row: ServerRow) {
     removingId = row.id
     try {
@@ -237,7 +238,7 @@
   function handleRemoveClick(row: ServerRow) {
     dialog.confirm(
       'Remove this server?',
-      `This permanently deregisters ${row.name} from the pool. It won't be reactivatable afterward - register it again if you need it back.`,
+      `This permanently deregisters ${row.name} from the pool. It can't be brought back afterward - register a new one if you need it.`,
       () => doRemove(row),
       'destructive',
       'Remove',
@@ -297,16 +298,23 @@
       {#each row.servers as n (n.nodeId)}
         {@const unsynced = n.metadata?.['unsynced_objects']}
         {@const drainReady = n.metadata?.['drain_ready'] === true}
+        {@const ready = n.metadata?.['ready'] === true}
+        {@const haSynced = n.metadata?.['ha_synced'] === true}
+        {@const converging = nodeConverging(n)}
         <a href={`/nodes/${n.regionId}/${n.nodeId}`}
           class="inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-xs hover:border-primary hover:text-primary transition-colors">
           <span class="font-mono truncate max-w-[8rem]" title={n.nodeId}>{n.nodeId}</span>
           <Badge variant={nodeStatusVariant(n.status)} class="text-xs px-1 py-0">{n.status}</Badge>
-          {#if directAccess}
-            {#if drainReady}
-              <Badge variant="outline" class="text-xs px-1 py-0" title="Fully synced and no active clients: safe to stop for maintenance">drain&#8209;ready</Badge>
-            {:else if typeof unsynced === 'number' && unsynced > 0}
-              <Badge variant="warning" class="text-xs px-1 py-0" title="Objects not yet synced to object storage: do not stop this instance until synced">{unsynced} unsynced</Badge>
-            {/if}
+          {#if converging}
+            <Badge variant="warning" class="text-xs px-1 py-0"
+              title={`Heartbeat is healthy, but ${!ready ? 'not yet ready to serve reads' : ''}${!ready && !haSynced ? ' and ' : ''}${!haSynced ? 'not yet HA-synced with its peer' : ''}`}>
+              {!ready ? 'not ready' : 'unsynced'}
+            </Badge>
+          {/if}
+          {#if typeof unsynced === 'number' && unsynced > 0}
+            <Badge variant="warning" class="text-xs px-1 py-0" title="Objects not yet synced to object storage: do not stop this instance until synced">{unsynced} unsynced</Badge>
+          {:else if directAccess && drainReady}
+            <Badge variant="outline" class="text-xs px-1 py-0" title="Fully synced and no active clients: safe to stop for maintenance">drain&#8209;ready</Badge>
           {/if}
         </a>
       {/each}
@@ -352,9 +360,13 @@
         </TableHeader>
         <TableBody>
           {#each rows as row (row.id)}
-            <TableRow id={row.copysetId ? `copyset-${row.copysetId}` : undefined}>
+            <TableRow id={row.slot === 'A' ? `copyset-${row.copysetId}` : undefined}
+              class="{row.groupParity === 1 ? 'bg-muted/20' : ''} {row.copysetId ? 'border-l-2 border-l-primary/30' : ''}">
               <TableCell>
                 <div class="flex items-center gap-1.5">
+                  {#if row.slot}
+                    <span class="inline-flex items-center justify-center size-4 rounded-full border text-[10px] font-mono text-muted-foreground shrink-0" title={`Slot ${row.slot} of copyset ${row.copysetName ?? row.copysetId}`}>{row.slot}</span>
+                  {/if}
                   <span class="font-medium">{row.name}</span>
                   <button type="button" onclick={() => copyValue(row.id, 'Server ID')}
                     class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-50 hover:opacity-100 hover:text-primary transition-opacity"
@@ -393,15 +405,10 @@
                   {:else if row.copysetId && row.copysetState === 'draining'}
                     <Button variant="outline" size="sm" onclick={() => handleCancelClick(row)}>Cancel drain</Button>
                   {:else if row.detached}
-                    <div class="inline-flex items-center gap-1.5">
-                      <Button variant="outline" size="sm" disabled={reactivatingId === row.id || removingId === row.id} onclick={() => handleReactivate(row)}>
-                        {reactivatingId === row.id ? 'Reactivating...' : 'Reactivate'}
-                      </Button>
-                      <Button variant="outline" size="sm" class="text-destructive hover:text-destructive"
-                        disabled={reactivatingId === row.id || removingId === row.id} onclick={() => handleRemoveClick(row)}>
-                        {removingId === row.id ? 'Removing...' : 'Remove'}
-                      </Button>
-                    </div>
+                    <Button variant="outline" size="sm" class="text-destructive hover:text-destructive"
+                      disabled={removingId === row.id} onclick={() => handleRemoveClick(row)}>
+                      {removingId === row.id ? 'Removing...' : 'Remove'}
+                    </Button>
                   {/if}
                 </TableCell>
               {/if}
@@ -414,7 +421,8 @@
 </Card>
 
 <Dialog.Root bind:open={registering} onOpenChange={(v) => { if (!v) submitting = false }}>
-  <Dialog.Content class="sm:max-w-sm">
+  <Dialog.Content class="sm:max-w-sm" showCloseButton={!submitting}
+    escapeKeydownBehavior={submitting ? 'ignore' : 'close'} interactOutsideBehavior={submitting ? 'ignore' : 'close'}>
     {#if registered}
       <Dialog.Header>
         <Dialog.Title>Copyset registered</Dialog.Title>
@@ -466,7 +474,8 @@
 </Dialog.Root>
 
 <Dialog.Root bind:open={bulkRegistering} onOpenChange={(v) => { if (!v) bulkSubmitting = false }}>
-  <Dialog.Content class="sm:max-w-md">
+  <Dialog.Content class="sm:max-w-md" showCloseButton={!bulkSubmitting}
+    escapeKeydownBehavior={bulkSubmitting ? 'ignore' : 'close'} interactOutsideBehavior={bulkSubmitting ? 'ignore' : 'close'}>
     {#if bulkResults}
       <Dialog.Header>
         <Dialog.Title>{bulkResults.length} copyset{bulkResults.length === 1 ? '' : 's'} registered</Dialog.Title>

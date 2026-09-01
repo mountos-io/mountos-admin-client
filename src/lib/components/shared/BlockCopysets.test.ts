@@ -25,7 +25,7 @@ function sn(nodeId: string, blockVolumeId: string): ServiceNode {
 
 const {
   listCopysets, listBlockVolumes, drainCopyset, cancelDrain, serviceNodesList, volumesList,
-  registerCopyset, registerCopysetsBulk, reactivateMember, removeMember,
+  registerCopyset, registerCopysetsBulk, removeMember,
 } = vi.hoisted(() => ({
   listCopysets: vi.fn(),
   listBlockVolumes: vi.fn(),
@@ -35,12 +35,11 @@ const {
   volumesList: vi.fn(),
   registerCopyset: vi.fn(),
   registerCopysetsBulk: vi.fn(),
-  reactivateMember: vi.fn(),
   removeMember: vi.fn(),
 }))
 
 vi.mock('$lib/core/stores/storages.svelte', () => ({
-  useStorages: () => ({ listCopysets, listBlockVolumes, drainCopyset, cancelDrain, registerCopyset, registerCopysetsBulk, reactivateMember, removeMember }),
+  useStorages: () => ({ listCopysets, listBlockVolumes, drainCopyset, cancelDrain, registerCopyset, registerCopysetsBulk, removeMember }),
 }))
 
 vi.mock('$lib/core/stores/client.svelte', () => ({
@@ -75,15 +74,20 @@ describe('BlockCopysets', () => {
     expect(serviceNodesList).toHaveBeenCalledWith(2, 'blockserv', undefined, undefined, undefined, expect.anything())
   })
 
-  it('shows the live active-server count', async () => {
+  it('shows a copyset-centric summary, not a raw server count', async () => {
     listBlockVolumes.mockResolvedValue([
       bv('bv-a', { copysetId: 'copyset-1' }),
       bv('bv-b', { copysetId: 'copyset-1' }),
       bv('bv-inactive', { isActive: false, memberState: 'detached' }),
     ])
     render(BlockCopysets, { props: baseProps })
-    await waitFor(() => expect(screen.getByText('2', { selector: '.font-mono.font-medium' })).toBeInTheDocument())
-    expect(screen.getByText(/servers registered/)).toBeInTheDocument()
+    // One active copyset (from the default `copyset()` fixture) plus one detached, unpaired
+    // member (bv-inactive is not a memberA/memberB of any copyset in the list).
+    const count = await screen.findByText('1', { selector: '.font-mono.font-medium' })
+    const summaryLine = count.parentElement
+    expect(summaryLine?.textContent).toMatch(/1\s*copyset/)
+    expect(summaryLine?.textContent).toMatch(/1\s*active/)
+    expect(summaryLine?.textContent).toMatch(/1\s*detached member/)
   })
 
   it('shows an error state when the initial load fails', async () => {
@@ -107,7 +111,7 @@ describe('BlockCopysets', () => {
     await waitFor(() => expect(screen.getAllByRole('button', { name: 'Cancel drain' }).length).toBeGreaterThan(0))
   })
 
-  it('renders unpaired and detached servers alongside paired ones in one list, and wires reactivate/register-copyset to the store', async () => {
+  it('renders unpaired and detached servers alongside paired ones in one list, and wires register-copyset to the store', async () => {
     listBlockVolumes.mockResolvedValue([
       bv('bv-a', { copysetId: 'copyset-1' }),
       bv('bv-b', { copysetId: 'copyset-1' }),
@@ -115,16 +119,12 @@ describe('BlockCopysets', () => {
       bv('bv-detached', { memberState: 'detached', copysetId: undefined }),
     ])
     registerCopyset.mockResolvedValue({ id: 'copyset-2', storageId: 'storage-1', name: 'replica-3', state: 'active', memberA: 'bv-c', memberB: 'bv-d', tags: [] })
-    reactivateMember.mockResolvedValue({ id: 'bv-detached', name: 'bv-detached', memberState: 'active' })
 
     render(BlockCopysets, { props: baseProps })
     await waitFor(() => expect(screen.getByText('bv-unpaired')).toBeInTheDocument())
     expect(screen.getByText('bv-detached')).toBeInTheDocument()
     expect(screen.getByText('Unpaired')).toBeInTheDocument()
     expect(screen.getByText('Detached')).toBeInTheDocument()
-
-    await fireEvent.click(screen.getByRole('button', { name: 'Reactivate' }))
-    await waitFor(() => expect(reactivateMember).toHaveBeenCalledWith(1, 'bv-detached'))
 
     await fireEvent.click(screen.getByRole('button', { name: 'Add copyset' }))
     await fireEvent.input(screen.getByLabelText('Copyset name'), { target: { value: 'replica-3' } })
@@ -175,7 +175,7 @@ describe('BlockCopysets', () => {
 
     expect(screen.queryByRole('button', { name: 'Drain' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Add copyset' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Remove' })).not.toBeInTheDocument()
     // Read-only display stays visible for a read-only user.
     expect(screen.getByText('bv-detached')).toBeInTheDocument()
   })
@@ -193,7 +193,10 @@ describe('BlockCopysets', () => {
     expect(volumesList).toHaveBeenCalledWith(expect.objectContaining({ accountId: 9, storageId: 1 }), expect.anything())
   })
 
-  it('a normal drain-poll tick refetches only copyset status, not the block-volume/node topology', async () => {
+  it('a drain-poll tick refetches both copyset status and the block-volume/node topology', async () => {
+    // Topology must be refetched on every tick too, not just copyset status: a copyset
+    // finishing its synced_drained -> retired transition detaches both its members, and only
+    // the topology fetch (blockVolumesById) observes that.
     listCopysets.mockResolvedValue([copyset({ state: 'draining', pendingSyncJobsA: 1, pendingSyncJobsB: 1 })])
     vi.useFakeTimers()
     try {
@@ -208,8 +211,29 @@ describe('BlockCopysets', () => {
       await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
 
       expect(listCopysets).toHaveBeenCalledTimes(1)
-      expect(listBlockVolumes).not.toHaveBeenCalled()
-      expect(serviceNodesList).not.toHaveBeenCalled()
+      expect(listBlockVolumes).toHaveBeenCalledTimes(1)
+      expect(serviceNodesList).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps polling through synced_drained (not just draining), so the eventual retirement is observed', async () => {
+    listCopysets.mockResolvedValue([copyset({ state: 'synced_drained' })])
+    vi.useFakeTimers()
+    try {
+      render(BlockCopysets, { props: baseProps })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(listCopysets).toHaveBeenCalledTimes(1)
+
+      vi.clearAllMocks()
+      listCopysets.mockResolvedValue([]) // retired: no longer returned by the default listCopysets() call
+      listBlockVolumes.mockResolvedValue([bv('bv-a', { memberState: 'detached', copysetId: undefined }), bv('bv-b', { memberState: 'detached', copysetId: undefined })])
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
+
+      expect(listCopysets).toHaveBeenCalledTimes(1)
+      expect(listBlockVolumes).toHaveBeenCalledTimes(1)
+      await waitFor(() => expect(screen.getAllByText('Detached').length).toBe(2))
     } finally {
       vi.useRealTimers()
     }
