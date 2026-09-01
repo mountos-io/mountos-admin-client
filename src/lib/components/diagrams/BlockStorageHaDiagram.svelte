@@ -3,8 +3,8 @@
 
   // Deterministic copyset placement: a block storage is served by K independent
   // 2-node copysets (K admin-adjustable after creation), each created directly as a
-  // pair. Placing a copyset's two members on separate racks or availability zones is
-  // advised, not enforced or tracked. Copysets replicate peer-to-peer within themselves
+  // pair. Placing a copyset's two members on separate placement or availability zones is
+  // advised. Copysets replicate peer-to-peer within themselves
   // only; there is no cross-copyset replication or mesh. A volume does not use the whole
   // pool: it draws its own configurable working set of copysets from it (3 by
   // default), so volumes commonly share a copyset. A write hashes deterministically,

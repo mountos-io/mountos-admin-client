@@ -222,7 +222,7 @@
 
             {#if isBlock}
               <div class="flex items-start gap-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
-                <p>This storage starts with no copyset servers. Register copysets, in pairs, from the storage's detail page once it's created. Spreading a copyset's two servers across racks or availability zones is advised but not enforced.</p>
+                <p>This storage starts with no copyset servers. Register copysets, in pairs, from the storage's detail page once it's created. Spreading a copyset's two servers across placement or availability zones is advised.</p>
               </div>
 
               <Separator />
