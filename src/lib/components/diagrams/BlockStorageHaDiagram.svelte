@@ -2,9 +2,10 @@
   import './diagram.css'
 
   // Deterministic copyset placement: a block storage is served by K independent
-  // 2-node copysets (K admin-adjustable after creation), each copyset's two members in
-  // distinct clusters. Copysets replicate peer-to-peer within themselves only;
-  // there is no cross-copyset replication or mesh. A volume does not use the whole
+  // 2-node copysets (K admin-adjustable after creation), each created directly as a
+  // pair. Placing a copyset's two members on separate racks or availability zones is
+  // advised, not enforced or tracked. Copysets replicate peer-to-peer within themselves
+  // only; there is no cross-copyset replication or mesh. A volume does not use the whole
   // pool: it draws its own configurable working set of copysets from it (3 by
   // default), so volumes commonly share a copyset. A write hashes deterministically,
   // client-side, to exactly one copyset within the volume's working set.
@@ -25,8 +26,8 @@
 </script>
 
 <!-- Copysets: one block storage = K independent 2-node copysets (2 shown here),
-     each two blockserv nodes + attached volumes in distinct clusters,
-     peer-replicated within the copyset only. A volume draws its own working set
+     each two blockserv nodes + attached volumes, created directly as a pair.
+     Peer-replicated within the copyset only. A volume draws its own working set
      of copysets from that pool (not the whole pool), so volumes commonly share
      a copyset, illustrated below with two example volumes. Discovery via
      appserv resolves a write to one copyset within the volume's working set.
@@ -38,7 +39,7 @@
   height="850"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
-  aria-label="A block storage is served by K independent 2-node copysets, admin-adjustable in count; two copysets are shown. Each copyset's two blockserv nodes, each with its own attached volume, sit in distinct region clusters and replicate peer-to-peer only within that copyset; copysets never replicate with each other. A volume does not draw on the whole pool: each volume sets its own working-set copyset count, 3 by default and admin-editable, so volumes commonly share a copyset. Two example volumes are shown below the pool: Volume A's working set spans both copysets pictured, Volume B's spans only Copyset 2, so Copyset 2 is shared between them. A client discovers its volume's working-set endpoints via appserv, then hashes each write deterministically to one copyset in that working set. Every copyset is backed by the region's object storage. In direct-access maintenance mode the client bypasses blockserv and reads and writes the same object keys on the backing object storage directly."
+  aria-label="A block storage is served by K independent 2-node copysets, admin-adjustable in count; two copysets are shown. Each copyset's two blockserv nodes, each with its own attached volume, replicate only within that copyset; copysets never replicate with each other. A volume does not draw on the whole pool: each volume sets its own working-set copyset count, 3 by default and admin-editable, so volumes commonly share a copyset. Two example volumes are shown below the pool: Volume A's working set spans both copysets pictured, Volume B's spans only Copyset 2, so Copyset 2 is shared between them. A client discovers its volume's working-set endpoints via appserv, then resolves each write to one copyset in that working set. Every copyset is backed by the region's object storage."
 >
   <defs>
     <marker id="ha-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -55,9 +56,6 @@
     </marker>
     <marker id="ha-bi-end" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--d-accent)" />
-    </marker>
-    <marker id="ha-arrow-direct" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--d-warn)" />
     </marker>
   </defs>
 
@@ -88,7 +86,7 @@
 
       <!-- Member A -->
       <g transform="translate(20,50)">
-        <text x="180" y="-6" text-anchor="end" class="t-small t-muted" style="font-size:10px">Cluster {p.memberA}</text>
+        <text x="180" y="-6" text-anchor="end" class="t-small t-muted" style="font-size:10px">Member {p.memberA}</text>
         <g class="n-core">
           <rect x="0" y="0" width="180" height="58" rx="6" />
           <text x="12" y="22" class="t-title" style="font-size:12px">blockserv</text>
@@ -102,7 +100,7 @@
 
       <!-- Member B -->
       <g transform="translate(240,50)">
-        <text x="180" y="-6" text-anchor="end" class="t-small t-muted" style="font-size:10px">Cluster {p.memberB}</text>
+        <text x="180" y="-6" text-anchor="end" class="t-small t-muted" style="font-size:10px">Member {p.memberB}</text>
         <g class="n-core">
           <rect x="0" y="0" width="180" height="58" rx="6" />
           <text x="12" y="22" class="t-title" style="font-size:12px">blockserv</text>
@@ -156,14 +154,6 @@
     <text x="20" y="38" class="t-small" style="font-size:10px">S3 · GCS · B2 · Azure · MinIO · on-prem</text>
   </g>
 
-  <!-- Direct-access (maintenance): client bypasses blockserv and reads/writes the
-       backing object store directly, using the SAME object keys. -->
-  <path class="edge-warn" d="M 60 114 C 20 350, 20 620, 90 704" marker-end="url(#ha-arrow-direct)" />
-  <text x="20" y="560" class="t-small" style="fill:var(--d-warn)">direct access</text>
-  <text x="20" y="576" class="t-small" style="fill:var(--d-warn)">(maintenance):</text>
-  <text x="20" y="592" class="t-small" style="fill:var(--d-warn)">bypass blockserv,</text>
-  <text x="20" y="608" class="t-small" style="fill:var(--d-warn)">same object keys</text>
-
   <!-- Legend -->
   <g transform="translate(70,780)">
     <rect x="0" y="-8" width="14" height="14" rx="2" fill="var(--d-surface-alt)" stroke="var(--d-accent)" stroke-width="1.25" stroke-dasharray="4 2" />
@@ -176,7 +166,5 @@
   <g transform="translate(70,804)">
     <line x1="0" y1="0" x2="26" y2="0" class="edge-muted" marker-end="url(#ha-arrow-muted)" />
     <text x="34" y="4" class="t-small">draws from / discovery / object storage</text>
-    <line x1="330" y1="0" x2="356" y2="0" class="edge-warn" marker-end="url(#ha-arrow-direct)" />
-    <text x="364" y="4" class="t-small">direct access (maintenance)</text>
   </g>
 </svg>

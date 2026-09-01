@@ -17,6 +17,15 @@
   --d-text-muted: oklch(0.45 0 0);
   --d-accent: oklch(0.48 0.10 255);
   --d-warn: oklch(0.50 0.14 55);
+  /* Per-entity flow/particle colors for animated diagrams (e.g. SystemMotion.svelte),
+     mirrored from mountos-overview's --d-flow-* set. */
+  --d-flow-meta: oklch(0.41 0.02 248);
+  --d-flow-block: oklch(0.61 0.1 211);
+  --d-flow-object: oklch(0.56 0.18 260);
+  --d-flow-ctrl: oklch(0.6 0.16 150);
+  --d-flow-repl: oklch(0.53 0.22 291);
+  --d-flow-secret: oklch(0.69 0.14 73);
+  --d-flow-gw: oklch(0.59 0.21 11);
 }
 
 .dark {
@@ -34,6 +43,13 @@
   --d-text-muted: oklch(0.72 0 0);
   --d-accent: oklch(0.74 0.10 255);
   --d-warn: oklch(0.78 0.14 65);
+  --d-flow-meta: oklch(0.96 0.01 248);
+  --d-flow-block: oklch(0.82 0.11 208);
+  --d-flow-object: oklch(0.72 0.13 256);
+  --d-flow-ctrl: oklch(0.8 0.18 152);
+  --d-flow-repl: oklch(0.71 0.16 294);
+  --d-flow-secret: oklch(0.8 0.13 81);
+  --d-flow-gw: oklch(0.72 0.17 13);
 }
 
 .diagram-svg {

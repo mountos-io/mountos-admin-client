@@ -11,7 +11,7 @@
   height="806"
   xmlns="http://www.w3.org/2000/svg"
   role="img"
-  aria-label="mountOS hierarchical topology: a client resolves its volume at the global HUB, then talks to the owning region cluster. Each region owns its database and vault, points at S3-compatible or Azure object storage, and is partitioned into one or more clusters that run dataserv and gcserv. A region also runs block storage as independent 2-node copysets, admin-adjustable in count, each copyset spanning distinct clusters, backed by the object storage."
+  aria-label="mountOS hierarchical topology: a client resolves its volume at the global HUB, then talks to the owning region cluster. Each region owns its database and vault, points at S3-compatible or Azure object storage, and is partitioned into one or more clusters that run dataserv and gcserv. A region also runs block storage as independent 2-node copysets, admin-adjustable in count, backed by the object storage."
 >
   <defs>
     <marker id="rc-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
@@ -108,12 +108,12 @@
       </g>
       <text x="18" y="46" class="t-small" style="font-size:10px">serves only its shard of volumes</text>
 
-      <!-- dataserv: stacked to show the raft node cluster -->
+      <!-- dataserv: stacked to show the replicated node cluster -->
       <g transform="translate(16,60)">
         <rect class="fill-surface" x="8" y="6" width="320" height="60" rx="6" stroke="var(--d-stroke-muted)" stroke-width="0.75" opacity="0.55" />
         <rect class="fill-surface" x="4" y="3" width="320" height="63" rx="6" stroke="var(--d-stroke-muted)" stroke-width="0.75" />
         <rect class="n-core" x="0" y="0" width="320" height="64" rx="6" />
-        <text x="16" y="25" class="t-title" style="font-size:12px">dataserv (meta) · Raft cluster</text>
+        <text x="16" y="25" class="t-title" style="font-size:12px">dataserv (meta) · replicated cluster</text>
         <text x="16" y="45" class="t-small" style="font-size:10px">one owner per (volume, fork) · in-memory cache</text>
       </g>
       <!-- gcserv -->
@@ -135,7 +135,7 @@
         <rect class="fill-surface" x="8" y="6" width="320" height="60" rx="6" stroke="var(--d-stroke-muted)" stroke-width="0.75" opacity="0.55" />
         <rect class="fill-surface" x="4" y="3" width="320" height="63" rx="6" stroke="var(--d-stroke-muted)" stroke-width="0.75" />
         <rect class="n-core" x="0" y="0" width="320" height="64" rx="6" />
-        <text x="16" y="25" class="t-title" style="font-size:12px">dataserv (meta) · Raft cluster</text>
+        <text x="16" y="25" class="t-title" style="font-size:12px">dataserv (meta) · replicated cluster</text>
         <text x="16" y="45" class="t-small" style="font-size:10px">own shard of (volume, fork) owners</text>
       </g>
       <g transform="translate(16,134)">
@@ -185,10 +185,10 @@
       <text x="716" y="22" text-anchor="end" class="t-small t-muted" style="font-size:10px">one copyset shown · admin sets K copysets per storage</text>
       <g transform="translate(14,30)">
         <rect class="n-edge" x="0" y="0" width="320" height="28" rx="5" />
-        <text x="160" y="18" text-anchor="middle" class="t-small" style="font-size:10px">member · cluster default</text>
+        <text x="160" y="18" text-anchor="middle" class="t-small" style="font-size:10px">member a</text>
         <line x1="326" y1="14" x2="368" y2="14" class="edge-accent" marker-start="url(#rc-bi-start)" marker-end="url(#rc-bi-end)" />
         <rect class="n-edge" x="374" y="0" width="320" height="28" rx="5" />
-        <text x="534" y="18" text-anchor="middle" class="t-small" style="font-size:10px">member · cluster-2</text>
+        <text x="534" y="18" text-anchor="middle" class="t-small" style="font-size:10px">member b</text>
       </g>
     </g>
   </g>
@@ -204,7 +204,7 @@
       <text x="18" y="28" class="t-title" style="font-size:13px">Clusters · 1..N</text>
       <g transform="translate(16,44)">
         <rect class="n-core" x="0" y="0" width="302" height="36" rx="5" />
-        <text x="14" y="23" class="t-small" style="font-size:11px">dataserv (meta) · Raft per cluster</text>
+        <text x="14" y="23" class="t-small" style="font-size:11px">dataserv (meta) · replicated per cluster</text>
       </g>
       <g transform="translate(16,88)">
         <rect class="n-edge" x="0" y="0" width="302" height="32" rx="5" />

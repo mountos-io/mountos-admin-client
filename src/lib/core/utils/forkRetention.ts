@@ -141,8 +141,8 @@ export function forkAsOfMin(
 // A snapshot request must target a moment at least this far in the past by
 // default. Client-side defense in depth alongside the server's own clamp:
 // keeps the picker (and every asOf-carrying request built from it) from
-// ever landing inside the most-recent window, where dataserv's own state
-// may still be in flight. Only a fork creation needs the volume's actual
+// ever landing inside the most-recent window, where the server's metadata
+// state may still be in flight. Only a fork creation needs the volume's actual
 // content-edit versioning window (see asOfCeilingMs's `volume` param): a
 // persisted fork boundary must never retroactively see a same-window
 // in-place content-edit update, where a read-only historical view (browsing

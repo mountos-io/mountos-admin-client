@@ -312,9 +312,8 @@
   const totalProcess = $derived(memSys + regionSize);
 
   // System RAM, read from the same live snapshot as regionSize, to flag an
-  // undersized arena. METAENGINE_ARENA_SIZE is a fixed upfront allocation
-  // (see internal/raft/config.go), so at least 50% of total RAM is the
-  // suggested floor.
+  // undersized arena. METAENGINE_ARENA_SIZE is a fixed upfront allocation,
+  // so at least 50% of total RAM is the suggested floor.
   const sysMemTotalBytes = $derived.by(() => {
     const sec = sections.find(s => s.name === 'System' && s.kind === 'scalar');
     return sec ? numVal(sec, 'sys_mem_total') : 0;

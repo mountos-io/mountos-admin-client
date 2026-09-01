@@ -65,7 +65,7 @@
   <g transform="translate(300,188)">
     <rect class="n-core" x="0" y="0" width="240" height="88" rx="8" />
     <text x="16" y="28" class="t-title" style="font-size:13px">Block volume</text>
-    <text x="16" y="50" class="t-small" style="font-size:10px">blockserv copysets · active-active</text>
+    <text x="16" y="50" class="t-small" style="font-size:10px">blockserv copysets</text>
     <text x="16" y="70" class="t-small" style="font-size:10px">fronts object store · caches parts</text>
   </g>
 

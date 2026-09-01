@@ -1,12 +1,13 @@
 import type { Component } from 'svelte'
 import BlockStorageExplainer from './BlockStorageExplainer.svelte'
+import CopysetExplainer from './CopysetExplainer.svelte'
 import StorageTypeExplainer from './StorageTypeExplainer.svelte'
 import RegionExplainer from './RegionExplainer.svelte'
 import SystemExplainer from './SystemExplainer.svelte'
 
 // Single source for the "How it works" explainers, reused by the desktop modal
 // (HowItWorks.svelte) and the mobile static page (/how-it-works/[topic]).
-export type ExplainerTopic = 'block-storage' | 'storage-type' | 'region' | 'system'
+export type ExplainerTopic = 'block-storage' | 'copyset' | 'storage-type' | 'region' | 'system'
 
 export const EXPLAINERS: Record<
   ExplainerTopic,
@@ -23,6 +24,11 @@ export const EXPLAINERS: Record<
     title: 'How block storage works',
     description: "A storage's copysets form a shared pool, admin-adjustable in count. Each volume draws its own working set from that pool, so volumes can share copysets.",
     component: BlockStorageExplainer,
+  },
+  copyset: {
+    title: 'How copyset registration works',
+    description: 'Register one pair of servers at a time, or many at once.',
+    component: CopysetExplainer,
   },
   'storage-type': {
     title: 'Object vs block storage',

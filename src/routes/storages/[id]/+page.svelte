@@ -90,10 +90,11 @@
     fetchCtrl = new AbortController()
     const ctrl = fetchCtrl
     loading = true
-    store.getStorage(id)
+    store.getStorage(id, ctrl.signal)
       .then(s => { if (!ctrl.signal.aborted) storage = s })
       .catch(() => { if (!ctrl.signal.aborted) storage = null })
       .finally(() => { if (!ctrl.signal.aborted) loading = false })
+    return () => ctrl.abort()
   })
 
   async function reload() {
@@ -151,7 +152,6 @@
   // Opens BlockCopysets' servers-list register dialog from this page's top-level action row,
   // reusing that same dialog rather than duplicating its form.
   let addServerOpen = $state(false)
-  let clustersAvailable = $state(true)
 
   // Maintenance mode ("direct access") makes a block storage bypass blockserv and hit its
   // backing object store directly, so blockserv can be safely stopped/upgraded. Flipping it
@@ -366,11 +366,9 @@
             </Button>
           {/if}
           {#if isBlock && auth.can('storages', 'update')}
-            <Button variant="outline" size="sm" class="gap-1.5" disabled={!clustersAvailable}
-              title={clustersAvailable ? undefined : 'No active, ready cluster in this region to register into'}
-              onclick={() => { addServerOpen = true }}>
+            <Button variant="outline" size="sm" class="gap-1.5" onclick={() => { addServerOpen = true }}>
               <ServerIcon class="h-4 w-4" />
-              Add Server
+              Add Copyset
             </Button>
           {/if}
           {#if isBlock && storage.isActive && auth.can('storages', 'update')}
@@ -408,7 +406,7 @@
     {:else}
       <BlockCopysets storageId={storage.id} regionId={storage.regionInfo.id} accountId={storage.account.id} directAccess={maintenanceOn}
         canUpdate={auth.can('storages', 'update')} {volumesRefreshKey}
-        bind:addServerOpen bind:clustersAvailable />
+        bind:addServerOpen />
     {/if}
 
     {#if storage.physicalFingerprint}

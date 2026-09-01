@@ -1,4 +1,4 @@
-import type { Storage, CreateStorageRequest, EditStorageRequest, TestStorageNewBucketRequest, MoveStorageVolumesRequest, RegisterStorageMemberRequest } from '$lib/core/api/types'
+import type { Storage, CreateStorageRequest, EditStorageRequest, TestStorageNewBucketRequest, MoveStorageVolumesRequest, RegisterStorageCopysetRequest, RegisterStorageCopysetsBulkRequest } from '$lib/core/api/types'
 import { api } from './client.svelte'
 
 let storages = $state<Storage[]>([])
@@ -62,8 +62,8 @@ async function setDirectAccess(id: number, name: string, directAccess: boolean) 
   return api.storages.edit(id, { name, directAccess })
 }
 
-async function getStorage(id: number) {
-  return api.storages.get(id)
+async function getStorage(id: number, signal?: AbortSignal) {
+  return api.storages.get(id, signal)
 }
 
 async function listBlockVolumes(id: number, signal?: AbortSignal) {
@@ -93,15 +93,6 @@ async function moveVolumes(id: number, req: MoveStorageVolumesRequest) {
   return api.storages.moveVolumes(id, req)
 }
 
-// Sets the target copyset count (k) for this block storage's HA placement.
-async function updateConfig(id: number, k: number) {
-  return api.storages.updateConfig(id, { k })
-}
-
-async function getConfig(id: number, signal?: AbortSignal) {
-  return api.storages.getConfig(id, signal)
-}
-
 async function listCopysets(id: number, signal?: AbortSignal) {
   return api.storages.listCopysets(id, undefined, undefined, signal)
 }
@@ -118,8 +109,12 @@ async function cancelDrain(id: number, copysetId: string) {
   return api.storages.cancelDrain(id, copysetId)
 }
 
-async function registerMember(id: number, req: RegisterStorageMemberRequest) {
-  return api.storages.registerMember(id, req)
+async function registerCopyset(id: number, req: RegisterStorageCopysetRequest) {
+  return api.storages.registerCopyset(id, req)
+}
+
+async function registerCopysetsBulk(id: number, req: RegisterStorageCopysetsBulkRequest) {
+  return api.storages.registerCopysetsBulk(id, req)
 }
 
 async function reactivateMember(id: number, blockVolumeId: string) {
@@ -148,13 +143,12 @@ export function useStorages() {
     testStorageBucket,
     listCompatibleStorages,
     moveVolumes,
-    updateConfig,
-    getConfig,
     listCopysets,
     getCopysetStatus,
     drainCopyset,
     cancelDrain,
-    registerMember,
+    registerCopyset,
+    registerCopysetsBulk,
     reactivateMember,
     removeMember,
   }

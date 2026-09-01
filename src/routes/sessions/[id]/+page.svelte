@@ -107,9 +107,9 @@
   }
 
   // Every client session carries a memorable "adjective-noun-xxxx" label
-  // under metadata.friendlyName (see mfuse's HealthReporter.SetFriendlyName),
-  // generated once per process and stable across an upload/download job's
-  // resumes. Preferred over the raw hostname for the header title.
+  // under metadata.friendlyName, generated once per process and stable
+  // across an upload/download job's resumes. Preferred over the raw
+  // hostname for the header title.
   function getFriendlyName(s: ClientSession): string | undefined {
     const name = getMetaProp(s, 'friendlyName')
     return typeof name === 'string' && name !== '' ? name : undefined
@@ -150,12 +150,10 @@
     // Live log file path on the client machine while the job is running.
     logPath?: string
     // Present only when SOURCE was an external object store (S3-compatible,
-    // Azure Blob, GCS) rather than a local folder/profile manifest --
+    // Azure Blob, GCS) rather than a local folder/profile manifest.
     // sourcePath above already renders as the scheme://bucket/prefix form
-    // in that case (uploadExternalSourceURI, mountos-servers), these are
-    // the individually-typed identifiers behind it. Never the secret --
-    // mountOS never persists or reports that anywhere (see
-    // uploadDetailsForSession's own doc comment, mountos-servers).
+    // in that case; these are the individually-typed identifiers behind it.
+    // Never the secret: mountOS never persists or reports that anywhere.
     sourceProvider?: string
     sourceBucket?: string
     sourcePrefix?: string
@@ -234,17 +232,17 @@
     if (!rl) return []
     return Object.entries(rl).sort((a, b) => b[1].count - a[1].count)
   }
-  // FUSE syscall handler latency (mfuse only). Same wire shape as
+  // FUSE syscall handler latency (FUSE mounts only). Same wire shape as
   // rpcLatency so the breakdown snippet renders both. Diagnostically
-  // complementary: rpcLatency is network round-trip to dataserv; FUSE
-  // latency adds cache hits and kernel-boundary time on top.
+  // complementary: rpcLatency is network round-trip to the metadata
+  // service; FUSE latency adds cache hits and kernel-boundary time on top.
   function getFuseLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
     const fl = m.fuseLatency as Record<string, RpcMethodLatency> | undefined
     if (!fl) return []
     return Object.entries(fl).sort((a, b) => b[1].count - a[1].count)
   }
 
-  // Object-store GET/PUT latency (mfuse only). Same wire shape again, so the
+  // Object-store GET/PUT latency (FUSE mounts only). Same wire shape again, so the
   // breakdown snippet renders it too. This is the round trip to the object
   // store, where the mean hides a tail measured in seconds; cache-served
   // reads are excluded by the client so the percentiles cover real requests.
@@ -311,12 +309,11 @@
     return (m.driver as DriverSnapshot | undefined) ?? null
   }
 
-  // TCP connection-pool health per dataserv node this mount talks to
-  // (mfuse's HealthReporter.collectPoolHealthMetrics, sourced from
-  // client.Manager.GetPoolStats -- the same state .network_diagnostics and
-  // the .stats "Connection Pool Health" section expose locally). One entry
-  // per pool; a single-dataserv mount reports one. reconnectBackoff is the
-  // client's own formatted duration string ("5s"), not a raw number.
+  // TCP connection-pool health per metadata-service node this mount talks to
+  // (the same state .network_diagnostics and the .stats "Connection Pool
+  // Health" section expose locally). One entry per pool; a single-server
+  // mount reports one. reconnectBackoff is the client's own formatted
+  // duration string ("5s"), not a raw number.
   interface PoolHealthEntry {
     node?: number
     addr?: number
@@ -335,9 +332,9 @@
     return Array.isArray(p) ? (p as PoolHealthEntry[]) : []
   }
 
-  // "addr" is a big-endian uint32 IPv4 the server packs the pool's dataserv
-  // address into (see mountos-servers cmd/mfuse HealthReporter.poolHealthEntry);
-  // an older server omits it and the UI falls back to the plain node index.
+  // "addr" is a big-endian uint32 IPv4 the server packs the pool's node
+  // address into; an older server omits it and the UI falls back to the
+  // plain node index.
   function poolNodeLabel(node: PoolHealthEntry, i: number): string {
     return node.addr != null ? formatIPv4(node.addr) : `Node ${node.node ?? i}`
   }
@@ -370,11 +367,11 @@
     objectExpanded = next
   }
 
-  // TCP connection-drop breakdown. mfuse splits drops into benign pool
+  // TCP connection-drop breakdown. The client splits drops into benign pool
   // cycling (parked timeouts, overflow shrink) and concerning failures
   // (remote close, transport error, healthcheck-marked unhealthy). The
   // breakdown is only sent when nonzero; we fall back to the aggregate
-  // count with no split for older clients or non-mfuse sessions.
+  // count with no split for older clients or sessions with no FUSE mount.
   interface ConnDroppedReasons { parked?: number; overflow?: number; unhealthy?: number; remote?: number; transportErr?: number; shutdown?: number; unknown?: number }
   interface ConnDroppedView { total: number; concern: number; benign: number; tooltip: string }
   function getConnDropped(m: Record<string, any>): ConnDroppedView {
@@ -838,7 +835,7 @@
                   {@const pw = Number(m.prefetchWastedBlocks ?? 0)}
                   {@const wastePct = pf > 0 ? (pw / pf) * 100 : 0}
                   <div class="metric-row"><span>Prefetch Used</span><span>{formatNum(m.prefetchUsedBlocks ?? 0)}</span></div>
-                  <div class="metric-row {wastePct >= 50 ? 'text-destructive' : wastePct >= 30 ? 'text-amber-500' : ''}"><span>Prefetch Wasted</span><span>{formatNum(pw)} ({wastePct.toFixed(1)}%)</span></div>
+                  <div class="metric-row {wastePct >= 50 ? 'text-destructive' : wastePct >= 30 ? 'text-warning' : ''}"><span>Prefetch Wasted</span><span>{formatNum(pw)} ({wastePct.toFixed(1)}%)</span></div>
                 {/if}
               </div>
             {/if}
@@ -881,7 +878,7 @@
             {#if m.bufArenaCapacityBytes != null}
               {@const blocked = Number(m.bufArenaBlockedAcquires ?? 0)}
               {@const peakPct = Number(m.bufArenaPeakPct ?? 0)}
-              {@const pressureColor = blocked > 0 || peakPct >= 95 ? 'text-destructive' : peakPct >= 80 ? 'text-amber-500' : ''}
+              {@const pressureColor = blocked > 0 || peakPct >= 95 ? 'text-destructive' : peakPct >= 80 ? 'text-warning' : ''}
               <div class="metric-group">
                 <p class="detail-label">Dirty Buffer Arena</p>
                 <div class="metric-row"><span>Capacity</span><span>{formatBytes(m.bufArenaCapacityBytes ?? 0)}</span></div>
@@ -924,7 +921,7 @@
               <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
               {#if m.s3RetryAttempts != null}
                 <div class="metric-row"><span>Retries</span><span>{formatNum(m.s3RetryAttempts ?? 0)}</span></div>
-                <div class="metric-row {(m.s3RetryThrottled ?? 0) ? 'text-amber-500' : ''}"><span>Throttled</span><span>{formatNum(m.s3RetryThrottled ?? 0)}</span></div>
+                <div class="metric-row {(m.s3RetryThrottled ?? 0) ? 'text-warning' : ''}"><span>Throttled</span><span>{formatNum(m.s3RetryThrottled ?? 0)}</span></div>
                 <div class="metric-row {(m.s3RetryExhausted ?? 0) ? 'text-destructive' : ''}"><span>Exhausted</span><span>{formatNum(m.s3RetryExhausted ?? 0)}</span></div>
               {/if}
             </div>
@@ -986,8 +983,8 @@
                 <div class="metric-row"><span>Authenticated</span><span>{formatNum(node.authenticated ?? 0)}</span></div>
                 <div class="metric-row"><span>Pending</span><span>{formatNum(node.pending ?? 0)}</span></div>
                 <div class="metric-row {node.serverDown ? 'text-destructive' : ''}"><span>Server Down</span><span>{node.serverDown ? 'yes' : 'no'}</span></div>
-                <div class="metric-row {node.congestionActive ? 'text-amber-500' : ''}"><span>Congestion</span><span>{node.congestionActive ? 'active' : 'none'}</span></div>
-                <div class="metric-row {(node.serverDownCount ?? 0) ? 'text-amber-500' : ''}"><span>Down Events</span><span>{formatNum(node.serverDownCount ?? 0)}</span></div>
+                <div class="metric-row {node.congestionActive ? 'text-warning' : ''}"><span>Congestion</span><span>{node.congestionActive ? 'active' : 'none'}</span></div>
+                <div class="metric-row {(node.serverDownCount ?? 0) ? 'text-warning' : ''}"><span>Down Events</span><span>{formatNum(node.serverDownCount ?? 0)}</span></div>
                 {#if node.serverDown && node.reconnectBackoff}
                   <div class="metric-row"><span>Reconnect Backoff</span><span>{node.reconnectBackoff}</span></div>
                 {/if}
@@ -1128,11 +1125,16 @@
                     {@const bkts = toBuckets(lat.buckets)}
                     {@const isOpen = expanded.has(method)}
                     {@const cv = bkts.length > 0 ? estimateCV(bkts, lat.avgUs) : -1}
-                    <tr class="cursor-pointer hover:bg-muted/50 transition-colors {isOpen ? 'bg-muted/30' : ''}" class:rpc-zebra={!isOpen && i % 2 === 1} onclick={() => bkts.length > 0 && toggleExpand(method)} onkeydown={(e: KeyboardEvent) => { if ((e.key === 'Enter' || e.key === ' ') && bkts.length > 0) { e.preventDefault(); toggleExpand(method) } }} tabindex={bkts.length > 0 ? 0 : undefined} role={bkts.length > 0 ? 'button' : undefined} aria-expanded={bkts.length > 0 ? isOpen : undefined}>
+                    <tr class="{bkts.length > 0 ? 'cursor-pointer' : ''} hover:bg-muted/50 transition-colors {isOpen ? 'bg-muted/30' : ''}" class:rpc-zebra={!isOpen && i % 2 === 1} onclick={() => bkts.length > 0 && toggleExpand(method)}>
                       {#if hasBuckets}
                         <td class="w-6">
                           {#if bkts.length > 0}
-                            <ChevronRight class="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 {isOpen ? 'rotate-90' : ''}" />
+                            <button type="button"
+                              class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+                              onclick={(e) => { e.stopPropagation(); toggleExpand(method) }}
+                              aria-expanded={isOpen} aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${method} latency buckets`}>
+                              <ChevronRight class="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 {isOpen ? 'rotate-90' : ''}" aria-hidden="true" />
+                            </button>
                           {/if}
                         </td>
                       {/if}
@@ -1229,11 +1231,15 @@
     letter-spacing: 0.08em;
     font-size: 1rem;
     padding: 0.25rem 0.625rem;
+    min-height: 44px;
     cursor: pointer;
     background: transparent;
     border: none;
     color: var(--muted-foreground);
     transition: color 0.15s, background 0.15s;
+  }
+  @media (min-width: 640px) {
+    .rpc-toggle-btn { min-height: 0; }
   }
   .rpc-toggle-active {
     color: var(--foreground);

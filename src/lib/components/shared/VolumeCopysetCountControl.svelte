@@ -1,8 +1,8 @@
 <script lang="ts">
-  // Per-volume copyset working-set control. Sibling of CopysetCountControl.svelte (the
-  // storage-wide copyset count): this edits a single volume's own target_copyset_count, its
-  // working-set size within the storage's copyset pool, a different number from the
-  // storage's fleet-wide copyset count, never the same control.
+  // Per-volume copyset working-set control: edits a single volume's own
+  // target_copyset_count, its working-set size within the storage's copyset pool. The
+  // storage's pool itself has no separate admin-settable count; it grows by registering
+  // copysets directly.
   // Presentational: the caller wires `onSave` to api.volumes.updateCopysetConfig.
   import * as Dialog from '$lib/components/ui/dialog'
   import { Button } from '$lib/components/ui/button'
@@ -12,9 +12,7 @@
   import type { VolumeBlockPlacementResizeResult } from '$lib/core/api/types'
   import Pencil from '@lucide/svelte/icons/pencil'
 
-  // Mirrors blockcopysets.MaxTargetCopysetCount (mountos-servers), the server-enforced ceiling
-  // on a volume's own target copyset count, same bound the storage-level copyset-count admin
-  // API uses.
+  // Mirrors the server-enforced ceiling on a volume's own target copyset count.
   const MAX_TARGET_COPYSET_COUNT = 100
 
   let {

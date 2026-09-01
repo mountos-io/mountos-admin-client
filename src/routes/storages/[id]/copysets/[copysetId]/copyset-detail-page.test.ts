@@ -41,7 +41,7 @@ function storage(overrides: Partial<Storage> = {}): Storage {
 }
 
 function copyset(overrides: Partial<Copyset> = {}): Copyset {
-  return { id: 'copyset-1', storageId: 'storage-uuid', state: 'active', memberA: 'bv-a', memberB: 'bv-b', tags: [], ...overrides }
+  return { id: 'copyset-1', storageId: 'storage-uuid', name: 'mos-block-a', state: 'active', memberA: 'bv-a', memberB: 'bv-b', tags: [], ...overrides }
 }
 
 function bv(id: string, name: string): BlockVolume {

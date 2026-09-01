@@ -329,9 +329,8 @@
     return `${seconds / 3600}h`
   }
 
-  // User-facing product names, not internal service names; never show
-  // "gcserv" or "mfuse" in this UI. Kept in lockstep with the server-side
-  // enum (db.CompactionMode* in mountos-servers).
+  // User-facing product names, never internal service names. Kept in
+  // lockstep with the server's own compaction-mode values.
   const COMPACTION_LABELS: Record<string, string> = {
     off: 'Off',
     server: 'GC Server',
@@ -782,7 +781,9 @@
     return { rows, totalRows: Math.max(...rows.map(r => r.row)) + 1, rowColorMap }
   }
 
-  const G_ROW = 52, G_TOP = 20, G_LEFT = 24, G_LABEL = 160, G_TIMELINE = 480, G_RIGHT = 200, G_DOT = 5, G_CR = 12
+  // G_RIGHT carries the created-at/size metadata label at 16px (the type floor); sized with
+  // headroom for that width, not the smaller font this column used to render at.
+  const G_ROW = 52, G_TOP = 20, G_LEFT = 24, G_LABEL = 160, G_TIMELINE = 480, G_RIGHT = 240, G_DOT = 5, G_CR = 12
   function gRowY(row: number) { return G_TOP + row * G_ROW + G_ROW / 2 }
   function gTimeX(norm: number) { return G_LEFT + G_LABEL + norm * G_TIMELINE }
   const gNowX = G_LEFT + G_LABEL + G_TIMELINE
@@ -1172,14 +1173,14 @@
           {/if}
         </CardContent>
         {#if editing}
-          <CardFooter class="gap-4">
+          <CardFooter class="gap-4 [&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8">
             <Button variant="primary" size="sm" class="cyberpunk-skewed-sm" disabled={editSaving || !editDirty} onclick={saveEdit}>
               {editSaving ? 'Saving...' : 'Update'}
             </Button>
             <Button variant="secondary" size="sm" onclick={cancelEdit} disabled={editSaving}>Cancel</Button>
           </CardFooter>
         {:else if auth.can('volumes', 'update') && volume.isActive}
-          <CardFooter class="flex gap-2">
+          <CardFooter class="flex gap-2 [&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8">
             <Button variant="destructive" size="sm" onclick={() => { deactivateOpen = true }}>Deactivate</Button>
             <Button variant="outline" size="sm" onclick={() => dialog.confirm(
               volume!.locked ? 'Unlock' : 'Lock',
@@ -1229,7 +1230,7 @@
             <div class="relative flex items-center gap-1.5" role="group" aria-label="Select size history range">
               {#each [['24h','24h'],['7d','7d'],['30d','30d'],['1y','1y']] as [val, label]}
                 <Button variant={sizeRange === val ? 'primary' : 'ghost'} size="sm"
-                  class="h-7 px-3 text-xs font-mono justify-center"
+                  class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                   aria-pressed={sizeRange === val}
                   onclick={() => sizeRange = val as SizeRange}>{label}</Button>
               {/each}
@@ -1283,7 +1284,7 @@
           <p class="text-sm text-muted-foreground">No forks</p>
         {:else if forkView === 'list'}
           {#snippet forkNode(node: ForkNode, depth: number, isLast: boolean)}
-            <div class="flex items-start gap-2 {depth > 0 ? 'ml-5' : ''} {node.status !== 'active' ? 'opacity-60' : ''}" role="treeitem" aria-selected="false" aria-expanded={node.children.length > 0 ? true : undefined}>
+            <div class="flex items-start gap-2 {depth > 0 ? 'ml-5' : ''} {node.status !== 'active' ? 'opacity-60' : ''}" role="listitem">
               {#if depth > 0}
                 <span class="shrink-0 text-muted-foreground/40 font-mono text-sm select-none" aria-hidden="true">{isLast ? '└─' : '├─'}</span>
               {/if}
@@ -1350,7 +1351,7 @@
               {/if}
             </div>
             {#if node.children.length > 0}
-              <div class="{depth > 0 && !isLast ? 'ml-5 border-l border-muted-foreground/20 pl-0' : depth > 0 ? 'ml-5' : ''}" role="group" aria-label="{node.name} children">
+              <div class="{depth > 0 && !isLast ? 'ml-5 border-l border-muted-foreground/20 pl-0' : depth > 0 ? 'ml-5' : ''}" role="list" aria-label="{node.name} children">
                 {#each node.children as child, i}
                   {@render forkNode(child, depth + 1, i === node.children.length - 1)}
                 {/each}
@@ -1358,7 +1359,7 @@
             {/if}
           {/snippet}
           {@const tree = forkTree}
-          <div role="tree" aria-label="Fork hierarchy">
+          <div role="list" aria-label="Fork hierarchy">
             {#each tree as root, i}
               {@render forkNode(root, 0, i === tree.length - 1)}
             {/each}
@@ -1407,11 +1408,11 @@
                 {#if br.fid !== 0}
                   <text x={gNowX + 14} y={y}
                     dominant-baseline="central"
-                    class="font-mono" style="font-size: 13px" fill="currentColor" opacity="0.55">{formatRelative(br.createdAt / 1_000_000)}{br.createdBy ? ` · ${(void userCache.rev, userCache.display(br.createdBy))}` : ''}{br.size > 0 ? ` · ${formatBytes(br.size)}` : ''}</text>
+                    class="font-mono" style="font-size: 16px" fill="currentColor" opacity="0.55">{formatRelative(br.createdAt / 1_000_000)}{br.createdBy ? ` · ${(void userCache.rev, userCache.display(br.createdBy))}` : ''}{br.size > 0 ? ` · ${formatBytes(br.size)}` : ''}</text>
                 {:else if br.size > 0}
                   <text x={gNowX + 14} y={y}
                     dominant-baseline="central"
-                    class="font-mono" style="font-size: 13px" fill="currentColor" opacity="0.55">{formatBytes(br.size)}</text>
+                    class="font-mono" style="font-size: 16px" fill="currentColor" opacity="0.55">{formatBytes(br.size)}</text>
                 {/if}
               {/each}
             </svg>
@@ -1521,8 +1522,8 @@
                     <TableRow>
                       <TableCell class="font-medium">{k.name || '·'}</TableCell>
                       <TableCell><code class="font-mono text-xs">{k.apiKey}</code></TableCell>
-                      <TableCell class="hidden sm:table-cell text-muted-foreground" title={k.createdAt}>{k.createdAt ? formatRelative(k.createdAt) : '·'}</TableCell>
-                      <TableCell class="text-muted-foreground" title={k.lastUsedAt}>{k.lastUsedAt ? formatRelative(k.lastUsedAt) : 'never'}</TableCell>
+                      <TableCell class="hidden sm:table-cell text-muted-foreground" title={k.createdAt ? formatTimestamp(new Date(k.createdAt).getTime()) : undefined}>{k.createdAt ? formatRelative(k.createdAt) : '·'}</TableCell>
+                      <TableCell class="text-muted-foreground" title={k.lastUsedAt ? formatTimestamp(new Date(k.lastUsedAt).getTime()) : undefined}>{k.lastUsedAt ? formatRelative(k.lastUsedAt) : 'never'}</TableCell>
                       <TableCell>
                         <Button variant="ghost" class="h-9 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 text-xs text-destructive hover:text-destructive"
                           onclick={() => handleRevokeKey(k.apiKey, keyLabel(k))}>Revoke</Button>

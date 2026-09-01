@@ -1,10 +1,10 @@
 <script lang="ts">
   // Unified per-server view for a block storage's copyset pool:
   // one row per registered block-volume server, whether it's currently serving a copyset
-  // (paired), available capacity (unpaired), or needs reactivation (detached). Replaces the
-  // earlier copyset-cards-plus-separate-pool-list split with one list, driven primarily by
-  // `copysets` (for paired rows) and `blockVolumesById` (the source of truth for a server's
-  // current state, including any server a retired copyset's members fell back to).
+  // (paired) or needs reactivation (detached). Driven primarily by `copysets` (for paired
+  // rows) and `blockVolumesById` (the source of truth for a server's current state,
+  // including any server a retired copyset's members fell back to).
+  import { tick } from 'svelte'
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
@@ -12,9 +12,9 @@
   import * as Dialog from '$lib/components/ui/dialog'
   import { Input } from '$lib/components/ui/input'
   import Label from '$lib/components/ui/label/label.svelte'
-  import { Select } from '$lib/components/ui/select'
   import CopysetStateBadge from '$lib/components/shared/CopysetStateBadge.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
+  import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import { nodeStatusVariant } from '$lib/core/utils/format'
   import { copyText } from '$lib/core/utils/clipboard'
@@ -22,15 +22,17 @@
   import { isCopysetState } from '$lib/core/api/copyset-ui-types'
   import type { Copyset, CopysetState, BlockVolume, ServiceNode } from '$lib/core/api/types'
   import Plus from '@lucide/svelte/icons/plus'
+  import Layers from '@lucide/svelte/icons/layers'
   import CopyIcon from '@lucide/svelte/icons/copy'
-  import MapPinIcon from '@lucide/svelte/icons/map-pin'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right'
 
+  const MAX_BULK_COUNT = 100
+
   let {
     copysets, storageId, blockVolumesById, nodesByVolume, directAccess = false, canUpdate,
-    staleStatus = false, nodesStale = false, clusterOptions, registering = $bindable(false),
-    onDrain, onCancelDrain, onReactivate, onRegister, onRemove,
+    staleStatus = false, nodesStale = false, registering = $bindable(false),
+    onDrain, onCancelDrain, onReactivate, onRegisterCopyset, onRegisterCopysetsBulk, onRemove,
   }: {
     copysets: Copyset[]
     storageId: number
@@ -42,14 +44,18 @@
     staleStatus?: boolean
     // Set by the caller when its last service-node discovery fetch failed.
     nodesStale?: boolean
-    clusterOptions: { value: string; label: string }[]
-    // Bindable so a page-level "Add Server" action can open this same dialog without
+    // Bindable so a page-level "Add Copyset" action can open this same dialog without
     // duplicating the form (see the storage detail page's top-level action row).
     registering?: boolean
     onDrain: (copysetId: string) => Promise<void>
     onCancelDrain: (copysetId: string) => Promise<void>
     onReactivate: (blockVolumeId: string) => Promise<unknown>
-    onRegister: (name: string, regionClusterId: number) => Promise<unknown>
+    // Creates a whole new copyset (both members atomically, names derived from name);
+    // returns the copyset so its memberA/memberB ids can be shown to the operator as
+    // BLOCK_VOLUME_ID env values.
+    onRegisterCopyset: (name: string) => Promise<Copyset>
+    // Creates count new copysets in one call, every name auto-generated.
+    onRegisterCopysetsBulk: (count: number) => Promise<Copyset[]>
     // Permanently deregisters a detached member (server-side guards this to
     // member_state='detached' - never a paired/draining member).
     onRemove: (blockVolumeId: string) => Promise<unknown>
@@ -58,13 +64,10 @@
   interface ServerRow {
     id: string
     name: string
-    cluster: string
-    clusterUuid?: string
     servers: ServiceNode[]
     copysetId?: string
     copysetState?: CopysetState
     pendingSyncJobs?: number
-    placementGroup?: number
     detached: boolean
   }
 
@@ -76,36 +79,31 @@
     const list: ServerRow[] = []
     const seen = new Set<string>()
 
-    function pushMember(volumeId: string | undefined, copyset: Copyset, placementGroup: number | undefined, pendingSyncJobs: number | undefined) {
+    function pushMember(volumeId: string | undefined, copyset: Copyset, pendingSyncJobs: number | undefined) {
       if (!volumeId) return
       seen.add(volumeId)
       const vol = blockVolumesById.get(volumeId)
       list.push({
         id: volumeId,
         name: vol?.name || volumeId,
-        cluster: vol?.clusterName || (vol ? `cluster ${vol.regionClusterId}` : ''),
-        clusterUuid: vol?.clusterUuid,
         servers: nodesByVolume.get(volumeId) ?? [],
         copysetId: copyset.id,
         copysetState: copyset.state,
         pendingSyncJobs,
-        placementGroup,
         detached: false,
       })
     }
 
     for (const copyset of copysets) {
       if (copyset.state === 'retired') continue
-      pushMember(copyset.memberA, copyset, copyset.placementGroupA, copyset.pendingSyncJobsA)
-      pushMember(copyset.memberB, copyset, copyset.placementGroupB, copyset.pendingSyncJobsB)
+      pushMember(copyset.memberA, copyset, copyset.pendingSyncJobsA)
+      pushMember(copyset.memberB, copyset, copyset.pendingSyncJobsB)
     }
     for (const vol of blockVolumesById.values()) {
       if (seen.has(vol.id)) continue
       list.push({
         id: vol.id,
         name: vol.name || vol.id,
-        cluster: vol.clusterName || `cluster ${vol.regionClusterId}`,
-        clusterUuid: vol.clusterUuid,
         servers: nodesByVolume.get(vol.id) ?? [],
         detached: vol.memberState === 'detached',
       })
@@ -116,34 +114,99 @@
   const dialog = useConfirmDialog()
 
   let name = $state('')
-  let regionClusterId = $state('')
   let submitting = $state(false)
   let reactivatingId = $state<string | null>(null)
   let removingId = $state<string | null>(null)
-
-  const canRegister = $derived(!!name.trim() && !!regionClusterId)
+  // Set once registration succeeds: the two generated BLOCK_VOLUME_IDs, shown for the
+  // operator to copy into the launch config of the two instances they're about to start.
+  let registered = $state<{ nameA: string; idA: string; nameB: string; idB: string } | null>(null)
+  // Receives focus when the dialog swaps from the form to this success view, so a
+  // keyboard or screen-reader user gets a cue the content changed instead of losing focus.
+  let successRef = $state<HTMLDivElement | null>(null)
 
   // Resets the form on every open, regardless of which entry point triggered it.
   $effect(() => {
-    if (registering) { name = ''; regionClusterId = '' }
+    if (registering) { name = ''; registered = null }
   })
 
   function startRegister() {
     registering = true
   }
 
+  // The member's real name is always deterministically <copysetName>-a/-b, so that's
+  // the fallback when it's not (yet) resolvable via blockVolumesById - a fresher,
+  // more useful label than the raw BLOCK_VOLUME_ID.
+  function memberLabel(copyset: Copyset, memberId: string | undefined, suffix: 'a' | 'b'): string {
+    const resolved = memberId ? blockVolumesById.get(memberId)?.name : undefined
+    return resolved ?? `${copyset.name}-${suffix}`
+  }
+
   async function handleRegister(e: Event) {
     e.preventDefault()
-    if (!canRegister) return
     submitting = true
     try {
-      await onRegister(name.trim(), Number(regionClusterId))
-      registering = false
-      showSuccessToast('Server registered')
+      const copyset = await onRegisterCopyset(name.trim())
+      registered = {
+        nameA: memberLabel(copyset, copyset.memberA, 'a'), idA: copyset.memberA ?? '',
+        nameB: memberLabel(copyset, copyset.memberB, 'b'), idB: copyset.memberB ?? '',
+      }
+      showSuccessToast('Copyset registered')
+      await tick()
+      successRef?.focus()
     } catch (err: unknown) {
-      handleApiError(err, 'Failed to register server')
+      handleApiError(err, 'Failed to register copyset')
     } finally {
       submitting = false
+    }
+  }
+
+  // Bulk registration: a separate dialog from the single-copyset one above, since it
+  // takes no name (count-only) and its success view is a list, not a fixed pair.
+  let bulkRegistering = $state(false)
+  let count = $state(5)
+  let bulkSubmitting = $state(false)
+  let bulkResults = $state<Copyset[] | null>(null)
+  let bulkSuccessRef = $state<HTMLDivElement | null>(null)
+  const bulkCountValid = $derived(Number.isInteger(count) && count >= 1 && count <= MAX_BULK_COUNT)
+
+  $effect(() => {
+    if (bulkRegistering) { count = 5; bulkResults = null }
+  })
+
+  function startBulkRegister() {
+    bulkRegistering = true
+  }
+
+  async function handleBulkRegister(e: Event) {
+    e.preventDefault()
+    if (!bulkCountValid) return
+    bulkSubmitting = true
+    try {
+      const results = await onRegisterCopysetsBulk(count)
+      bulkResults = results
+      showSuccessToast(`${results.length} cop${results.length === 1 ? 'yset' : 'ysets'} registered`)
+      await tick()
+      bulkSuccessRef?.focus()
+    } catch (err: unknown) {
+      handleApiError(err, 'Failed to register copysets')
+    } finally {
+      bulkSubmitting = false
+    }
+  }
+
+  const bulkMemberPairs = $derived.by(() =>
+    (bulkResults ?? []).flatMap((c) => [
+      { label: memberLabel(c, c.memberA, 'a'), id: c.memberA ?? '' },
+      { label: memberLabel(c, c.memberB, 'b'), id: c.memberB ?? '' },
+    ]).filter((m) => m.id)
+  )
+
+  async function copyAllBulkIds() {
+    const lines = bulkMemberPairs.map((m) => `BLOCK_VOLUME_ID=${m.id}`).join('\n')
+    if (await copyText(lines)) {
+      showSuccessToast(`${bulkMemberPairs.length} BLOCK_VOLUME_IDs copied`)
+    } else {
+      showErrorToast('Copy failed: clipboard access blocked')
     }
   }
 
@@ -253,12 +316,18 @@
 
 <Card cornerBrackets={false} id="pool-members">
   <CardHeader>
-    <div class="flex items-center justify-between gap-3">
+    <div class="flex items-center justify-between gap-3 flex-wrap">
       <CardTitle class="text-base">Servers</CardTitle>
       {#if canUpdate}
-        <Button variant="outline" size="sm" class="gap-1.5" onclick={startRegister} disabled={clusterOptions.length === 0}>
-          <Plus class="size-4" aria-hidden="true" /> Add server
-        </Button>
+        <div class="flex items-center gap-2">
+          <HowItWorks topic="copyset" />
+          <Button variant="outline" size="sm" class="gap-1.5" onclick={startBulkRegister}>
+            <Layers class="size-4" aria-hidden="true" /> Add multiple
+          </Button>
+          <Button variant="outline" size="sm" class="gap-1.5" onclick={startRegister}>
+            <Plus class="size-4" aria-hidden="true" /> Add copyset
+          </Button>
+        </div>
       {/if}
     </div>
   </CardHeader>
@@ -276,7 +345,6 @@
         <TableHeader>
           <TableRow>
             <TableHead class="th-cyber">Server</TableHead>
-            <TableHead class="th-cyber hidden md:table-cell">Placement</TableHead>
             <TableHead class="th-cyber">State</TableHead>
             <TableHead class="th-cyber">Serving blockserv</TableHead>
             {#if canUpdate}<TableHead class="th-cyber text-right">Actions</TableHead>{/if}
@@ -293,18 +361,7 @@
                     title="Copy BLOCK_VOLUME_ID" aria-label={`Copy ID for ${row.name}`}>
                     <CopyIcon class="size-3" aria-hidden="true" />
                   </button>
-                  {#if row.clusterUuid}
-                    <button type="button" onclick={() => copyValue(row.clusterUuid ?? '', 'Region cluster ID')}
-                      class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-50 hover:opacity-100 hover:text-primary transition-opacity"
-                      title="Copy REGION_CLUSTER_ID" aria-label={`Copy region cluster ID for ${row.name}`}>
-                      <MapPinIcon class="size-3" aria-hidden="true" />
-                    </button>
-                  {/if}
                 </div>
-              </TableCell>
-              <TableCell class="hidden md:table-cell text-sm text-muted-foreground">
-                {row.cluster || '·'}
-                {#if row.placementGroup !== undefined}<Badge variant="outline" class="ml-1 text-xs">pg {row.placementGroup}</Badge>{/if}
               </TableCell>
               <TableCell>
                 {#if row.copysetId && row.copysetState}
@@ -358,30 +415,113 @@
 
 <Dialog.Root bind:open={registering} onOpenChange={(v) => { if (!v) submitting = false }}>
   <Dialog.Content class="sm:max-w-sm">
-    <Dialog.Header>
-      <Dialog.Title>Add Server</Dialog.Title>
-      <Dialog.Description>
-        Registers a new block server for this storage. Raise the copyset count to form a
-        copyset from it.
-      </Dialog.Description>
-    </Dialog.Header>
-    <form onsubmit={handleRegister} class="space-y-5">
-      <div class="space-y-2">
-        <Label for="register-server-name">Name</Label>
-        <Input id="register-server-name" bind:value={name} placeholder="e.g. replica-3" autocomplete="off" required />
+    {#if registered}
+      <Dialog.Header>
+        <Dialog.Title>Copyset registered</Dialog.Title>
+        <Dialog.Description>
+          Paste each BLOCK_VOLUME_ID into the launch config of the matching instance.
+        </Dialog.Description>
+      </Dialog.Header>
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+      <div class="space-y-3" bind:this={successRef} tabindex="-1">
+        {#each [{ label: registered.nameA, id: registered.idA }, { label: registered.nameB, id: registered.idB }] as m (m.id)}
+          <div class="space-y-1">
+            <span class="text-sm font-medium">{m.label}</span>
+            <div class="flex items-center gap-1.5">
+              <code class="flex-1 rounded-sm border bg-muted px-2 py-1.5 text-xs font-mono break-all">BLOCK_VOLUME_ID={m.id}</code>
+              <button type="button" onclick={() => copyValue(`BLOCK_VOLUME_ID=${m.id}`, `${m.label}'s BLOCK_VOLUME_ID`)}
+                class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-70 hover:opacity-100 hover:text-primary transition-opacity"
+                title="Copy" aria-label={`Copy BLOCK_VOLUME_ID for ${m.label}`}>
+                <CopyIcon class="size-3.5" aria-hidden="true" />
+              </button>
+            </div>
+          </div>
+        {/each}
       </div>
-      <div class="space-y-2">
-        <Label id="register-server-cluster-label" for="register-server-cluster">Availability / placement</Label>
-        <Select id="register-server-cluster" ariaLabelledby="register-server-cluster-label"
-          bind:value={regionClusterId} placeholder="Select cluster..." options={clusterOptions} />
-      </div>
-      <Dialog.Footer class="gap-2">
-        <Button variant="secondary" type="button" onclick={() => registering = false} disabled={submitting}>Cancel</Button>
-        <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting || !canRegister}>
-          {submitting ? 'Registering...' : 'Register'}
-        </Button>
+      <Dialog.Footer>
+        <Button variant="primary" type="button" class="cyberpunk-skewed-sm" onclick={() => (registering = false)}>Done</Button>
       </Dialog.Footer>
-    </form>
+    {:else}
+      <Dialog.Header>
+        <Dialog.Title>Add Copyset</Dialog.Title>
+        <Dialog.Description>
+          Registers a new copyset for this storage: two servers, launched as a pair. Leave the
+          name blank to auto-generate one - both servers derive their names from it.
+        </Dialog.Description>
+      </Dialog.Header>
+      <form onsubmit={handleRegister} class="space-y-5">
+        <div class="space-y-2">
+          <Label for="register-copyset-name">Copyset name</Label>
+          <Input id="register-copyset-name" bind:value={name} maxlength={98} placeholder="Auto-generated if left blank" autocomplete="off" />
+        </div>
+        <Dialog.Footer class="gap-2">
+          <Button variant="secondary" type="button" onclick={() => registering = false} disabled={submitting}>Cancel</Button>
+          <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting}>
+            {submitting ? 'Registering...' : 'Register'}
+          </Button>
+        </Dialog.Footer>
+      </form>
+    {/if}
+  </Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={bulkRegistering} onOpenChange={(v) => { if (!v) bulkSubmitting = false }}>
+  <Dialog.Content class="sm:max-w-md">
+    {#if bulkResults}
+      <Dialog.Header>
+        <Dialog.Title>{bulkResults.length} copyset{bulkResults.length === 1 ? '' : 's'} registered</Dialog.Title>
+        <Dialog.Description>
+          Paste each BLOCK_VOLUME_ID into the launch config of the matching instance.
+        </Dialog.Description>
+      </Dialog.Header>
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+      <div class="space-y-3" bind:this={bulkSuccessRef} tabindex="-1">
+        <Button variant="outline" size="sm" class="gap-1.5 w-full" onclick={copyAllBulkIds}>
+          <CopyIcon class="size-4" aria-hidden="true" /> Copy all {bulkMemberPairs.length} BLOCK_VOLUME_IDs
+        </Button>
+        <div class="max-h-72 overflow-y-auto space-y-2 pr-1">
+          {#each bulkMemberPairs as m (m.id)}
+            <div class="space-y-1">
+              <span class="text-xs font-medium text-muted-foreground">{m.label}</span>
+              <div class="flex items-center gap-1.5">
+                <code class="flex-1 rounded-sm border bg-muted px-2 py-1 text-xs font-mono break-all">BLOCK_VOLUME_ID={m.id}</code>
+                <button type="button" onclick={() => copyValue(`BLOCK_VOLUME_ID=${m.id}`, `${m.label}'s BLOCK_VOLUME_ID`)}
+                  class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-70 hover:opacity-100 hover:text-primary transition-opacity"
+                  title="Copy" aria-label={`Copy BLOCK_VOLUME_ID for ${m.label}`}>
+                  <CopyIcon class="size-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+      <Dialog.Footer>
+        <Button variant="primary" type="button" class="cyberpunk-skewed-sm" onclick={() => (bulkRegistering = false)}>Done</Button>
+      </Dialog.Footer>
+    {:else}
+      <Dialog.Header>
+        <Dialog.Title>Add Multiple Copysets</Dialog.Title>
+        <Dialog.Description>
+          Registers this many copysets at once, every name auto-generated - up to {MAX_BULK_COUNT} per call.
+        </Dialog.Description>
+      </Dialog.Header>
+      <form onsubmit={handleBulkRegister} class="space-y-5">
+        <div class="space-y-2">
+          <Label for="register-copysets-bulk-count">Count</Label>
+          <Input id="register-copysets-bulk-count" type="number" min="1" max={MAX_BULK_COUNT}
+            bind:value={count} autocomplete="off" />
+          {#if !bulkCountValid}
+            <p class="text-xs text-destructive">Count must be between 1 and {MAX_BULK_COUNT} and must be a whole number.</p>
+          {/if}
+        </div>
+        <Dialog.Footer class="gap-2">
+          <Button variant="secondary" type="button" onclick={() => bulkRegistering = false} disabled={bulkSubmitting}>Cancel</Button>
+          <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={bulkSubmitting || !bulkCountValid}>
+            {bulkSubmitting ? 'Registering...' : 'Register'}
+          </Button>
+        </Dialog.Footer>
+      </form>
+    {/if}
   </Dialog.Content>
 </Dialog.Root>
 

@@ -2,16 +2,20 @@
   import { onMount } from 'svelte'
   import Pause from '@lucide/svelte/icons/pause'
   import Play from '@lucide/svelte/icons/play'
+  // Only for the shared --d-flow-* particle-color tokens: everything else in this
+  // diagram stays on its own local --sm-* namespace.
+  import './diagram.css'
 
   let svgEl: SVGSVGElement
   let paused = $state(false)
   // false under prefers-reduced-motion: nothing animates, so hide the control
   let animated = $state(false)
 
+  // Bound on the figure itself (not the window): the shortcut only fires while
+// focus is inside this diagram, so it never fires while the reader is typing
+// or dictating text elsewhere on the page.
   function onKeydown(e: KeyboardEvent) {
     if (!animated || e.metaKey || e.ctrlKey || e.altKey) return
-    const t = e.target as HTMLElement | null
-    if (t?.isContentEditable || /^(input|textarea|select)$/i.test(t?.tagName ?? '')) return
     if (e.key === 'i' || e.key === 'I') {
       paused = !paused
       e.preventDefault()
@@ -23,16 +27,18 @@
     const SPEED = 0.6
 
     const COLORS = {
-      meta: 'var(--sm-c-meta)',
-      block: 'var(--sm-c-block)',
-      object: 'var(--sm-c-object)',
-      ctrl: 'var(--sm-c-ctrl)',
-      repl: 'var(--sm-c-repl)',
-      secret: 'var(--sm-c-secret)',
-      gw: 'var(--sm-c-gw)',
+      meta: 'var(--d-flow-meta)',
+      block: 'var(--d-flow-block)',
+      object: 'var(--d-flow-object)',
+      ctrl: 'var(--d-flow-ctrl)',
+      repl: 'var(--d-flow-repl)',
+      secret: 'var(--d-flow-secret)',
+      gw: 'var(--d-flow-gw)',
     }
 
-    type Flow = { id: string; c: string; n: number; s: number; ph: number; op?: number; bidi?: boolean }
+    // rr overrides the dot's core radius (halo scales with it) for a flow drawn
+    // at a smaller scale than the diagram's regular boxes, e.g. the mini copysets.
+    type Flow = { id: string; c: string; n: number; s: number; ph: number; op?: number; bidi?: boolean; rr?: number }
 
     // n = concurrent balls, s = px/sec, ph = phase offset (fraction of path)
     const FLOWS: Flow[] = [
@@ -72,6 +78,13 @@
       { id: 'rdb2', c: COLORS.repl, n: 1, s: 50, ph: 0.5 },
       { id: 'adb1', c: COLORS.repl, n: 1, s: 45, ph: 0.0 },
       { id: 'adb2', c: COLORS.repl, n: 1, s: 45, ph: 0.5 },
+      // sync dot inside each mini copyset icon, scaled down to fit its size
+      { id: 'mc1', c: COLORS.repl, n: 1, s: 10, ph: 0.0, bidi: true, rr: 1.3 },
+      { id: 'mc2', c: COLORS.repl, n: 1, s: 10, ph: 0.2, bidi: true, rr: 1.3 },
+      { id: 'mc3', c: COLORS.repl, n: 1, s: 10, ph: 0.4, bidi: true, rr: 1.3 },
+      { id: 'mc4', c: COLORS.repl, n: 1, s: 10, ph: 0.6, bidi: true, rr: 1.3 },
+      { id: 'mc5', c: COLORS.repl, n: 1, s: 10, ph: 0.8, bidi: true, rr: 1.3 },
+      { id: 'mc6', c: COLORS.repl, n: 1, s: 10, ph: 0.1, bidi: true, rr: 1.3 },
     ]
 
     const NS = 'http://www.w3.org/2000/svg'
@@ -81,12 +94,14 @@
 
     function spawn(f: Flow, path: SVGPathElement, len: number, k: number, rev: boolean) {
       const g = document.createElementNS(NS, 'g')
+      const coreR = f.rr ?? (rev ? 3.2 : 4)
+      const haloR = f.rr ? f.rr * 2.2 : (rev ? 7 : 9)
       const halo = document.createElementNS(NS, 'circle')
-      halo.setAttribute('r', rev ? '7' : '9')
+      halo.setAttribute('r', String(haloR))
       halo.setAttribute('fill', f.c)
       halo.setAttribute('opacity', String(0.16 * (f.op ?? 1)))
       const core = document.createElementNS(NS, 'circle')
-      core.setAttribute('r', rev ? '3.2' : '4')
+      core.setAttribute('r', String(coreR))
       core.setAttribute('fill', f.c)
       core.setAttribute('opacity', String(f.op ?? 1))
       g.appendChild(halo)
@@ -143,9 +158,10 @@
   })
 </script>
 
-<svelte:window onkeydown={onKeydown} />
-
-<figure class="system-motion">
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<!-- The figure itself stays non-interactive; this only catches keydown bubbling up from the
+     pause/play button below, so the "i" shortcut can never fire outside this diagram. -->
+<figure class="system-motion" onkeydown={onKeydown}>
   {#if animated}
     <button
       type="button"
@@ -166,7 +182,7 @@
     viewBox="0 -130 1680 1075"
     xmlns="http://www.w3.org/2000/svg"
     role="img"
-    aria-label="Animated mountOS system diagram: partner systems and the admin system drive the HUB through the SDK, clients and apps reach the region services, a region holds the dataserv raft cluster, region database, vaults, and block storage, all backed by object storage. Block storage is a shared pool of 2-node active-active copysets (one shown); a volume draws its own working set of copysets from that pool rather than the whole pool, so volumes commonly share a copyset. Apps without a mount reach the same data through the optional gateway embedded in the client"
+    aria-label="Animated mountOS system diagram: partner systems and the admin system drive the HUB through the SDK, clients and apps reach the region services, a region holds dataserv, the region database, vaults, and block storage, all backed by object storage. Block storage is a fleet of copysets, shown as a pile with one copyset open: two blockserv nodes, each with its own SSD, with no primary. A volume draws its own working set of copysets from the fleet rather than the whole fleet, so volumes commonly share a copyset. Apps without a mount reach the same data through the optional gateway embedded in the client"
   >
     <defs>
       <marker id="sm-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -181,6 +197,10 @@
     <rect class="frame" x="556" y="224" width="760" height="630" rx="14" opacity="0.3" />
     <rect class="frame" x="548" y="232" width="760" height="630" rx="14" opacity="0.55" />
     <rect class="frame" x="540" y="240" width="760" height="630" rx="14" />
+    <!-- block storage pile: a storage is a fleet of copysets, so the group
+         frame is stacked (2 ghost layers behind the front, real one) -->
+    <rect class="subframe" x="616" y="584" width="460" height="140" rx="10" opacity="0.35" />
+    <rect class="subframe" x="608" y="592" width="460" height="140" rx="10" opacity="0.6" />
     <rect class="subframe" x="600" y="600" width="460" height="140" rx="10" />
 
     <!-- visible edges -->
@@ -274,6 +294,12 @@
       <path data-g="capp2" class="guide" d="M150,436 V468" />
       <path data-g="raft" class="guide" d="M608,292 H1032 A20,20 0 0 1 1052,312 V362 A20,20 0 0 1 1032,382 H608 A20,20 0 0 1 588,362 V312 A20,20 0 0 1 608,292 Z" />
       <path data-g="peer" class="guide" d="M700,657 H960" />
+      <path data-g="mc1" class="guide" d="M656,600 H666" />
+      <path data-g="mc2" class="guide" d="M726,600 H736" />
+      <path data-g="mc3" class="guide" d="M796,600 H806" />
+      <path data-g="mc4" class="guide" d="M866,600 H876" />
+      <path data-g="mc5" class="guide" d="M936,600 H946" />
+      <path data-g="mc6" class="guide" d="M1006,600 H1016" />
       <path data-g="rdb1" class="guide" d="M1198,325 H1210 V312 H1234" />
       <path data-g="rdb2" class="guide" d="M1198,345 H1210 V364 H1234" />
       <path data-g="adb1" class="guide" d="M1015,66 H1034" />
@@ -387,7 +413,7 @@
       <path class="divider" d="M932,345 H1028" />
       <text class="t-boxsm" x="980" y="360" text-anchor="middle">+ gcserv</text>
 
-      <text class="t-lbl" x="820" y="402" text-anchor="middle">raft · ownership sync · one owner per (volume · fork)</text>
+      <text class="t-lbl" x="820" y="402" text-anchor="middle">one owner per (volume · fork)</text>
     </g>
 
     <!-- region db (primary + replicas) -->
@@ -410,13 +436,33 @@
       <text class="t-boxsm" x="1185" y="556" text-anchor="middle">aws sm · azure kv · gcp · hashicorp</text>
     </g>
 
-    <!-- block storage: one copyset (2-node, active-active) shown from the
-         storage's shared pool of K copysets - a volume draws its own working
-         set of copysets from that pool, so volumes commonly share one -->
+    <!-- block storage: a fleet of copysets (the pile), one copyset shown open.
+         A copyset is 2 blockserv nodes, each with its own SSD, peer-syncing
+         directly with each other (no primary). A volume draws its own working
+         set of copysets from the fleet, so volumes commonly share one. -->
     <g>
-      <text class="t-lbl t-cyan" x="612" y="622">BLOCK STORAGE</text>
-      <text class="t-lbl" x="1048" y="722" text-anchor="end">copyset · active-active · 1 of K</text>
-      <text class="t-lbl" x="1048" y="736" text-anchor="end">volumes draw a working set from the pool</text>
+      <!-- fleet: several mini copysets (each 2 nodes + SSD + sync, same
+           shape as the full-size one below) standing for the pool; one is
+           opened below into its full labeled detail -->
+      <defs>
+        <g id="sm-mini-copyset">
+          <rect x="0" y="0" width="12" height="12" rx="1.5" class="box-outer" />
+          <rect x="22" y="0" width="12" height="12" rx="1.5" class="box-outer" />
+          <path d="M12,6 H22" class="rlink" />
+          <rect x="1" y="14" width="10" height="4" rx="1" class="ssd" />
+          <rect x="23" y="14" width="10" height="4" rx="1" class="ssd" />
+        </g>
+      </defs>
+      <path class="edge" d="M661,600 H1011" />
+      <use href="#sm-mini-copyset" x="644" y="594" />
+      <use href="#sm-mini-copyset" x="714" y="594" />
+      <use href="#sm-mini-copyset" x="784" y="594" />
+      <use href="#sm-mini-copyset" x="854" y="594" />
+      <use href="#sm-mini-copyset" x="924" y="594" />
+      <use href="#sm-mini-copyset" x="994" y="594" />
+      <path class="rlink" d="M801,612 V628" />
+
+      <text class="t-lbl t-cyan" x="612" y="627">BLOCK STORAGE</text>
 
       <path class="attach" d="M700,684 V696" />
       <rect class="ssd" x="672" y="696" width="56" height="22" rx="3" />
@@ -428,13 +474,16 @@
 
       <rect class="box-outer" x="640" y="630" width="120" height="54" rx="3" />
       <rect class="box-inner" x="644" y="634" width="112" height="46" rx="2" />
-      <text class="t-box" x="700" y="652" text-anchor="middle" style="font-size:0.7rem">BLOCK VOL</text>
-      <text class="t-boxsm" x="700" y="670" text-anchor="middle">cluster a</text>
+      <text class="t-box" x="700" y="652" text-anchor="middle" style="font-size:0.7rem">blockserv</text>
+      <text class="t-boxsm" x="700" y="670" text-anchor="middle">placement a</text>
 
       <rect class="box-outer" x="900" y="630" width="120" height="54" rx="3" />
       <rect class="box-inner" x="904" y="634" width="112" height="46" rx="2" />
-      <text class="t-box" x="960" y="652" text-anchor="middle" style="font-size:0.7rem">BLOCK VOL</text>
-      <text class="t-boxsm" x="960" y="670" text-anchor="middle">cluster b</text>
+      <text class="t-box" x="960" y="652" text-anchor="middle" style="font-size:0.7rem">blockserv</text>
+      <text class="t-boxsm" x="960" y="670" text-anchor="middle">placement b</text>
+
+      <text class="t-lbl t-cyan" x="830" y="645" text-anchor="middle">COPYSET</text>
+      <text class="t-lbl" x="830" y="670" text-anchor="middle" style="font-size:0.6rem">sync</text>
     </g>
 
     <!-- object storage -->
@@ -464,19 +513,19 @@
 
     <!-- legend -->
     <g>
-      <circle cx="46" cy="816" r="4" fill="var(--sm-c-meta)" />
+      <circle cx="46" cy="816" r="4" fill="var(--d-flow-meta)" />
       <text class="t-lbl" x="58" y="820">metadata</text>
-      <circle cx="216" cy="816" r="4" fill="var(--sm-c-block)" />
+      <circle cx="216" cy="816" r="4" fill="var(--d-flow-block)" />
       <text class="t-lbl" x="228" y="820">block i/o</text>
-      <circle cx="46" cy="846" r="4" fill="var(--sm-c-object)" />
+      <circle cx="46" cy="846" r="4" fill="var(--d-flow-object)" />
       <text class="t-lbl" x="58" y="850">object parts</text>
-      <circle cx="216" cy="846" r="4" fill="var(--sm-c-ctrl)" opacity="0.6" />
+      <circle cx="216" cy="846" r="4" fill="var(--d-flow-ctrl)" opacity="0.6" />
       <text class="t-lbl" x="228" y="850">control · discovery</text>
-      <circle cx="46" cy="876" r="4" fill="var(--sm-c-repl)" />
+      <circle cx="46" cy="876" r="4" fill="var(--d-flow-repl)" />
       <text class="t-lbl" x="58" y="880">replication</text>
-      <circle cx="216" cy="876" r="4" fill="var(--sm-c-secret)" />
+      <circle cx="216" cy="876" r="4" fill="var(--d-flow-secret)" />
       <text class="t-lbl" x="228" y="880">secrets</text>
-      <circle cx="46" cy="906" r="4" fill="var(--sm-c-gw)" />
+      <circle cx="46" cy="906" r="4" fill="var(--d-flow-gw)" />
       <text class="t-lbl" x="58" y="910">gateway api</text>
       <text class="t-lbl" x="216" y="910">cluster = logical group</text>
     </g>
@@ -508,13 +557,6 @@
     --sm-border: oklch(0.91 0.01 254);
     --sm-bright: oklch(0.42 0.02 248);
     --sm-cyan-lbl: oklch(0.51 0.09 215);
-    --sm-c-meta: oklch(0.41 0.02 248);
-    --sm-c-block: oklch(0.61 0.1 211);
-    --sm-c-object: oklch(0.56 0.18 260);
-    --sm-c-ctrl: oklch(0.6 0.16 150);
-    --sm-c-repl: oklch(0.53 0.22 291);
-    --sm-c-secret: oklch(0.69 0.14 73);
-    --sm-c-gw: oklch(0.59 0.21 11);
     position: relative;
     margin: 0 0 24px;
     padding: 8px;
@@ -545,13 +587,6 @@
     --sm-border: oklch(0.27 0.01 257);
     --sm-bright: oklch(0.76 0.02 254);
     --sm-cyan-lbl: oklch(0.74 0.07 208);
-    --sm-c-meta: oklch(0.96 0.01 248);
-    --sm-c-block: oklch(0.82 0.11 208);
-    --sm-c-object: oklch(0.72 0.13 256);
-    --sm-c-ctrl: oklch(0.8 0.18 152);
-    --sm-c-repl: oklch(0.71 0.16 294);
-    --sm-c-secret: oklch(0.8 0.13 81);
-    --sm-c-gw: oklch(0.72 0.17 13);
   }
   .system-motion svg {
     width: 100%;

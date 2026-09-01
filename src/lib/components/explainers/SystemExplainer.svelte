@@ -8,7 +8,11 @@
     },
     {
       title: 'Data plane',
-      body: 'Metadata flows to the dataserv raft cluster, block reads and writes go to the resolved copyset, and content chunks go directly to object storage.',
+      body: 'Metadata flows to the dataserv metadata cluster, block reads and writes go to the resolved copyset, and content chunks go directly to object storage.',
+    },
+    {
+      title: 'Copyset servers',
+      body: 'A copyset is two blockserv nodes, each with its own SSD. The two nodes sync directly, with no primary. A volume draws its own working set of copysets, not the whole fleet, so volumes often share one.',
     },
     {
       title: 'Gateways',
@@ -16,7 +20,7 @@
     },
     {
       title: 'Durability',
-      body: 'Object storage is the source of truth. Databases and vaults run highly available, and each block volume replicates through 2-node copysets, active-active within each copyset.',
+      body: 'Object storage is the source of truth. Databases and vaults run highly available, and each block volume replicates through 2-node copysets.',
     },
   ]
 </script>

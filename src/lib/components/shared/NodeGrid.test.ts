@@ -18,7 +18,7 @@ function sn(nodeId: string, status: string, regionId = 2): ServiceNode {
 }
 
 function copyset(overrides: Partial<Copyset> = {}): Copyset {
-  return { id: 'copyset-1', storageId: 'storage-1', state: 'active', memberA: 'bv-a', memberB: 'bv-b', tags: [], ...overrides }
+  return { id: 'copyset-1', storageId: 'storage-1', name: 'mos-block-a', state: 'active', memberA: 'bv-a', memberB: 'bv-b', tags: [], ...overrides }
 }
 
 // jsdom has no IntersectionObserver; this fake lets tests drive viewport enter/leave

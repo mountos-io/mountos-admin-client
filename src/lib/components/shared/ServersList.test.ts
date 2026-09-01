@@ -11,14 +11,9 @@ vi.mock('$lib/core/utils/toast', () => ({
 import { showSuccessToast, handleApiError } from '$lib/core/utils/toast'
 
 vi.mock('$lib/core/utils/clipboard', () => ({ copyText: vi.fn().mockResolvedValue(true) }))
-import { copyText } from '$lib/core/utils/clipboard'
 
 function bv(id: string, overrides: Partial<BlockVolume> = {}): BlockVolume {
-  return {
-    id, name: id, isActive: true, clusterUuid: `cluster-${id}`, clusterName: 'az-1', clusterReady: true,
-    regionClusterId: 101, memberState: 'active', copysetId: undefined,
-    ...overrides,
-  } as unknown as BlockVolume
+  return { id, name: id, isActive: true, memberState: 'active', copysetId: undefined, ...overrides } as unknown as BlockVolume
 }
 
 function sn(nodeId: string, status = 'up', overrides: Partial<ServiceNode> = {}): ServiceNode {
@@ -26,17 +21,8 @@ function sn(nodeId: string, status = 'up', overrides: Partial<ServiceNode> = {})
 }
 
 function copyset(overrides: Partial<Copyset> = {}): Copyset {
-  return {
-    id: 'copyset-1', storageId: 'storage-1', state: 'active',
-    memberA: 'bv-a', memberB: 'bv-b', placementGroupA: 1, placementGroupB: 2, tags: [],
-    ...overrides,
-  }
+  return { id: 'copyset-1', storageId: 'storage-1', name: 'mos-block-a', state: 'active', memberA: 'bv-a', memberB: 'bv-b', tags: [], ...overrides }
 }
-
-const clusterOptions = [
-  { value: '101', label: 'az-1 (default)' },
-  { value: '102', label: 'az-2' },
-]
 
 function baseProps(overrides: Record<string, unknown> = {}) {
   return {
@@ -45,11 +31,11 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     blockVolumesById: new Map([['bv-a', bv('bv-a', { copysetId: 'copyset-1' })], ['bv-b', bv('bv-b', { copysetId: 'copyset-1' })]]),
     nodesByVolume: new Map(),
     canUpdate: true,
-    clusterOptions,
     onDrain: vi.fn(),
     onCancelDrain: vi.fn(),
     onReactivate: vi.fn(),
-    onRegister: vi.fn(),
+    onRegisterCopyset: vi.fn(),
+    onRegisterCopysetsBulk: vi.fn(),
     onRemove: vi.fn(),
     ...overrides,
   }
@@ -112,22 +98,13 @@ describe('ServersList', () => {
     expect(screen.getByText('2 blockserv processes are serving this server; each server should have exactly one')).toBeInTheDocument()
   })
 
-  it('copies the region cluster ID (REGION_CLUSTER_ID) for a row that has one, and toasts', async () => {
+  it('copies a row\'s BLOCK_VOLUME_ID and toasts', async () => {
+    const { copyText } = await import('$lib/core/utils/clipboard')
     render(ServersList, { props: baseProps() })
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Copy region cluster ID for bv-a' }))
-    await waitFor(() => expect(copyText).toHaveBeenCalledWith('cluster-bv-a'))
-    await waitFor(() => expect(showSuccessToast).toHaveBeenCalledWith('Region cluster ID copied'))
-  })
-
-  it('hides the region cluster ID copy button for a row with no clusterUuid', () => {
-    const blockVolumesById = new Map([
-      ['bv-a', bv('bv-a', { copysetId: 'copyset-1', clusterUuid: undefined })],
-      ['bv-b', bv('bv-b', { copysetId: 'copyset-1' })],
-    ])
-    render(ServersList, { props: baseProps({ blockVolumesById }) })
-    expect(screen.queryByRole('button', { name: 'Copy region cluster ID for bv-a' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Copy region cluster ID for bv-b' })).toBeInTheDocument()
+    await fireEvent.click(screen.getByRole('button', { name: 'Copy ID for bv-a' }))
+    await waitFor(() => expect(copyText).toHaveBeenCalledWith('bv-a'))
+    await waitFor(() => expect(showSuccessToast).toHaveBeenCalledWith('Server ID copied'))
   })
 
   it('shows unsynced/drain-ready badges only under directAccess', () => {
@@ -212,21 +189,50 @@ describe('ServersList', () => {
     await waitFor(() => expect(handleApiError).toHaveBeenCalled())
   })
 
-  it('Add server: opens the dialog, submits name + cluster, and calls onRegister', async () => {
-    const onRegister = vi.fn().mockResolvedValue(undefined)
-    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById: new Map(), onRegister }) })
+  it('Add copyset: opens the dialog, submits one name, calls onRegisterCopyset, and shows the generated BLOCK_VOLUME_IDs', async () => {
+    const onRegisterCopyset = vi.fn().mockResolvedValue({
+      id: 'copyset-2', storageId: 'storage-1', name: 'replica', state: 'active', memberA: 'bv-new-a', memberB: 'bv-new-b', tags: [],
+    })
+    const blockVolumesById = new Map([
+      ['bv-new-a', bv('bv-new-a', { copysetId: 'copyset-2' })],
+      ['bv-new-b', bv('bv-new-b', { copysetId: 'copyset-2' })],
+    ])
+    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById, onRegisterCopyset }) })
 
-    await fireEvent.click(screen.getByRole('button', { name: 'Add server' }))
-    expect(screen.getByRole('button', { name: 'Register' })).toBeDisabled()
-
-    await fireEvent.input(screen.getByLabelText('Name'), { target: { value: 'replica-3' } })
-    await fireEvent.click(screen.getByRole('button', { name: 'Availability / placement' }))
-    await fireEvent.click(await screen.findByRole('option', { name: 'az-2' }))
-    expect(screen.getByRole('button', { name: 'Register' })).not.toBeDisabled()
-
+    await fireEvent.click(screen.getByRole('button', { name: 'Add copyset' }))
+    await fireEvent.input(screen.getByLabelText('Copyset name'), { target: { value: 'replica' } })
     await fireEvent.click(screen.getByRole('button', { name: 'Register' }))
-    await waitFor(() => expect(onRegister).toHaveBeenCalledWith('replica-3', 102))
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+
+    await waitFor(() => expect(onRegisterCopyset).toHaveBeenCalledWith('replica'))
+    expect(await screen.findByText('BLOCK_VOLUME_ID=bv-new-a')).toBeInTheDocument()
+    expect(screen.getByText('BLOCK_VOLUME_ID=bv-new-b')).toBeInTheDocument()
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('Add copyset: falls back to <copysetName>-a/-b labels when the member id is missing from blockVolumesById', async () => {
+    const onRegisterCopyset = vi.fn().mockResolvedValue({
+      id: 'copyset-2', storageId: 'storage-1', name: 'riveted-truss-4f2a', state: 'active', memberA: 'bv-new-a', memberB: 'bv-new-b', tags: [],
+    })
+    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById: new Map(), onRegisterCopyset }) })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Add copyset' }))
+    await fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+
+    expect(await screen.findByText('riveted-truss-4f2a-a')).toBeInTheDocument()
+    expect(screen.getByText('riveted-truss-4f2a-b')).toBeInTheDocument()
+  })
+
+  it('routes a failed Add copyset submit through handleApiError, keeping the dialog open', async () => {
+    const onRegisterCopyset = vi.fn().mockRejectedValue(new Error('conflict'))
+    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById: new Map(), onRegisterCopyset }) })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Add copyset' }))
+    await fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+
+    await waitFor(() => expect(handleApiError).toHaveBeenCalled())
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 
   it('opens the same dialog when the caller sets registering externally, resetting the form', async () => {
@@ -235,12 +241,55 @@ describe('ServersList', () => {
 
     await rerender(baseProps({ copysets: [], blockVolumesById: new Map(), registering: true }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByLabelText('Name')).toHaveValue('')
+    expect(screen.getByLabelText('Copyset name')).toHaveValue('')
   })
 
-  it('disables Add server when no cluster is ready', () => {
-    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById: new Map(), clusterOptions: [] }) })
-    expect(screen.getByRole('button', { name: 'Add server' })).toBeDisabled()
+  it('Add multiple: opens the bulk dialog, submits a count, calls onRegisterCopysetsBulk, and shows every generated BLOCK_VOLUME_ID', async () => {
+    const onRegisterCopysetsBulk = vi.fn().mockResolvedValue([
+      { id: 'copyset-3', storageId: 'storage-1', name: 'riveted-truss-1a2b', state: 'active', memberA: 'bv-3a', memberB: 'bv-3b', tags: [] },
+      { id: 'copyset-4', storageId: 'storage-1', name: 'coupled-beam-3c4d', state: 'active', memberA: 'bv-4a', memberB: 'bv-4b', tags: [] },
+    ])
+    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById: new Map(), onRegisterCopysetsBulk }) })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Add multiple' }))
+    await fireEvent.input(screen.getByLabelText('Count'), { target: { value: '2' } })
+    await fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+
+    await waitFor(() => expect(onRegisterCopysetsBulk).toHaveBeenCalledWith(2))
+    expect(await screen.findByText('BLOCK_VOLUME_ID=bv-3a')).toBeInTheDocument()
+    expect(screen.getByText('BLOCK_VOLUME_ID=bv-3b')).toBeInTheDocument()
+    expect(screen.getByText('BLOCK_VOLUME_ID=bv-4a')).toBeInTheDocument()
+    expect(screen.getByText('BLOCK_VOLUME_ID=bv-4b')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Copy all 4 BLOCK_VOLUME_IDs/ })).toBeInTheDocument()
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('Add multiple: disables Register when count is out of range or fractional', async () => {
+    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById: new Map() }) })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Add multiple' }))
+    await fireEvent.input(screen.getByLabelText('Count'), { target: { value: '101' } })
+    expect(screen.getByRole('button', { name: 'Register' })).toBeDisabled()
+    expect(screen.getByText(/Count must be between 1 and 100/)).toBeInTheDocument()
+
+    await fireEvent.input(screen.getByLabelText('Count'), { target: { value: '0' } })
+    expect(screen.getByRole('button', { name: 'Register' })).toBeDisabled()
+
+    await fireEvent.input(screen.getByLabelText('Count'), { target: { value: '1.5' } })
+    expect(screen.getByRole('button', { name: 'Register' })).toBeDisabled()
+  })
+
+  it('routes a failed Add multiple submit through handleApiError, keeping the dialog open', async () => {
+    const onRegisterCopysetsBulk = vi.fn().mockRejectedValue(new Error('conflict'))
+    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById: new Map(), onRegisterCopysetsBulk }) })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Add multiple' }))
+    await fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+
+    await waitFor(() => expect(handleApiError).toHaveBeenCalled())
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
   })
 
   it('canUpdate=false hides every mutation control while keeping the servers list visible', () => {
@@ -251,7 +300,8 @@ describe('ServersList', () => {
     ])
     render(ServersList, { props: baseProps({ blockVolumesById, canUpdate: false }) })
 
-    expect(screen.queryByRole('button', { name: 'Add server' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Add copyset' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Add multiple' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Drain' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Reactivate' })).not.toBeInTheDocument()
     expect(screen.getByText('bv-detached')).toBeInTheDocument()

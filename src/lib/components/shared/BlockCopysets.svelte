@@ -1,18 +1,14 @@
 <script lang="ts">
   // Copyset/server-aware view rendered on the storage detail page. Self-fetches; owns the
-  // 15s poll loop while any copyset is draining. The top control row (copyset count + live
-  // server count) stays outside the tabs; "Copyset servers" (default) and "Volumes" sit
-  // below it as tabs, reusing the shared Tabs primitive.
+  // 15s poll loop while any copyset is draining. "Copyset servers" (default) and "Volumes"
+  // sit in tabs, reusing the shared Tabs primitive.
   import { onDestroy } from 'svelte'
   import * as Tabs from '$lib/components/ui/tabs'
   import NodeGrid from '$lib/components/shared/NodeGrid.svelte'
   import ServersList from '$lib/components/shared/ServersList.svelte'
-  import CopysetCountControl from '$lib/components/shared/CopysetCountControl.svelte'
   import StorageVolumes from '$lib/components/shared/StorageVolumes.svelte'
   import { useStorages } from '$lib/core/stores/storages.svelte'
-  import { useClusters } from '$lib/core/stores/clusters.svelte'
   import { api } from '$lib/core/stores/client.svelte'
-  import { ApiError } from '$lib/core/api/errors'
   import { groupNodesByVolume } from '$lib/core/utils/nodes'
   import type { Copyset, BlockVolume, ServiceNode } from '$lib/core/api/types'
 
@@ -21,7 +17,7 @@
 
   let {
     storageId, regionId, accountId, directAccess = false, canUpdate, volumesRefreshKey = 0,
-    addServerOpen = $bindable(false), clustersAvailable = $bindable(true),
+    addServerOpen = $bindable(false),
   }: {
     storageId: number
     regionId: number
@@ -30,23 +26,16 @@
     canUpdate: boolean
     // Bumped by the caller (a compatible-storage volume move) to force the Volumes tab to refetch.
     volumesRefreshKey?: number
-    // Bindable: lets the storage detail page's top-level "Add Server" button open the
+    // Bindable: lets the storage detail page's top-level "Add Copyset" button open the
     // servers list's register dialog without duplicating its form.
     addServerOpen?: boolean
-    // Bindable read-out: whether there's a cluster to register a new server into, so the
-    // page-level button can disable itself the same way the servers list's own does.
-    clustersAvailable?: boolean
   } = $props()
 
   const store = useStorages()
-  const clusterStore = useClusters()
 
   let copysets = $state<Copyset[]>([])
   let blockVolumesById = $state<Map<string, BlockVolume>>(new Map())
   let nodesByVolume = $state<Map<string, ServiceNode[]>>(new Map())
-  // K is 0 until the first updateConfig call ever mints a copyset config row (getConfig 404s
-  // until then). 0 renders as "no target set yet" rather than a fabricated value.
-  let targetK = $state(0)
   let loading = $state(true)
   let error = $state(false)
   // Set when the fast copyset-status poll's latest request failed; the copysets/topology
@@ -55,31 +44,10 @@
   // Set when the last node-discovery fetch failed; nodesByVolume keeps its last-known-good value.
   let nodesStale = $state(false)
 
-  // Live count of currently-active registered servers, distinct from targetK (the desired
-  // copyset count): shown next to the reconcile control so an admin can see actual capacity,
-  // not just the configured target.
+  // Live count of currently-active registered servers.
   const activeServerCount = $derived(Array.from(blockVolumesById.values()).filter(v => v.isActive).length)
 
-  const clusterOptions = $derived(
-    clusterStore.clustersFor(regionId)
-      .filter(c => c.isActive && c.isReady)
-      .map(c => ({ value: String(c.id), label: c.defaultCluster ? `${c.name} (default)` : c.name }))
-  )
-
-  $effect(() => { clusterStore.fetchClusters(regionId, { isActive: true }) })
-  $effect(() => { clustersAvailable = clusterOptions.length > 0 })
-
   let activeTab = $state<'servers' | 'volumes'>('servers')
-
-  async function loadConfig(signal?: AbortSignal) {
-    try {
-      const cfg = await store.getConfig(storageId, signal)
-      targetK = cfg.k
-    } catch (err: unknown) {
-      if (err instanceof ApiError && err.status === 404) { targetK = 0; return }
-      throw err
-    }
-  }
 
   // Sequence guards: a slower in-flight request (poll tick, mutation reload, mount) must
   // never overwrite state with an older snapshot than one that already landed.
@@ -105,12 +73,9 @@
   // mutation, not on every poll tick: this data rarely changes between drain polls.
   async function refreshTopology(signal?: AbortSignal): Promise<void> {
     const seq = ++topologySeq
-    const [volumes] = await Promise.all([
-      // Full pool, not just copyset members: resolves a copyset's memberA/memberB ids and
-      // every server outside any copyset.
-      store.listBlockVolumes(storageId, signal),
-      loadConfig(signal),
-    ])
+    // Full pool, not just copyset members: resolves a copyset's memberA/memberB ids and
+    // every server outside any copyset.
+    const volumes = await store.listBlockVolumes(storageId, signal)
     if (signal?.aborted || seq !== topologySeq) return
     blockVolumesById = new Map(volumes.map(v => [v.id, v]))
 
@@ -187,15 +152,16 @@
     await load()
   }
 
-  async function handleUpdateConfig(k: number) {
-    const result = await store.updateConfig(storageId, k)
+  async function handleRegisterCopyset(name: string) {
+    const copyset = await store.registerCopyset(storageId, { name: name || undefined })
     await load()
-    return result
+    return copyset
   }
 
-  async function handleRegisterMember(name: string, regionClusterId: number) {
-    await store.registerMember(storageId, { name, regionClusterId })
+  async function handleRegisterCopysetsBulk(count: number) {
+    const result = await store.registerCopysetsBulk(storageId, { count })
     await load()
+    return result.copysets
   }
 
   async function handleReactivateMember(blockVolumeId: string) {
@@ -216,7 +182,6 @@
 {:else}
   <div class="space-y-4">
     <div class="flex items-center gap-3 flex-wrap">
-      <CopysetCountControl k={targetK} {canUpdate} onSave={handleUpdateConfig} />
       <span class="text-sm text-muted-foreground">
         <span class="font-mono font-medium text-foreground">{activeServerCount}</span>
         server{activeServerCount === 1 ? '' : 's'} registered
@@ -231,8 +196,9 @@
       <Tabs.Content value="servers" class="space-y-4">
         <NodeGrid {copysets} {blockVolumesById} {nodesByVolume} {storageId} />
         <ServersList {copysets} {storageId} {blockVolumesById} {nodesByVolume} {directAccess} {canUpdate} {staleStatus} {nodesStale}
-          {clusterOptions} bind:registering={addServerOpen}
-          onDrain={handleDrain} onCancelDrain={handleCancelDrain} onReactivate={handleReactivateMember} onRegister={handleRegisterMember}
+          bind:registering={addServerOpen}
+          onDrain={handleDrain} onCancelDrain={handleCancelDrain} onReactivate={handleReactivateMember}
+          onRegisterCopyset={handleRegisterCopyset} onRegisterCopysetsBulk={handleRegisterCopysetsBulk}
           onRemove={handleRemoveMember} />
       </Tabs.Content>
       <Tabs.Content value="volumes">
