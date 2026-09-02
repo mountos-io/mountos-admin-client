@@ -226,7 +226,9 @@
     return sk != null && typeof sk === 'object' ? (sk as SinkInfo) : null
   }
 
-  interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number; durationNs?: number; buckets?: number[] }
+  // bytes pairs with durationNs (get/put only; RPC and FUSE entries never set it) so a
+  // table can derive average payload size and throughput per op alongside latency.
+  interface RpcMethodLatency { count: number; avgUs: number; minUs: number; maxUs: number; durationNs?: number; buckets?: number[]; bytes?: number }
   function getRpcLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
     const rl = m.rpcLatency as Record<string, RpcMethodLatency> | undefined
     if (!rl) return []
@@ -249,6 +251,14 @@
   // Fixed GET/TTFB/PUT order rather than by count: the rows stay stable
   // between refreshes and make the provider wait visible separately from
   // payload transfer.
+  // Derives average throughput (bits/sec, for formatBitrate) from the cumulative bytes,
+  // avg latency, and op count already carried by collectMetrics' top-level object
+  // scalars: avgUs * count reconstructs the total time the ops spent in flight.
+  function objectThroughputBps(bytes: number | undefined, avgUs: number | undefined, count: number | undefined): number {
+    const b = bytes ?? 0, u = avgUs ?? 0, c = count ?? 0
+    if (b <= 0 || u <= 0 || c <= 0) return 0
+    return (b * 8) / ((u * c) / 1e6)
+  }
   const OBJECT_OP_LABELS: [string, string][] = [['get', 'GET'], ['get_ttfb', 'GET TTFB'], ['put', 'PUT']]
   function getObjectLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
     const ol = m.objectLatency as Record<string, RpcMethodLatency> | undefined
@@ -912,11 +922,13 @@
                 {#if (m.objectGetTTFBAvgUs ?? 0) > 0}
                   <div class="metric-row"><span>GET Avg TTFB</span><span style="color: {objectLatencyColor(m.objectGetTTFBAvgUs ?? 0)}">{formatUs(m.objectGetTTFBAvgUs ?? 0)}</span></div>
                 {/if}
+                <div class="metric-row"><span>GET Throughput</span><span>{formatBitrate(objectThroughputBps(m.objectGetBytes, m.objectGetAvgUs, m.objectGetCount))}</span></div>
               {/if}
               <div class="metric-row"><span>PUT Count</span><span>{formatNum(m.objectPutCount ?? 0)}</span></div>
               <div class="metric-row"><span>PUT Bytes</span><span>{formatBytes(m.objectPutBytes ?? 0)}</span></div>
               {#if (m.objectPutCount ?? 0) > 0}
                 <div class="metric-row"><span>PUT Avg Latency</span><span style="color: {objectLatencyColor(m.objectPutAvgUs ?? 0)}">{formatUs(m.objectPutAvgUs ?? 0)}</span></div>
+                <div class="metric-row"><span>PUT Throughput</span><span>{formatBitrate(objectThroughputBps(m.objectPutBytes, m.objectPutAvgUs, m.objectPutCount))}</span></div>
               {/if}
               <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
               {#if m.s3RetryAttempts != null}
@@ -1072,6 +1084,7 @@
         {@const totalTimeSec = entries.reduce((s, [, l]) => s + (l.durationNs != null ? l.durationNs / 1e9 : (l.count * l.avgUs) / 1e6), 0)}
         {@const bands = latencyBands(entries, scale.bands)}
         {@const hasBuckets = entries.some(([, l]) => l.buckets?.some(c => c > 0))}
+        {@const hasBytes = entries.some(([, l]) => (l.bytes ?? 0) > 0)}
         <!-- Without buckets there are no percentiles to show, and the mode toggle is
              hidden, so honouring a 'percentiles' preference would strand the reader on
              three empty columns while min/max sit unused in the same payload. -->
@@ -1109,6 +1122,10 @@
                     <th scope="col" class="text-right">Ops/s</th>
                     <th scope="col" class="text-right">Total</th>
                     <th scope="col" class="text-right">Avg</th>
+                    {#if hasBytes}
+                      <th scope="col" class="text-right">Avg Bytes/op</th>
+                      <th scope="col" class="text-right">Throughput</th>
+                    {/if}
                     {#if hasBuckets}<th scope="col" class="text-right"><span class="inline-flex items-center justify-end gap-0.5">σ/μ<InfoTip text={CV_TOOLTIP_TEXT} width={420} /></span></th>{/if}
                     {#if mode === 'minMax'}
                       <th scope="col" class="text-right">Min</th>
@@ -1125,6 +1142,8 @@
                     {@const bkts = toBuckets(lat.buckets)}
                     {@const isOpen = expanded.has(method)}
                     {@const cv = bkts.length > 0 ? estimateCV(bkts, lat.avgUs) : -1}
+                    {@const durationSec = lat.durationNs != null ? lat.durationNs / 1e9 : (lat.count * lat.avgUs) / 1e6}
+                    {@const throughputBps = lat.bytes && durationSec > 0 ? (lat.bytes * 8) / durationSec : 0}
                     <tr class="{bkts.length > 0 ? 'cursor-pointer' : ''} hover:bg-muted/50 transition-colors {isOpen ? 'bg-muted/30' : ''}" class:rpc-zebra={!isOpen && i % 2 === 1} onclick={() => bkts.length > 0 && toggleExpand(method)}>
                       {#if hasBuckets}
                         <td class="w-6">
@@ -1143,6 +1162,10 @@
                       <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{formatOpsPerSec(lat.avgUs)}</td>
                       <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{formatTotalTime(lat.durationNs != null ? lat.durationNs / 1e9 : (lat.count * lat.avgUs) / 1e6)}</td>
                       <td class="text-right font-mono text-sm tabular-nums" style="color: {scale.color(lat.avgUs)}">{formatUs(lat.avgUs)}</td>
+                      {#if hasBytes}
+                        <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{lat.bytes ? formatBytes(lat.bytes / lat.count) : '-'}</td>
+                        <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{throughputBps > 0 ? formatBitrate(throughputBps) : '-'}</td>
+                      {/if}
                       {#if hasBuckets}
                         <td class="text-right">
                           {#if cv >= 0}<Badge variant="outline" class="font-mono text-xs px-1 py-0 {cvClass(cv)}">{cv.toFixed(2)}</Badge>{/if}
@@ -1164,7 +1187,7 @@
                     </tr>
                     {#if isOpen && bkts.length > 0}
                       {@const totalCount = bkts.reduce((s, b) => s + b.count, 0)}
-                      {@const bktColspan = mode === 'minMax' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)}
+                      {@const bktColspan = (mode === 'minMax' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)) + (hasBytes ? 2 : 0)}
                       <tr>
                         <td colspan={bktColspan} class="p-0">
                           <div class="py-2 px-4 space-y-1 ml-6">

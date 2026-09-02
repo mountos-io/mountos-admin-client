@@ -79,6 +79,19 @@ function detectRecords(scalars: ScalarEntry[]): { records: MetricRecord[]; field
   return { records, fields: fieldOrder }
 }
 
+// Metric-name suffixes that map onto a HistogramGroup field, in match-priority order
+// (checked longest/most-specific-first is not required here since each is checked by
+// exact tail match, but 'total' must stay first so a name like "..._histogram_count"
+// is still tried against every other suffix before falling through).
+const HIST_SUFFIXES = ['total', 'duration_seconds', 'avg_latency_us', 'stddev_us', 'histogram_min_us', 'histogram_max_us', 'histogram_count', 'histogram_sum_seconds', 'rollbacks']
+
+function histSuffixKey(metricName: string): string | null {
+  for (const s of HIST_SUFFIXES) {
+    if (metricName.endsWith('_' + s)) return s
+  }
+  return null
+}
+
 function parseLeValue(le: string): number {
   if (le === '+Inf') return Infinity
   const m = le.match(/^([\d.]+)(us|ms|s)?$/)
@@ -129,6 +142,63 @@ export function parseMetrics(text: string): MetricSection[] {
       } else {
         result.push({ name, kind: 'scalar', scalars, groups: [], records: [], recordFields: [] })
       }
+      continue
+    }
+
+    const hasBuckets = lines.some(l => l.includes('_bucket{') && l.includes('le="'))
+    // A labeled, bucket-less section is a genuine per-method latency profile (e.g.
+    // "RPC Methods": foo_total/foo_duration_seconds/foo_avg_latency_us{method=...}) only
+    // when every metric maps to a distinct HIST_SUFFIXES key within its label group. Two
+    // metrics of the same label colliding onto the same suffix (e.g. "Block Commits"'s
+    // commit_peer_total and commit_local_total both ending in "_total") means this is
+    // really a per-entity counter fan-out (one storage/peer/op per label, each with its
+    // own differently-named counters), not a latency table — take the entity path below
+    // instead, or every "_total"-suffixed counter but the last would silently overwrite
+    // the others under the shared 'total' key.
+    const isHistLike = hasBuckets || (() => {
+      const seen = new Map<string, Set<string>>()
+      for (const l of lines) {
+        const m = l.match(/^([a-zA-Z_:]\w*)\{(.*?)\}\s+[\d.eE+\-]+$/)
+        if (!m) continue
+        const metricName = m[1]!
+        const key = histSuffixKey(metricName)
+        if (key == null) return false
+        const pv = (m[2]!.match(/(\w+)="([^"]*)"/)?.[2]) ?? metricName
+        if (!seen.has(pv)) seen.set(pv, new Set())
+        const keys = seen.get(pv)!
+        if (keys.has(key)) return false
+        keys.add(key)
+      }
+      return true
+    })()
+
+    if (!isHistLike) {
+      // Per-entity fan-out (one storage id / peer addr / op per label): keep each
+      // metric under its own bare name instead of running it through the suffix table,
+      // which would collapse every "_total"-suffixed counter onto one key. Reuses the
+      // 'record' shape (recordTable already renders "one row per label, one column per
+      // field" correctly) rather than adding a parallel entity type.
+      const emap = new Map<string, Record<string, number>>()
+      const order: string[] = []
+      const fieldOrder: string[] = []
+      for (const l of lines) {
+        const m = l.match(/^([a-zA-Z_:]\w*)\{(.*?)\}\s+([\d.eE+\-]+)$/)
+        if (!m) continue
+        const [, metricName, rawLabels, rawVal] = m
+        const value = parseFloat(rawVal!)
+        const labels: Record<string, string> = {}
+        for (const pair of rawLabels!.match(/(\w+)="([^"]*)"/g) ?? []) {
+          const eq = pair.indexOf('=')
+          labels[pair.slice(0, eq)] = pair.slice(eq + 2, -1)
+        }
+        const pk = Object.keys(labels)[0]
+        const pv = pk ? labels[pk]! : metricName!
+        if (!emap.has(pv)) { emap.set(pv, {}); order.push(pv) }
+        emap.get(pv)![metricName!] = value
+        if (!fieldOrder.includes(metricName!)) fieldOrder.push(metricName!)
+      }
+      const records = order.map(label => ({ label, fields: emap.get(label)! }))
+      result.push({ name, kind: 'record', scalars: [], groups: [], records, recordFields: fieldOrder })
     } else {
       const gmap = new Map<string, { metrics: Map<string, number>; buckets: HistBucket[] }>()
 
@@ -151,12 +221,7 @@ export function parseMetrics(text: string): MetricSection[] {
         if (metricName!.includes('_bucket') && labels.le != null) {
           g.buckets.push({ le: labels.le, leUs: parseLeValue(labels.le), count: value })
         } else {
-          const suffixes = ['total', 'duration_seconds', 'avg_latency_us', 'stddev_us', 'histogram_min_us', 'histogram_max_us', 'histogram_count', 'histogram_sum_seconds', 'rollbacks']
-          let key = metricName!
-          for (const s of suffixes) {
-            if (metricName!.endsWith('_' + s)) { key = s; break }
-          }
-          g.metrics.set(key, value)
+          g.metrics.set(histSuffixKey(metricName!) ?? metricName!, value)
         }
       }
 

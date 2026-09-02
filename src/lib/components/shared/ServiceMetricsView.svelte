@@ -134,6 +134,20 @@
     }
   }
 
+  // Row-identifier column header for a per-label metrics table, derived from the
+  // section name so a table of storages, peers, or ops isn't captioned "Query" (a
+  // leftover default that only ever fit genuine SQL query-latency tables, which use
+  // dbTab's own literal "Query" instead). Checked most-specific-first; a caller passes
+  // its own fallback for anything this doesn't recognize (profileTab's per-method
+  // histogram sections default to "Method", recordTable's arbitrary-entity sections
+  // default to "Name").
+  function rowLabel(sectionName: string, fallback = "Method"): string {
+    if (/\bstorage\b/i.test(sectionName)) return "Storage";
+    if (/\bpeer\b|\bsibling\b/i.test(sectionName)) return "Peer";
+    if (/\bobject\b|\bs3\b/i.test(sectionName)) return "Operation";
+    return fallback;
+  }
+
   // Section-level explainer hints (lightbulb tooltip on the card title).
   // Keyed by section name; sections without an entry render no hint.
   const SCALAR_SECTION_HINTS: Record<string, string> = {
@@ -719,6 +733,7 @@
   bands: ReturnType<typeof latencyBands>,
   sectionKey: string,
 )}
+  {@const rowLabelText = rowLabel(section.name)}
   <Card cornerBrackets={false}>
     <CardHeader>
       <div class="flex items-center justify-between flex-wrap gap-2">
@@ -750,7 +765,7 @@
       {#if section.groups.length === 0}
         <p class="text-sm text-muted-foreground">No traffic recorded</p>
       {:else if layout === "table"}
-        {@render tableView(section.groups, maxUs, isHttp, sectionKey, false)}
+        {@render tableView(section.groups, maxUs, isHttp, rowLabelText, sectionKey, false)}
       {:else}
         <div class="space-y-1">
           {#each section.groups as group, i}
@@ -785,7 +800,7 @@
         <p class="text-sm text-muted-foreground">No queries recorded</p>
       {:else}
         {#if layout === 'table'}
-          {@render tableView(section.groups, maxUs, false, section.name, true)}
+          {@render tableView(section.groups, maxUs, false, 'Query', section.name, true)}
         {:else}
           <div class="space-y-1">
             {#each section.groups as group, i}
@@ -848,7 +863,7 @@
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead class="th-cyber">Name</TableHead>
+              <TableHead class="th-cyber">{rowLabel(sec.name, "Name")}</TableHead>
               {#each sec.recordFields as field}
                 <TableHead class="th-cyber text-right">{recordFieldLabel(field)}</TableHead>
               {/each}
@@ -1021,6 +1036,7 @@
   groups: HistogramGroup[],
   maxUs: number,
   isHttp: boolean,
+  rowLabelText: string,
   sectionKey: string,
   showRollbacks: boolean,
 )}
@@ -1030,7 +1046,7 @@
       <TableHeader>
         <TableRow>
           <TableHead class="th-cyber w-6"></TableHead>
-          {@render sortableHead("label", isHttp ? "Method" : "Query")}
+          {@render sortableHead("label", rowLabelText)}
           {@render sortableHead("total", "Count")}
           {@render sortableHead("opsPerSec", "Ops/s")}
           {@render sortableHead("durationSec", "Total")}
