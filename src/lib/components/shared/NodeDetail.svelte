@@ -506,6 +506,16 @@
     {/if}
   {:else if nodeStore.statsLoading && !nodeStore.statsLastUpdated}
     <DetailSkeleton cards={[{ rows: 4, cols: 3, title: true }]} />
+  {:else if nodeStore.statsError && nodeStore.statsNodeUnreachable}
+    <Card>
+      <CardHeader><CardTitle class="text-base">Metrics</CardTitle></CardHeader>
+      <CardContent class="pt-0">
+        <p class="text-sm text-muted-foreground">Metrics unavailable; node is not running.</p>
+      </CardContent>
+    </Card>
+    {#if instanceInfo}
+      <InstanceInfoPanel info={instanceInfo} />
+    {/if}
   {:else if nodeStore.statsError}
     <Card>
       <CardContent>

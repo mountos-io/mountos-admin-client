@@ -1,6 +1,7 @@
 import type { ServiceNode, NodeStatsSample } from '$lib/core/api/types'
 import { parsePrometheusText, type PrometheusMetric } from '$lib/core/utils/format'
 import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
+import { isNodeUnreachableError } from '$lib/core/api/errors'
 import { api } from './client.svelte'
 
 let nodes = $state<ServiceNode[]>([])
@@ -19,6 +20,10 @@ let stats = $state<Map<string, PrometheusMetric[]>>(new Map())
 let statsRaw = $state('')
 let statsLoading = $state(false)
 let statsError = $state('')
+// True when statsError came from the proxy failing to reach the node process (dial
+// failure or a deregistered node row), not a genuine backend/auth error - the node not
+// running, not a bug to alarm the operator about.
+let statsNodeUnreachable = $state(false)
 let statsLastUpdated = $state<Date | null>(null)
 let pollInterval = $state(0)
 let poll: ActivePoll | null = null
@@ -92,6 +97,7 @@ async function fetchStats(regionId: number, nodeId: string) {
   const ctrl = statsFetchCtrl = new AbortController()
   statsLoading = true
   statsError = ''
+  statsNodeUnreachable = false
   try {
     const text = await api.serviceNodes.stats(regionId, nodeId, ctrl.signal)
     statsRaw = text
@@ -100,6 +106,7 @@ async function fetchStats(regionId: number, nodeId: string) {
   } catch (e) {
     if ((e as Error).name === 'AbortError') return
     statsError = (e as Error).message || 'Failed to fetch stats'
+    statsNodeUnreachable = isNodeUnreachableError(e)
     stats = new Map()
     statsRaw = ''
   } finally {
@@ -150,6 +157,7 @@ function resetStats() {
   stats = new Map()
   statsRaw = ''
   statsError = ''
+  statsNodeUnreachable = false
   statsLastUpdated = null
   statsHistory = []
   statsHistoryIntervalMs = 0
@@ -207,6 +215,7 @@ export function useNodes() {
     get statsRaw() { return statsRaw },
     get statsLoading() { return statsLoading },
     get statsError() { return statsError },
+    get statsNodeUnreachable() { return statsNodeUnreachable },
     get statsLastUpdated() { return statsLastUpdated },
     get pollInterval() { return pollInterval },
     get statsHistory() { return statsHistory },
