@@ -1249,30 +1249,39 @@
                 onSave={handleCopysetConfigSave}
               />
               {#if copysetConfig.copysetIds.length > 0}
-                <ul class="space-y-1">
-                  {#each copysetConfig.copysetIds as cid (cid)}
-                    {@const c = volumeCopysetsById.get(cid)}
-                    <li class="flex items-center gap-1.5 text-sm">
-                      {#if c}
-                        {#if isCopysetState(c.state)}
-                          <CopysetStateBadge state={c.state} />
-                        {:else}
-                          <Badge variant="destructive">{c.state}</Badge>
-                        {/if}
-                        <a href={`/storages/${volume?.storage.id}/copysets/${cid}`}
-                          class="inline-flex items-center gap-0.5 font-mono text-xs text-muted-foreground hover:text-primary hover:underline">
-                          {c.name || cid}<ArrowUpRight class="size-3" aria-hidden="true" />
-                        </a>
-                      {:else}
-                        <Badge variant="outline" class={volumeCopysetsLoading ? 'animate-pulse' : ''}>{volumeCopysetsLoading ? 'loading' : 'unknown'}</Badge>
-                        <a href={`/storages/${volume?.storage.id}/copysets/${cid}`}
-                          class="inline-flex items-center gap-0.5 font-mono text-xs text-muted-foreground hover:text-primary hover:underline">
-                          {cid}<ArrowUpRight class="size-3" aria-hidden="true" />
-                        </a>
-                      {/if}
-                    </li>
-                  {/each}
-                </ul>
+                <Table>
+                  <caption class="sr-only">Copysets in this volume's working set</caption>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead class="w-28">State</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {#each copysetConfig.copysetIds as cid (cid)}
+                      {@const c = volumeCopysetsById.get(cid)}
+                      <TableRow>
+                        <TableCell>
+                          <a href={`/storages/${volume?.storage.id}/copysets/${cid}`}
+                            class="inline-flex items-center gap-0.5 font-mono text-xs text-muted-foreground hover:text-primary hover:underline">
+                            {c?.name || cid}<ArrowUpRight class="size-3" aria-hidden="true" />
+                          </a>
+                        </TableCell>
+                        <TableCell>
+                          {#if c}
+                            {#if isCopysetState(c.state)}
+                              <CopysetStateBadge state={c.state} />
+                            {:else}
+                              <Badge variant="destructive">{c.state}</Badge>
+                            {/if}
+                          {:else}
+                            <Badge variant="outline" class={volumeCopysetsLoading ? 'animate-pulse' : ''}>{volumeCopysetsLoading ? 'loading' : 'unknown'}</Badge>
+                          {/if}
+                        </TableCell>
+                      </TableRow>
+                    {/each}
+                  </TableBody>
+                </Table>
               {/if}
             </div>
           {:else}
