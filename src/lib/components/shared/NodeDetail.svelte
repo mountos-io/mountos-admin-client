@@ -32,7 +32,7 @@
   import { showErrorToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
   import { formatRelative, nodeStatusVariant, formatDate, formatBinaryVersion } from '$lib/core/utils/format'
-  import type { ServiceNode } from '$lib/core/api/types'
+  import type { ServiceNode, BlockVolume } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Copy from '@lucide/svelte/icons/copy'
   import Check from '@lucide/svelte/icons/check'
@@ -64,8 +64,7 @@
 
   const node = $derived<ServiceNode | undefined>(nodeStore.nodes.find(n => n.nodeId === nodeId))
   // Worker events are gcserv-specific (per-goal cycle summaries); other
-  // service types have nothing to show here, same structural gate the
-  // Volume Group card uses for blockserv-only metadata.
+  // service types have nothing to show here.
   const isGCServ = $derived(node?.serviceType === 'gcserv')
   const clusterLabel = $derived.by(() => {
     if (!node?.metadataClusterId) return null
@@ -217,7 +216,9 @@
     if (!node?.metadata) return []
     const meta = node.metadata
     return Object.keys(meta)
-      .filter((k) => k !== 'processId' && k !== 'commitHash' && k !== 'metrics_port' && k !== 'metrics_path')
+      // processId/commitHash/metrics_port/metrics_path surface elsewhere on this card;
+      // storage_id folds into the linked "Storage" field below instead of a bare ID here.
+      .filter((k) => k !== 'processId' && k !== 'commitHash' && k !== 'metrics_port' && k !== 'metrics_path' && k !== 'storage_id')
       .sort((a, b) => {
         const ia = META_ORDER.indexOf(a)
         const ib = META_ORDER.indexOf(b)
@@ -227,10 +228,11 @@
       .map((k) => toMetaEntry(k, meta[k]))
   })
 
-  // Volume group: the HA members serving the same block storage. blockserv nodes carry a
-  // storage_id in metadata; siblings are the other region nodes sharing it. Built from the
-  // already-fetched region nodes, so no extra request.
+  // A blockserv node's metadata carries the storage UUID and its own block-volume id;
+  // resolve both to the storage's numeric route id (for the "Storage" link) and to this
+  // member's own copyset pairing (for the "Copyset" link), not the whole storage's pool.
   const nodeStorageId = $derived(node?.metadata?.['storage_id'] ? String(node.metadata['storage_id']) : '')
+  const nodeBlockVolumeId = $derived(node?.metadata?.['block_volume_id'] ? String(node.metadata['block_volume_id']) : '')
 
   // Resolve the blockserv node's storage (its metadata carries the storage UUID, not the
   // numeric route id) so we can link back to the storage detail page.
@@ -245,23 +247,22 @@
     const s = storageStore.storages.find((x) => x.uuid === nodeStorageId)
     return s ? { id: s.id, name: s.name } : null
   })
-  function metaStr(n: ServiceNode, k: string): string { return String(n.metadata?.[k] ?? '') }
-  function metaBool(n: ServiceNode, k: string): boolean { return n.metadata?.[k] === true }
-  function memberClusterName(n: ServiceNode): string | null {
-    if (!n.metadataClusterId) return null
-    const c = clusterStore.clustersFor(regionId).find((x) => x.id === n.metadataClusterId)
-    return c?.name ?? `#${n.metadataClusterId}`
-  }
-  const volumeGroup = $derived.by<ServiceNode[]>(() => {
-    if (!nodeStorageId) return []
-    return nodeStore.nodes
-      .filter((n) => metaStr(n, 'storage_id') === nodeStorageId)
-      .sort((a, b) => {
-        if (a.nodeId === nodeId) return -1
-        if (b.nodeId === nodeId) return 1
-        return metaStr(a, 'name').localeCompare(metaStr(b, 'name')) || a.nodeId.localeCompare(b.nodeId)
-      })
+
+  // Copyset lookup needs the storage's numeric id first, so it only fires once storageRef
+  // resolves. Pool members (not just this one) come back, but only this node's own
+  // block_volume_id entry is used, never the whole pool.
+  let blockVolumesById = $state<Map<string, BlockVolume>>(new Map())
+  $effect(() => {
+    const sid = storageRef?.id
+    if (sid) {
+      storageStore.listBlockVolumes(sid).then((volumes) => {
+        blockVolumesById = new Map(volumes.map((v) => [v.id, v]))
+      }).catch(() => { /* link just stays absent */ })
+    }
   })
+  const copysetId = $derived<string | null>(
+    nodeBlockVolumeId ? blockVolumesById.get(nodeBlockVolumeId)?.copysetId ?? null : null,
+  )
 
   let copiedKey = $state('')
   let copyTimer: ReturnType<typeof setTimeout>
@@ -456,98 +457,41 @@
               </dd>
             </div>
           {/each}
-          {#if storageRef}
+          {#if nodeStorageId}
             <div>
               <dt class="text-muted-foreground text-sm">Storage</dt>
               <dd class="mt-0.5">
-                <a
-                  href={`/storages/${storageRef.id}`}
-                  aria-label="View storage {storageRef.name} details"
-                  class="inline-flex items-center font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                >{storageRef.name}</a>
+                {#if storageRef}
+                  <a
+                    href={`/storages/${storageRef.id}`}
+                    aria-label="View storage {storageRef.name} details"
+                    class="inline-flex items-center font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >{storageRef.name}</a>
+                {:else}
+                  <span class="font-mono text-sm">{nodeStorageId}</span>
+                {/if}
+              </dd>
+            </div>
+          {/if}
+          {#if nodeBlockVolumeId}
+            <div>
+              <dt class="text-muted-foreground text-sm">Copyset</dt>
+              <dd class="mt-0.5">
+                {#if storageRef && copysetId}
+                  <a
+                    href={`/storages/${storageRef.id}/copysets/${copysetId}`}
+                    aria-label="View copyset {copysetId} details"
+                    class="inline-flex items-center font-mono text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                  >{copysetId}</a>
+                {:else}
+                  <span class="text-sm text-muted-foreground">Not paired</span>
+                {/if}
               </dd>
             </div>
           {/if}
         </dl>
       </CardContent>
     </Card>
-
-    {#if nodeStorageId && volumeGroup.length > 0}
-      <Card>
-        <CardHeader>
-          <div class="flex items-center justify-between gap-2">
-            <CardTitle class="text-base">Volume Group</CardTitle>
-            <Badge variant={volumeGroup.length > 1 ? 'outline' : 'secondary'}>
-              {volumeGroup.length} member{volumeGroup.length > 1 ? 's' : ''}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent class="pt-0">
-          <p class="text-sm text-muted-foreground mb-3">
-            HA members serving the same block storage{volumeGroup.length === 1 ? ' (single-node, no replica)' : ''}.
-          </p>
-          <Table>
-            <caption class="sr-only">Block volume group members</caption>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead class="hidden sm:table-cell w-32">Cluster</TableHead>
-                <TableHead class="w-40">Replication</TableHead>
-                <TableHead class="hidden md:table-cell w-20">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {#each volumeGroup as m (m.nodeId)}
-                {@const isCurrent = m.nodeId === nodeId}
-                {@const memberName = metaStr(m, 'name') || m.nodeId}
-                {@const cluster = memberClusterName(m)}
-                <TableRow class={isCurrent ? 'bg-muted/40' : ''}>
-                  <TableCell>
-                    <div class="flex items-center gap-2">
-                      {#if isCurrent}
-                        <span class="font-medium">{memberName}</span>
-                        <Badge variant="outline" class="text-xs">this node</Badge>
-                      {:else}
-                        <a href={`${basePath}/${regionId}/${m.nodeId}`}
-                          class="font-medium hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                        >{memberName}</a>
-                      {/if}
-                    </div>
-                    {#if metaStr(m, 'block_volume_id')}
-                      <div class="font-mono text-xs text-muted-foreground truncate">{metaStr(m, 'block_volume_id')}</div>
-                    {/if}
-                  </TableCell>
-                  <TableCell class="hidden sm:table-cell">
-                    {#if cluster && m.metadataClusterId}
-                      <a
-                        href={`/regions/${regionId}?cluster=${m.metadataClusterId}`}
-                        aria-label="View region filtered by cluster {cluster}"
-                        class="font-mono text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                      >{cluster}</a>
-                    {:else}
-                      <span class="font-mono text-sm text-muted-foreground">·</span>
-                    {/if}
-                  </TableCell>
-                  <TableCell>
-                    <div class="flex flex-wrap gap-1">
-                      <Badge variant={metaBool(m, 'ready') ? 'success' : 'warning'}>
-                        {metaBool(m, 'ready') ? 'Ready' : 'Not ready'}
-                      </Badge>
-                      <Badge variant={metaBool(m, 'ha_synced') ? 'success' : 'warning'}>
-                        {metaBool(m, 'ha_synced') ? 'Synced' : 'Unsynced'}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell class="hidden md:table-cell">
-                    <Badge variant={nodeStatusVariant(m.status)}>{m.status}</Badge>
-                  </TableCell>
-                </TableRow>
-              {/each}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    {/if}
   {/if}
 
   {#if node && (node.status !== 'healthy' || !node.isActive)}
