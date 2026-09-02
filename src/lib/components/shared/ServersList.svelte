@@ -27,6 +27,7 @@
   import CopyIcon from '@lucide/svelte/icons/copy'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right'
+  import SearchIcon from '@lucide/svelte/icons/search'
 
   const MAX_BULK_COUNT = 100
 
@@ -123,6 +124,21 @@
       })
     }
     return list
+  })
+
+  // Local, client-side filter only - no API round-trip. Matches a row's own name/id or its
+  // copyset's name, case-insensitively. A match on the copyset name (or on either member)
+  // keeps BOTH of that copyset's rows: a paired copyset's two members share one derived
+  // name stem, so searching by that stem should surface the pair together rather than
+  // orphaning one half of it.
+  let query = $state('')
+  const filteredRows = $derived.by((): ServerRow[] => {
+    const q = query.trim().toLowerCase()
+    if (!q) return rows
+    const rowMatches = (r: ServerRow) =>
+      r.name.toLowerCase().includes(q) || r.id.toLowerCase().includes(q) || (r.copysetName?.toLowerCase().includes(q) ?? false)
+    const matchedCopysetIds = new Set(rows.filter(rowMatches).map((r) => r.copysetId).filter((id): id is string => !!id))
+    return rows.filter((r) => rowMatches(r) || (r.copysetId !== undefined && matchedCopysetIds.has(r.copysetId)))
   })
 
   const dialog = useConfirmDialog()
@@ -349,73 +365,81 @@
     {#if rows.length === 0}
       <p class="text-sm text-muted-foreground">No servers registered for this storage yet.</p>
     {:else}
-      <Table containerLabel="Servers">
-        <TableHeader>
-          <TableRow>
-            <TableHead class="th-cyber">Server</TableHead>
-            <TableHead class="th-cyber">State</TableHead>
-            <TableHead class="th-cyber">Serving blockserv</TableHead>
-            {#if canUpdate}<TableHead class="th-cyber text-right">Actions</TableHead>{/if}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {#each rows as row (row.id)}
-            <TableRow id={row.slot === 'A' ? `copyset-${row.copysetId}` : undefined}
-              class="{row.groupParity === 1 ? 'bg-muted/20' : ''} {row.copysetId ? 'border-l-2 border-l-primary/30' : ''}">
-              <TableCell>
-                <div class="flex items-center gap-1.5">
-                  {#if row.slot}
-                    <span class="inline-flex items-center justify-center size-4 rounded-full border text-[10px] font-mono text-muted-foreground shrink-0" title={`Slot ${row.slot} of copyset ${row.copysetName ?? row.copysetId}`}>{row.slot}</span>
-                  {/if}
-                  <span class="font-medium">{row.name}</span>
-                  <button type="button" onclick={() => copyValue(row.id, 'Server ID')}
-                    class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-50 hover:opacity-100 hover:text-primary transition-opacity"
-                    title="Copy BLOCK_VOLUME_ID" aria-label={`Copy ID for ${row.name}`}>
-                    <CopyIcon class="size-3" aria-hidden="true" />
-                  </button>
-                </div>
-              </TableCell>
-              <TableCell>
-                {#if row.copysetId && row.copysetState}
-                  {#if isCopysetState(row.copysetState)}
-                    <CopysetStateBadge state={row.copysetState} />
-                  {:else}
-                    <Badge variant="destructive">{row.copysetState}</Badge>
-                  {/if}
-                  <a href={`/storages/${storageId}/copysets/${row.copysetId}`}
-                    class="ml-1.5 inline-flex items-center gap-0.5 text-xs text-muted-foreground hover:text-primary hover:underline">
-                    {row.copysetId}<ArrowUpRight class="size-3" aria-hidden="true" />
-                  </a>
-                  {#if row.copysetState === 'draining'}
-                    <p class="text-xs text-warning mt-0.5">
-                      {typeof row.pendingSyncJobs === 'number' ? `${row.pendingSyncJobs} pending` : 'backlog unknown'}
-                    </p>
-                  {/if}
-                {:else if row.detached}
-                  <Badge variant="secondary">Detached</Badge>
-                {:else}
-                  <Badge variant="outline">Unpaired</Badge>
-                {/if}
-              </TableCell>
-              <TableCell>{@render servingBadges(row)}</TableCell>
-              {#if canUpdate}
-                <TableCell class="text-right [&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8">
-                  {#if row.copysetId && row.copysetState === 'active'}
-                    <Button variant="outline" size="sm" onclick={() => handleDrainClick(row)}>Drain</Button>
-                  {:else if row.copysetId && row.copysetState === 'draining'}
-                    <Button variant="outline" size="sm" onclick={() => handleCancelClick(row)}>Cancel drain</Button>
+      <div class="relative max-w-xs">
+        <SearchIcon class="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" aria-hidden="true" />
+        <Input bind:value={query} placeholder="Filter by name..." aria-label="Filter servers by name" class="pl-8" />
+      </div>
+      {#if filteredRows.length === 0}
+        <p class="text-sm text-muted-foreground">No servers match "{query}".</p>
+      {:else}
+        <Table containerLabel="Servers">
+          <TableHeader>
+            <TableRow>
+              <TableHead class="th-cyber">Server</TableHead>
+              <TableHead class="th-cyber">State</TableHead>
+              <TableHead class="th-cyber">Serving blockserv</TableHead>
+              {#if canUpdate}<TableHead class="th-cyber text-right">Actions</TableHead>{/if}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {#each filteredRows as row (row.id)}
+              <TableRow id={row.slot === 'A' ? `copyset-${row.copysetId}` : undefined}
+                class="{row.groupParity === 1 ? 'bg-muted/20' : ''} {row.copysetId ? 'border-l-2 border-l-primary/30' : ''}">
+                <TableCell>
+                  <div class="flex items-center gap-1.5">
+                    {#if row.slot}
+                      <span class="inline-flex items-center justify-center size-4 rounded-full border text-[10px] font-mono text-muted-foreground shrink-0" title={`Slot ${row.slot} of copyset ${row.copysetName ?? row.copysetId}`}>{row.slot}</span>
+                    {/if}
+                    <span class="font-medium">{row.name}</span>
+                    <button type="button" onclick={() => copyValue(row.id, 'Server ID')}
+                      class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-50 hover:opacity-100 hover:text-primary transition-opacity"
+                      title="Copy BLOCK_VOLUME_ID" aria-label={`Copy ID for ${row.name}`}>
+                      <CopyIcon class="size-3" aria-hidden="true" />
+                    </button>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {#if row.copysetId && row.copysetState}
+                    {#if isCopysetState(row.copysetState)}
+                      <CopysetStateBadge state={row.copysetState} />
+                    {:else}
+                      <Badge variant="destructive">{row.copysetState}</Badge>
+                    {/if}
+                    <a href={`/storages/${storageId}/copysets/${row.copysetId}`}
+                      class="ml-1.5 inline-flex items-center gap-0.5 text-xs text-muted-foreground hover:text-primary hover:underline">
+                      {row.copysetId}<ArrowUpRight class="size-3" aria-hidden="true" />
+                    </a>
+                    {#if row.copysetState === 'draining'}
+                      <p class="text-xs text-warning mt-0.5">
+                        {typeof row.pendingSyncJobs === 'number' ? `${row.pendingSyncJobs} pending` : 'backlog unknown'}
+                      </p>
+                    {/if}
                   {:else if row.detached}
-                    <Button variant="outline" size="sm" class="text-destructive hover:text-destructive"
-                      disabled={removingId === row.id} onclick={() => handleRemoveClick(row)}>
-                      {removingId === row.id ? 'Removing...' : 'Remove'}
-                    </Button>
+                    <Badge variant="secondary">Detached</Badge>
+                  {:else}
+                    <Badge variant="outline">Unpaired</Badge>
                   {/if}
                 </TableCell>
-              {/if}
-            </TableRow>
-          {/each}
-        </TableBody>
-      </Table>
+                <TableCell>{@render servingBadges(row)}</TableCell>
+                {#if canUpdate}
+                  <TableCell class="text-right [&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8">
+                    {#if row.copysetId && row.copysetState === 'active'}
+                      <Button variant="outline" size="sm" onclick={() => handleDrainClick(row)}>Drain</Button>
+                    {:else if row.copysetId && row.copysetState === 'draining'}
+                      <Button variant="outline" size="sm" onclick={() => handleCancelClick(row)}>Cancel drain</Button>
+                    {:else if row.detached}
+                      <Button variant="outline" size="sm" class="text-destructive hover:text-destructive"
+                        disabled={removingId === row.id} onclick={() => handleRemoveClick(row)}>
+                        {removingId === row.id ? 'Removing...' : 'Remove'}
+                      </Button>
+                    {/if}
+                  </TableCell>
+                {/if}
+              </TableRow>
+            {/each}
+          </TableBody>
+        </Table>
+      {/if}
     {/if}
   </CardContent>
 </Card>

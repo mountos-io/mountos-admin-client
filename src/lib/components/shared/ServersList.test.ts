@@ -304,4 +304,103 @@ describe('ServersList', () => {
     expect(screen.getByText(/Can't confirm blockserv node data right now/)).toBeInTheDocument()
     expect(screen.getByText('bv-a')).toBeInTheDocument()
   })
+
+  describe('local name filter', () => {
+    function multiRowProps() {
+      const blockVolumesById = new Map([
+        ['bv-a', bv('bv-a', { copysetId: 'copyset-1' })],
+        ['bv-b', bv('bv-b', { copysetId: 'copyset-1' })],
+        ['bv-unpaired', bv('bv-unpaired', { memberState: 'active', copysetId: undefined })],
+        ['bv-detached', bv('bv-detached', { memberState: 'detached', copysetId: undefined })],
+      ])
+      return baseProps({ blockVolumesById })
+    }
+
+    it('typing a query narrows the visible rows to matching names', async () => {
+      render(ServersList, { props: multiRowProps() })
+      expect(screen.getByText('bv-unpaired')).toBeInTheDocument()
+
+      await fireEvent.input(screen.getByLabelText('Filter servers by name'), { target: { value: 'unpaired' } })
+
+      expect(screen.getByText('bv-unpaired')).toBeInTheDocument()
+      expect(screen.queryByText('bv-a')).not.toBeInTheDocument()
+      expect(screen.queryByText('bv-b')).not.toBeInTheDocument()
+      expect(screen.queryByText('bv-detached')).not.toBeInTheDocument()
+    })
+
+    it('clearing the query restores the full list', async () => {
+      render(ServersList, { props: multiRowProps() })
+      const input = screen.getByLabelText('Filter servers by name')
+
+      await fireEvent.input(input, { target: { value: 'unpaired' } })
+      expect(screen.queryByText('bv-a')).not.toBeInTheDocument()
+
+      await fireEvent.input(input, { target: { value: '' } })
+      expect(screen.getByText('bv-a')).toBeInTheDocument()
+      expect(screen.getByText('bv-b')).toBeInTheDocument()
+      expect(screen.getByText('bv-unpaired')).toBeInTheDocument()
+      expect(screen.getByText('bv-detached')).toBeInTheDocument()
+    })
+
+    it('a non-matching query shows a distinct "no matches" empty state, not the "no servers at all" one', async () => {
+      render(ServersList, { props: multiRowProps() })
+
+      await fireEvent.input(screen.getByLabelText('Filter servers by name'), { target: { value: 'no-such-server' } })
+
+      expect(screen.getByText('No servers match "no-such-server".')).toBeInTheDocument()
+      expect(screen.queryByText('No servers registered for this storage yet.')).not.toBeInTheDocument()
+    })
+
+    it('matches by BLOCK_VOLUME_ID as well as by name', async () => {
+      render(ServersList, { props: multiRowProps() })
+
+      await fireEvent.input(screen.getByLabelText('Filter servers by name'), { target: { value: 'bv-detached' } })
+
+      expect(screen.getByText('bv-detached')).toBeInTheDocument()
+      expect(screen.queryByText('bv-a')).not.toBeInTheDocument()
+    })
+
+    it('matching only one member by name keeps both of its copyset\'s rows together, not just the matching one', async () => {
+      const blockVolumesById = new Map([
+        ['bv-a', bv('bv-a', { name: 'mos-block-a-a', copysetId: 'copyset-1' })],
+        ['bv-b', bv('bv-b', { name: 'mos-block-a-b', copysetId: 'copyset-1' })],
+        ['bv-unpaired', bv('bv-unpaired', { memberState: 'active', copysetId: undefined })],
+      ])
+      render(ServersList, { props: baseProps({ blockVolumesById }) })
+
+      await fireEvent.input(screen.getByLabelText('Filter servers by name'), { target: { value: 'mos-block-a-a' } })
+
+      expect(screen.getByText('mos-block-a-a')).toBeInTheDocument()
+      expect(screen.getByText('mos-block-a-b')).toBeInTheDocument()
+      expect(screen.queryByText('bv-unpaired')).not.toBeInTheDocument()
+    })
+
+    it('matching by the copyset name keeps both member rows, even when member names don\'t contain the query', async () => {
+      const blockVolumesById = new Map([
+        ['bv-a', bv('bv-a', { name: 'server-one', copysetId: 'copyset-1' })],
+        ['bv-b', bv('bv-b', { name: 'server-two', copysetId: 'copyset-1' })],
+      ])
+      // copyset() defaults to name 'mos-block-a'
+      render(ServersList, { props: baseProps({ blockVolumesById }) })
+
+      await fireEvent.input(screen.getByLabelText('Filter servers by name'), { target: { value: 'mos-block-a' } })
+
+      expect(screen.getByText('server-one')).toBeInTheDocument()
+      expect(screen.getByText('server-two')).toBeInTheDocument()
+    })
+
+    it('is case-insensitive', async () => {
+      render(ServersList, { props: multiRowProps() })
+
+      await fireEvent.input(screen.getByLabelText('Filter servers by name'), { target: { value: 'UNPAIRED' } })
+
+      expect(screen.getByText('bv-unpaired')).toBeInTheDocument()
+      expect(screen.queryByText('bv-a')).not.toBeInTheDocument()
+    })
+
+    it('does not render a filter input when there are no servers at all', () => {
+      render(ServersList, { props: baseProps({ copysets: [], blockVolumesById: new Map() }) })
+      expect(screen.queryByLabelText('Filter servers by name')).not.toBeInTheDocument()
+    })
+  })
 })
