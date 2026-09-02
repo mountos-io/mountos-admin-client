@@ -80,7 +80,30 @@
     // Alternates per copyset so consecutive A/B rows share a background tint and the next
     // pair reads as visually distinct; unset (no tint) for detached/unpaired rows.
     groupParity?: 0 | 1
+    // True when this row's copyset has both members' commit hashes known and they differ -
+    // the two paired blockserv processes are running incompatible builds.
+    commitMismatch?: boolean
   }
+
+  // The commit hash comes from the first registered blockserv for a volume; a volume with
+  // zero or duplicate registrations is already flagged by servingBadges' own warning.
+  function commitHashOf(nodes: ServiceNode[]): string | null {
+    const raw = nodes[0]?.metadata?.['commitHash']
+    return typeof raw === 'string' && raw ? raw : null
+  }
+
+  // Only a real mismatch (both hashes known and different) is alarming. A missing hash on
+  // either side just predates this feature's rollout on that binary, not a live mismatch.
+  const copysetCommitMismatch = $derived.by(() => {
+    const map = new Map<string, boolean>()
+    for (const copyset of copysets) {
+      if (copyset.state === 'retired') continue
+      const commitA = copyset.memberA ? commitHashOf(nodesByVolume.get(copyset.memberA) ?? []) : null
+      const commitB = copyset.memberB ? commitHashOf(nodesByVolume.get(copyset.memberB) ?? []) : null
+      map.set(copyset.id, !!commitA && !!commitB && commitA !== commitB)
+    }
+    return map
+  })
 
   // Retired copysets contribute no rows of their own: a retired copyset's members are already
   // reflected as detached servers via blockVolumesById, which is the authoritative source
@@ -107,6 +130,7 @@
         detached: false,
         slot,
         groupParity,
+        commitMismatch: copysetCommitMismatch.get(copyset.id) ?? false,
       })
     }
 
@@ -416,6 +440,12 @@
                       <CopysetStateBadge state={row.copysetState} />
                     {:else}
                       <Badge variant="destructive">{row.copysetState}</Badge>
+                    {/if}
+                    {#if row.commitMismatch}
+                      <Badge variant="warning" class="ml-1.5 gap-1"
+                        title="These two servers are running different builds. Replication between them needs matching versions.">
+                        <TriangleAlert class="size-3 shrink-0" aria-hidden="true" /> Build mismatch
+                      </Badge>
                     {/if}
                     <a href={`/storages/${storageId}/copysets/${row.copysetId}`}
                       class="ml-1.5 inline-flex items-center gap-0.5 text-xs text-muted-foreground hover:text-primary hover:underline">

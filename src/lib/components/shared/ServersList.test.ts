@@ -97,6 +97,33 @@ describe('ServersList', () => {
     expect(screen.getByText('2 blockserv processes are serving this server; each server should have exactly one')).toBeInTheDocument()
   })
 
+  it('flags both rows of a copyset with a Build mismatch badge when member commits differ', () => {
+    const nodesByVolume = new Map([
+      ['bv-a', [sn('node-a1', 'up', { metadata: { commitHash: 'abc1234' } })]],
+      ['bv-b', [sn('node-b1', 'up', { metadata: { commitHash: 'def5678' } })]],
+    ])
+    render(ServersList, { props: baseProps({ nodesByVolume }) })
+    expect(screen.getAllByText('Build mismatch')).toHaveLength(2)
+  })
+
+  it('stays calm when both members of a copyset share the same commit', () => {
+    const nodesByVolume = new Map([
+      ['bv-a', [sn('node-a1', 'up', { metadata: { commitHash: 'abc1234' } })]],
+      ['bv-b', [sn('node-b1', 'up', { metadata: { commitHash: 'abc1234' } })]],
+    ])
+    render(ServersList, { props: baseProps({ nodesByVolume }) })
+    expect(screen.queryByText('Build mismatch')).not.toBeInTheDocument()
+  })
+
+  it('stays calm when a member\'s commit is unknown, even if the other member reports one', () => {
+    const nodesByVolume = new Map([
+      ['bv-a', [sn('node-a1', 'up', { metadata: { commitHash: 'abc1234' } })]],
+      ['bv-b', [sn('node-b1')]],
+    ])
+    render(ServersList, { props: baseProps({ nodesByVolume }) })
+    expect(screen.queryByText('Build mismatch')).not.toBeInTheDocument()
+  })
+
   it('copies a row\'s BLOCK_VOLUME_ID and toasts', async () => {
     const { copyText } = await import('$lib/core/utils/clipboard')
     render(ServersList, { props: baseProps() })

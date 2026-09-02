@@ -117,6 +117,19 @@
   const nodesA = $derived(copyset?.memberA ? nodesByVolume.get(copyset.memberA) ?? [] : [])
   const nodesB = $derived(copyset?.memberB ? nodesByVolume.get(copyset.memberB) ?? [] : [])
 
+  // The commit hash comes from the first registered blockserv for a member; a member with
+  // zero or duplicate registrations is already flagged by memberPanel's own warnings, so
+  // this just reads whichever process is showing.
+  function commitHashOf(nodes: ServiceNode[]): string | null {
+    const raw = nodes[0]?.metadata?.['commitHash']
+    return typeof raw === 'string' && raw ? raw : null
+  }
+  const commitA = $derived(commitHashOf(nodesA))
+  const commitB = $derived(commitHashOf(nodesB))
+  // Only a real mismatch (both hashes known and different) is alarming. A missing hash on
+  // either side just predates this feature's rollout on that binary, not a live mismatch.
+  const commitMismatch = $derived(!!commitA && !!commitB && commitA !== commitB)
+
   // Backlog is only a confirmed number once both members have been observed at least once;
   // a null/undefined count means "not yet observed," not zero. Mirrors ServersList's own gate.
   const backlogKnown = $derived(typeof copyset?.pendingSyncJobsA === 'number' && typeof copyset?.pendingSyncJobsB === 'number')
@@ -177,6 +190,12 @@
       <CardHeader>
         <div class="flex items-center gap-3">
           <CardTitle class="min-w-0 flex-1 truncate" title={copyset.name}>{copyset.name}</CardTitle>
+          {#if commitMismatch}
+            <Badge variant="warning" class="gap-1 shrink-0"
+              title={`Member A is on commit ${commitA}, Member B is on commit ${commitB}. These two servers are running different builds; replication between them needs matching versions.`}>
+              <TriangleAlert class="size-3.5" aria-hidden="true" /> Build mismatch
+            </Badge>
+          {/if}
           {#if isCopysetState(copyset.state)}
             <CopysetStateBadge state={copyset.state} />
           {:else}
@@ -197,10 +216,12 @@
           <div>
             <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Member A</span>
             <p class="mt-1 text-sm">{memberA?.name ?? '—'}</p>
+            {#if commitA}<p class="mt-0.5 text-xs font-mono {commitMismatch ? 'text-warning' : 'text-muted-foreground'}">{commitA}</p>{/if}
           </div>
           <div>
             <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Member B</span>
             <p class="mt-1 text-sm">{memberB?.name ?? '—'}</p>
+            {#if commitB}<p class="mt-0.5 text-xs font-mono {commitMismatch ? 'text-warning' : 'text-muted-foreground'}">{commitB}</p>{/if}
           </div>
         </div>
 

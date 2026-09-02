@@ -48,10 +48,10 @@ function bv(id: string, name: string): BlockVolume {
   return { id, name, isActive: true, clusterUuid: `cluster-${id}`, clusterName: 'az-1', clusterReady: true } as unknown as BlockVolume
 }
 
-function sn(nodeId: string, blockVolumeId: string): ServiceNode {
+function sn(nodeId: string, blockVolumeId: string, extraMetadata: Record<string, unknown> = {}): ServiceNode {
   return {
     id: 1, regionId: 2, serviceType: 'blockserv', nodeId, advertiseAddr: '10.0.0.1:9100', status: 'healthy',
-    metadata: { block_volume_id: blockVolumeId },
+    metadata: { block_volume_id: blockVolumeId, ...extraMetadata },
   } as unknown as ServiceNode
 }
 
@@ -126,6 +126,44 @@ describe('copyset detail page', () => {
 
     await waitFor(() => expect(screen.getByText(/2 blockserv processes are serving replica-a/)).toBeInTheDocument())
     expect(screen.getByTestId('node-detail-stub')).toHaveAttribute('data-node-id', 'blockserv-a1')
+  })
+
+  it('warns when the two members are on different commits', async () => {
+    getCopysetStatus.mockResolvedValue(copyset())
+    serviceNodesList.mockResolvedValue([
+      sn('blockserv-a1', 'bv-a', { commitHash: 'abc1234' }),
+      sn('blockserv-b1', 'bv-b', { commitHash: 'def5678' }),
+    ])
+    render(Page)
+
+    await screen.findByText('Build mismatch')
+    expect(screen.getByTitle(/abc1234.*def5678/)).toBeInTheDocument()
+    expect(screen.getAllByText('abc1234').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('def5678').length).toBeGreaterThan(0)
+  })
+
+  it('stays calm when both members are on the same commit', async () => {
+    getCopysetStatus.mockResolvedValue(copyset())
+    serviceNodesList.mockResolvedValue([
+      sn('blockserv-a1', 'bv-a', { commitHash: 'abc1234' }),
+      sn('blockserv-b1', 'bv-b', { commitHash: 'abc1234' }),
+    ])
+    render(Page)
+
+    await screen.findByTestId('node-detail-stub')
+    expect(screen.queryByText('Build mismatch')).not.toBeInTheDocument()
+  })
+
+  it('stays calm when a commit hash is unknown on one or both members', async () => {
+    getCopysetStatus.mockResolvedValue(copyset())
+    serviceNodesList.mockResolvedValue([
+      sn('blockserv-a1', 'bv-a', { commitHash: 'abc1234' }),
+      sn('blockserv-b1', 'bv-b'), // no commitHash reported
+    ])
+    render(Page)
+
+    await screen.findByTestId('node-detail-stub')
+    expect(screen.queryByText('Build mismatch')).not.toBeInTheDocument()
   })
 
   it('redirects away when the viewer lacks storages read access', async () => {
