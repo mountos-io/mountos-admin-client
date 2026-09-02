@@ -58,7 +58,9 @@
     // Creates count new copysets in one call, every name auto-generated.
     onRegisterCopysetsBulk: (count: number) => Promise<Copyset[]>
     // Permanently deregisters a detached member (server-side guards this to
-    // member_state='detached' - never a paired/draining member).
+    // member_state='detached' - never a paired/draining member). The client additionally
+    // withholds this while the member still has a live blockserv reporting its id -
+    // see stillReachable below.
     onRemove: (blockVolumeId: string) => Promise<unknown>
   } = $props()
 
@@ -251,7 +253,17 @@
     }
   }
 
+  // A detached row still showing a serving-blockserv entry means that instance is still
+  // heartbeating (see the "Serving blockserv" column) - its BLOCK_VOLUME_ID is still live,
+  // so the instance was never actually terminated. Removing the row now would just orphan
+  // a running instance nobody tracks anymore. Blocked in the UI, not just discouraged: the
+  // Remove button stays disabled until no live blockserv reports this row's id.
+  function stillReachable(row: ServerRow): boolean {
+    return row.detached && row.servers.length > 0
+  }
+
   function handleRemoveClick(row: ServerRow) {
+    if (stillReachable(row)) return
     dialog.confirm(
       'Remove this server?',
       `This permanently deregisters ${row.name} from the pool. It can't be brought back afterward - register a new one if you need it.`,
@@ -428,10 +440,18 @@
                     {:else if row.copysetId && row.copysetState === 'draining'}
                       <Button variant="outline" size="sm" onclick={() => handleCancelClick(row)}>Cancel drain</Button>
                     {:else if row.detached}
-                      <Button variant="outline" size="sm" class="text-destructive hover:text-destructive"
-                        disabled={removingId === row.id} onclick={() => handleRemoveClick(row)}>
-                        {removingId === row.id ? 'Removing...' : 'Remove'}
-                      </Button>
+                      {@const blocked = stillReachable(row)}
+                      <div class="inline-flex flex-col items-end gap-1">
+                        <Button variant="outline" size="sm" class="text-destructive hover:text-destructive"
+                          disabled={removingId === row.id || blocked}
+                          title={blocked ? 'This server still has a live blockserv registered. Terminate its instance first, then remove it here.' : undefined}
+                          onclick={() => handleRemoveClick(row)}>
+                          {removingId === row.id ? 'Removing...' : 'Remove'}
+                        </Button>
+                        {#if blocked}
+                          <span class="text-xs text-muted-foreground">Instance still reachable</span>
+                        {/if}
+                      </div>
                     {/if}
                   </TableCell>
                 {/if}

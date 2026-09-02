@@ -180,6 +180,36 @@ describe('ServersList', () => {
     await waitFor(() => expect(handleApiError).toHaveBeenCalled())
   })
 
+  it('remove: disabled with an explanation while the detached server still has a live blockserv registered', async () => {
+    const onRemove = vi.fn()
+    const blockVolumesById = new Map([['bv-detached', bv('bv-detached', { memberState: 'detached', copysetId: undefined })]])
+    const nodesByVolume = new Map([['bv-detached', [sn('node-a')]]])
+    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById, nodesByVolume, onRemove }) })
+
+    const removeButton = screen.getByRole('button', { name: 'Remove' })
+    expect(removeButton).toBeDisabled()
+    expect(removeButton).toHaveAttribute('title', expect.stringContaining('Terminate its instance first'))
+    expect(screen.getByText('Instance still reachable')).toBeInTheDocument()
+
+    await fireEvent.click(removeButton)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(onRemove).not.toHaveBeenCalled()
+  })
+
+  it('remove: enabled once the detached server has no live blockserv reporting its id', async () => {
+    const onRemove = vi.fn().mockResolvedValue(undefined)
+    const blockVolumesById = new Map([['bv-detached', bv('bv-detached', { memberState: 'detached', copysetId: undefined })]])
+    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById, nodesByVolume: new Map(), onRemove }) })
+
+    const removeButton = screen.getByRole('button', { name: 'Remove' })
+    expect(removeButton).not.toBeDisabled()
+    expect(screen.queryByText('Instance still reachable')).not.toBeInTheDocument()
+
+    await fireEvent.click(removeButton)
+    await fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Remove' }))
+    await waitFor(() => expect(onRemove).toHaveBeenCalledWith('bv-detached'))
+  })
+
   it('Add copyset: opens the dialog, submits one name, calls onRegisterCopyset, and shows the generated BLOCK_VOLUME_IDs', async () => {
     const onRegisterCopyset = vi.fn().mockResolvedValue({
       id: 'copyset-2', storageId: 'storage-1', name: 'replica', state: 'active', memberA: 'bv-new-a', memberB: 'bv-new-b', tags: [],
