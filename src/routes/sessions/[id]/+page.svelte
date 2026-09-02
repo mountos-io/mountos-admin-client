@@ -868,9 +868,13 @@
                       {/if}
                     </span>
                   </div>
-                  <div class="metric-row"><span>Ops Served Degraded</span><span class="metric-value-pop">{formatNum(m.blockAutoDegradeOps ?? 0)}</span></div>
+                  <div class="metric-row">
+                    <span>Current Route</span>
+                    <span class={blockDegraded ? 'text-destructive' : ''}>{blockDegraded ? 'Object' : 'Block'}</span>
+                  </div>
+                  <div class="metric-row"><span class="inline-flex items-center gap-0.5">Ops Served Degraded<InfoTip text="Ops served while this mount was switched away from blockserv, due to a persistent connectivity issue. It switches back automatically within seconds of blockserv becoming reachable again." /></span><span class="metric-value-pop">{formatNum(m.blockAutoDegradeOps ?? 0)}</span></div>
                 {/if}
-                <div class="metric-row"><span>Direct S3 Fallback Ops</span><span class="metric-value-pop">{formatNum(m.blockDirectFallbackOps ?? 0)}</span></div>
+                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Direct S3 Fallback Ops<InfoTip text="A brief, normal blip. One read had not synced to S3 yet, so it was served from blockserv instead. Not a sign of a problem." /></span><span class="metric-value-pop">{formatNum(m.blockDirectFallbackOps ?? 0)}</span></div>
               </div>
             {/if}
             {#if m.metaArenaCapacityBytes != null}

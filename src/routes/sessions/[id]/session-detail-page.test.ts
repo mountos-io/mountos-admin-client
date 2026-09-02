@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/svelte'
+import { render, screen, waitFor, within } from '@testing-library/svelte'
 import { readable } from 'svelte/store'
 import Page from './+page.svelte'
 import type { ClientSession } from '$lib/core/api/types'
@@ -54,10 +54,18 @@ describe('sessions/[id] block storage metrics', () => {
     await waitFor(() => expect(screen.getByText('Block Storage')).toBeInTheDocument())
     expect(screen.getByText('Auto-Degraded')).toBeInTheDocument()
     expect(screen.queryByText('Normal')).not.toBeInTheDocument()
+    expect(screen.getByText('Current Route')).toBeInTheDocument()
+    expect(screen.getByText('Object')).toHaveClass('text-destructive')
+    expect(screen.queryByText('Block')).not.toBeInTheDocument()
     expect(screen.getByText('Ops Served Degraded')).toBeInTheDocument()
     expect(screen.getByText((1234).toLocaleString())).toHaveClass('metric-value-pop')
     expect(screen.getByText('Direct S3 Fallback Ops')).toBeInTheDocument()
     expect(screen.getByText((56).toLocaleString())).toHaveClass('metric-value-pop')
+
+    const degradedRow = screen.getByText('Ops Served Degraded').closest('.metric-row') as HTMLElement
+    expect(within(degradedRow).getByLabelText('More info')).toBeInTheDocument()
+    const fallbackRow = screen.getByText('Direct S3 Fallback Ops').closest('.metric-row') as HTMLElement
+    expect(within(fallbackRow).getByLabelText('More info')).toBeInTheDocument()
   })
 
   it('shows a quiet normal state and still reports the fallback count when the breaker is closed', async () => {
@@ -70,6 +78,9 @@ describe('sessions/[id] block storage metrics', () => {
     await waitFor(() => expect(screen.getByText('Block Storage')).toBeInTheDocument())
     expect(screen.getByText('Normal')).toBeInTheDocument()
     expect(screen.queryByText('Auto-Degraded')).not.toBeInTheDocument()
+    expect(screen.getByText('Current Route')).toBeInTheDocument()
+    expect(screen.getByText('Block')).not.toHaveClass('text-destructive')
+    expect(screen.queryByText('Object')).not.toBeInTheDocument()
     expect(screen.getByText('Direct S3 Fallback Ops')).toBeInTheDocument()
     expect(screen.getByText((12).toLocaleString())).toBeInTheDocument()
   })
