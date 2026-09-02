@@ -49,3 +49,10 @@
 .metric-row > span:last-child {
   font-variant-numeric: tabular-nums;
 }
+
+/* Emphasizes a value span beyond the row default, for counts worth spotting at a glance. */
+.metric-value-pop {
+  font-weight: 700;
+  font-size: 1.125rem;
+  color: var(--foreground);
+}

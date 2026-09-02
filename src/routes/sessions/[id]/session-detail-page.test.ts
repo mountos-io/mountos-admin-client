@@ -55,9 +55,9 @@ describe('sessions/[id] block storage metrics', () => {
     expect(screen.getByText('Auto-Degraded')).toBeInTheDocument()
     expect(screen.queryByText('Normal')).not.toBeInTheDocument()
     expect(screen.getByText('Ops Served Degraded')).toBeInTheDocument()
-    expect(screen.getByText((1234).toLocaleString())).toBeInTheDocument()
+    expect(screen.getByText((1234).toLocaleString())).toHaveClass('metric-value-pop')
     expect(screen.getByText('Direct S3 Fallback Ops')).toBeInTheDocument()
-    expect(screen.getByText((56).toLocaleString())).toBeInTheDocument()
+    expect(screen.getByText((56).toLocaleString())).toHaveClass('metric-value-pop')
   })
 
   it('shows a quiet normal state and still reports the fallback count when the breaker is closed', async () => {

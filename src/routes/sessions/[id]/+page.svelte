@@ -868,9 +868,9 @@
                       {/if}
                     </span>
                   </div>
-                  <div class="metric-row"><span>Ops Served Degraded</span><span>{formatNum(m.blockAutoDegradeOps ?? 0)}</span></div>
+                  <div class="metric-row"><span>Ops Served Degraded</span><span class="metric-value-pop">{formatNum(m.blockAutoDegradeOps ?? 0)}</span></div>
                 {/if}
-                <div class="metric-row"><span>Direct S3 Fallback Ops</span><span>{formatNum(m.blockDirectFallbackOps ?? 0)}</span></div>
+                <div class="metric-row"><span>Direct S3 Fallback Ops</span><span class="metric-value-pop">{formatNum(m.blockDirectFallbackOps ?? 0)}</span></div>
               </div>
             {/if}
             {#if m.metaArenaCapacityBytes != null}
