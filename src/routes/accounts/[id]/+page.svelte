@@ -256,6 +256,10 @@
           <CardContent>
             <dl class="space-y-3">
               <div>
+                <dt class="text-sm font-medium text-muted-foreground">Account ID</dt>
+                <dd class="mt-1 font-mono text-sm">{account.id}</dd>
+              </div>
+              <div>
                 <dt class="text-sm font-medium text-muted-foreground">Status</dt>
                 <dd class="mt-1"><StatusBadge active={account.isActive} locked={account.locked} /></dd>
               </div>

@@ -13,7 +13,7 @@ function bv(id: string, overrides: Partial<BlockVolume> = {}): BlockVolume {
 }
 
 function copyset(overrides: Partial<Copyset> = {}): Copyset {
-  return { id: 'copyset-1', storageId: 'storage-1', name: 'mos-block-a', state: 'active', memberA: 'bv-a', memberB: 'bv-b', tags: [], ...overrides }
+  return { id: 'copyset-1', storageId: 'storage-1', name: 'mos-block-a', state: 'active', memberA: 'bv-a', memberB: 'bv-b', volumeCount: 0, tags: [], ...overrides }
 }
 
 function sn(nodeId: string, blockVolumeId: string): ServiceNode {

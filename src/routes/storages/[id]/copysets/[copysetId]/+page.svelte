@@ -15,7 +15,7 @@
   import { groupNodesByVolume } from '$lib/core/utils/nodes'
   import { isCopysetState } from '$lib/core/api/copyset-ui-types'
   import { formatDuration } from '$lib/core/utils/format'
-  import { Card, CardHeader } from '$lib/components/ui/card'
+  import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
@@ -175,14 +175,44 @@
   {:else}
     <Card cornerBrackets>
       <CardHeader>
-        <div class="flex items-center gap-2">
-          <span class="font-mono text-xs text-muted-foreground break-all">{copyset.id}</span>
+        <div class="flex items-center gap-3">
+          <CardTitle class="min-w-0 flex-1 truncate" title={copyset.name}>{copyset.name}</CardTitle>
           {#if isCopysetState(copyset.state)}
             <CopysetStateBadge state={copyset.state} />
           {:else}
             <Badge variant="destructive" title="Unrecognized copyset state, treat as unsafe to act on">{copyset.state}</Badge>
           {/if}
         </div>
+      </CardHeader>
+      <CardContent class="space-y-4">
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="min-w-0">
+            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">ID</span>
+            <p class="mt-1 text-sm font-mono break-all">{copyset.id}</p>
+          </div>
+          <div>
+            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground" title="Volumes currently drawing this copyset into their working set">Volumes</span>
+            <p class="mt-1 text-sm font-mono">{copyset.volumeCount}</p>
+          </div>
+          <div>
+            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Member A</span>
+            <p class="mt-1 text-sm">{memberA?.name ?? '—'}</p>
+          </div>
+          <div>
+            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Member B</span>
+            <p class="mt-1 text-sm">{memberB?.name ?? '—'}</p>
+          </div>
+        </div>
+
+        {#if copyset.tags.length > 0}
+          <div>
+            <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Tags</span>
+            <div class="mt-1 flex flex-wrap gap-1">
+              {#each copyset.tags as tag (tag)}<Badge variant="outline" class="text-xs">{tag}</Badge>{/each}
+            </div>
+          </div>
+        {/if}
+
         {#if copyset.state === 'draining'}
           <p class="text-sm text-warning">
             {#if backlogKnown}
@@ -200,7 +230,7 @@
             remove them or pair them into a different copyset.
           </p>
         {/if}
-      </CardHeader>
+      </CardContent>
     </Card>
 
     {#if storage}

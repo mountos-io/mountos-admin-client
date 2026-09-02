@@ -303,7 +303,7 @@
         {@const converging = nodeConverging(n)}
         <a href={`/nodes/${n.regionId}/${n.nodeId}`}
           class="inline-flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-xs hover:border-primary hover:text-primary transition-colors">
-          <span class="font-mono truncate max-w-[8rem]" title={n.nodeId}>{n.nodeId}</span>
+          <span class="font-mono" title={n.nodeId}>{n.nodeId}</span>
           <Badge variant={nodeStatusVariant(n.status)} class="text-xs px-1 py-0">{n.status}</Badge>
           {#if converging}
             <Badge variant="warning" class="text-xs px-1 py-0"
