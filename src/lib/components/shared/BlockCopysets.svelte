@@ -189,18 +189,20 @@
     }
   }
 
-  async function handleDrain(copysetId: string) {
-    await store.drainCopyset(storageId, copysetId)
+  async function handleDrain(copysetId: string, force?: boolean) {
+    if (force) await store.drainCopyset(storageId, copysetId, true)
+    else await store.drainCopyset(storageId, copysetId)
     await reloadAfterMutation()
   }
 
-  async function handleCancelDrain(copysetId: string) {
-    await store.cancelDrain(storageId, copysetId)
+  async function handleCancelDrain(copysetId: string, force?: boolean) {
+    if (force) await store.cancelDrain(storageId, copysetId, true)
+    else await store.cancelDrain(storageId, copysetId)
     await reloadAfterMutation()
   }
 
-  async function handleRegisterCopyset(name: string) {
-    const copyset = await store.registerCopyset(storageId, { name: name || undefined })
+  async function handleRegisterCopyset(name: string, failureDomainA?: string, failureDomainB?: string) {
+    const copyset = await store.registerCopyset(storageId, { name: name || undefined, failureDomainA, failureDomainB })
     await reloadAfterMutation()
     return copyset
   }
@@ -209,10 +211,10 @@
   // just on success. The request may have actually landed server-side (a timeout after the
   // server committed, for example), so the operator needs the true current list, not a
   // stale pre-attempt one, to judge whether retrying would create duplicates.
-  async function handleRegisterCopysetsBulk(count: number) {
+  async function handleRegisterCopysetsBulk(count: number, failureDomainA?: string, failureDomainB?: string) {
     const countBefore = copysets.length
     try {
-      const result = await store.registerCopysetsBulk(storageId, { count })
+      const result = await store.registerCopysetsBulk(storageId, { count, failureDomainA, failureDomainB })
       await reloadAfterMutation()
       return result.copysets
     } catch (err) {

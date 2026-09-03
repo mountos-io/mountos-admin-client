@@ -1,4 +1,7 @@
-import type { Storage, CreateStorageRequest, EditStorageRequest, TestStorageNewBucketRequest, MoveStorageVolumesRequest, RegisterStorageCopysetRequest, RegisterStorageCopysetsBulkRequest } from '$lib/core/api/types'
+import type {
+  Storage, CreateStorageRequest, EditStorageRequest, TestStorageNewBucketRequest, MoveStorageVolumesRequest,
+  RegisterStorageCopysetRequest, RegisterStorageCopysetsBulkRequest, AddStorageCopysetMemberRequest, MarkStorageMemberLostRequest,
+} from '$lib/core/api/types'
 import { api } from './client.svelte'
 
 let storages = $state<Storage[]>([])
@@ -101,12 +104,16 @@ async function getCopysetStatus(id: number, copysetId: string, signal?: AbortSig
   return api.storages.getCopysetStatus(id, copysetId, signal)
 }
 
-async function drainCopyset(id: number, copysetId: string) {
-  return api.storages.drainCopyset(id, copysetId)
+// force retries a drain the server refused because it would strand a volume with no
+// write-eligible copyset left; the operator confirms that cost explicitly before this is set.
+async function drainCopyset(id: number, copysetId: string, force = false) {
+  return api.storages.drainCopyset(id, copysetId, { force })
 }
 
-async function cancelDrain(id: number, copysetId: string) {
-  return api.storages.cancelDrain(id, copysetId)
+// force retries a cancel the server refused because a member's service node is not yet
+// confirmed deactivated; the operator confirms that cost explicitly before this is set.
+async function cancelDrain(id: number, copysetId: string, force = false) {
+  return api.storages.cancelDrain(id, copysetId, { force })
 }
 
 async function registerCopyset(id: number, req: RegisterStorageCopysetRequest) {
@@ -120,6 +127,18 @@ async function registerCopysetsBulk(id: number, req: RegisterStorageCopysetsBulk
 // Permanently deregisters a detached pool member.
 async function removeMember(id: number, blockVolumeId: string) {
   return api.storages.removeMember(id, blockVolumeId)
+}
+
+// Fills a copyset's vacant slot (freed by a removed or lost member) with a fresh member.
+async function addCopysetMember(id: number, copysetId: string, req: AddStorageCopysetMemberRequest) {
+  return api.storages.addCopysetMember(id, copysetId, req)
+}
+
+// Declares a copyset member permanently lost, freeing its slot right away. force overrides
+// the server's guard against discarding a member whose service node is not yet confirmed
+// deactivated; the operator confirms that cost explicitly before this is set.
+async function markMemberLost(id: number, copysetId: string, req: MarkStorageMemberLostRequest) {
+  return api.storages.markMemberLost(id, copysetId, req)
 }
 
 export function useStorages() {
@@ -146,5 +165,7 @@ export function useStorages() {
     registerCopyset,
     registerCopysetsBulk,
     removeMember,
+    addCopysetMember,
+    markMemberLost,
   }
 }

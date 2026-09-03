@@ -11,20 +11,27 @@
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useStorages } from '$lib/core/stores/storages.svelte'
   import { api } from '$lib/core/stores/client.svelte'
-  import { showErrorToast } from '$lib/core/utils/toast'
+  import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
+  import { ApiError } from '$lib/core/api/errors'
   import { groupNodesByVolume } from '$lib/core/utils/nodes'
   import { isCopysetState } from '$lib/core/api/copyset-ui-types'
   import { formatDuration } from '$lib/core/utils/format'
   import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
   import { Badge } from '$lib/components/ui/badge'
   import { Button } from '$lib/components/ui/button'
+  import { Input } from '$lib/components/ui/input'
+  import Label from '$lib/components/ui/label/label.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import CopysetStateBadge from '$lib/components/shared/CopysetStateBadge.svelte'
+  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
+  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import NodeDetail from '$lib/components/shared/NodeDetail.svelte'
   import * as Tabs from '$lib/components/ui/tabs'
   import type { Copyset, BlockVolume, ServiceNode, Storage } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
+  import UserX from '@lucide/svelte/icons/user-x'
+  import Plus from '@lucide/svelte/icons/plus'
 
   const POLL_INTERVAL_MS = 15_000
 
@@ -33,6 +40,7 @@
 
   const store = useStorages()
   const auth = useAuth()
+  const canUpdate = $derived(auth.can('storages', 'update'))
 
   let storage = $state<Storage | null>(null)
   let copyset = $state<Copyset | null>(null)
@@ -60,6 +68,18 @@
     copyset = c
   }
 
+  // Pool membership + service-node topology, split out from refreshCopysetStatus so a
+  // mutation (mark member lost, fill a vacant slot) can refresh both without re-running the
+  // whole mount effect.
+  async function refreshTopology(id: number, regionId: number, signal?: AbortSignal) {
+    const volumes = await store.listBlockVolumes(id, signal)
+    if (signal?.aborted) return
+    blockVolumesById = new Map(volumes.map((v) => [v.id, v]))
+    const nodes = await api.serviceNodes.list(regionId, 'blockserv', undefined, undefined, undefined, signal)
+    if (signal?.aborted) return
+    nodesByVolume = groupNodesByVolume(nodes)
+  }
+
   $effect(() => {
     const id = storageId
     const cid = copysetId
@@ -68,22 +88,88 @@
     loading = true
     error = false
     ;(async () => {
-      const [s, , volumes] = await Promise.all([
-        store.getStorage(id),
-        refreshCopysetStatus(id, cid, ctrl.signal),
-        store.listBlockVolumes(id, ctrl.signal),
-      ])
+      const [s] = await Promise.all([store.getStorage(id), refreshCopysetStatus(id, cid, ctrl.signal)])
       if (ctrl.signal.aborted) return
       storage = s
-      blockVolumesById = new Map(volumes.map((v) => [v.id, v]))
-      const nodes = await api.serviceNodes.list(s.regionInfo.id, 'blockserv', undefined, undefined, undefined, ctrl.signal)
-      if (ctrl.signal.aborted) return
-      nodesByVolume = groupNodesByVolume(nodes)
+      await refreshTopology(id, s.regionInfo.id, ctrl.signal)
     })()
       .catch(() => { if (!ctrl.signal.aborted) error = true })
       .finally(() => { if (!ctrl.signal.aborted) loading = false })
     return () => ctrl.abort()
   })
+
+  // Refetches the copyset (and, since a slot's membership changed, the pool topology too) so
+  // the member panels reflect the new state right away, without a full page reload.
+  async function refreshAfterMutation() {
+    if (!storage) return
+    await Promise.all([refreshCopysetStatus(storageId, copysetId), refreshTopology(storageId, storage.regionInfo.id)])
+  }
+
+  const dialog = useConfirmDialog()
+
+  // Second-stage force confirmation, offered only after a plain mark-lost attempt is
+  // refused specifically because the member's service node is not yet confirmed
+  // deactivated. Kept as separate dialog state from `dialog` above so the routine
+  // confirmation's own close doesn't race this one's open.
+  let forceMarkLostOpen = $state(false)
+  let forceMarkLostBlockVolumeId = $state('')
+  let forceMarkLostReason = $state('')
+
+  async function attemptMarkLost(blockVolumeId: string) {
+    try {
+      await store.markMemberLost(storageId, copysetId, { blockVolumeId })
+      showSuccessToast('Member marked lost')
+      await refreshAfterMutation()
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.status === 409 && err.message.includes('not confirmed deactivated')) {
+        forceMarkLostBlockVolumeId = blockVolumeId
+        forceMarkLostReason = err.message
+        forceMarkLostOpen = true
+        return
+      }
+      throw err
+    }
+  }
+
+  async function handleForceMarkLost() {
+    await store.markMemberLost(storageId, copysetId, { blockVolumeId: forceMarkLostBlockVolumeId, force: true })
+    showSuccessToast('Member marked lost (forced)')
+    await refreshAfterMutation()
+  }
+
+  function handleMarkLostClick(member: BlockVolume) {
+    dialog.confirm(
+      'Mark this member lost?',
+      `This permanently removes ${member.name || 'this member'} from its copyset slot. The slot opens up for a replacement member right away; the other member keeps serving throughout. This can't be undone.`,
+      () => attemptMarkLost(member.id),
+      'destructive',
+      'Mark lost',
+    )
+  }
+
+  let fillVacantFailureDomainA = $state('')
+  let fillVacantFailureDomainB = $state('')
+  let fillVacantSubmittingA = $state(false)
+  let fillVacantSubmittingB = $state(false)
+
+  async function handleFillVacantSlot(e: Event, slot: 'a' | 'b') {
+    e.preventDefault()
+    const failureDomain = (slot === 'a' ? fillVacantFailureDomainA : fillVacantFailureDomainB).trim() || undefined
+    if (slot === 'a') fillVacantSubmittingA = true
+    else fillVacantSubmittingB = true
+    try {
+      await store.addCopysetMember(storageId, copysetId, { failureDomain })
+      showSuccessToast('Member added')
+      if (slot === 'a') fillVacantFailureDomainA = ''
+      else fillVacantFailureDomainB = ''
+      await refreshAfterMutation()
+    } catch (err: unknown) {
+      handleApiError(err, 'Failed to add member')
+    } finally {
+      if (slot === 'a') fillVacantSubmittingA = false
+      else fillVacantSubmittingB = false
+    }
+  }
 
   // Keeps the draining banner's backlog/elapsed-time readout live without a manual reload.
   // Effect-scoped cleanup (rather than BlockCopysets.svelte's module-level pollActive flag)
@@ -146,21 +232,53 @@
 
 <svelte:head><title>Copyset · mountOS Admin</title></svelte:head>
 
-{#snippet memberPanel(member: BlockVolume | undefined, nodes: ServiceNode[], regionId: number)}
+{#snippet memberPanel(member: BlockVolume | undefined, nodes: ServiceNode[], regionId: number, slot: 'a' | 'b')}
   {#if !member}
-    <div class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-      No member assigned. This copyset is in the defensive 0/1-member edge case: treat it as
-      degraded, not normally formed.
+    <div class="rounded-lg border border-dashed p-4 space-y-3">
+      <p class="text-sm text-muted-foreground">
+        No member assigned. This copyset is in the defensive 0/1-member edge case: treat it as
+        degraded, not normally formed.
+      </p>
+      {#if canUpdate && copyset?.state === 'active'}
+        {@const submitting = slot === 'a' ? fillVacantSubmittingA : fillVacantSubmittingB}
+        <form onsubmit={(e) => handleFillVacantSlot(e, slot)} class="space-y-2">
+          <Label for={`fill-vacant-domain-${slot}`}>Failure domain (optional)</Label>
+          <Input id={`fill-vacant-domain-${slot}`} maxlength={98} placeholder="e.g. rack-1" autocomplete="off"
+            value={slot === 'a' ? fillVacantFailureDomainA : fillVacantFailureDomainB}
+            oninput={(e: Event) => {
+              const v = (e.target as HTMLInputElement).value
+              if (slot === 'a') fillVacantFailureDomainA = v; else fillVacantFailureDomainB = v
+            }} />
+          <p class="text-xs text-muted-foreground">Leave blank to skip the check. A value matching the other member's own domain is refused.</p>
+          <Button type="submit" variant="outline" size="sm" class="gap-1.5" disabled={submitting}>
+            <Plus class="size-4" aria-hidden="true" /> {submitting ? 'Adding...' : 'Fill vacant slot'}
+          </Button>
+        </form>
+      {/if}
     </div>
   {:else if nodes.length === 0}
-    <div class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
-      No blockserv registered for {member.name || 'this member'} yet.
+    <div class="space-y-3">
+      <div class="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        No blockserv registered for {member.name || 'this member'} yet.
+      </div>
+      {#if canUpdate && copyset?.state === 'active'}
+        <Button variant="destructive" size="sm" class="gap-1.5" onclick={() => handleMarkLostClick(member)}>
+          <UserX class="size-4" aria-hidden="true" /> Mark member lost
+        </Button>
+      {/if}
     </div>
   {:else}
     {#if nodes.length > 1}
       <div class="mb-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
         <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
         <p>{nodes.length} blockserv processes are serving {member.name || 'this member'}. Each member should have exactly one; showing the first.</p>
+      </div>
+    {/if}
+    {#if canUpdate && copyset?.state === 'active'}
+      <div class="mb-4">
+        <Button variant="destructive" size="sm" class="gap-1.5" onclick={() => handleMarkLostClick(member)}>
+          <UserX class="size-4" aria-hidden="true" /> Mark member lost
+        </Button>
       </div>
     {/if}
     <NodeDetail regionId={regionId} nodeId={nodes[0].nodeId} basePath="/nodes" />
@@ -262,15 +380,21 @@
         </Tabs.List>
         <Tabs.Content value="a">
           {#if activeTab === 'a'}
-            {@render memberPanel(memberA, nodesA, storage.regionInfo.id)}
+            {@render memberPanel(memberA, nodesA, storage.regionInfo.id, 'a')}
           {/if}
         </Tabs.Content>
         <Tabs.Content value="b">
           {#if activeTab === 'b'}
-            {@render memberPanel(memberB, nodesB, storage.regionInfo.id)}
+            {@render memberPanel(memberB, nodesB, storage.regionInfo.id, 'b')}
           {/if}
         </Tabs.Content>
       </Tabs.Root>
     {/if}
   {/if}
 </div>
+
+<ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} variant={dialog.variant} confirmLabel={dialog.confirmLabel} onConfirm={dialog.action} />
+
+<ConfirmDialog bind:open={forceMarkLostOpen} title="Force mark this member lost?"
+  description={`${forceMarkLostReason} Forcing marks it lost anyway, even though its service node is not confirmed deactivated.`}
+  variant="destructive" confirmLabel="Force mark lost" onConfirm={handleForceMarkLost} />

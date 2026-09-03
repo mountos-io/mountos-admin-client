@@ -21,6 +21,7 @@
   import { copyText } from '$lib/core/utils/clipboard'
   import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
   import { isCopysetState } from '$lib/core/api/copyset-ui-types'
+  import { ApiError } from '$lib/core/api/errors'
   import type { Copyset, CopysetState, BlockVolume, ServiceNode } from '$lib/core/api/types'
   import Plus from '@lucide/svelte/icons/plus'
   import Layers from '@lucide/svelte/icons/layers'
@@ -53,14 +54,18 @@
     // Bindable so a page-level "Add Copyset" action can open this same dialog without
     // duplicating the form (see the storage detail page's top-level action row).
     registering?: boolean
-    onDrain: (copysetId: string) => Promise<void>
-    onCancelDrain: (copysetId: string) => Promise<void>
+    // force is set only on a resend after the server refused the plain attempt for a
+    // known, operator-confirmed reason (see the force confirm dialogs below).
+    onDrain: (copysetId: string, force?: boolean) => Promise<void>
+    onCancelDrain: (copysetId: string, force?: boolean) => Promise<void>
     // Creates a whole new copyset (both members atomically, names derived from name);
     // returns the copyset so its memberA/memberB ids can be shown to the operator as
-    // BLOCK_VOLUME_ID env values.
-    onRegisterCopyset: (name: string) => Promise<Copyset>
-    // Creates count new copysets in one call, every name auto-generated.
-    onRegisterCopysetsBulk: (count: number) => Promise<Copyset[]>
+    // BLOCK_VOLUME_ID env values. failureDomainA/B are optional diversity labels, one per
+    // member; a value matching the other member's own domain is refused.
+    onRegisterCopyset: (name: string, failureDomainA?: string, failureDomainB?: string) => Promise<Copyset>
+    // Creates count new copysets in one call, every name auto-generated. failureDomainA/B,
+    // when given, apply identically to every generated copyset's A/B member.
+    onRegisterCopysetsBulk: (count: number, failureDomainA?: string, failureDomainB?: string) => Promise<Copyset[]>
     // Permanently deregisters a detached member (server-side guards this to
     // member_state='detached' - never a paired/draining member). The client additionally
     // withholds this while the member still has a live blockserv reporting its id -
@@ -174,6 +179,8 @@
   const dialog = useConfirmDialog()
 
   let name = $state('')
+  let failureDomainA = $state('')
+  let failureDomainB = $state('')
   let submitting = $state(false)
   let removingId = $state<string | null>(null)
   // Set once registration succeeds: the two generated BLOCK_VOLUME_IDs, shown for the
@@ -185,7 +192,7 @@
 
   // Resets the form on every open, regardless of which entry point triggered it.
   $effect(() => {
-    if (registering) { name = ''; registered = null }
+    if (registering) { name = ''; failureDomainA = ''; failureDomainB = ''; registered = null }
   })
 
   function startRegister() {
@@ -204,7 +211,7 @@
     e.preventDefault()
     submitting = true
     try {
-      const copyset = await onRegisterCopyset(name.trim())
+      const copyset = await onRegisterCopyset(name.trim(), failureDomainA.trim() || undefined, failureDomainB.trim() || undefined)
       registered = {
         nameA: memberLabel(copyset, copyset.memberA, 'a'), idA: copyset.memberA ?? '',
         nameB: memberLabel(copyset, copyset.memberB, 'b'), idB: copyset.memberB ?? '',
@@ -223,13 +230,15 @@
   // takes no name (count-only) and its success view is a list, not a fixed pair.
   let bulkRegistering = $state(false)
   let count = $state(5)
+  let bulkFailureDomainA = $state('')
+  let bulkFailureDomainB = $state('')
   let bulkSubmitting = $state(false)
   let bulkResults = $state<Copyset[] | null>(null)
   let bulkSuccessRef = $state<HTMLDivElement | null>(null)
   const bulkCountValid = $derived(Number.isInteger(count) && count >= 1 && count <= MAX_BULK_COUNT)
 
   $effect(() => {
-    if (bulkRegistering) { count = 5; bulkResults = null }
+    if (bulkRegistering) { count = 5; bulkFailureDomainA = ''; bulkFailureDomainB = ''; bulkResults = null }
   })
 
   function startBulkRegister() {
@@ -241,7 +250,7 @@
     if (!bulkCountValid) return
     bulkSubmitting = true
     try {
-      const results = await onRegisterCopysetsBulk(count)
+      const results = await onRegisterCopysetsBulk(count, bulkFailureDomainA.trim() || undefined, bulkFailureDomainB.trim() || undefined)
       bulkResults = results
       showSuccessToast(`${results.length} cop${results.length === 1 ? 'yset' : 'ysets'} registered`)
       await tick()
@@ -301,6 +310,65 @@
     )
   }
 
+  // Second-stage force confirmations. Kept as separate dialog state from the routine
+  // `dialog` above (not chained through it): the routine dialog closes itself the moment
+  // its own onConfirm resolves, which would race a same-tick reopen for the force step.
+  let forceDrainOpen = $state(false)
+  let forceDrainCopysetId = $state('')
+  let forceDrainReason = $state('')
+
+  let forceCancelOpen = $state(false)
+  let forceCancelCopysetId = $state('')
+  let forceCancelReason = $state('')
+
+  // Plain drain attempt. On the one refusal reason the server distinguishes (this drain
+  // would leave a volume with no write-eligible copyset), the reason is shown and a
+  // separate, explicit force confirmation is offered rather than silently retrying.
+  async function attemptDrain(copysetId: string) {
+    try {
+      await onDrain(copysetId)
+      showSuccessToast('Drain started. Watch this copyset’s status for progress.')
+    } catch (err: unknown) {
+      // The server has exactly one 409 reason for a drain request: it would strand a
+      // volume. force is always the right override here.
+      if (err instanceof ApiError && err.status === 409) {
+        forceDrainCopysetId = copysetId
+        forceDrainReason = err.message
+        forceDrainOpen = true
+        return
+      }
+      throw err
+    }
+  }
+
+  async function attemptCancelDrain(copysetId: string) {
+    try {
+      await onCancelDrain(copysetId)
+      showSuccessToast('Drain cancelled. Copyset is active again.')
+    } catch (err: unknown) {
+      // Only the deactivated-member-node refusal has a force override; a copyset that has
+      // already moved past draining (a stale row) is a different problem force can't fix,
+      // so that 409 falls through to the routine dialog's own error toast instead.
+      if (err instanceof ApiError && err.status === 409 && err.message.includes('service node is deactivated')) {
+        forceCancelCopysetId = copysetId
+        forceCancelReason = err.message
+        forceCancelOpen = true
+        return
+      }
+      throw err
+    }
+  }
+
+  async function handleForceDrain() {
+    await onDrain(forceDrainCopysetId, true)
+    showSuccessToast('Drain started (forced). Watch this copyset’s status for progress.')
+  }
+
+  async function handleForceCancelDrain() {
+    await onCancelDrain(forceCancelCopysetId, true)
+    showSuccessToast('Drain cancelled (forced). Copyset is active again.')
+  }
+
   function handleDrainClick(row: ServerRow) {
     const copysetId = row.copysetId
     if (!copysetId) return
@@ -311,10 +379,7 @@
       dialog.confirm(
         'Drain the last active copyset?',
         'This storage has no other active copyset. If this drain proceeds, every volume assigned here loses write access. Write access returns only when this copyset is replaced or the drain is force-confirmed. Reads keep working until the drain finishes syncing to object storage.',
-        async () => {
-          await onDrain(copysetId)
-          showSuccessToast('Drain started. Watch this copyset’s status for progress.')
-        },
+        () => attemptDrain(copysetId),
         'destructive',
         'Start drain',
       )
@@ -323,10 +388,7 @@
     dialog.confirm(
       'Drain this copyset',
       'This action stops new writes to the copyset now. The copyset keeps serving reads until all its data is confirmed in object storage. This can take a long time. You can cancel the drain before it finishes.',
-      async () => {
-        await onDrain(copysetId)
-        showSuccessToast('Drain started. Watch this copyset’s status for progress.')
-      },
+      () => attemptDrain(copysetId),
       'default',
       'Start drain',
     )
@@ -338,10 +400,7 @@
     dialog.confirm(
       'Cancel this drain?',
       'The copyset goes back to active. New writes resume immediately.',
-      async () => {
-        await onCancelDrain(copysetId)
-        showSuccessToast('Drain cancelled. Copyset is active again.')
-      },
+      () => attemptCancelDrain(copysetId),
       'default',
       'Cancel drain',
     )
@@ -556,6 +615,19 @@
           <Label for="register-copyset-name">Copyset name</Label>
           <Input id="register-copyset-name" bind:value={name} maxlength={98} placeholder="Auto-generated if left blank" autocomplete="off" />
         </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="space-y-2">
+            <Label for="register-copyset-domain-a">Member A failure domain (optional)</Label>
+            <Input id="register-copyset-domain-a" bind:value={failureDomainA} maxlength={98} placeholder="e.g. rack-1" autocomplete="off" />
+          </div>
+          <div class="space-y-2">
+            <Label for="register-copyset-domain-b">Member B failure domain (optional)</Label>
+            <Input id="register-copyset-domain-b" bind:value={failureDomainB} maxlength={98} placeholder="e.g. rack-2" autocomplete="off" />
+          </div>
+        </div>
+        <p class="text-xs text-muted-foreground">
+          Leave blank to skip the check. A member's domain matching its partner's is refused.
+        </p>
         <Dialog.Footer class="gap-2">
           <Button variant="secondary" type="button" onclick={() => registering = false} disabled={submitting}>Cancel</Button>
           <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={submitting}>
@@ -617,6 +689,19 @@
             <p class="text-xs text-destructive">Count must be between 1 and {MAX_BULK_COUNT} and must be a whole number.</p>
           {/if}
         </div>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div class="space-y-2">
+            <Label for="register-copysets-bulk-domain-a">Every A member's failure domain (optional)</Label>
+            <Input id="register-copysets-bulk-domain-a" bind:value={bulkFailureDomainA} maxlength={98} placeholder="e.g. rack-1" autocomplete="off" />
+          </div>
+          <div class="space-y-2">
+            <Label for="register-copysets-bulk-domain-b">Every B member's failure domain (optional)</Label>
+            <Input id="register-copysets-bulk-domain-b" bind:value={bulkFailureDomainB} maxlength={98} placeholder="e.g. rack-2" autocomplete="off" />
+          </div>
+        </div>
+        <p class="text-xs text-muted-foreground">
+          Applies to every copyset in this batch. Leave blank to skip the check. A value matching the other side's domain is refused.
+        </p>
         <Dialog.Footer class="gap-2">
           <Button variant="secondary" type="button" onclick={() => bulkRegistering = false} disabled={bulkSubmitting}>Cancel</Button>
           <Button variant="primary" type="submit" class="cyberpunk-skewed-sm" disabled={bulkSubmitting || !bulkCountValid}>
@@ -629,3 +714,11 @@
 </Dialog.Root>
 
 <ConfirmDialog bind:open={dialog.open} title={dialog.title} description={dialog.desc} variant={dialog.variant} confirmLabel={dialog.confirmLabel} onConfirm={dialog.action} />
+
+<ConfirmDialog bind:open={forceDrainOpen} title="Force this drain?"
+  description={`${forceDrainReason} Forcing proceeds anyway; the affected volume stays without a write-eligible copyset until this is resolved.`}
+  variant="destructive" confirmLabel="Force drain" onConfirm={handleForceDrain} />
+
+<ConfirmDialog bind:open={forceCancelOpen} title="Force cancel this drain?"
+  description={`${forceCancelReason} Forcing readmits the copyset to active anyway, with a member whose service node is not confirmed deactivated.`}
+  variant="destructive" confirmLabel="Force cancel" onConfirm={handleForceCancelDrain} />

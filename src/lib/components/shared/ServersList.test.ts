@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/svelte'
 import ServersList from './ServersList.svelte'
+import { ApiError } from '$lib/core/api/errors'
 import type { Copyset, BlockVolume, ServiceNode } from '$lib/core/api/types'
 
 vi.mock('$lib/core/utils/toast', () => ({
@@ -195,6 +196,63 @@ describe('ServersList', () => {
     await waitFor(() => expect(onCancelDrain).toHaveBeenCalledWith('copyset-1'))
   })
 
+  it('drain: refused with the strand-a-volume reason offers a force confirmation, which resends with force: true', async () => {
+    const onDrain = vi.fn()
+      .mockRejectedValueOnce(new ApiError('draining this copyset would leave a volume with no write-eligible copyset; retry with force=true to proceed anyway', 409))
+      .mockResolvedValueOnce(undefined)
+    render(ServersList, { props: baseProps({ onDrain, activeCopysetCount: 3 }) })
+
+    await fireEvent.click(screen.getAllByRole('button', { name: 'Drain' })[0])
+    await fireEvent.click(screen.getByRole('button', { name: 'Start drain' }))
+
+    const forceDialog = await screen.findByText('Force this drain?')
+    expect(forceDialog).toBeInTheDocument()
+    expect(screen.getByText(/would leave a volume with no write-eligible copyset/)).toBeInTheDocument()
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Force drain' }))
+
+    await waitFor(() => expect(onDrain).toHaveBeenCalledWith('copyset-1', true))
+    expect(onDrain).toHaveBeenCalledTimes(2)
+  })
+
+  it('drain: a refusal for any other reason shows the real message and does not offer a force confirmation', async () => {
+    const onDrain = vi.fn().mockRejectedValue(new Error('network error'))
+    render(ServersList, { props: baseProps({ onDrain, activeCopysetCount: 3 }) })
+
+    await fireEvent.click(screen.getAllByRole('button', { name: 'Drain' })[0])
+    await fireEvent.click(screen.getByRole('button', { name: 'Start drain' }))
+
+    await waitFor(() => expect(handleApiError).toHaveBeenCalled())
+    expect(screen.queryByText('Force this drain?')).not.toBeInTheDocument()
+  })
+
+  it('cancel-drain: refused because a member\'s service node is deactivated offers a force confirmation, which resends with force: true', async () => {
+    const onCancelDrain = vi.fn()
+      .mockRejectedValueOnce(new ApiError('a copyset member\'s service node is deactivated; retry with force=true to cancel anyway', 409))
+      .mockResolvedValueOnce(undefined)
+    render(ServersList, { props: baseProps({ copysets: [copyset({ state: 'draining', pendingSyncJobsA: 1, pendingSyncJobsB: 1 })], onCancelDrain }) })
+
+    await fireEvent.click(screen.getAllByRole('button', { name: 'Cancel drain' })[0])
+    await fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel drain' }))
+
+    const forceDialog = await screen.findByText('Force cancel this drain?')
+    expect(forceDialog).toBeInTheDocument()
+    await fireEvent.click(screen.getByRole('button', { name: 'Force cancel' }))
+
+    await waitFor(() => expect(onCancelDrain).toHaveBeenCalledWith('copyset-1', true))
+  })
+
+  it('cancel-drain: a copyset no longer draining (stale row) shows the real message and does not offer a force confirmation, since force can\'t fix it', async () => {
+    const onCancelDrain = vi.fn().mockRejectedValue(new ApiError('copyset is not draining', 409))
+    render(ServersList, { props: baseProps({ copysets: [copyset({ state: 'draining', pendingSyncJobsA: 1, pendingSyncJobsB: 1 })], onCancelDrain }) })
+
+    await fireEvent.click(screen.getAllByRole('button', { name: 'Cancel drain' })[0])
+    await fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel drain' }))
+
+    await waitFor(() => expect(handleApiError).toHaveBeenCalled())
+    expect(screen.queryByText('Force cancel this drain?')).not.toBeInTheDocument()
+  })
+
   it('shows the pending-sync count on both rows of a draining copyset', () => {
     render(ServersList, { props: baseProps({ copysets: [copyset({ state: 'draining', pendingSyncJobsA: 2, pendingSyncJobsB: 5 })] }) })
     expect(screen.getByText('2 pending')).toBeInTheDocument()
@@ -268,7 +326,7 @@ describe('ServersList', () => {
     await fireEvent.input(screen.getByLabelText('Copyset name'), { target: { value: 'replica' } })
     await fireEvent.click(screen.getByRole('button', { name: 'Register' }))
 
-    await waitFor(() => expect(onRegisterCopyset).toHaveBeenCalledWith('replica'))
+    await waitFor(() => expect(onRegisterCopyset).toHaveBeenCalledWith('replica', undefined, undefined))
     expect(await screen.findByText('BLOCK_VOLUME_ID=bv-new-a')).toBeInTheDocument()
     expect(screen.getByText('BLOCK_VOLUME_ID=bv-new-b')).toBeInTheDocument()
 
@@ -287,6 +345,19 @@ describe('ServersList', () => {
 
     expect(await screen.findByText('riveted-truss-4f2a-a')).toBeInTheDocument()
     expect(screen.getByText('riveted-truss-4f2a-b')).toBeInTheDocument()
+  })
+
+  it('Add copyset: passes trimmed failure domains through, or undefined when left blank', async () => {
+    const onRegisterCopyset = vi.fn().mockResolvedValue({
+      id: 'copyset-2', storageId: 'storage-1', name: 'replica', state: 'active', memberA: 'bv-new-a', memberB: 'bv-new-b', tags: [],
+    })
+    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById: new Map(), onRegisterCopyset }) })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Add copyset' }))
+    await fireEvent.input(screen.getByLabelText('Member A failure domain (optional)'), { target: { value: ' rack-1 ' } })
+    await fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+
+    await waitFor(() => expect(onRegisterCopyset).toHaveBeenCalledWith('', 'rack-1', undefined))
   })
 
   it('routes a failed Add copyset submit through handleApiError, keeping the dialog open', async () => {
@@ -320,7 +391,7 @@ describe('ServersList', () => {
     await fireEvent.input(screen.getByLabelText('Count'), { target: { value: '2' } })
     await fireEvent.click(screen.getByRole('button', { name: 'Register' }))
 
-    await waitFor(() => expect(onRegisterCopysetsBulk).toHaveBeenCalledWith(2))
+    await waitFor(() => expect(onRegisterCopysetsBulk).toHaveBeenCalledWith(2, undefined, undefined))
     expect(await screen.findByText('BLOCK_VOLUME_ID=bv-3a')).toBeInTheDocument()
     expect(screen.getByText('BLOCK_VOLUME_ID=bv-3b')).toBeInTheDocument()
     expect(screen.getByText('BLOCK_VOLUME_ID=bv-4a')).toBeInTheDocument()
@@ -329,6 +400,17 @@ describe('ServersList', () => {
 
     await fireEvent.click(screen.getByRole('button', { name: 'Done' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('Add multiple: passes trimmed failure domains through, or undefined when left blank', async () => {
+    const onRegisterCopysetsBulk = vi.fn().mockResolvedValue([])
+    render(ServersList, { props: baseProps({ copysets: [], blockVolumesById: new Map(), onRegisterCopysetsBulk }) })
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Add multiple' }))
+    await fireEvent.input(screen.getByLabelText("Every A member's failure domain (optional)"), { target: { value: 'rack-1' } })
+    await fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+
+    await waitFor(() => expect(onRegisterCopysetsBulk).toHaveBeenCalledWith(5, 'rack-1', undefined))
   })
 
   it('Add multiple: disables Register when count is out of range or fractional', async () => {
