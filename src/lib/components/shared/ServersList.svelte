@@ -33,7 +33,7 @@
 
   let {
     copysets, storageId, blockVolumesById, nodesByVolume, directAccess = false, canUpdate,
-    staleStatus = false, nodesStale = false, registering = $bindable(false),
+    staleStatus = false, nodesStale = false, activeCopysetCount, registering = $bindable(false),
     onDrain, onCancelDrain, onRegisterCopyset, onRegisterCopysetsBulk, onRemove,
   }: {
     copysets: Copyset[]
@@ -44,6 +44,10 @@
     canUpdate: boolean
     // Set by the caller when its own poll loop's last refresh failed (spec §5).
     staleStatus?: boolean
+    // Count of this storage's currently active copysets, from the caller's own summary.
+    // Drives the stronger drain warning below: draining the sole active copyset would
+    // leave every volume assigned here with no write-eligible copyset.
+    activeCopysetCount: number
     // Set by the caller when its last service-node discovery fetch failed.
     nodesStale?: boolean
     // Bindable so a page-level "Add Copyset" action can open this same dialog without
@@ -300,6 +304,22 @@
   function handleDrainClick(row: ServerRow) {
     const copysetId = row.copysetId
     if (!copysetId) return
+    // Draining this storage's only active copyset would leave every volume assigned here
+    // with no write-eligible copyset, so it gets a distinct, stronger warning rather than
+    // the routine one below.
+    if (activeCopysetCount === 1) {
+      dialog.confirm(
+        'Drain the last active copyset?',
+        'This storage has no other active copyset. If this drain proceeds, every volume assigned here loses write access. Write access returns only when this copyset is replaced or the drain is force-confirmed. Reads keep working until the drain finishes syncing to object storage.',
+        async () => {
+          await onDrain(copysetId)
+          showSuccessToast('Drain started. Watch this copyset’s status for progress.')
+        },
+        'destructive',
+        'Start drain',
+      )
+      return
+    }
     dialog.confirm(
       'Drain this copyset',
       'This action stops new writes to the copyset now. The copyset keeps serving reads until all its data is confirmed in object storage. This can take a long time. You can cancel the drain before it finishes.',

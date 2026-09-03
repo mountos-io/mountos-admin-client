@@ -52,6 +52,7 @@ vi.mock('$lib/core/utils/toast', () => ({
   showWarningToast: vi.fn(),
   handleApiError: vi.fn(),
 }))
+import { handleApiError } from '$lib/core/utils/toast'
 
 vi.mock('$lib/core/utils/clipboard', () => ({ copyText: vi.fn().mockResolvedValue(true) }))
 
@@ -149,6 +150,33 @@ describe('BlockCopysets', () => {
 
     await waitFor(() => expect(registerCopysetsBulk).toHaveBeenCalledWith(1, { count: 3 }))
     await waitFor(() => expect(listCopysets).toHaveBeenCalledTimes(2))
+  })
+
+  it('bulk registration: refetches the copyset list on failure too, and tells the operator to check it before retrying', async () => {
+    // The request may have landed server-side even though this call failed (e.g. a
+    // timeout after the server committed); the operator needs the true current list,
+    // not a stale pre-attempt one, to judge whether retrying would create duplicates.
+    listCopysets.mockResolvedValueOnce([copyset()])
+    registerCopysetsBulk.mockRejectedValue(new Error('timeout'))
+
+    render(BlockCopysets, { props: baseProps })
+    await waitFor(() => expect(screen.getAllByRole('button', { name: 'Drain' })[0]).toBeInTheDocument())
+
+    // The refetch after the failed attempt shows two copysets now on screen, one more
+    // than before the attempt, as if the request had actually landed.
+    listCopysets.mockResolvedValueOnce([copyset(), copyset({ id: 'copyset-2', name: 'mos-block-b', memberA: 'bv-c', memberB: 'bv-d' })])
+
+    await fireEvent.click(screen.getByRole('button', { name: 'Add multiple' }))
+    await fireEvent.input(screen.getByLabelText('Count'), { target: { value: '1' } })
+    await fireEvent.click(screen.getByRole('button', { name: 'Register' }))
+
+    await waitFor(() => expect(listCopysets).toHaveBeenCalledTimes(2))
+    await waitFor(() => expect(handleApiError).toHaveBeenCalled())
+    const [reportedError, fallback] = vi.mocked(handleApiError).mock.calls[0]
+    expect(fallback).toBe('Failed to register copysets')
+    expect((reportedError as Error).message).toMatch(/timeout/)
+    expect((reportedError as Error).message).toMatch(/more copysets than before this attempt/)
+    expect((reportedError as Error).message).toMatch(/check it before retrying/)
   })
 
   it('opens the Add Copyset dialog when the caller sets addServerOpen, without a second form', async () => {

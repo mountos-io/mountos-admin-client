@@ -205,10 +205,25 @@
     return copyset
   }
 
+  // Unlike the other mutations above, a bulk-register failure is refetched here too, not
+  // just on success. The request may have actually landed server-side (a timeout after the
+  // server committed, for example), so the operator needs the true current list, not a
+  // stale pre-attempt one, to judge whether retrying would create duplicates.
   async function handleRegisterCopysetsBulk(count: number) {
-    const result = await store.registerCopysetsBulk(storageId, { count })
-    await reloadAfterMutation()
-    return result.copysets
+    const countBefore = copysets.length
+    try {
+      const result = await store.registerCopysetsBulk(storageId, { count })
+      await reloadAfterMutation()
+      return result.copysets
+    } catch (err) {
+      await reloadAfterMutation()
+      const grew = copysets.length > countBefore
+      const guidance = grew
+        ? "The list now shows more copysets than before this attempt - check it before retrying, so you don't create duplicates."
+        : "The list has been refreshed to the current state - check it before retrying, so you don't create duplicates."
+      const detail = err instanceof Error ? err.message : 'Failed to register copysets'
+      throw new Error(`${detail} ${guidance}`)
+    }
   }
 
   async function handleRemoveMember(blockVolumeId: string) {
@@ -247,6 +262,7 @@
       <Tabs.Content value="servers" class="space-y-4">
         <NodeGrid {copysets} {blockVolumesById} {nodesByVolume} {storageId} />
         <ServersList {copysets} {storageId} {blockVolumesById} {nodesByVolume} {directAccess} {canUpdate} {staleStatus} {nodesStale}
+          activeCopysetCount={summary.active}
           bind:registering={addServerOpen}
           onDrain={handleDrain} onCancelDrain={handleCancelDrain}
           onRegisterCopyset={handleRegisterCopyset} onRegisterCopysetsBulk={handleRegisterCopysetsBulk}

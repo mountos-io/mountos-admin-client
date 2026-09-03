@@ -31,6 +31,7 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     blockVolumesById: new Map([['bv-a', bv('bv-a', { copysetId: 'copyset-1' })], ['bv-b', bv('bv-b', { copysetId: 'copyset-1' })]]),
     nodesByVolume: new Map(),
     canUpdate: true,
+    activeCopysetCount: 1,
     onDrain: vi.fn(),
     onCancelDrain: vi.fn(),
     onRegisterCopyset: vi.fn(),
@@ -165,6 +166,22 @@ describe('ServersList', () => {
 
     await waitFor(() => expect(onDrain).toHaveBeenCalledWith('copyset-1'))
     await waitFor(() => expect(showSuccessToast).toHaveBeenCalledWith(expect.stringContaining('Drain started')))
+  })
+
+  it('drain: warns that this is the storage\'s last active copyset when activeCopysetCount is 1', async () => {
+    render(ServersList, { props: baseProps({ activeCopysetCount: 1 }) })
+
+    await fireEvent.click(screen.getAllByRole('button', { name: 'Drain' })[0])
+    expect(screen.getByText('Drain the last active copyset?')).toBeInTheDocument()
+    expect(screen.getByText(/no other active copyset/)).toBeInTheDocument()
+  })
+
+  it('drain: shows the routine warning, not the last-copyset one, when other active copysets exist', async () => {
+    render(ServersList, { props: baseProps({ activeCopysetCount: 3 }) })
+
+    await fireEvent.click(screen.getAllByRole('button', { name: 'Drain' })[0])
+    expect(screen.getByText('Drain this copyset')).toBeInTheDocument()
+    expect(screen.queryByText('Drain the last active copyset?')).not.toBeInTheDocument()
   })
 
   it('cancel-drain: opens a confirm dialog, then calls onCancelDrain and toasts on confirm', async () => {
