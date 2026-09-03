@@ -329,9 +329,11 @@
       await onDrain(copysetId)
       showSuccessToast('Drain started. Watch this copyset’s status for progress.')
     } catch (err: unknown) {
-      // The server has exactly one 409 reason for a drain request: it would strand a
-      // volume. force is always the right override here.
-      if (err instanceof ApiError && err.status === 409) {
+      // Matched on the strand-reason text, not a bare 409 status, the same way
+      // attemptCancelDrain and handleMarkLost match their own force-overridable
+      // reason: a bare-status match would wrongly offer this prompt for any other
+      // 409 this route might ever raise.
+      if (err instanceof ApiError && err.status === 409 && err.message.includes('would leave a volume with no write-eligible copyset')) {
         forceDrainCopysetId = copysetId
         forceDrainReason = err.message
         forceDrainOpen = true

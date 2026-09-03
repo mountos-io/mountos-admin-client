@@ -226,6 +226,17 @@ describe('ServersList', () => {
     expect(screen.queryByText('Force this drain?')).not.toBeInTheDocument()
   })
 
+  it('drain: a 409 for any other reason shows the real message and does not offer a force confirmation', async () => {
+    const onDrain = vi.fn().mockRejectedValue(new ApiError('some other refusal reason', 409))
+    render(ServersList, { props: baseProps({ onDrain, activeCopysetCount: 3 }) })
+
+    await fireEvent.click(screen.getAllByRole('button', { name: 'Drain' })[0])
+    await fireEvent.click(screen.getByRole('button', { name: 'Start drain' }))
+
+    await waitFor(() => expect(handleApiError).toHaveBeenCalled())
+    expect(screen.queryByText('Force this drain?')).not.toBeInTheDocument()
+  })
+
   it('cancel-drain: refused because a member\'s service node is deactivated offers a force confirmation, which resends with force: true', async () => {
     const onCancelDrain = vi.fn()
       .mockRejectedValueOnce(new ApiError('a copyset member\'s service node is deactivated; retry with force=true to cancel anyway', 409))
