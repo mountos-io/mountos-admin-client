@@ -47,6 +47,8 @@
   import InfoTip from "$lib/components/shared/InfoTip.svelte";
   import TextTooltip from "$lib/components/shared/TextTooltip.svelte";
   import BlockservStats from "$lib/components/shared/BlockservStats.svelte";
+  import PfkitNetworkStats from "$lib/components/shared/PfkitNetworkStats.svelte";
+  import { parseFlowStats } from "$lib/core/utils/pfkitNetwork";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ChevronsDownUp from "@lucide/svelte/icons/chevrons-down-up";
   import ChevronsUpDown from "@lucide/svelte/icons/chevrons-up-down";
@@ -257,6 +259,14 @@
     return lastParsedSections;
   });
 
+  // pfkit's "# Network (per peer)" section (see internal/pfkitclient.AppendFlowStats in
+  // mountos-servers) rides in the same raw blob but is NOT one of the sections above: it
+  // needs its own parser (see pfkitNetwork.ts's doc comment for why parseMetrics can't parse
+  // it) and backs its own top-level "Packets" tab rather than folding into Overview or a
+  // histogram-derived tab. null when the section is absent entirely (an older build, or a
+  // service type pfkit enrichment was never wired into), not just when pfkit isn't running.
+  const networkStats = $derived(parseFlowStats(raw));
+
   const uptime = $derived(sv(sections, "Overview", "uptime_seconds"));
   const pid = $derived(sv(sections, "Overview", "pid"));
   const goroutines = $derived(sv(sections, "Runtime", "goroutines"));
@@ -380,6 +390,7 @@
       count: s.groups.length,
       uiId: `sec-${s.name.toLowerCase().replace(/\s+/g, '-')}`,
     })),
+    ...(networkStats ? [{ id: 'packets', label: 'Packets', count: 0, uiId: 'packets' }] : []),
     ...(alertsTab ? [{ id: 'alerts', label: 'Alerts', count: alertsCount, uiId: 'alerts' }] : []),
     ...(activityTab ? [{ id: 'activity', label: 'Activity Log', count: 0, uiId: 'activity' }] : []),
     ...(workerEventsTab ? [{ id: 'worker-events', label: 'Worker Events', count: 0, uiId: 'worker-events' }] : []),
@@ -615,6 +626,29 @@
   {#if activeTab === 'instance' && instanceTab}
     <div role="tabpanel" id="panel-instance" aria-labelledby="tab-instance">
       {@render instanceTab()}
+    </div>
+  {/if}
+
+  {#if activeTab === 'packets' && networkStats}
+    <div role="tabpanel" id="panel-packets" aria-labelledby="tab-packets">
+      <!-- "Packets" is a category, not a single fixed view: Network is the first entrant.
+           A future sibling (e.g. retransmit/DNS views) is another card here, or its own
+           sub-tab if the category grows enough to need one. -->
+      {#if networkStats.running}
+        <PfkitNetworkStats stats={networkStats} />
+      {:else}
+        <Card cornerBrackets={false}>
+          <CardHeader><CardTitle class="text-base">Network</CardTitle></CardHeader>
+          <CardContent class="pt-0 space-y-1">
+            <p class="text-sm text-muted-foreground">pfkit is not running on this node.</p>
+            <p class="text-sm text-muted-foreground">
+              pfkit is an optional add-on. It reports real OS-level network data per peer.
+              It does not run by default. Install it from mountos.sh, then start it on this
+              host to see data here.
+            </p>
+          </CardContent>
+        </Card>
+      {/if}
     </div>
   {/if}
 
