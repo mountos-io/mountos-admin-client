@@ -182,7 +182,7 @@
     viewBox="0 -130 1680 1075"
     xmlns="http://www.w3.org/2000/svg"
     role="img"
-    aria-label="Animated mountOS system diagram: partner systems and the admin system drive the HUB through the SDK, clients and apps reach the region services, a region holds dataserv, the region database, vaults, and block storage, all backed by object storage. Block storage is a fleet of copysets, shown as a pile with one copyset open: two blockserv nodes, each with its own SSD, with no primary. A volume draws its own working set of copysets from the fleet rather than the whole fleet, so volumes commonly share a copyset. Apps without a mount reach the same data through the optional gateway embedded in the client"
+    aria-label="Animated mountOS system diagram: partner systems and the admin system drive the HUB through the SDK, clients and apps reach the region services, a region holds metadata nodes, the region database, vaults, and block storage, all backed by object storage. Block storage is a fleet of copysets, shown as a pile with one copyset open: two blockserv nodes, each with its own SSD, with no primary. A volume draws its own working set of copysets from the fleet rather than the whole fleet, so volumes commonly share a copyset. Apps without a mount reach the same data through the optional gateway embedded in the client"
   >
     <defs>
       <marker id="sm-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -363,7 +363,7 @@
       <rect class="hub-outer" x="600" y="50" width="280" height="110" rx="4" />
       <rect class="hub-inner" x="606" y="56" width="268" height="98" rx="3" />
       <text class="t-hub" x="740" y="92" text-anchor="middle">HUB</text>
-      <text class="t-boxsm" x="740" y="114" text-anchor="middle">appserv × N · DNS</text>
+      <text class="t-boxsm" x="740" y="114" text-anchor="middle">hub × N · DNS</text>
       <text class="t-boxsm" x="740" y="132" text-anchor="middle">discovery · control</text>
     </g>
 
@@ -394,24 +394,24 @@
     <g>
       <rect class="box-outer" x="600" y="303" width="120" height="68" rx="3" />
       <rect class="box-inner" x="604" y="307" width="112" height="60" rx="2" />
-      <text class="t-box" x="660" y="322" text-anchor="middle" style="font-size:0.7rem">dataserv</text>
+      <text class="t-box" x="660" y="322" text-anchor="middle" style="font-size:0.7rem">metadata</text>
       <text class="t-boxsm" x="660" y="337" text-anchor="middle">meta</text>
       <path class="divider" d="M612,345 H708" />
-      <text class="t-boxsm" x="660" y="360" text-anchor="middle">+ gcserv</text>
+      <text class="t-boxsm" x="660" y="360" text-anchor="middle">+ gc</text>
 
       <rect class="box-outer" x="760" y="303" width="120" height="68" rx="3" />
       <rect class="box-inner" x="764" y="307" width="112" height="60" rx="2" />
-      <text class="t-box" x="820" y="322" text-anchor="middle" style="font-size:0.7rem">dataserv</text>
+      <text class="t-box" x="820" y="322" text-anchor="middle" style="font-size:0.7rem">metadata</text>
       <text class="t-boxsm" x="820" y="337" text-anchor="middle">meta</text>
       <path class="divider" d="M772,345 H868" />
-      <text class="t-boxsm" x="820" y="360" text-anchor="middle">+ gcserv</text>
+      <text class="t-boxsm" x="820" y="360" text-anchor="middle">+ gc</text>
 
       <rect class="box-outer" x="920" y="303" width="120" height="68" rx="3" />
       <rect class="box-inner" x="924" y="307" width="112" height="60" rx="2" />
-      <text class="t-box" x="980" y="322" text-anchor="middle" style="font-size:0.7rem">dataserv</text>
+      <text class="t-box" x="980" y="322" text-anchor="middle" style="font-size:0.7rem">metadata</text>
       <text class="t-boxsm" x="980" y="337" text-anchor="middle">meta</text>
       <path class="divider" d="M932,345 H1028" />
-      <text class="t-boxsm" x="980" y="360" text-anchor="middle">+ gcserv</text>
+      <text class="t-boxsm" x="980" y="360" text-anchor="middle">+ gc</text>
 
       <text class="t-lbl" x="820" y="402" text-anchor="middle">one owner per (volume · fork)</text>
     </g>
@@ -474,12 +474,12 @@
 
       <rect class="box-outer" x="640" y="630" width="120" height="54" rx="3" />
       <rect class="box-inner" x="644" y="634" width="112" height="46" rx="2" />
-      <text class="t-box" x="700" y="652" text-anchor="middle" style="font-size:0.7rem">blockserv</text>
+      <text class="t-box" x="700" y="652" text-anchor="middle" style="font-size:0.7rem">storage</text>
       <text class="t-boxsm" x="700" y="670" text-anchor="middle">placement a</text>
 
       <rect class="box-outer" x="900" y="630" width="120" height="54" rx="3" />
       <rect class="box-inner" x="904" y="634" width="112" height="46" rx="2" />
-      <text class="t-box" x="960" y="652" text-anchor="middle" style="font-size:0.7rem">blockserv</text>
+      <text class="t-box" x="960" y="652" text-anchor="middle" style="font-size:0.7rem">storage</text>
       <text class="t-boxsm" x="960" y="670" text-anchor="middle">placement b</text>
 
       <text class="t-lbl t-cyan" x="830" y="645" text-anchor="middle">COPYSET</text>
