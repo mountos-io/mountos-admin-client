@@ -43,7 +43,7 @@
     nodesByVolume: Map<string, ServiceNode[]>
     directAccess?: boolean
     canUpdate: boolean
-    // Set by the caller when its own poll loop's last refresh failed (spec §5).
+    // Set by the caller when its own poll loop's last refresh failed.
     staleStatus?: boolean
     // Count of this storage's currently active copysets, from the caller's own summary.
     // Drives the stronger drain warning below: draining the sole active copyset would

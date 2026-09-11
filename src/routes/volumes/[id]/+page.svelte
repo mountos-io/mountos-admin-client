@@ -815,7 +815,7 @@
   }
 
   // G_RIGHT carries the created-at/size metadata label at 16px (the type floor); sized with
-  // headroom for that width, not the smaller font this column used to render at.
+  // headroom for that width instead of a smaller font.
   const G_ROW = 52, G_TOP = 20, G_LEFT = 24, G_LABEL = 160, G_TIMELINE = 480, G_RIGHT = 240, G_DOT = 5, G_CR = 12
   function gRowY(row: number) { return G_TOP + row * G_ROW + G_ROW / 2 }
   function gTimeX(norm: number) { return G_LEFT + G_LABEL + norm * G_TIMELINE }

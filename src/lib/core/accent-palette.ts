@@ -71,11 +71,11 @@ const ACCENT_VAR_NAMES = [
   '--scrollbar-thumb',
   // Neutral chrome: app.css pins these to one fixed hue per mode (~95° warm
   // cream in light, ~200° cool gray in dark) regardless of accent, so a
-  // differently-hued accent used to sit on a backdrop that didn't follow it.
-  // Re-hued at each token's own existing chroma (only the hue moves, same
-  // tint strength as the default theme already uses) so the page reads as
-  // one blended palette instead of an accent color dropped onto an
-  // unrelated backdrop.
+  // differently-hued accent needs re-hueing here to keep the backdrop
+  // following it. Re-hued at each token's own existing chroma (only the hue
+  // moves, same tint strength as the default theme already uses) so the
+  // page reads as one blended palette instead of an accent color dropped
+  // onto an unrelated backdrop.
   '--background',
   '--card',
   '--popover',

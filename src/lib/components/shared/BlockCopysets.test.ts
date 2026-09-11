@@ -255,7 +255,7 @@ describe('BlockCopysets', () => {
       expect(listCopysets).toHaveBeenCalledTimes(1)
 
       vi.clearAllMocks()
-      listCopysets.mockResolvedValue([]) // retired: no longer returned by the default listCopysets() call
+      listCopysets.mockResolvedValue([]) // the default listCopysets() call returns no copysets
       listBlockVolumes.mockResolvedValue([bv('bv-a', { memberState: 'detached', copysetId: undefined }), bv('bv-b', { memberState: 'detached', copysetId: undefined })])
       await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS)
 

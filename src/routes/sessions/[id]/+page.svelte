@@ -1014,10 +1014,10 @@
       </div>
     {/if}
 
-    <!-- Gateway and Latency sections each self-gate on metric presence;
-         previously they were nested under the {#if m.reads !== undefined}
-         metrics gate, which would hide an RPC/FUSE latency table if a
-         heartbeat shipped without the bulk I/O counters. -->
+    <!-- Gateway and Latency sections each self-gate on metric presence,
+         independent of the {#if m.reads !== undefined} gate, so an RPC/FUSE
+         latency table still shows when a heartbeat ships without the bulk
+         I/O counters. -->
     <!-- Gateway Activity (embedded per-volume S3 / WebHDFS gateway). -->
     <!-- Present only when the client reported gateway counters; mount-only sessions skip. -->
     {@const gwMetrics = getGatewayMetrics(m)}

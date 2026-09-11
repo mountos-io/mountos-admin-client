@@ -132,7 +132,7 @@
   const secretKeyPlaceholder = $derived(getProvider(providerType)?.secretKeyPlaceholder ?? 'Secret key')
   const accessKeyReadonly = $derived(!!getProvider(providerType)?.regionDrivesAccessKey)
 
-  // Azure is now a valid backing store for both object and hybrid storage.
+  // Azure is a valid backing store for both object and hybrid storage.
   const providerOptionsForContext = $derived(PROVIDER_OPTIONS)
 
   const objectStoreReady = $derived(

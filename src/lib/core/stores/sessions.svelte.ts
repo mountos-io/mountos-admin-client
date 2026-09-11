@@ -46,7 +46,7 @@ let showInactive = $state(true)
 let displayPage = $state(1)
 let expanded = $state<Set<number>>(new Set())
 
-// Stable option lists (static; previously derived from full dataset client-side).
+// Stable option lists (static, independent of the fetched dataset).
 // Keeping these static avoids an unfiltered round-trip just to populate dropdowns.
 // Filter values match the ClientSessionStatus enum exposed by the SDK.
 // Internal numeric codes stay server-side. "connected" is omitted: the
@@ -263,9 +263,9 @@ async function getSession(id: number): Promise<ClientSession> {
 
 export function useSessions() {
   return {
-    // `allSessions` used to be the full dataset; it now exposes the current
-    // server page so existing call sites (summary, filter, loading checks)
-    // keep working without a deeper refactor of the page component.
+    // `allSessions` exposes the current server page, not the full dataset,
+    // so existing call sites (summary, filter, loading checks) keep working
+    // without a deeper refactor of the page component.
     get allSessions() { return pageSessions },
     get displaySessions() { return pageSessions },
     get filtered() { return pageSessions },

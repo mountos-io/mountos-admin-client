@@ -53,7 +53,7 @@ const SLUG_TO_RESOURCE: Record<string, string> = {
 const CREATE_SUFFIXES = ['/create', '/add']
 
 // Resources not scoped to an account: exempt from the accountId-on-list
-// requirement. Regions, storages and clusters are now account-scoped (appserv
+// requirement. Regions, storages and clusters are account-scoped (appserv
 // requires accountId), so nothing is exempt.
 const GLOBAL_RESOURCES = new Set<string>([])
 const VOLUME_ID_PATH = /^\/api\/v1\/volumes\/(\d+)/
