@@ -6,6 +6,7 @@
     CardTitle,
   } from "$lib/components/ui/card";
   import { Badge } from "$lib/components/ui/badge";
+  import { Button } from "$lib/components/ui/button";
   import {
     Table,
     TableBody,
@@ -49,12 +50,15 @@
   import BlockservStats from "$lib/components/shared/BlockservStats.svelte";
   import PfkitNetworkStats from "$lib/components/shared/PfkitNetworkStats.svelte";
   import { parseFlowStats } from "$lib/core/utils/pfkitNetwork";
+  import { copyText } from "$lib/core/utils/clipboard";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ChevronsDownUp from "@lucide/svelte/icons/chevrons-down-up";
   import ChevronsUpDown from "@lucide/svelte/icons/chevrons-up-down";
   import ArrowUp from "@lucide/svelte/icons/arrow-up";
   import ArrowDown from "@lucide/svelte/icons/arrow-down";
   import TriangleAlert from "@lucide/svelte/icons/triangle-alert";
+  import Copy from "@lucide/svelte/icons/copy";
+  import Check from "@lucide/svelte/icons/check";
 
   import type { Snippet } from 'svelte';
 
@@ -105,6 +109,17 @@
   let metricMode = $state<MetricMode>("percentiles");
   let sortCol = $state<SortCol>("avgLatencyUs");
   let sortDir = $state<SortDir>("desc");
+
+  const PFKIT_INSTALL_CMD = "curl -fsSL https://mountos.sh/install | bash -s -- --pkg mountos-pfkit";
+  let pfkitCmdCopied = $state(false);
+  let pfkitCmdCopyTimer: ReturnType<typeof setTimeout>;
+  async function copyPfkitInstallCmd() {
+    if (await copyText(PFKIT_INSTALL_CMD)) {
+      pfkitCmdCopied = true;
+      clearTimeout(pfkitCmdCopyTimer);
+      pfkitCmdCopyTimer = setTimeout(() => { pfkitCmdCopied = false; }, 1500);
+    }
+  }
 
   function expandAll(groups: HistogramGroup[], sectionKey: string) {
     const suffix = layout === "table" ? "-tbl-" : "-";
@@ -390,7 +405,7 @@
       count: s.groups.length,
       uiId: `sec-${s.name.toLowerCase().replace(/\s+/g, '-')}`,
     })),
-    ...(networkStats ? [{ id: 'packets', label: 'Packets', count: 0, uiId: 'packets' }] : []),
+    { id: 'packets', label: 'Packets', count: 0, uiId: 'packets' },
     ...(alertsTab ? [{ id: 'alerts', label: 'Alerts', count: alertsCount, uiId: 'alerts' }] : []),
     ...(activityTab ? [{ id: 'activity', label: 'Activity Log', count: 0, uiId: 'activity' }] : []),
     ...(workerEventsTab ? [{ id: 'worker-events', label: 'Worker Events', count: 0, uiId: 'worker-events' }] : []),
@@ -629,23 +644,35 @@
     </div>
   {/if}
 
-  {#if activeTab === 'packets' && networkStats}
+  {#if activeTab === 'packets'}
     <div role="tabpanel" id="panel-packets" aria-labelledby="tab-packets">
       <!-- "Packets" is a category, not a single fixed view: Network is the first entrant.
            A future sibling (e.g. retransmit/DNS views) is another card here, or its own
            sub-tab if the category grows enough to need one. -->
-      {#if networkStats.running}
+      {#if networkStats?.running}
         <PfkitNetworkStats stats={networkStats} />
       {:else}
         <Card cornerBrackets={false}>
           <CardHeader><CardTitle class="text-base">Network</CardTitle></CardHeader>
-          <CardContent class="pt-0 space-y-1">
-            <p class="text-sm text-muted-foreground">pfkit is not running on this node.</p>
-            <p class="text-sm text-muted-foreground">
-              pfkit is an optional add-on. It reports real OS-level network data per peer.
-              It does not run by default. Install it from mountos.sh, then start it on this
-              host to see data here.
-            </p>
+          <CardContent class="pt-0 space-y-2">
+            <div class="inline-flex w-fit items-center gap-2 rounded-md border border-warning/30 bg-warning/15 px-3 py-2 text-sm text-warning">
+              <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
+              <p><code class="font-mono">pfkit</code> is not running on this node.</p>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <code class="font-mono text-sm break-all bg-muted rounded px-2 py-1">{PFKIT_INSTALL_CMD}</code>
+              <Button
+                variant="ghost" size="icon" class="h-6 w-6 min-h-[44px] min-w-[44px] sm:min-h-6 sm:min-w-6 shrink-0"
+                aria-label={pfkitCmdCopied ? 'Install command copied' : 'Copy install command'}
+                onclick={copyPfkitInstallCmd}
+              >
+                {#if pfkitCmdCopied}
+                  <Check class="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+                {:else}
+                  <Copy class="h-3.5 w-3.5" aria-hidden="true" />
+                {/if}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       {/if}
