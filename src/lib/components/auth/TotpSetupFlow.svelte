@@ -52,8 +52,8 @@
   }
 
   function downloadBackupCodes() {
-    const header = 'mountOS Admin backup codes\nEach code can be used once, in place of a 6-digit authenticator code.\n\n'
-    downloadTextFile('mountos-admin-backup-codes.txt', header + backupCodes.join('\n') + '\n')
+    const header = 'mountOS Dashboard backup codes\nEach code can be used once, in place of a 6-digit authenticator code.\n\n'
+    downloadTextFile('mountos-dashboard-backup-codes.txt', header + backupCodes.join('\n') + '\n')
   }
 
   async function handleSubmit(e: Event) {

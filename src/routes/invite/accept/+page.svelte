@@ -55,12 +55,12 @@
   }
 </script>
 
-<svelte:head><title>Accept invite · mountOS Admin</title></svelte:head>
+<svelte:head><title>Accept invite · mountOS Dashboard</title></svelte:head>
 
 <div class="flex h-screen items-center justify-center">
   <Card cornerBrackets class="w-full max-w-md">
     <CardHeader>
-      <CardTitle>Welcome to mountOS Admin</CardTitle>
+      <CardTitle>Welcome to mountOS Dashboard</CardTitle>
       <CardDescription>
         {#if step === 'set_password'}Set a password to activate your account.{:else}Two-factor setup required for this account.{/if}
       </CardDescription>

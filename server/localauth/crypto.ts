@@ -57,7 +57,7 @@ export function decryptTotpSecret(stored: string, encKeyB64: string): string {
   return Buffer.concat([decipher.update(enc), decipher.final()]).toString('utf-8')
 }
 
-const TOTP_ISSUER = 'mountOS Admin'
+const TOTP_ISSUER = 'mountOS Dashboard'
 
 export function generateTotpSecret(): string {
   return new OTPAuth.Secret({ size: 20 }).base32

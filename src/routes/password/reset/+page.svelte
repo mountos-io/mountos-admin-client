@@ -33,7 +33,7 @@
   }
 </script>
 
-<svelte:head><title>Reset password · mountOS Admin</title></svelte:head>
+<svelte:head><title>Reset password · mountOS Dashboard</title></svelte:head>
 
 <div class="flex h-screen items-center justify-center">
   <Card cornerBrackets class="w-full max-w-md">

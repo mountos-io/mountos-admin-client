@@ -105,7 +105,7 @@
     <CardHeader>
       <CardTitle>Sign in</CardTitle>
       <CardDescription>
-        {#if step === 'password'}mountOS Admin
+        {#if step === 'password'}mountOS Dashboard
         {:else if step === 'mfa'}Verify it's you
         {:else}Set up two-factor authentication
         {/if}
