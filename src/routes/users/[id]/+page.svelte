@@ -3,21 +3,23 @@
   import { goto } from '$app/navigation'
   import { useUsers } from '$lib/core/stores/users.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { ROLE } from '$lib/core/auth/adapter'
+  import { ROLE, isAdmin } from '$lib/core/auth/adapter'
   import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
   import { Button } from '$lib/components/ui/button'
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
+  import TextTooltip from '$lib/components/shared/TextTooltip.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
-  import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
+  import { showErrorToast, showSuccessToast, showWarningToast, handleApiError } from '$lib/core/utils/toast'
   import { isUsernameValid, usernameErrorMessage } from '$lib/core/utils/validation'
   import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
   import type { User } from '$lib/core/api/types'
+  import { fetchLocalLoginEnabled, localAuthApi, type PortalInviteStatus } from '$lib/core/api/localauth'
 
   const store = useUsers()
   const auth = useAuth()
@@ -34,6 +36,64 @@
   let user = $state<User | null>(null)
   let loading = $state(true)
   const dialog = useConfirmDialog()
+
+  let localLoginEnabled = $state(false)
+  let inviteStatus = $state<PortalInviteStatus | null>(null)
+  let inviteRole = $state<string | undefined>(undefined)
+  let inviteEmailVerified = $state(false)
+  let inviteTotpEnabled = $state(false)
+  let inviteSubmitting = $state(false)
+  fetchLocalLoginEnabled().then((v) => { localLoginEnabled = v })
+
+  const portalRoleTooltip = $derived(
+    inviteRole ? `This email's portal sign-in is a ${inviteRole} dashboard account, separate from this account-scoped user record. It no longer carries this account's data scope.` : '',
+  )
+
+  $effect(() => {
+    if (localLoginEnabled && user?.email && inviteStatus === null) {
+      localAuthApi.inviteStatus(user.email).then((r) => {
+        inviteStatus = r.inviteStatus
+        inviteRole = r.role
+        inviteEmailVerified = r.emailVerified
+        inviteTotpEnabled = r.totpEnabled
+      }).catch(() => {})
+    }
+  })
+
+  async function sendInvite() {
+    if (!user) return
+    inviteSubmitting = true
+    try {
+      const res = await localAuthApi.inviteUser({ email: user.email, name: user.name || user.username, accountId: user.accountId, appservUserId: user.id })
+      inviteStatus = 'invited'
+      if (res.emailSent) {
+        showSuccessToast('Portal invite sent')
+      } else {
+        showWarningToast('Portal invite created, but the email failed to send', { description: 'Resend it once email delivery is fixed.' })
+      }
+    } catch (err: unknown) {
+      handleApiError(err, 'Failed to send portal invite')
+    } finally {
+      inviteSubmitting = false
+    }
+  }
+
+  async function resendInvite() {
+    if (!user) return
+    inviteSubmitting = true
+    try {
+      const res = await localAuthApi.resendInvite(user.email)
+      if (res.emailSent) {
+        showSuccessToast('Portal invite resent')
+      } else {
+        showWarningToast('Invite refreshed, but the email failed to send', { description: 'Check the EMAIL_PROVIDER configuration on the server.' })
+      }
+    } catch (err: unknown) {
+      handleApiError(err, 'Failed to resend portal invite')
+    } finally {
+      inviteSubmitting = false
+    }
+  }
 
   let editing = $state(false)
   let editUsername = $state('')
@@ -104,6 +164,9 @@
     <Button variant="ghost" size="sm" href="/users" class="min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0" aria-label="Back to users"><ArrowLeft class="h-4 w-4" /></Button>
     <h1 class="text-2xl font-bold tracking-tight">{user?.username ?? 'User'}</h1>
     {#if user}<Badge variant="outline" style="border-color: var(--pastel-user); color: var(--pastel-user-text)">User</Badge>{/if}
+    {#if inviteStatus === 'active' && inviteRole && isAdmin(inviteRole)}
+      <TextTooltip text={portalRoleTooltip}><Badge variant="primary">{inviteRole}</Badge></TextTooltip>
+    {/if}
   </div>
 
   {#if loading}
@@ -171,6 +234,31 @@
                 <dt class="text-sm font-medium text-muted-foreground">Display Name</dt>
                 <dd class="mt-1 text-sm">{user.name || '·'}</dd>
               </div>
+              {#if localLoginEnabled && inviteStatus === 'active'}
+                <div>
+                  <dt class="text-sm font-medium text-muted-foreground">Portal Login</dt>
+                  <dd class="mt-1 flex flex-wrap gap-1.5">
+                    {#if inviteRole}
+                      {#if isAdmin(inviteRole)}
+                        <TextTooltip text={portalRoleTooltip}><Badge variant="outline">{inviteRole}</Badge></TextTooltip>
+                      {:else}
+                        <Badge variant="outline">{inviteRole}</Badge>
+                      {/if}
+                    {/if}
+                    <Badge variant={inviteEmailVerified ? 'success' : 'warning'}>
+                      {inviteEmailVerified ? 'Email verified' : 'Email not verified'}
+                    </Badge>
+                    <Badge variant={inviteTotpEnabled ? 'success' : 'warning'}>
+                      {inviteTotpEnabled ? '2FA enabled' : '2FA not enabled'}
+                    </Badge>
+                  </dd>
+                </div>
+              {:else if localLoginEnabled && inviteStatus === 'disabled'}
+                <div>
+                  <dt class="text-sm font-medium text-muted-foreground">Portal Login</dt>
+                  <dd class="mt-1"><Badge variant="destructive">Disabled</Badge></dd>
+                </div>
+              {/if}
             </dl>
           </CardContent>
           {#if auth.can('users', 'update')}
@@ -185,6 +273,17 @@
                   async () => { await store.revokeAdminSessions(user!.username!); showSuccessToast('Admin sessions revoked') },
                   'destructive',
                 )}>Revoke Sessions</Button>
+              {/if}
+              {#if localLoginEnabled}
+                {#if inviteStatus === 'none'}
+                  <Button variant="outline" size="sm" onclick={sendInvite} disabled={inviteSubmitting}>
+                    {inviteSubmitting ? 'Sending...' : 'Send Portal Invite'}
+                  </Button>
+                {:else if inviteStatus === 'invited'}
+                  <Button variant="outline" size="sm" onclick={resendInvite} disabled={inviteSubmitting}>
+                    {inviteSubmitting ? 'Sending...' : 'Resend Portal Invite'}
+                  </Button>
+                {/if}
               {/if}
             </CardFooter>
           {/if}

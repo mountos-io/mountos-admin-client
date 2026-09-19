@@ -23,6 +23,27 @@ function validateLabel(label: unknown): string {
   return label
 }
 
+// Default label at registration time. A constant (e.g. the RP name) is
+// useless once a second credential exists — every row reads identically in
+// the settings list. A device/browser summary at least tells rows apart;
+// the list UI additionally shows each credential's own createdAt so two
+// passkeys registered from the same browser still differ visibly.
+export function summarizeUserAgent(userAgent: string | undefined): string {
+  if (!userAgent) return 'Unknown device'
+  const browser = /Edg\//.test(userAgent) ? 'Edge'
+    : /Chrome\//.test(userAgent) ? 'Chrome'
+    : /Firefox\//.test(userAgent) ? 'Firefox'
+    : /Safari\//.test(userAgent) ? 'Safari'
+    : 'Browser'
+  const os = /iPhone|iPad/.test(userAgent) ? 'iOS'
+    : /Android/.test(userAgent) ? 'Android'
+    : /Mac OS X/.test(userAgent) ? 'macOS'
+    : /Windows/.test(userAgent) ? 'Windows'
+    : /Linux/.test(userAgent) ? 'Linux'
+    : 'device'
+  return `${browser} on ${os}`
+}
+
 // Lua scripts for atomic credential mutations
 const LUA_DELETE = `
 local raw = redis.call('GET', KEYS[1])

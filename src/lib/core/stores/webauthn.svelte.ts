@@ -28,7 +28,12 @@ async function api(path: string, method = 'GET', body?: unknown, extraHeaders?: 
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
-    throw new Error(data.message ?? `WebAuthn request failed (${res.status})`)
+    const err = new Error(data.message ?? `WebAuthn request failed (${res.status})`)
+    // Callers that need to distinguish a step-up challenge (e.g. deleting the
+    // credential that would itself satisfy it) read this off the error rather
+    // than string-matching the message.
+    Object.assign(err, { status: data.status as string | undefined, httpStatus: res.status })
+    throw err
   }
   const text = await res.text()
   return text ? JSON.parse(text) : null

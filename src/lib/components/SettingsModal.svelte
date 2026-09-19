@@ -9,6 +9,8 @@
   import { Button } from '$lib/components/ui/button'
   import { Input } from '$lib/components/ui/input'
   import { Textarea } from '$lib/components/ui/textarea'
+  import { Select } from '$lib/components/ui/select'
+  import Label from '$lib/components/ui/label/label.svelte'
   import { cn, isMacPlatform } from '$lib/utils'
   import Sun from '@lucide/svelte/icons/sun'
   import Moon from '@lucide/svelte/icons/moon'
@@ -20,13 +22,22 @@
   import Info from '@lucide/svelte/icons/info'
   import ScrollText from '@lucide/svelte/icons/scroll-text'
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
+  import KeyRound from '@lucide/svelte/icons/key-round'
+  import UserPlus from '@lucide/svelte/icons/user-plus'
   import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { ROLE } from '$lib/core/auth/adapter'
   import { useLicense } from '$lib/core/stores/license.svelte'
   import { useReleases, severityClass, severityLabel, semverLess, type ReleaseUnit } from '$lib/core/stores/releases.svelte'
   import { Badge } from '$lib/components/ui/badge'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
   import { formatDate, formatRelative } from '$lib/core/utils/format'
+  import { localAuthApi, fetchLocalLoginEnabled, type TotpStatus } from '$lib/core/api/localauth'
+  import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
+  import KeyIcon from '@lucide/svelte/icons/key'
+  import TrashIcon from '@lucide/svelte/icons/trash-2'
+  import { showSuccessToast, showWarningToast, handleApiError } from '$lib/core/utils/toast'
+  import TotpSetupFlow from '$lib/components/auth/TotpSetupFlow.svelte'
 
   const prefs = usePreferences()
   const modal = useSettingsModal()
@@ -34,12 +45,241 @@
   const auth = useAuth()
   const licenseStore = useLicense()
   const releases = useReleases()
+  const webauthn = useWebAuthn()
 
   $effect(() => {
     if (modal.tab === 'updates' && !releases.loaded && !releases.loading) {
       releases.fetchReleases().catch(() => { /* rendered as the error state below */ })
     }
   })
+
+  // Whether the native-login extension is active at all. A cheap, unauthenticated
+  // check, so it's fine to fire once at modal init rather than gate it on tab visits.
+  let localLoginEnabled = $state(false)
+  fetchLocalLoginEnabled().then((v) => { localLoginEnabled = v })
+
+  // Security tab: only once we know the extension is on, check whether THIS
+  // signed-in identity is a portal account (a provider-JWT admin has no
+  // portal_users row, so nothing here applies to it) and its TOTP state.
+  let totpStatus = $state<TotpStatus | null>(null)
+  let totpStatusLoading = $state(false)
+
+  type SecurityStep = 'idle' | 'confirm_current' | 'setup'
+  let securityStep = $state<SecurityStep>('idle')
+  let securityCode = $state('')
+  let securityError = $state('')
+  let securitySubmitting = $state(false)
+  let pendingSecret = $state('')
+  let pendingUri = $state('')
+  let rotating = false
+
+  type BackupStep = 'idle' | 'confirm' | 'show'
+  let backupStep = $state<BackupStep>('idle')
+  let backupCode = $state('')
+  let backupError = $state('')
+  let backupSubmitting = $state(false)
+  let newBackupCodes = $state<string[]>([])
+
+  // Fetched as soon as we know the extension is on (not lazily on tab-open):
+  // whether the tab itself should be offered depends on `isPortalUser`.
+  $effect(() => {
+    if (localLoginEnabled && totpStatus === null && !totpStatusLoading) {
+      totpStatusLoading = true
+      localAuthApi.totpStatus()
+        .then((s) => { totpStatus = s })
+        .catch(() => { totpStatus = { isPortalUser: false, totpEnabled: false } })
+        .finally(() => { totpStatusLoading = false })
+    }
+  })
+
+  // Fetch exactly once per modal lifetime. A guard based on the *result*
+  // (e.g. credentials.length === 0) instead of "have we already tried" stays
+  // true forever for anyone with zero passkeys, since that's also the state
+  // right after a successful fetch — the effect would refire every time its
+  // own fetch resolves, looping indefinitely and exhausting the rate limit
+  // on GET /api/webauthn/credentials within a second of opening the tab.
+  let webauthnFetchStarted = false
+  $effect(() => {
+    if (modal.tab === 'security' && !webauthnFetchStarted) {
+      webauthnFetchStarted = true
+      webauthn.fetchCredentials().catch(() => { /* leaves the section empty; not fatal */ })
+    }
+  })
+
+  let addingPasskey = $state(false)
+
+  async function handleAddPasskey() {
+    addingPasskey = true
+    try {
+      await webauthn.registerCredential()
+      showSuccessToast('Passkey added')
+    } catch (e: unknown) {
+      handleApiError(e, 'Could not add passkey')
+    } finally {
+      addingPasskey = false
+    }
+  }
+
+  // Confirmed with the account's own TOTP/backup code rather than a fresh
+  // WebAuthn ceremony (the generic step-up gate on DELETE
+  // /api/webauthn/credentials/:id): if this passkey is the one that's no
+  // longer reachable — lost phone, broken sync — WebAuthn step-up is a dead
+  // end, since it demands the very credential you're trying to remove.
+  let passkeyDeleteTarget = $state<{ id: string; label: string } | null>(null)
+  let passkeyDeleteCode = $state('')
+  let passkeyDeleteError = $state('')
+  let passkeyDeleteSubmitting = $state(false)
+
+  function startDeletePasskey(cred: { id: string; label: string }) {
+    passkeyDeleteTarget = cred
+    passkeyDeleteCode = ''
+    passkeyDeleteError = ''
+  }
+
+  function cancelDeletePasskey() {
+    passkeyDeleteTarget = null
+  }
+
+  async function confirmDeletePasskey(e: Event) {
+    e.preventDefault()
+    if (!passkeyDeleteTarget) return
+    passkeyDeleteSubmitting = true
+    passkeyDeleteError = ''
+    try {
+      await localAuthApi.deletePasskey(passkeyDeleteTarget.id, passkeyDeleteCode)
+      await webauthn.fetchCredentials()
+      showSuccessToast('Passkey removed')
+      passkeyDeleteTarget = null
+    } catch (e: unknown) {
+      passkeyDeleteError = e instanceof Error ? e.message : 'Could not remove passkey'
+    } finally {
+      passkeyDeleteSubmitting = false
+    }
+  }
+
+  function startEnroll() {
+    securityError = ''
+    rotating = false
+    securitySubmitting = true
+    localAuthApi.totpEnrollStart()
+      .then((res) => { pendingSecret = res.secretBase32; pendingUri = res.otpauthUri; securityStep = 'setup' })
+      .catch((e: unknown) => { securityError = e instanceof Error ? e.message : 'Failed to start enrollment' })
+      .finally(() => { securitySubmitting = false })
+  }
+
+  function startRotate() {
+    securityError = ''
+    securityCode = ''
+    securityStep = 'confirm_current'
+  }
+
+  async function submitCurrentCode(e: Event) {
+    e.preventDefault()
+    securityError = ''
+    securitySubmitting = true
+    rotating = true
+    try {
+      const res = await localAuthApi.totpEnrollStart(securityCode)
+      pendingSecret = res.secretBase32
+      pendingUri = res.otpauthUri
+      securityStep = 'setup'
+    } catch (e: unknown) {
+      securityError = e instanceof Error ? e.message : 'Invalid code'
+    } finally {
+      securitySubmitting = false
+    }
+  }
+
+  async function finishEnroll() {
+    securityStep = 'idle'
+    pendingSecret = ''
+    pendingUri = ''
+    if (rotating) {
+      // Rotation revokes every session, including this one, by design (see
+      // server/localauth/routes.ts) — sign out here rather than let the next
+      // API call surface as a confusing 401.
+      showSuccessToast('Two-factor authentication updated. Please sign in again.')
+      await auth.signOut()
+      return
+    }
+    showSuccessToast('Two-factor authentication enabled')
+    totpStatus = { isPortalUser: true, totpEnabled: true }
+  }
+
+  function cancelSecurityStep() {
+    securityStep = 'idle'
+    securityError = ''
+  }
+
+  function startBackupRegenerate() {
+    backupError = ''
+    backupCode = ''
+    backupStep = 'confirm'
+  }
+
+  async function submitBackupRegenerate(e: Event) {
+    e.preventDefault()
+    backupError = ''
+    backupSubmitting = true
+    try {
+      const res = await localAuthApi.regenerateBackupCodes(backupCode)
+      newBackupCodes = res.backupCodes
+      backupStep = 'show'
+    } catch (e: unknown) {
+      backupError = e instanceof Error ? e.message : 'Invalid code'
+    } finally {
+      backupSubmitting = false
+    }
+  }
+
+  function finishBackupRegenerate() {
+    backupStep = 'idle'
+    newBackupCodes = []
+  }
+
+  let inviteEmail = $state('')
+  let inviteName = $state('')
+  let inviteRole = $state<string>(ROLE.l2admin)
+  let inviteSubmitting = $state(false)
+
+  async function handleInviteAdmin(e: Event) {
+    e.preventDefault()
+    inviteSubmitting = true
+    try {
+      const res = await localAuthApi.inviteAdmin({ email: inviteEmail.trim(), name: inviteName.trim(), role: inviteRole })
+      if (res.emailSent) {
+        showSuccessToast(`Invite sent to ${inviteEmail.trim()}`)
+      } else {
+        showWarningToast('Invite created, but the email failed to send', { description: 'Check the EMAIL_PROVIDER configuration on the server.' })
+      }
+      inviteEmail = ''
+      inviteName = ''
+      inviteRole = ROLE.l2admin
+    } catch (e: unknown) {
+      handleApiError(e, 'Failed to send invite')
+    } finally {
+      inviteSubmitting = false
+    }
+  }
+
+  let switchEmail = $state('')
+  let switchRole = $state<string>(ROLE.l2admin)
+  let switchSubmitting = $state(false)
+
+  async function handleSwitchRole(e: Event) {
+    e.preventDefault()
+    switchSubmitting = true
+    try {
+      await localAuthApi.switchAdminRole({ email: switchEmail.trim(), role: switchRole })
+      showSuccessToast(`${switchEmail.trim()} now has ${switchRole} access`)
+      switchEmail = ''
+      switchRole = ROLE.l2admin
+    } catch (e: unknown) {
+      handleApiError(e, 'Failed to update role')
+    } finally {
+      switchSubmitting = false
+    }
+  }
 
   // A release unit covers the binaries that must never drift apart (dataserv and gcserv
   // share `dbserv` because they migrate the same database). Separate units that shipped
@@ -127,8 +367,10 @@
     { id: 'appearance', label: 'Appearance', icon: Palette },
     { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal },
     { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
+    ...(totpStatus?.isPortalUser ? [{ id: 'security' as SettingsTab, label: 'Security', icon: KeyRound }] : []),
     ...(!auth.isUserRole ? [{ id: 'license' as SettingsTab, label: 'License', icon: ShieldCheck }] : []),
     ...(!auth.isUserRole ? [{ id: 'updates' as SettingsTab, label: 'Updates', icon: RefreshCw }] : []),
+    ...(localLoginEnabled && auth.user?.role === ROLE.superadmin ? [{ id: 'invite-admin' as SettingsTab, label: 'Invite Admin', icon: UserPlus }] : []),
     { id: 'about', label: 'About', icon: Info },
   ])
 
@@ -512,6 +754,145 @@
             {/each}
           </div>
 
+        {:else if modal.tab === 'security'}
+          <div class="space-y-6">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-medium">Two-Factor Authentication</h3>
+                {#if totpStatus?.totpEnabled}
+                  <Badge variant="success">Enabled</Badge>
+                {:else}
+                  <Badge variant="outline">Not enabled</Badge>
+                {/if}
+              </div>
+
+              {#if securityStep === 'idle'}
+                {#if totpStatus?.totpEnabled}
+                  <p class="text-sm text-muted-foreground">
+                    Rotating replaces your current authenticator and backup codes, and signs you out
+                    everywhere. You'll need your current code to confirm.
+                  </p>
+                  <Button variant="outline" size="sm" onclick={startRotate} disabled={securitySubmitting}>Rotate 2FA</Button>
+                {:else}
+                  <p class="text-sm text-muted-foreground">Add an authenticator app as a second sign-in factor.</p>
+                  <Button variant="primary" size="sm" onclick={startEnroll} disabled={securitySubmitting}>
+                    {securitySubmitting ? 'Starting...' : 'Enable two-factor authentication'}
+                  </Button>
+                {/if}
+                {#if securityError}<p class="text-destructive text-sm" role="alert">{securityError}</p>{/if}
+              {:else if securityStep === 'confirm_current'}
+                <form onsubmit={submitCurrentCode} class="space-y-3">
+                  <div class="space-y-2">
+                    <Label for="rotate-code">Current authenticator or backup code</Label>
+                    <Input id="rotate-code" bind:value={securityCode} required autocomplete="one-time-code" placeholder="123456" class="h-14 text-center text-2xl font-mono tracking-[0.3em]" />
+                  </div>
+                  {#if securityError}<p class="text-destructive text-sm" role="alert">{securityError}</p>{/if}
+                  <div class="flex gap-2">
+                    <Button type="submit" size="sm" disabled={securitySubmitting}>{securitySubmitting ? 'Verifying...' : 'Continue'}</Button>
+                    <Button type="button" variant="outline" size="sm" onclick={cancelSecurityStep}>Cancel</Button>
+                  </div>
+                </form>
+              {:else if securityStep === 'setup'}
+                <TotpSetupFlow
+                  secretBase32={pendingSecret}
+                  otpauthUri={pendingUri}
+                  required={false}
+                  onVerify={(code) => localAuthApi.totpEnrollVerify(code)}
+                  onComplete={finishEnroll}
+                />
+              {/if}
+            </div>
+
+            {#if totpStatus?.totpEnabled}
+              <div class="space-y-3 border-t border-border pt-5">
+                <h3 class="text-sm font-medium">Backup Codes</h3>
+                {#if backupStep === 'idle'}
+                  <p class="text-sm text-muted-foreground">
+                    Regenerating invalidates every existing backup code. Store the new ones somewhere safe.
+                  </p>
+                  <Button variant="outline" size="sm" onclick={startBackupRegenerate}>Regenerate backup codes</Button>
+                {:else if backupStep === 'confirm'}
+                  <form onsubmit={submitBackupRegenerate} class="space-y-3">
+                    <div class="space-y-2">
+                      <Label for="backup-code">Current authenticator or backup code</Label>
+                      <Input id="backup-code" bind:value={backupCode} required autocomplete="one-time-code" placeholder="123456" class="h-14 text-center text-2xl font-mono tracking-[0.3em]" />
+                    </div>
+                    {#if backupError}<p class="text-destructive text-sm" role="alert">{backupError}</p>{/if}
+                    <div class="flex gap-2">
+                      <Button type="submit" size="sm" disabled={backupSubmitting}>{backupSubmitting ? 'Verifying...' : 'Regenerate'}</Button>
+                      <Button type="button" variant="outline" size="sm" onclick={() => backupStep = 'idle'}>Cancel</Button>
+                    </div>
+                  </form>
+                {:else}
+                  <p class="text-sm text-muted-foreground">
+                    These replace your old backup codes. They will not be shown again.
+                  </p>
+                  <ul class="grid grid-cols-2 gap-2 rounded-md border p-3 font-mono text-sm" aria-label="Backup codes">
+                    {#each newBackupCodes as bc (bc)}<li>{bc}</li>{/each}
+                  </ul>
+                  <Button variant="primary" size="sm" onclick={finishBackupRegenerate}>Done</Button>
+                {/if}
+              </div>
+            {/if}
+
+            <div class="space-y-3 border-t border-border pt-5">
+              <h3 class="text-sm font-medium">Passkeys</h3>
+              <p class="text-sm text-muted-foreground">
+                Sign in with a device passkey instead of an authenticator code.
+              </p>
+              {#if webauthn.credentials.length > 0}
+                <ul class="space-y-2">
+                  {#each webauthn.credentials as cred (cred.id)}
+                    <li class="flex items-center justify-between gap-2 rounded-md border p-2.5">
+                      <span class="flex items-center gap-2 text-sm">
+                        <KeyIcon class="size-4 text-muted-foreground" aria-hidden="true" />
+                        <span>
+                          {cred.label}
+                          <span class="block text-xs text-muted-foreground">Added {formatDate(cred.createdAt)}</span>
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onclick={() => startDeletePasskey(cred)}
+                        class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-8 sm:min-w-8 opacity-70 hover:opacity-100 hover:text-destructive transition-opacity"
+                        title="Remove"
+                        aria-label={`Remove ${cred.label}`}
+                      >
+                        <TrashIcon class="size-4" aria-hidden="true" />
+                      </button>
+                    </li>
+                  {/each}
+                </ul>
+              {/if}
+              {#if passkeyDeleteTarget}
+                <form onsubmit={confirmDeletePasskey} class="space-y-3 rounded-md border p-3">
+                  <div class="space-y-2">
+                    <Label for="passkey-delete-code">Confirm with your authenticator or backup code to remove "{passkeyDeleteTarget.label}"</Label>
+                    <Input
+                      id="passkey-delete-code"
+                      bind:value={passkeyDeleteCode}
+                      required
+                      autocomplete="one-time-code"
+                      placeholder="123456"
+                      class="h-14 text-center text-2xl font-mono tracking-[0.3em]"
+                    />
+                  </div>
+                  {#if passkeyDeleteError}<p class="text-destructive text-sm" role="alert">{passkeyDeleteError}</p>{/if}
+                  <div class="flex gap-2">
+                    <Button type="submit" variant="destructive" size="sm" disabled={passkeyDeleteSubmitting}>
+                      {passkeyDeleteSubmitting ? 'Removing...' : 'Remove passkey'}
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onclick={cancelDeletePasskey}>Cancel</Button>
+                  </div>
+                </form>
+              {:else}
+                <Button variant="outline" size="sm" onclick={handleAddPasskey} disabled={addingPasskey}>
+                  {addingPasskey ? 'Waiting for device...' : 'Add a passkey'}
+                </Button>
+              {/if}
+            </div>
+          </div>
+
         {:else if modal.tab === 'license'}
           {#if licenseStore.license}
             {@const lic = licenseStore.license}
@@ -768,6 +1149,73 @@
                 </TableBody>
               </Table>
             {/if}
+          </div>
+
+        {:else if modal.tab === 'invite-admin'}
+          <div class="space-y-6">
+            <div class="space-y-1">
+              <h3 class="text-sm font-medium">Invite a Dashboard Operator</h3>
+              <p class="text-xs text-muted-foreground">
+                Sends a one-time invite link. The recipient sets a password and enables two-factor
+                authentication before they can sign in.
+              </p>
+            </div>
+            <form onsubmit={handleInviteAdmin} class="space-y-4">
+              <div class="space-y-2">
+                <Label for="invite-email">Email</Label>
+                <Input id="invite-email" type="email" bind:value={inviteEmail} required autocomplete="email" placeholder="operator@example.com" />
+              </div>
+              <div class="space-y-2">
+                <Label for="invite-name">Name</Label>
+                <Input id="invite-name" bind:value={inviteName} required autocomplete="name" />
+              </div>
+              <div class="space-y-2">
+                <Label id="invite-role-label" for="invite-role">Role</Label>
+                <Select
+                  id="invite-role"
+                  ariaLabelledby="invite-role-label"
+                  bind:value={inviteRole}
+                  options={[
+                    { value: ROLE.superadmin, label: 'Superadmin' },
+                    { value: ROLE.l1admin, label: 'L1 Admin' },
+                    { value: ROLE.l2admin, label: 'L2 Admin' },
+                  ]}
+                />
+              </div>
+              <Button variant="primary" type="submit" size="sm" disabled={inviteSubmitting || !inviteEmail.trim() || !inviteName.trim()}>
+                {inviteSubmitting ? 'Sending...' : 'Send Invite'}
+              </Button>
+            </form>
+
+            <div class="space-y-1 border-t border-border pt-5">
+              <h3 class="text-sm font-medium">Switch an Existing Account to Admin</h3>
+              <p class="text-xs text-muted-foreground">
+                Grants or changes admin-role access for an email that already has a portal account
+                (invited or active). This does not create a new account.
+              </p>
+            </div>
+            <form onsubmit={handleSwitchRole} class="space-y-4">
+              <div class="space-y-2">
+                <Label for="switch-email">Email</Label>
+                <Input id="switch-email" type="email" bind:value={switchEmail} required autocomplete="email" placeholder="user@example.com" />
+              </div>
+              <div class="space-y-2">
+                <Label id="switch-role-label" for="switch-role">Role</Label>
+                <Select
+                  id="switch-role"
+                  ariaLabelledby="switch-role-label"
+                  bind:value={switchRole}
+                  options={[
+                    { value: ROLE.superadmin, label: 'Superadmin' },
+                    { value: ROLE.l1admin, label: 'L1 Admin' },
+                    { value: ROLE.l2admin, label: 'L2 Admin' },
+                  ]}
+                />
+              </div>
+              <Button variant="outline" type="submit" size="sm" disabled={switchSubmitting || !switchEmail.trim()}>
+                {switchSubmitting ? 'Updating...' : 'Switch Role'}
+              </Button>
+            </form>
           </div>
 
         {:else if modal.tab === 'about'}

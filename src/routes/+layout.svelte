@@ -24,8 +24,8 @@
   const prefs = usePreferences()
 
   // Routes rendered without the auth gate or app shell: /login, plus internal
-  // tools that must be reachable before sign-in (e.g. the login-token generator).
-  const CHROMELESS_ROUTES = new Set(['/login', '/tools/generate-login-token'])
+  // tools and native-login flows that must be reachable before sign-in.
+  const CHROMELESS_ROUTES = new Set(['/login', '/tools/generate-login-token', '/invite/accept', '/password/forgot', '/password/reset'])
 
   let { children } = $props()
   let exchanging = $state(false)

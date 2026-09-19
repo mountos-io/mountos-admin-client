@@ -65,6 +65,35 @@ Provider bootstrap (`src/provider/server/bootstrap.ts`) runs before env validati
 | `MOUNTOS_UPDATE_CHECK` | Set to `off` to disable the release update check | update check enabled |
 | `PROVIDER2DASHBOARD_SIGNING_KEY` | Ed25519 private seed (base64) used only by `make generate-test-token` to mint a Provider ephemeral token for local testing | none; required for that script only |
 
+### Native Login (optional extension)
+
+Off by default. Setting `MOUNTOS_PORTAL_DATABASE_URL` enables a first-party
+username+password login path — invite-based accounts, mandatory TOTP+backup
+codes for admin roles (superadmin/l1admin/l2admin), optional TOTP for the
+`user` role, email verification (the invite-accept step itself), and password
+reset. It never changes appserv/mountos-servers: all of it lives in a new,
+separate `mountos-portal` Postgres database holding credentials only.
+
+| Variable | Description |
+|----------|-------------|
+| `MOUNTOS_PORTAL_DATABASE_URL` | Postgres connection string. Master switch — unset means this whole feature is inert. |
+| `MOUNTOS_PORTAL_PASSWORD_PEPPER` | Server-side secret mixed into every password/backup-code hash. |
+| `MOUNTOS_PORTAL_TOTP_ENC_KEY` | Base64, 32 bytes. Encrypts TOTP secrets at rest (AES-256-GCM). Generate with `openssl rand -base64 32`. |
+| `MOUNTOS_PORTAL_APP_URL` | Base URL used to build invite/reset links in emails. |
+| `EMAIL_PROVIDER` | Selects `server/localauth/email/providers/<name>.ts`. Currently: `ses`. Adding a provider is a new file in that folder, no other code changes. |
+| `EMAIL_FROM` | Provider-agnostic sender identity — must be a verified identity with the chosen provider (e.g. a domain or address verified in SES). |
+| `EMAIL_SES_REGION` | Read only when `EMAIL_PROVIDER=ses`. AWS credentials come from the SDK's standard chain (env/shared config/instance role), never a custom var. |
+
+Setup:
+```sh
+createdb -h localhost -p 5432 -U <pg-user> mountos_portal
+MOUNTOS_PORTAL_DATABASE_URL=... make portal-migrate   # never runs automatically
+SEED_ADMIN_EMAIL=you@example.com SEED_ADMIN_NAME="You" SEED_ADMIN_PASSWORD=... MOUNTOS_PORTAL_DATABASE_URL=... MOUNTOS_PORTAL_PASSWORD_PEPPER=... make seed-admin
+```
+The seeded admin can log in with password alone and enable TOTP afterward
+from settings — every other admin account, created via invite, must finish
+TOTP setup before it gets a session.
+
 ### Test Token Generation
 
 ```sh

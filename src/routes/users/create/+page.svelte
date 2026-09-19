@@ -7,10 +7,12 @@
   import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
   import Input from '$lib/components/ui/input/input.svelte'
   import Label from '$lib/components/ui/label/label.svelte'
+  import { Checkbox } from '$lib/components/ui/checkbox'
   import { Separator } from '$lib/components/ui/separator'
   import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import { showSuccessToast, showErrorToast, showWarningToast, handleApiError } from '$lib/core/utils/toast'
   import { isUsernameValid, usernameErrorMessage } from '$lib/core/utils/validation'
+  import { fetchLocalLoginEnabled, localAuthApi } from '$lib/core/api/localauth'
 
   const userStore = useUsers()
   const accountStore = useAccounts()
@@ -29,6 +31,10 @@
   let name = $state('')
   let submitting = $state(false)
 
+  let localLoginEnabled = $state(false)
+  let sendPortalInvite = $state(true)
+  fetchLocalLoginEnabled().then((v) => { localLoginEnabled = v })
+
   const usernameValid = $derived(isUsernameValid(username))
   const usernameError = $derived(usernameErrorMessage(username))
 
@@ -37,13 +43,31 @@
     if (!usernameValid || !email.trim() || !accountId) return
     submitting = true
     try {
-      await userStore.addUser({
+      const trimmedEmail = email.trim()
+      const trimmedName = name.trim()
+      const added = await userStore.addUser({
         accountId,
         username: username.trim(),
-        email: email.trim(),
-        name: name.trim() || undefined,
+        email: trimmedEmail,
+        name: trimmedName || undefined,
       })
-      showSuccessToast('User added')
+
+      if (localLoginEnabled && sendPortalInvite) {
+        try {
+          const inviteRes = await localAuthApi.inviteUser({ email: trimmedEmail, name: trimmedName || username.trim(), accountId, appservUserId: added.id })
+          if (inviteRes.emailSent) {
+            showSuccessToast('User added and portal invite sent')
+          } else {
+            showSuccessToast('User added')
+            showWarningToast('Portal invite created, but the email failed to send', { description: 'Resend it from the user\'s page once email delivery is fixed.' })
+          }
+        } catch (inviteErr: unknown) {
+          showSuccessToast('User added')
+          handleApiError(inviteErr, 'User added, but the portal invite could not be created. Resend it from the user\'s page.')
+        }
+      } else {
+        showSuccessToast('User added')
+      }
       goto('/users')
     } catch (err: unknown) {
       handleApiError(err, 'Failed to add user')
@@ -82,6 +106,10 @@
             <Label for="name">Display Name</Label>
             <Input id="name" bind:value={name} placeholder="Display name" autocomplete="name" />
           </div>
+
+          {#if localLoginEnabled}
+            <Checkbox bind:checked={sendPortalInvite} label="Send a portal sign-in invite to this email" />
+          {/if}
 
           <Separator />
 

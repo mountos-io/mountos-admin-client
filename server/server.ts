@@ -6,8 +6,7 @@ import { compress } from 'hono/compress'
 import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
 import { csrf } from 'hono/csrf'
-import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
-import type { Context } from 'hono'
+import { getCookie } from 'hono/cookie'
 import { bootstrap } from '../src/provider/server/bootstrap'
 import { providerCsrfConfig, providerCspConfig, providerStepUpRules, providerWebAuthnConfig, providerRateLimitRules, providerThrottleConfig } from '../src/provider/server/config'
 import { providerAuthzMiddleware } from '../src/provider/server/middleware'
@@ -16,12 +15,15 @@ import { dashboardAuth } from './auth'
 import { auth } from './middleware'
 import { authz } from './authz'
 import { proxy } from './proxy'
-import { WebAuthnManager } from './webauthn'
+import { WebAuthnManager, summarizeUserAgent } from './webauthn'
 import { createStepUpMiddleware } from './stepup'
 import { getReleases } from './releases'
 import { createRateLimiter } from './ratelimit'
 import { createThrottle } from './throttle'
 import { registry, metricsMiddleware, authFailuresTotal, webauthnOpsTotal } from './metrics'
+import { setTokenCookies, clearTokenCookies, enrichUserResponse, issueSession, COOKIE_SESSION, COOKIE_REFRESH } from './session'
+import { LOCAL_LOGIN_ENABLED } from './localauth/config'
+import { createLocalAuthRoutes } from './localauth/routes'
 
 await bootstrap()
 
@@ -62,21 +64,6 @@ const webauthnConfig: WebAuthnConfig = {
 }
 const webauthnManager = new WebAuthnManager(dashboardAuth.redisClient, webauthnConfig)
 const stepUpMiddleware = createStepUpMiddleware(webauthnManager, providerStepUpRules)
-
-const COOKIE_SESSION = 'mountos_session'
-const COOKIE_REFRESH = 'mountos_refresh'
-
-function setTokenCookies(c: Context, token: string, refreshToken: string) {
-  const opts = { httpOnly: true, sameSite: 'Strict' as const, path: '/', secure: process.env.NODE_ENV !== 'development' }
-  setCookie(c, COOKIE_SESSION, token, { ...opts, maxAge: dashboardAuth.sessionTTL })
-  setCookie(c, COOKIE_REFRESH, refreshToken, { ...opts, maxAge: dashboardAuth.refreshTTL })
-}
-
-function clearTokenCookies(c: Context) {
-  const opts = { httpOnly: true, sameSite: 'Strict' as const, path: '/', secure: process.env.NODE_ENV !== 'development' }
-  deleteCookie(c, COOKIE_SESSION, opts)
-  deleteCookie(c, COOKIE_REFRESH, opts)
-}
 
 const scriptHashes = await (async () => {
   try {
@@ -130,6 +117,12 @@ const rateLimiter = createRateLimiter(dashboardAuth.redisClient, {
     { prefix: '/api/auth/exchange', limit: 30, window: 60 },
     { prefix: '/api/auth/refresh', limit: 20, window: 60 },
     { prefix: '/api/webauthn', limit: 15, window: 60 },
+    { prefix: '/api/auth/local/login', limit: 10, window: 60 },
+    { prefix: '/api/auth/local/mfa', limit: 10, window: 60 },
+    { prefix: '/api/auth/local/password', limit: 5, window: 60 },
+    { prefix: '/api/auth/local/invite', limit: 20, window: 60 },
+    { prefix: '/api/auth/local/totp', limit: 10, window: 60 },
+    { prefix: '/api/auth/local/config', limit: 100, window: 60 },
   ],
   providerRules: providerRateLimitRules,
 })
@@ -147,33 +140,12 @@ app.post('/api/auth/exchange', async (c) => {
   try {
     const { token: providerToken } = await c.req.json<{ token: string }>()
     const user = await dashboardAuth.validateProviderToken(providerToken)
-    const capabilities = dashboardAuth.resolveCapabilities(user.role)
-    const [token, refreshToken] = await Promise.all([
-      dashboardAuth.signSessionToken(user),
-      dashboardAuth.signRefreshToken(user),
-    ])
-    setTokenCookies(c, token, refreshToken)
-    return c.json(await enrichUserResponse(user, { token, refreshToken }))
+    return c.json(await issueSession(c, webauthnManager, user))
   } catch {
     authFailuresTotal.inc({ type: 'provider_exchange' })
     return c.json({ status: 'failure', message: 'invalid provider token' }, 401)
   }
 })
-
-async function webauthnState(userId: string) {
-  const creds = await webauthnManager.listCredentials(userId)
-  return { enrolled: creds.length > 0, credentialCount: creds.length }
-}
-
-async function enrichUserResponse(user: AdminUser, extra: Record<string, unknown> = {}) {
-  const capabilities = dashboardAuth.resolveCapabilities(user.role)
-  const webauthn = await webauthnState(user.id)
-  const result: Record<string, unknown> = { user, capabilities, webauthn, ...extra }
-  if (user.role === ROLE.user && user.accountId != null) {
-    result.account = await dashboardAuth.fetchAccountForUser(user.accountId).catch(() => undefined)
-  }
-  return result
-}
 
 // Session verification & cookie recovery, before auth middleware
 app.get('/api/me', async (c) => {
@@ -185,7 +157,7 @@ app.get('/api/me', async (c) => {
       if (await dashboardAuth.isUserRevoked(user.username)) {
         return c.json({ status: 'failure', message: 'session revoked' }, 401)
       }
-      return c.json(await enrichUserResponse(user))
+      return c.json(await enrichUserResponse(webauthnManager, user))
     } catch {
       return c.json({ status: 'failure', message: 'invalid session token' }, 401)
     }
@@ -201,7 +173,7 @@ app.get('/api/me', async (c) => {
         return c.json({ status: 'failure', message: 'session revoked' }, 401)
       }
       const refreshCookie = getCookie(c, COOKIE_REFRESH)
-      return c.json(await enrichUserResponse(user, { token: sessionCookie, refreshToken: refreshCookie }))
+      return c.json(await enrichUserResponse(webauthnManager, user, { token: sessionCookie, refreshToken: refreshCookie }))
     } catch { /* session expired, fall through to refresh */ }
   }
 
@@ -218,7 +190,7 @@ app.get('/api/me', async (c) => {
         dashboardAuth.signRefreshToken(user),
       ])
       setTokenCookies(c, token, refreshToken)
-      return c.json(await enrichUserResponse(user, { token, refreshToken }))
+      return c.json(await enrichUserResponse(webauthnManager, user, { token, refreshToken }))
     } catch {
       clearTokenCookies(c)
     }
@@ -254,6 +226,13 @@ app.post('/api/auth/logout', async (c) => {
   return c.json({ status: 'ok' })
 })
 
+// Native username+password login extension — a no-op mount when the portal DB
+// URL isn't set, so a default deployment's behavior is unchanged.
+if (LOCAL_LOGIN_ENABLED) {
+  app.route('/', await createLocalAuthRoutes({ webauthnManager }))
+  console.log('Local login: enabled')
+}
+
 app.use('/api/*', auth)
 // Throttle only the data API; auth/me/webauthn have their own rate-limit rules
 // and must not share the per-user token bucket or page resource loads stall.
@@ -272,7 +251,7 @@ app.post('/api/webauthn/register/verify', async (c) => {
   try {
     const { response } = await c.req.json()
     const user = c.get('mountosUser')
-    const { publicKey: _, ...cred } = await webauthnManager.verifyRegistration(user.id, response, webauthnConfig.rpName)
+    const { publicKey: _, ...cred } = await webauthnManager.verifyRegistration(user.id, response, summarizeUserAgent(c.req.header('user-agent')))
     webauthnOpsTotal.inc({ op: 'register', result: 'success' })
     return c.json(cred)
   } catch (e) {

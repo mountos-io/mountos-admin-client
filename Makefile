@@ -4,7 +4,7 @@ TS_EXEC_deno  := deno run -A
 TS_EXEC_node  := npx tsx
 TS_EXEC       := $(or $(TS_EXEC_$(TS_RUNTIME)),$(TS_RUNTIME))
 
-.PHONY: help dev build check proxy dev-all gen generate-test-token test-auto-login clean setup-certs set-local-admin-sdk reset-local-admin-sdk prepare export
+.PHONY: help dev build check proxy dev-all gen generate-test-token test-auto-login clean setup-certs set-local-admin-sdk reset-local-admin-sdk prepare export portal-migrate seed-admin
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
@@ -59,6 +59,12 @@ test-auto-login: ## Generate test token and open login URL in browser
 setup-certs: ## Generate mkcert TLS certs for local HTTPS dev (requires: brew install mkcert && mkcert -install)
 	@mkdir -p .certs
 	mkcert -cert-file .certs/cert.pem -key-file .certs/key.pem local.mountos.io localhost 127.0.0.1
+
+portal-migrate: ## Apply pending mountos-portal DB migrations (TS_RUNTIME=node|bun|deno). Never run automatically.
+	$(TS_EXEC) server/localauth/migrate-cli.ts
+
+seed-admin: ## One-off: seed the first admin account (SEED_ADMIN_EMAIL= SEED_ADMIN_NAME= SEED_ADMIN_PASSWORD= SEED_ADMIN_ROLE=superadmin). Never run automatically.
+	$(TS_EXEC) server/localauth/seed-admin.ts
 
 clean: ## Remove build artifacts
 	rm -rf .svelte-kit build node_modules

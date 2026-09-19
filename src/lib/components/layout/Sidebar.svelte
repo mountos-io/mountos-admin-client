@@ -6,9 +6,12 @@
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAlerts } from '$lib/core/stores/alerts.svelte'
+  import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
+  import { isMacPlatform } from '$lib/utils.js'
   import AccountSwitcher from './AccountSwitcher.svelte'
   import type { Component } from 'svelte'
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
+  import SettingsIcon from '@lucide/svelte/icons/settings'
   import Building2 from '@lucide/svelte/icons/building-2'
   import Users from '@lucide/svelte/icons/users'
   import Globe from '@lucide/svelte/icons/globe'
@@ -25,7 +28,9 @@
   const auth = useAuth()
   const accountStore = useAccounts()
   const alertStore = useAlerts()
+  const settingsModal = useSettingsModal()
   const hasAccount = $derived(accountStore.selectedAccountId !== null)
+  const settingsShortcut = isMacPlatform() ? '⌘,' : 'Ctrl+,'
 
   const iconMap: Record<string, Component> = {
     'layout-dashboard': LayoutDashboard, 'building-2': Building2,
@@ -92,6 +97,24 @@
       </a>
     {/each}
   </nav>
+  <div class={cn('border-t border-sidebar-border', collapsed ? 'p-1.5' : 'p-3')}>
+    <button
+      type="button"
+      onclick={() => settingsModal.show()}
+      title={collapsed ? 'Settings' : undefined}
+      aria-label={collapsed ? `Settings (${settingsShortcut})` : undefined}
+      class={cn(
+        'flex w-full items-center rounded-md text-sm font-medium transition-colors text-sidebar-foreground hover:bg-sidebar-accent/50 focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:outline-none',
+        collapsed ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2',
+      )}
+    >
+      <SettingsIcon class={cn('shrink-0', collapsed ? 'h-5 w-5' : 'h-4 w-4')} />
+      {#if !collapsed}
+        <span class="flex-1 truncate text-left">Settings</span>
+        <kbd class="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">{settingsShortcut}</kbd>
+      {/if}
+    </button>
+  </div>
 </aside>
 
 <style>
