@@ -9,6 +9,7 @@
   import XIcon from '@lucide/svelte/icons/x'
   import Folder from '@lucide/svelte/icons/folder'
   import FileIcon from '@lucide/svelte/icons/file'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
 
   let {
     draft = $bindable(''),
@@ -147,8 +148,11 @@
 
   {#if active}
     {#if error}
-      <div class="rounded-sm border border-destructive/40 bg-destructive/10 px-3 py-2 flex items-start justify-between gap-2">
-        <p class="text-sm text-destructive">{error}</p>
+      <div role="alert" class="rounded-sm border border-destructive/40 bg-destructive/10 px-3 py-2 flex items-start justify-between gap-2">
+        <span class="flex items-start gap-2 text-sm text-destructive">
+          <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+          <span>{error}</span>
+        </span>
         <Button variant="outline" size="sm" onclick={onretry} class="min-h-[44px] sm:min-h-9 shrink-0">Retry</Button>
       </div>
     {:else}

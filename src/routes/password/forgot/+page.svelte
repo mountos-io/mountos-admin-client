@@ -32,7 +32,7 @@
       <CardTitle>Forgot password</CardTitle>
       <CardDescription>We’ll email you a reset link if an account exists.</CardDescription>
     </CardHeader>
-    <CardContent>
+    <CardContent aria-live="polite">
       {#if sent}
         <p class="text-sm text-muted-foreground">
           If an account exists for that address, a reset link is on its way. Check your inbox.

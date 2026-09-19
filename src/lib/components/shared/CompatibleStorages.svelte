@@ -13,6 +13,7 @@
   import type { CompatibleStorage } from '$lib/core/api/types'
   import ArrowLeftRight from '@lucide/svelte/icons/arrow-left-right'
   import Loader2 from '@lucide/svelte/icons/loader-2'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
 
   let { storageId, storageType, onmoved }: { storageId: number; storageType: string; onmoved?: () => void } = $props()
 
@@ -134,7 +135,10 @@
           cells={[{ width: 'w-6' }, { width: 'w-32' }]}
         />
       {:else if error}
-        <p class="text-sm text-destructive">Failed to load compatible storages.</p>
+        <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+          <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+          <span>Failed to load compatible storages.</span>
+        </div>
       {:else}
         {#each compatible as s (s.id)}
           <div class="space-y-2">

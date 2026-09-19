@@ -8,6 +8,7 @@
   import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
 
@@ -62,8 +63,11 @@
       {#if loading && versions.length === 0}
         <div class="flex justify-center py-8"><LoadingSpinner /></div>
       {:else if error}
-        <div class="rounded-sm border border-destructive/40 bg-destructive/10 px-3 py-2 flex items-start justify-between gap-2">
-          <p class="text-sm text-destructive">{error}</p>
+        <div role="alert" class="rounded-sm border border-destructive/40 bg-destructive/10 px-3 py-2 flex items-start justify-between gap-2">
+          <span class="flex items-start gap-2 text-sm text-destructive">
+            <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+            <span>{error}</span>
+          </span>
           <Button variant="outline" size="sm" onclick={onretry} class="min-h-[44px] sm:min-h-9 shrink-0">Retry</Button>
         </div>
       {:else if versions.length === 0}

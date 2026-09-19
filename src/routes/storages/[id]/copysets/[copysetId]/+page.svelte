@@ -302,7 +302,10 @@
   {#if loading}
     <DetailSkeleton cards={[{ rows: 2, cols: 2, title: false }, { rows: 6, cols: 3, title: true }]} />
   {:else if error || !copyset}
-    <p class="text-sm text-destructive">Copyset not found.</p>
+    <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+      <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+      <span>Copyset not found.</span>
+    </div>
   {:else}
     <Card cornerBrackets>
       <CardHeader>

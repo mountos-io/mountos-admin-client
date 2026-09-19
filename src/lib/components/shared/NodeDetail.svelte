@@ -36,6 +36,7 @@
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Copy from '@lucide/svelte/icons/copy'
   import Check from '@lucide/svelte/icons/check'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
 
   let { regionId, nodeId, basePath }: { regionId: number; nodeId: string; basePath: string } = $props()
@@ -519,7 +520,10 @@
   {:else if nodeStore.statsError}
     <Card>
       <CardContent>
-        <p class="text-sm text-destructive">{nodeStore.statsError}</p>
+        <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+          <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+          <span>{nodeStore.statsError}</span>
+        </div>
       </CardContent>
     </Card>
   {:else if nodeStore.statsRaw}
@@ -568,7 +572,10 @@
               ]}
             />
           {:else if alertStore.error}
-            <p class="text-sm text-destructive">{alertStore.error}</p>
+            <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+              <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+              <span>{alertStore.error}</span>
+            </div>
           {:else if alertStore.alerts.length === 0}
             <p class="text-sm text-muted-foreground">No alerts for this node.</p>
           {:else}
@@ -721,7 +728,10 @@
               ]}
             />
           {:else if workerEventStore.error}
-            <p class="text-sm text-destructive">{workerEventStore.error}</p>
+            <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+              <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+              <span>{workerEventStore.error}</span>
+            </div>
           {:else if workerEventStore.events.length === 0}
             <p class="text-sm text-muted-foreground">No worker events recorded for this node in the selected range.</p>
           {:else}

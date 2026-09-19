@@ -55,7 +55,7 @@
         </div>
       </div>
 
-      <div role="alert" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+      <div role="alert" class="rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
         This volume will be permanently deactivated and cannot be reactivated.
       </div>
 

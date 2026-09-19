@@ -10,6 +10,7 @@
   import type { Volume } from '$lib/core/api/types'
   import DatabaseIcon from '@lucide/svelte/icons/database'
   import Lock from '@lucide/svelte/icons/lock'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
 
   let { storageId, accountId }: { storageId: number; accountId: number } = $props()
 
@@ -74,7 +75,10 @@
         ]}
       />
     {:else if error}
-      <p class="text-sm text-destructive">Failed to load volumes.</p>
+      <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+        <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+        <span>Failed to load volumes.</span>
+      </div>
     {:else if volumes.length === 0}
       <p class="text-sm text-muted-foreground">No volumes on this storage.</p>
     {:else}

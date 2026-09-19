@@ -1,7 +1,9 @@
 import type { Component } from 'svelte'
 import type { Capabilities } from '$lib/core/auth/adapter'
+import type { Action } from '$lib/core/auth/authorize'
 import type { FeatureFlags } from './features'
 import { providerNavItems, providerNavFilter } from '$provider/config/navigation'
+import { features } from './features'
 
 export interface NavItem {
   label: string
@@ -29,3 +31,25 @@ const defaults: NavItem[] = [
 
 export const navigation: NavItem[] = [...defaults, ...(providerNavItems ?? [])]
 export const navFilter: NavFilter | null = providerNavFilter ?? null
+
+const accountFreeRoutes = new Set(['/', '/accounts', '/alerts'])
+
+export interface NavVisibilityAuth {
+  isUserRole: boolean
+  capabilities: Capabilities
+  can: (resource: string, action: Action) => boolean
+}
+
+// Single source of truth for which nav items a role/account state can reach,
+// shared by the sidebar, the command palette, and the global keyboard shortcuts,
+// so a shortcut number always points at the item actually shown in the sidebar.
+export function visibleNavItems(auth: NavVisibilityAuth, hasAccount: boolean): NavItem[] {
+  return navigation.filter(item => {
+    if (!hasAccount && !accountFreeRoutes.has(item.href)) return false
+    if (item.adminOnly && auth.isUserRole) return false
+    if (navFilter) return navFilter(item, auth.capabilities)
+    if (item.feature && !features[item.feature]) return false
+    if (item.feature && !auth.can(item.feature, 'read')) return false
+    return true
+  })
+}

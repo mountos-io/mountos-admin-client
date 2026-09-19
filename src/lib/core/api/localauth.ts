@@ -32,15 +32,36 @@ export interface TotpEnrollStart {
 
 export type PortalInviteStatus = 'none' | 'invited' | 'active' | 'disabled'
 
-export async function fetchLocalLoginEnabled(): Promise<boolean> {
+export const DEFAULT_MIN_PASSWORD_LENGTH = 8
+
+export interface LocalAuthConfig {
+  enabled: boolean
+  minPasswordLength: number
+}
+
+async function fetchLocalAuthConfig(): Promise<LocalAuthConfig> {
   try {
     const res = await fetch('/api/auth/local/config', { credentials: 'same-origin' })
-    if (!res.ok) return false
-    const data = await res.json() as { enabled?: boolean }
-    return data.enabled === true
+    if (!res.ok) return { enabled: false, minPasswordLength: DEFAULT_MIN_PASSWORD_LENGTH }
+    const data = await res.json() as { enabled?: boolean; minPasswordLength?: number }
+    return {
+      enabled: data.enabled === true,
+      minPasswordLength: data.minPasswordLength ?? DEFAULT_MIN_PASSWORD_LENGTH,
+    }
   } catch {
-    return false
+    return { enabled: false, minPasswordLength: DEFAULT_MIN_PASSWORD_LENGTH }
   }
+}
+
+export async function fetchLocalLoginEnabled(): Promise<boolean> {
+  return (await fetchLocalAuthConfig()).enabled
+}
+
+// Server is the source of truth for the password-length policy (server/localauth/crypto.ts
+// MIN_PASSWORD_LENGTH); every password-entry form fetches it here rather than hard-coding
+// its own value, so client-side validation can never drift from what the server accepts.
+export async function fetchMinPasswordLength(): Promise<number> {
+  return (await fetchLocalAuthConfig()).minPasswordLength
 }
 
 export const localAuthApi = {

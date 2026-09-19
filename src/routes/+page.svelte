@@ -26,6 +26,7 @@
   import PlusIcon from '@lucide/svelte/icons/plus'
   import BuildingIcon from '@lucide/svelte/icons/building'
   import ShieldAlertIcon from '@lucide/svelte/icons/shield-alert'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
   import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
   import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
@@ -128,7 +129,10 @@
     {:else if dashboard.error}
       <Card cornerPlus>
         <CardContent class="py-8">
-          <p class="text-center text-destructive">{dashboard.error}</p>
+          <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+            <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+            <span>{dashboard.error}</span>
+          </div>
         </CardContent>
       </Card>
     {:else if stats}
@@ -169,22 +173,37 @@
 
       <!-- Quick Actions -->
       {@const quickActions = [
-        { label: 'Account', icon: BuildingIcon, href: '/accounts/create', can: auth.can('accounts', 'create') },
-        { label: 'User', icon: UsersIcon, href: '/users/create', can: !!accountId && auth.can('users', 'create') },
-        { label: 'Volume', icon: DatabaseIcon, href: '/volumes/create', can: !!accountId && auth.can('volumes', 'create') },
-        { label: 'Storage', icon: HardDriveIcon, href: '/storages/create', can: !!accountId && auth.can('storages', 'create') },
-        { label: 'Region', icon: GlobeIcon, href: '/regions/create', can: auth.can('regions', 'create') },
+        { label: 'Account', icon: BuildingIcon, href: '/accounts/create', can: auth.can('accounts', 'create'), clip: 'cyberpunk-rskewed' },
+        { label: 'User', icon: UsersIcon, href: '/users/create', can: !!accountId && auth.can('users', 'create'), clip: 'cyberpunk-rskewed' },
+        { label: 'Volume', icon: DatabaseIcon, href: '/volumes/create', can: !!accountId && auth.can('volumes', 'create'), clip: '' },
+        { label: 'Storage', icon: HardDriveIcon, href: '/storages/create', can: !!accountId && auth.can('storages', 'create'), clip: 'cyberpunk-skewed' },
+        { label: 'Region', icon: GlobeIcon, href: '/regions/create', can: auth.can('regions', 'create'), clip: 'cyberpunk-skewed' },
       ]}
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex flex-wrap justify-center gap-4">
         {#each quickActions as action}
           {@const Icon = action.icon}
-          <Button variant="outline" size="sm" class="gap-1.5 min-h-[44px] sm:min-h-8" href={action.can ? action.href : undefined}
-            disabled={!action.can}
-            title={action.can ? undefined : `Requires ${action.label.toLowerCase()} create permission`}
-            aria-label={action.can ? `Create ${action.label}` : `Create ${action.label} (no permission)`}>
-            <Icon class="size-4" aria-hidden="true" />
-            <PlusIcon class="size-3.5" aria-hidden="true" />{action.label}
-          </Button>
+          {#if action.can}
+            <a href={action.href}
+              class="flex flex-col items-center justify-center gap-3 w-full min-w-[120px] max-w-[10rem] h-32 sm:w-36 md:w-48 md:h-40 rounded-sm border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+              <div class="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 {action.clip} bg-primary/10">
+                <Icon class="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-primary" />
+              </div>
+              <span class="text-sm md:text-base font-medium flex items-center gap-1.5">
+                <PlusIcon class="w-4 h-4" />{action.label}
+              </span>
+            </a>
+          {:else}
+            <button type="button" disabled class="flex flex-col items-center justify-center gap-3 w-full min-w-[120px] max-w-[10rem] h-32 sm:w-36 md:w-48 md:h-40 rounded-sm border border-border opacity-25 cursor-not-allowed"
+              title="Requires {action.label.toLowerCase()} create permission"
+              aria-label="Create {action.label} (no permission)">
+              <div class="flex items-center justify-center w-12 h-12 md:w-16 md:h-16 {action.clip} bg-primary/10">
+                <Icon class="w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8 text-primary" />
+              </div>
+              <span class="text-sm md:text-base font-medium flex items-center gap-1.5">
+                <PlusIcon class="w-4 h-4" />{action.label}
+              </span>
+            </button>
+          {/if}
         {/each}
       </div>
 

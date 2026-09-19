@@ -29,6 +29,7 @@
   import ExternalLink from '@lucide/svelte/icons/external-link'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import { pingRttColor, formatTotalTime } from '$lib/core/utils/metrics'
 
   const store = useSessions()
@@ -265,7 +266,12 @@
         ]}
       />
     {:else if store.error}
-      <Card><CardContent class="py-8"><p class="text-center text-destructive" role="alert">{store.error}</p></CardContent></Card>
+      <Card><CardContent class="py-8">
+        <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+          <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+          <span>{store.error}</span>
+        </div>
+      </CardContent></Card>
     {:else if store.filtered.length === 0}
       <EmptyState title="No sessions" description={hasFilters ? 'No sessions match filters.' : 'No client sessions found for this account.'} />
     {:else}

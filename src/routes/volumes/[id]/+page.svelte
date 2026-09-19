@@ -55,6 +55,7 @@
   import X from '@lucide/svelte/icons/x'
   import ShieldAlert from '@lucide/svelte/icons/shield-alert'
   import GitFork from '@lucide/svelte/icons/git-fork'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import ForkPicker from '$lib/components/volume-tree/ForkPicker.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import { Checkbox } from '$lib/components/ui/checkbox'
@@ -1285,7 +1286,10 @@
               {/if}
             </div>
           {:else}
-            <p class="text-sm text-destructive">Failed to load copyset config.</p>
+            <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+              <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+              <span>Failed to load copyset config.</span>
+            </div>
           {/if}
         </CardContent>
       </Card>
@@ -1576,8 +1580,11 @@
             {:else if auth.userMountosUserId == null}
               <p class="text-sm text-muted-foreground">Your dashboard account has no linked mountOS user, so it holds no API keys.</p>
             {:else if !apiKeysKnown}
-              <div class="flex items-center gap-3">
-                <p class="text-sm text-destructive">Could not load your API keys.</p>
+              <div class="flex items-start gap-3">
+                <div role="alert" class="flex flex-1 items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+                  <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+                  <span>Could not load your API keys.</span>
+                </div>
                 <Button variant="outline" size="sm" onclick={fetchApiKeys}>Retry</Button>
               </div>
             {:else if apiKeys.length === 0}

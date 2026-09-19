@@ -5,6 +5,7 @@
   import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
   import Shield from '@lucide/svelte/icons/shield'
   import KeyRound from '@lucide/svelte/icons/key-round'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
 
   const stepUp = useStepUp()
   const webauthn = useWebAuthn()
@@ -96,9 +97,14 @@
         {#if registering}
           <p class="text-sm text-muted-foreground">Waiting for security key...</p>
         {:else if error}
-          <div class="space-y-3 text-center">
-            <p class="text-sm text-destructive" role="alert">{error}</p>
-            <Button variant="outline" size="sm" onclick={handleRegister}>Retry</Button>
+          <div class="w-full space-y-3">
+            <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+              <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <div class="flex justify-center">
+              <Button variant="outline" size="sm" onclick={handleRegister}>Retry</Button>
+            </div>
           </div>
         {/if}
       {:else}
@@ -106,9 +112,14 @@
         {#if authenticating}
           <p class="text-sm text-muted-foreground">Waiting for security key...</p>
         {:else if error}
-          <div class="space-y-3 text-center">
-            <p class="text-sm text-destructive" role="alert">{error}</p>
-            <Button variant="outline" size="sm" onclick={startAuthentication}>Retry</Button>
+          <div class="w-full space-y-3">
+            <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+              <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <div class="flex justify-center">
+              <Button variant="outline" size="sm" onclick={startAuthentication}>Retry</Button>
+            </div>
           </div>
         {/if}
       {/if}

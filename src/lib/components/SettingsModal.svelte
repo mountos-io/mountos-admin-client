@@ -36,6 +36,7 @@
   import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
   import KeyIcon from '@lucide/svelte/icons/key'
   import TrashIcon from '@lucide/svelte/icons/trash-2'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import { showSuccessToast, showWarningToast, handleApiError } from '$lib/core/utils/toast'
   import TotpSetupFlow from '$lib/components/auth/TotpSetupFlow.svelte'
 
@@ -766,6 +767,13 @@
                 {/if}
               </div>
 
+              {#if securityError}
+                <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+                  <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+                  <span>{securityError}</span>
+                </div>
+              {/if}
+
               {#if securityStep === 'idle'}
                 {#if totpStatus?.totpEnabled}
                   <p class="text-sm text-muted-foreground">
@@ -779,14 +787,12 @@
                     {securitySubmitting ? 'Starting...' : 'Enable two-factor authentication'}
                   </Button>
                 {/if}
-                {#if securityError}<p class="text-destructive text-sm" role="alert">{securityError}</p>{/if}
               {:else if securityStep === 'confirm_current'}
                 <form onsubmit={submitCurrentCode} class="space-y-3">
                   <div class="space-y-2">
                     <Label for="rotate-code">Current authenticator or backup code</Label>
                     <Input id="rotate-code" bind:value={securityCode} required autocomplete="one-time-code" placeholder="123456" class="h-14 text-center text-2xl font-mono tracking-[0.3em]" />
                   </div>
-                  {#if securityError}<p class="text-destructive text-sm" role="alert">{securityError}</p>{/if}
                   <div class="flex gap-2">
                     <Button type="submit" size="sm" disabled={securitySubmitting}>{securitySubmitting ? 'Verifying...' : 'Continue'}</Button>
                     <Button type="button" variant="outline" size="sm" onclick={cancelSecurityStep}>Cancel</Button>
@@ -806,6 +812,12 @@
             {#if totpStatus?.totpEnabled}
               <div class="space-y-3 border-t border-border pt-5">
                 <h3 class="text-sm font-medium">Backup Codes</h3>
+                {#if backupError}
+                  <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+                    <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+                    <span>{backupError}</span>
+                  </div>
+                {/if}
                 {#if backupStep === 'idle'}
                   <p class="text-sm text-muted-foreground">
                     Regenerating invalidates every existing backup code. Store the new ones somewhere safe.
@@ -817,7 +829,6 @@
                       <Label for="backup-code">Current authenticator or backup code</Label>
                       <Input id="backup-code" bind:value={backupCode} required autocomplete="one-time-code" placeholder="123456" class="h-14 text-center text-2xl font-mono tracking-[0.3em]" />
                     </div>
-                    {#if backupError}<p class="text-destructive text-sm" role="alert">{backupError}</p>{/if}
                     <div class="flex gap-2">
                       <Button type="submit" size="sm" disabled={backupSubmitting}>{backupSubmitting ? 'Verifying...' : 'Regenerate'}</Button>
                       <Button type="button" variant="outline" size="sm" onclick={() => backupStep = 'idle'}>Cancel</Button>
@@ -837,6 +848,12 @@
 
             <div class="space-y-3 border-t border-border pt-5">
               <h3 class="text-sm font-medium">Passkeys</h3>
+              {#if passkeyDeleteError}
+                <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+                  <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+                  <span>{passkeyDeleteError}</span>
+                </div>
+              {/if}
               <p class="text-sm text-muted-foreground">
                 Sign in with a device passkey instead of an authenticator code.
               </p>
@@ -877,7 +894,6 @@
                       class="h-14 text-center text-2xl font-mono tracking-[0.3em]"
                     />
                   </div>
-                  {#if passkeyDeleteError}<p class="text-destructive text-sm" role="alert">{passkeyDeleteError}</p>{/if}
                   <div class="flex gap-2">
                     <Button type="submit" variant="destructive" size="sm" disabled={passkeyDeleteSubmitting}>
                       {passkeyDeleteSubmitting ? 'Removing...' : 'Remove passkey'}
@@ -1020,7 +1036,10 @@
           {:else if licenseStore.loading}
             <p class="text-sm text-muted-foreground">Loading license...</p>
           {:else if licenseStore.error}
-            <p class="text-sm text-destructive">{licenseStore.error}</p>
+            <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+              <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+              <span>{licenseStore.error}</span>
+            </div>
           {:else}
             <p class="text-sm text-muted-foreground">No license information available.</p>
           {/if}
@@ -1030,6 +1049,12 @@
               <h3 class="text-sm font-medium">Load License</h3>
               <p class="text-xs text-muted-foreground mt-1">Paste a signed license payload, or upload a license file. Stacked licenses sum; separate multiple payloads with newlines.</p>
             </div>
+            {#if licenseUploadError}
+              <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+                <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+                <span>{licenseUploadError}</span>
+              </div>
+            {/if}
             <div class="space-y-2">
               <Textarea
                 bind:value={licenseText}
@@ -1057,9 +1082,7 @@
                 {uploadingLicense ? 'Uploading…' : 'Upload'}
               </Button>
             </div>
-            {#if licenseUploadError}
-              <p class="text-sm text-destructive" role="alert">{licenseUploadError}</p>
-            {:else if licenseUploaded}
+            {#if licenseUploaded}
               <p class="text-sm text-success" role="status">License loaded.</p>
             {/if}
           </div>

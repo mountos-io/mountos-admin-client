@@ -3,6 +3,7 @@
   import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
   import { Skeleton } from '$lib/components/ui/skeleton'
   import TextTooltip from '$lib/components/shared/TextTooltip.svelte'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import { formatBytes } from '$lib/core/utils/format'
   import type { NodeStatsSample } from '$lib/core/api/types'
 
@@ -621,7 +622,10 @@
   </CardHeader>
   <CardContent class="pt-0">
     {#if error}
-      <p class="text-sm text-destructive">{error}</p>
+      <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+        <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+        <span>{error}</span>
+      </div>
     {:else if loading && samples.length === 0}
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6" role="status" aria-busy="true" aria-label="Loading resource history">
         {#each { length: 4 } as _, i (i)}

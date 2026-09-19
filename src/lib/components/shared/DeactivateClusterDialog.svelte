@@ -45,7 +45,7 @@
         </div>
       </div>
 
-      <div role="alert" class="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-base text-destructive">
+      <div role="alert" class="rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-base text-destructive">
         Instances grouped here will lose their cluster binding. Volumes assigned to this cluster must be moved first.
       </div>
 

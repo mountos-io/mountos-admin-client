@@ -15,6 +15,7 @@
   import ForkPicker from './ForkPicker.svelte'
   import TimezonePicker from '$lib/components/shared/TimezonePicker.svelte'
   import SearchIcon from '@lucide/svelte/icons/search'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import TreeBreadcrumb from './TreeBreadcrumb.svelte'
   import TreeTimePicker from './TreeTimePicker.svelte'
   import TreeList from './TreeList.svelte'
@@ -429,8 +430,11 @@
     {/if}
 
     {#if listError}
-      <div class="rounded-sm border border-destructive/40 bg-destructive/10 px-3 py-2 flex items-start justify-between gap-2">
-        <p class="text-sm text-destructive">{listError}</p>
+      <div role="alert" class="rounded-sm border border-destructive/40 bg-destructive/10 px-3 py-2 flex items-start justify-between gap-2">
+        <span class="flex items-start gap-2 text-sm text-destructive">
+          <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+          <span>{listError}</span>
+        </span>
         <Button variant="outline" size="sm" onclick={() => loadDir(false)} class="min-h-[44px] sm:min-h-9 shrink-0">Retry</Button>
       </div>
     {/if}

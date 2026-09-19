@@ -13,6 +13,7 @@
   import { groupNodesByVolume } from '$lib/core/utils/nodes'
   import type { Copyset, BlockVolume, ServiceNode } from '$lib/core/api/types'
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
 
   // Matches the reconciler's actual shipped tick, copysetDrainReconcilerInterval.
   const POLL_INTERVAL_MS = 15_000
@@ -237,7 +238,10 @@
 {#if loading}
   <p class="text-sm text-muted-foreground">Loading copysets…</p>
 {:else if error}
-  <p class="text-sm text-destructive">Failed to load copysets.</p>
+  <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+    <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+    <span>Failed to load copysets.</span>
+  </div>
 {:else}
   <div class="space-y-4">
     <div class="flex items-center gap-3 flex-wrap">

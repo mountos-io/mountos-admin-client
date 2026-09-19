@@ -8,6 +8,7 @@
   import { showSuccessToast, showErrorToast } from '$lib/core/utils/toast'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import DownloadIcon from '@lucide/svelte/icons/download'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
 
   interface Props {
     secretBase32: string
@@ -74,13 +75,20 @@
 
 {#if step === 'enter_code'}
   <form onsubmit={handleSubmit} class="space-y-4">
+    {#if error}
+      <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+        <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+        <span>{error}</span>
+      </div>
+    {/if}
     <p class="text-sm text-muted-foreground">
       {#if required}Two-factor authentication is required for this account. {/if}Scan this in your
       authenticator app, or enter the key manually, then enter the 6-digit code it shows.
     </p>
     <!-- Fixed white backdrop regardless of theme: a QR code needs strong, stable
-         contrast to scan reliably, which dark mode's inverted palette would break. -->
-    <div class="flex justify-center rounded-md border bg-white p-4">
+         contrast to scan reliably, which dark mode's inverted palette would break.
+         --qr-backdrop is the one token that stays oklch(1 0 0) under .dark too. -->
+    <div class="flex justify-center rounded-md border bg-qr-backdrop p-4">
       <div
         class="h-56 w-56 [&_svg]:h-full [&_svg]:w-full"
         role="img"
@@ -115,7 +123,6 @@
         class="h-14 text-center text-2xl font-mono tracking-[0.3em]"
       />
     </div>
-    {#if error}<p class="text-destructive text-sm" role="alert">{error}</p>{/if}
     <Button variant="primary" type="submit" class="w-full" disabled={submitting}>
       {submitting ? 'Verifying...' : 'Enable and continue'}
     </Button>

@@ -474,10 +474,16 @@
   </CardHeader>
   <CardContent class="space-y-3">
     {#if staleStatus}
-      <p class="text-xs text-destructive">Can't confirm copyset status right now. Showing the last-known state.</p>
+      <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-xs text-destructive">
+        <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+        <span>Can't confirm copyset status right now. Showing the last-known state.</span>
+      </div>
     {/if}
     {#if nodesStale}
-      <p class="text-xs text-destructive">Can't confirm blockserv node data right now. Showing the last-known servers.</p>
+      <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-xs text-destructive">
+        <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+        <span>Can't confirm blockserv node data right now. Showing the last-known servers.</span>
+      </div>
     {/if}
     {#if rows.length === 0}
       <p class="text-sm text-muted-foreground">No servers registered for this storage yet.</p>

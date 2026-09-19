@@ -17,6 +17,7 @@
   import { showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import CheckCircle from '@lucide/svelte/icons/check-circle'
   import Loader2 from '@lucide/svelte/icons/loader-2'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
 
   const store = useAlerts()
   const auth = useAuth()
@@ -145,7 +146,10 @@
   {:else if store.error}
     <Card cornerPlus>
       <CardContent class="py-8 space-y-3">
-        <p class="text-center text-destructive" role="alert">{store.error}</p>
+        <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+          <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+          <span>{store.error}</span>
+        </div>
         <div class="flex justify-center">
           <Button variant="outline" size="sm" onclick={() => store.fetchAlerts()}>Retry</Button>
         </div>

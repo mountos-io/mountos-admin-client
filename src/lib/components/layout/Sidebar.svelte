@@ -1,8 +1,7 @@
 <script lang="ts">
   import { page } from '$app/stores'
   import { cn } from '$lib/utils.js'
-  import { navigation, navFilter } from '$lib/config/navigation'
-  import { features } from '$lib/config/features'
+  import { visibleNavItems } from '$lib/config/navigation'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAlerts } from '$lib/core/stores/alerts.svelte'
@@ -30,7 +29,9 @@
   const alertStore = useAlerts()
   const settingsModal = useSettingsModal()
   const hasAccount = $derived(accountStore.selectedAccountId !== null)
-  const settingsShortcut = isMacPlatform() ? '⌘,' : 'Ctrl+,'
+  const mac = isMacPlatform()
+  const settingsShortcut = mac ? '⌘,' : 'Ctrl+,'
+  const navShortcutPrefix = mac ? '⌘⇧' : 'Ctrl+Shift+'
 
   const iconMap: Record<string, Component> = {
     'layout-dashboard': LayoutDashboard, 'building-2': Building2,
@@ -39,19 +40,35 @@
     'bell': Bell,
   }
 
-  const accountFreeRoutes = new Set(['/', '/accounts', '/alerts'])
+  const visibleNav = $derived(visibleNavItems(auth, hasAccount))
 
-  const visibleNav = $derived(
-    navigation.filter(item => {
-      if (!hasAccount && !accountFreeRoutes.has(item.href)) return false
-      if (item.adminOnly && auth.isUserRole) return false
-      if (navFilter) return navFilter(item, auth.capabilities)
-      if (item.feature && !features[item.feature]) return false
-      if (item.feature && !auth.can(item.feature, 'read')) return false
-      return true
-    })
-  )
+  // Number-key nav shortcuts only appear while both keys of the combo are
+  // held, so the hint always matches what actually triggers the jump and
+  // never competes visually with the item label the rest of the time.
+  let cmdDown = $state(false)
+  let shiftDown = $state(false)
+  const modHeld = $derived(cmdDown && shiftDown)
+
+  function onWindowKeydown(e: KeyboardEvent) {
+    if (e.key === (mac ? 'Meta' : 'Control')) cmdDown = true
+    if (e.key === 'Shift') shiftDown = true
+  }
+  function onWindowKeyup(e: KeyboardEvent) {
+    if (e.key === (mac ? 'Meta' : 'Control')) cmdDown = false
+    if (e.key === 'Shift') shiftDown = false
+  }
+  function clearModHeld() {
+    cmdDown = false
+    shiftDown = false
+  }
+
+  function navShortcut(index: number): string | null {
+    if (index >= 10) return null
+    return navShortcutPrefix + (index === 9 ? '0' : String(index + 1))
+  }
 </script>
+
+<svelte:window onkeydown={onWindowKeydown} onkeyup={onWindowKeyup} onblur={clearModHeld} />
 
 <aside
   class={cn(
@@ -62,10 +79,11 @@
     <AccountSwitcher {collapsed} />
   </div>
   <nav aria-label="Main navigation" class={cn('flex-1 space-y-1 py-2', collapsed ? 'px-1.5' : 'px-3')}>
-    {#each visibleNav as item (item.href)}
+    {#each visibleNav as item, i (item.href)}
       {@const Icon = item.iconComponent ?? iconMap[item.icon] ?? Box}
       {@const active = $page.url.pathname === item.href || (item.href !== '/' && $page.url.pathname.startsWith(item.href + '/'))}
       {@const isBell = item.icon === 'bell'}
+      {@const shortcut = navShortcut(i)}
       <a
         href={item.href}
         title={collapsed ? item.label : undefined}
@@ -85,7 +103,10 @@
           </span>
         {/if}
         {#if !collapsed}
-          <span class="truncate">{item.label}</span>
+          <span class="flex-1 truncate">{item.label}</span>
+        {/if}
+        {#if !collapsed && modHeld && shortcut}
+          <kbd class="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground">{shortcut}</kbd>
         {/if}
         {#if isBell && alertStore.recentCount > 0}
           <span class="alert-badge" class:collapsed-badge={collapsed}

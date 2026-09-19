@@ -129,7 +129,7 @@ export async function createLocalAuthRoutes({ webauthnManager }: { webauthnManag
 
   const app = new Hono()
 
-  app.get('/api/auth/local/config', (c) => c.json({ enabled: true }))
+  app.get('/api/auth/local/config', (c) => c.json({ enabled: true, minPasswordLength: MIN_PASSWORD_LENGTH }))
 
   app.post('/api/auth/local/login', async (c) => {
     const body = await readJson<{ email: string; password: string }>(c)

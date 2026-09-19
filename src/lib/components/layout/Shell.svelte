@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { goto } from '$app/navigation'
   import Sidebar from './Sidebar.svelte'
   import Header from './Header.svelte'
   import CommandPalette from '$lib/components/CommandPalette.svelte'
@@ -11,6 +12,7 @@
   import { useLicense } from '$lib/core/stores/license.svelte'
   import { useAlerts } from '$lib/core/stores/alerts.svelte'
   import { features } from '$lib/config/features'
+  import { visibleNavItems } from '$lib/config/navigation'
   import { isMacPlatform } from '$lib/utils'
   import type { Snippet } from 'svelte'
 
@@ -22,6 +24,8 @@
   const auth = useAuth()
   const licenseStore = useLicense()
   const alertStore = useAlerts()
+  const hasAccount = $derived(accountStore.selectedAccountId !== null)
+  const visibleNav = $derived(visibleNavItems(auth, hasAccount))
   let commandOpen = $state(false)
   let mobileOpen = $state(false)
   let sidebarToggleRef = $state<HTMLButtonElement | null>(null)
@@ -44,6 +48,16 @@
     }
   })
 
+  // e.key for a digit key reflects the character the modifiers actually
+  // produce (Shift+3 is '#', Option+3 is '£' on a US layout), so it can't
+  // identify a number-row press once Shift or Alt is held. e.code names the
+  // physical key instead and stays 'Digit0'..'Digit9' regardless of layout
+  // or modifiers, which is what a digit shortcut needs.
+  function digitFromCode(code: string): number | null {
+    const m = /^Digit([0-9])$/.exec(code)
+    return m ? parseInt(m[1], 10) : null
+  }
+
   function handleKeydown(e: KeyboardEvent) {
     // e.metaKey is the Cmd key on macOS but the Windows/Super key elsewhere
     // (already claimed by the OS), so Windows/Linux users need ctrlKey for
@@ -52,12 +66,12 @@
     const mac = isMacPlatform()
     const modPressed = mac ? e.metaKey : e.ctrlKey
     const otherModifier = mac ? e.ctrlKey : e.metaKey
-    if (!modPressed || otherModifier || e.altKey) return
+    if (!modPressed || otherModifier) return
 
     const target = e.target as HTMLElement
     const inInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
 
-    if (e.key === 'k' && !e.shiftKey) {
+    if (e.key === 'k' && !e.shiftKey && !e.altKey) {
       e.preventDefault()
       commandOpen = !commandOpen
       return
@@ -65,24 +79,44 @@
 
     if (inInput) return
 
+    // Browsers reserve bare Cmd/Ctrl+1-9 for switching to browser tab N, and
+    // Cmd/Ctrl+0 for resetting zoom; preventDefault cannot override either in
+    // Chrome or Safari. Account switching and sidebar-item jumps each need
+    // their own extra modifier to reach a combo the browser doesn't already
+    // own: Option/Alt for accounts, Shift for sidebar items.
+    if (e.altKey) {
+      const digit = digitFromCode(e.code)
+      if (!e.shiftKey && !auth.isUserRole && digit !== null && digit >= 1) {
+        const idx = digit - 1
+        if (idx < accountStore.accounts.length) {
+          e.preventDefault()
+          accountStore.selectAccount(accountStore.accounts[idx].id)
+        }
+      }
+      return
+    }
+
+    if (e.shiftKey) {
+      const digit = digitFromCode(e.code)
+      if (digit !== null) {
+        const idx = digit === 0 ? 9 : digit - 1
+        if (idx < visibleNav.length) {
+          e.preventDefault()
+          goto(visibleNav[idx].href)
+        }
+      } else if (e.key.toLowerCase() === 'g') {
+        e.preventDefault(); prefs.grayscale = !prefs.grayscale
+      }
+      return
+    }
+
     switch (e.key) {
       case ',':
-        if (!e.shiftKey) { e.preventDefault(); settingsModal.show() }
+        e.preventDefault(); settingsModal.show()
         break
       case 'b':
-        if (!e.shiftKey) { e.preventDefault(); toggleSidebar() }
+        e.preventDefault(); toggleSidebar()
         break
-      case 'g':
-        if (e.shiftKey) { e.preventDefault(); prefs.grayscale = !prefs.grayscale }
-        break
-      default:
-        if (!auth.isUserRole && !e.shiftKey && e.key >= '1' && e.key <= '9') {
-          const idx = parseInt(e.key) - 1
-          if (idx < accountStore.accounts.length) {
-            e.preventDefault()
-            accountStore.selectAccount(accountStore.accounts[idx].id)
-          }
-        }
     }
   }
 </script>

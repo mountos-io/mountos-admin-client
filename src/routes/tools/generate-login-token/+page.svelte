@@ -181,6 +181,12 @@
         <CardDescription>Same claims as <code class="text-xs">make generate-test-token</code>.</CardDescription>
       </CardHeader>
       <CardContent class="space-y-4">
+        {#if error}
+          <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+            <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        {/if}
         <div class="space-y-2">
           <Label for="signingKey">Signing key</Label>
           <SecretInput id="signingKey" bind:value={signingKey} placeholder="base64 seed" autocomplete="off" spellcheck={false} />
@@ -224,10 +230,6 @@
             </div>
           {/if}
         </div>
-
-        {#if error}
-          <p class="text-sm text-destructive" role="alert">{error}</p>
-        {/if}
 
         <div class="pt-1">
           <Button variant="primary" class="cyberpunk-skewed-sm" onclick={generate} disabled={generating || !canGenerate}>

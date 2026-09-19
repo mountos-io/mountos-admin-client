@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
-  import { navigation, navFilter } from '$lib/config/navigation'
-  import { features } from '$lib/config/features'
+  import { visibleNavItems } from '$lib/config/navigation'
   import { useAccounts } from '$lib/core/stores/accounts.svelte'
   import { useAuth } from '$lib/core/stores/auth.svelte'
   import { usePreferences } from '$lib/stores/preferences.svelte'
@@ -31,7 +30,10 @@
   const auth = useAuth()
   const prefs = usePreferences()
   const settingsModal = useSettingsModal()
-  const modSymbol = isMacPlatform() ? '⌘' : 'Ctrl+'
+  const mac = isMacPlatform()
+  const modSymbol = mac ? '⌘' : 'Ctrl+'
+  const navModSymbol = mac ? '⌘⇧' : 'Ctrl+Shift+'
+  const altModSymbol = mac ? '⌘⌥' : 'Ctrl+Alt+'
 
   const iconMap: Record<string, Component> = {
     'layout-dashboard': LayoutDashboard, 'building-2': Building2,
@@ -39,14 +41,13 @@
     'database': Database, 'scroll-text': ScrollText, 'server': Server,
   }
 
-  const visibleNav = $derived(
-    navigation.filter(item => {
-      if (navFilter) return navFilter(item, auth.capabilities)
-      if (item.feature && !features[item.feature]) return false
-      if (item.feature && !auth.can(item.feature, 'read')) return false
-      return true
-    })
-  )
+  const hasAccount = $derived(accountStore.selectedAccountId !== null)
+  const visibleNav = $derived(visibleNavItems(auth, hasAccount))
+
+  function navShortcut(index: number): string | null {
+    if (index >= 10) return null
+    return navModSymbol + (index === 9 ? '0' : String(index + 1))
+  }
 
   function run(action: () => void) {
     open = false
@@ -64,11 +65,13 @@
     <Command.CommandEmpty>No results found.</Command.CommandEmpty>
 
     <Command.CommandGroup heading="Navigation">
-      {#each visibleNav as item}
+      {#each visibleNav as item, i}
         {@const Icon = item.iconComponent ?? iconMap[item.icon] ?? Box}
+        {@const shortcut = navShortcut(i)}
         <Command.CommandItem value={item.label} onSelect={() => nav(item.href)}>
           {#if Icon}<Icon class="mr-2 h-4 w-4" />{/if}
           {item.label}
+          {#if shortcut}<Command.CommandShortcut>{shortcut}</Command.CommandShortcut>{/if}
         </Command.CommandItem>
       {/each}
     </Command.CommandGroup>
@@ -125,7 +128,7 @@
               <Badge variant="primary">active</Badge>
             {/if}
             {#if i < 9}
-              <Command.CommandShortcut>{modSymbol}{i + 1}</Command.CommandShortcut>
+              <Command.CommandShortcut>{altModSymbol}{i + 1}</Command.CommandShortcut>
             {/if}
           </Command.CommandItem>
         {/each}

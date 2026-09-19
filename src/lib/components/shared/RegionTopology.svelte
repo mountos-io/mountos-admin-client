@@ -45,6 +45,7 @@
   import RefreshCw from '@lucide/svelte/icons/refresh-cw'
   import CheckCircle from '@lucide/svelte/icons/check-circle'
   import Loader2 from '@lucide/svelte/icons/loader-2'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
   import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
   import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
@@ -1180,7 +1181,10 @@
       {:else if alertStore.error}
         <Card cornerPlus>
           <CardContent class="py-8 space-y-3">
-            <p class="text-center text-destructive" role="alert">{alertStore.error}</p>
+            <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+              <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+              <span>{alertStore.error}</span>
+            </div>
             <div class="flex justify-center">
               <Button variant="outline" size="sm" onclick={() => alertStore.fetchAlerts()}>Retry</Button>
             </div>

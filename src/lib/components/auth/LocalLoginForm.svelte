@@ -8,6 +8,7 @@
   import Label from '$lib/components/ui/label/label.svelte'
   import { Separator } from '$lib/components/ui/separator'
   import TotpSetupFlow from './TotpSetupFlow.svelte'
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
 
   const auth = useAuth()
 
@@ -101,70 +102,76 @@
 </script>
 
 <div class="flex h-screen items-center justify-center">
-  <Card cornerBrackets class="w-full max-w-md">
-    <CardHeader>
-      <CardTitle>Sign in</CardTitle>
-      <CardDescription>
-        {#if step === 'password'}mountOS Dashboard
-        {:else if step === 'mfa'}Verify it's you
-        {:else}Set up two-factor authentication
-        {/if}
-      </CardDescription>
-    </CardHeader>
-    <CardContent aria-live="polite">
-      {#if step === 'password'}
-        <form onsubmit={handlePasswordSubmit} class="space-y-4">
-          <div class="space-y-2">
-            <Label for="email">Email</Label>
-            <Input id="email" type="email" bind:value={email} required autocomplete="email" />
-          </div>
-          <div class="space-y-2">
-            <Label for="password">Password</Label>
-            <Input id="password" type="password" bind:value={password} required autocomplete="current-password" />
-          </div>
-          {#if error}<p class="text-destructive text-sm" role="alert">{error}</p>{/if}
-          <Button variant="primary" type="submit" class="w-full" disabled={submitting}>
-            {submitting ? 'Signing in...' : 'Sign in'}
-          </Button>
-          <div class="text-center">
-            <a href="/password/forgot" class="text-sm text-muted-foreground hover:underline">Forgot password?</a>
-          </div>
-        </form>
-      {:else if step === 'mfa'}
-        <div class="space-y-4">
-          {#if hasPasskey}
-            <Button variant="primary" class="w-full" onclick={handlePasskeyAuth} disabled={passkeyPending}>
-              {passkeyPending ? 'Waiting for passkey...' : 'Use a passkey'}
-            </Button>
+  <div class="w-full max-w-md space-y-3">
+    {#if error}
+      <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+        <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+        <span>{error}</span>
+      </div>
+    {/if}
+    <Card cornerBrackets class="w-full">
+      <CardHeader>
+        <CardTitle>Sign in</CardTitle>
+        <CardDescription>
+          {#if step === 'password'}mountOS Dashboard
+          {:else if step === 'mfa'}Verify it's you
+          {:else}Set up two-factor authentication
           {/if}
-          {#if hasPasskey && totpEnabled}
-            <div class="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
-              <span class="h-px flex-1 bg-border"></span>
-              or
-              <span class="h-px flex-1 bg-border"></span>
+        </CardDescription>
+      </CardHeader>
+      <CardContent aria-live="polite">
+        {#if step === 'password'}
+          <form onsubmit={handlePasswordSubmit} class="space-y-4">
+            <div class="space-y-2">
+              <Label for="email">Email</Label>
+              <Input id="email" type="email" bind:value={email} required autocomplete="email" />
             </div>
-          {/if}
-          {#if totpEnabled}
-            <form onsubmit={handleMfaSubmit} class="space-y-4">
-              <div class="space-y-2">
-                <Label for="code">Authenticator or backup code</Label>
-                <Input id="code" bind:value={code} required autocomplete="one-time-code" placeholder="123456" class="h-14 text-center text-2xl font-mono tracking-[0.3em]" />
-              </div>
-              <Button variant={hasPasskey ? 'outline' : 'primary'} type="submit" class="w-full" disabled={submitting}>
-                {submitting ? 'Verifying...' : 'Verify'}
+            <div class="space-y-2">
+              <Label for="password">Password</Label>
+              <Input id="password" type="password" bind:value={password} required autocomplete="current-password" />
+            </div>
+            <Button variant="primary" type="submit" class="w-full" disabled={submitting}>
+              {submitting ? 'Signing in...' : 'Sign in'}
+            </Button>
+            <div class="text-center">
+              <a href="/password/forgot" class="text-sm text-muted-foreground hover:underline">Forgot password?</a>
+            </div>
+          </form>
+        {:else if step === 'mfa'}
+          <div class="space-y-4">
+            {#if hasPasskey}
+              <Button variant="primary" class="w-full" onclick={handlePasskeyAuth} disabled={passkeyPending}>
+                {passkeyPending ? 'Waiting for passkey...' : 'Use a passkey'}
               </Button>
-            </form>
-          {/if}
-          {#if error}<p class="text-destructive text-sm" role="alert">{error}</p>{/if}
-        </div>
-      {:else}
-        <TotpSetupFlow
-          {secretBase32}
-          {otpauthUri}
-          onVerify={(code) => post('/api/auth/local/totp/setup/verify', { setupToken, code })}
-          onComplete={completeSession}
-        />
-      {/if}
-    </CardContent>
-  </Card>
+            {/if}
+            {#if hasPasskey && totpEnabled}
+              <div class="flex items-center gap-3 text-xs text-muted-foreground" aria-hidden="true">
+                <span class="h-px flex-1 bg-border"></span>
+                or
+                <span class="h-px flex-1 bg-border"></span>
+              </div>
+            {/if}
+            {#if totpEnabled}
+              <form onsubmit={handleMfaSubmit} class="space-y-4">
+                <div class="space-y-2">
+                  <Label for="code">Authenticator or backup code</Label>
+                  <Input id="code" bind:value={code} required autocomplete="one-time-code" placeholder="123456" class="h-14 text-center text-2xl font-mono tracking-[0.3em]" />
+                </div>
+                <Button variant={hasPasskey ? 'outline' : 'primary'} type="submit" class="w-full" disabled={submitting}>
+                  {submitting ? 'Verifying...' : 'Verify'}
+                </Button>
+              </form>
+            {/if}
+          </div>
+        {:else}
+          <TotpSetupFlow
+            {secretBase32}
+            {otpauthUri}
+            onVerify={(code) => post('/api/auth/local/totp/setup/verify', { setupToken, code })}
+            onComplete={completeSession}
+          />
+        {/if}
+      </CardContent>
+    </Card>
+  </div>
 </div>

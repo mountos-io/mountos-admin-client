@@ -497,7 +497,12 @@
   {#if loading && !session}
     <DetailSkeleton cards={[{ rows: 4, cols: 2 }]} />
   {:else if error && !session}
-    <Card><CardContent class="py-8"><p class="text-center text-destructive" role="alert">{error}</p></CardContent></Card>
+    <Card><CardContent class="py-8">
+      <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+        <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+        <span>{error}</span>
+      </div>
+    </CardContent></Card>
   {:else if session}
     {@const m = getMetrics(session)}
     {@const pid = getMetaProp(session, 'processId')}
@@ -509,7 +514,10 @@
     {@const sk = getSinkInfo(session)}
 
     {#if error}
-      <div class="rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive" role="alert">Refresh failed: {error}</div>
+      <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive">
+        <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+        <span>Refresh failed: {error}</span>
+      </div>
     {/if}
 
     <!-- Info -->
