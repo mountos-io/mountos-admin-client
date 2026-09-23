@@ -304,6 +304,13 @@ export function formatOs(raw: string): string {
   return OS_LABELS[raw] ?? raw
 }
 
+const OS_NAMES: Record<string, string> = { ...OS_LABELS, windows: 'Windows' }
+
+// formatOsName is formatOs for running text. It returns the full OS name, never a badge abbreviation.
+export function formatOsName(raw: string): string {
+  return OS_NAMES[raw] ?? raw
+}
+
 export function formatUptime(seconds: number): string {
   if (!seconds) return '·'
   const h = Math.floor(seconds / 3600)

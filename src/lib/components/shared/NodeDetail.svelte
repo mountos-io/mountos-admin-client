@@ -32,6 +32,7 @@
   import { showErrorToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
   import { formatRelative, nodeStatusVariant, formatDate, formatBinaryVersion } from '$lib/core/utils/format'
+  import { humanizeKey, metadataRows, type MetaEntry } from '$lib/core/utils/node-meta'
   import type { ServiceNode, BlockVolume } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Copy from '@lucide/svelte/icons/copy'
@@ -174,60 +175,7 @@
       .map(e => ({ key: e.name, label: humanizeKey(e.name), text: fmtScalar(e.name, e.value) }))
   })
 
-  // Node metadata is service-specific; render it as labeled fields (not raw JSON).
-  // Known keys (mostly blockserv) get friendly labels, ordering and typed rendering;
-  // unknown keys fall back to a humanized label so any service stays readable.
-  type MetaKind = 'badge' | 'mono' | 'text'
-  type BadgeVariant = 'success' | 'warning' | 'secondary'
-  type MetaEntry = {
-    key: string; label: string; kind: MetaKind; text: string
-    variant?: BadgeVariant; copy?: boolean; wide?: boolean
-  }
-
-  const META_LABELS: Record<string, string> = {
-    name: 'Block Volume',
-    block_volume_id: 'Block Volume ID',
-    storage_id: 'Storage ID',
-    block_data_port: 'Data Port',
-    block_peer_port: 'Peer Port',
-    ha_synced: 'HA Sync',
-    ready: 'Ready',
-  }
-  // Most operationally relevant first; everything else trails alphabetically.
-  const META_ORDER = ['name', 'ready', 'ha_synced', 'block_data_port', 'block_peer_port', 'block_volume_id', 'storage_id']
-
-  function humanizeKey(key: string): string {
-    return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-  }
-
-  function toMetaEntry(key: string, value: unknown): MetaEntry {
-    const label = META_LABELS[key] ?? humanizeKey(key)
-    if (typeof value === 'boolean') {
-      if (key === 'ha_synced') return { key, label, kind: 'badge', text: value ? 'Synced' : 'Pending', variant: value ? 'success' : 'warning' }
-      if (key === 'ready') return { key, label, kind: 'badge', text: value ? 'Yes' : 'No', variant: value ? 'success' : 'warning' }
-      return { key, label, kind: 'badge', text: value ? 'Yes' : 'No', variant: value ? 'success' : 'secondary' }
-    }
-    const text = String(value)
-    if (key.endsWith('_id')) return { key, label, kind: 'mono', text, copy: true, wide: true }
-    if (key.endsWith('_port')) return { key, label, kind: 'mono', text }
-    return { key, label, kind: 'text', text }
-  }
-
-  const nodeMetaEntries = $derived.by<MetaEntry[]>(() => {
-    if (!node?.metadata) return []
-    const meta = node.metadata
-    return Object.keys(meta)
-      // processId/commitHash/metrics_port/metrics_path surface elsewhere on this card;
-      // storage_id folds into the linked "Storage" field below instead of a bare ID here.
-      .filter((k) => k !== 'processId' && k !== 'commitHash' && k !== 'metrics_port' && k !== 'metrics_path' && k !== 'storage_id')
-      .sort((a, b) => {
-        const ia = META_ORDER.indexOf(a)
-        const ib = META_ORDER.indexOf(b)
-        if (ia !== -1 || ib !== -1) return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib)
-        return a.localeCompare(b)
-      })
-      .map((k) => toMetaEntry(k, meta[k]))
-  })
+  const nodeMetaEntries = $derived<MetaEntry[]>(metadataRows(node?.metadata, node?.serviceType === 'blockserv'))
 
   // A blockserv node's metadata carries the storage UUID and its own block-volume id;
   // resolve both to the storage's numeric route id (for the "Storage" link) and to this

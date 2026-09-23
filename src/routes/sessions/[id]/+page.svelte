@@ -10,7 +10,7 @@
   import { api } from '$lib/core/stores/client.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatBitrate, formatNum, formatIPv4, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant } from '$lib/core/utils/format'
+  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatBitrate, formatNum, formatIPv4, formatPlatform, formatOs, formatOsName, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant } from '$lib/core/utils/format'
   import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, objectLatencyColor, pingRttColor, memAllocColor, cvClass, bucketBarColor, estimateCV, interpolatePercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
@@ -340,6 +340,52 @@
   function getPoolHealth(m: Record<string, any>): PoolHealthEntry[] {
     const p = m.poolHealth
     return Array.isArray(p) ? (p as PoolHealthEntry[]) : []
+  }
+
+  // Host TCP tuning of the client. The host values are read once per client
+  // process; bbrApplied can change while it runs. Tuned means both buffer
+  // ceilings reach the target and, on Linux, block data sockets run bbr.
+  // supported is false when the client read no value. cc is the congestion
+  // control of the block data sockets and systemCc the system default.
+  // socketCc is present only when the block data sockets get a per-socket
+  // congestion control. ccOverride is true when this client process moved its
+  // per-socket choice away from bbr (to another algorithm, or to none); only a
+  // Linux client sets it.
+  // A value the client could not read is absent, and tuned is absent when the
+  // values it read all pass but some value is missing.
+  interface NetTuningSnapshot {
+    os?: string
+    supported?: boolean
+    cc?: string
+    systemCc?: string
+    socketCc?: string
+    ccOverride?: boolean
+    rcvMax?: number
+    sndMax?: number
+    bbrApplied?: boolean
+    tuned?: boolean
+  }
+  function getNetTuning(m: Record<string, any>): NetTuningSnapshot | null {
+    return (m.netTuning as NetTuningSnapshot | undefined) ?? null
+  }
+  // ccText is the one congestion control row of a Linux client. It gives the value, where
+  // it comes from, and the system default when that differs. An override that is off or
+  // that the kernel did not accept leaves the sockets on the system default.
+  function ccText(n: NetTuningSnapshot): string {
+    const source = n.socketCc
+      ? n.ccOverride ? 'per-socket override' : 'per socket'
+      : n.ccOverride ? 'system default, no per-socket setting' : 'system default'
+    const system = n.systemCc && n.systemCc !== n.cc ? `, system default ${n.systemCc}` : ''
+    return `${n.cc || '·'} (${source}${system})`
+  }
+  // ccFailsTarget uses the node page rule. It is true when the congestion control is a cause of "below target".
+  function ccFailsTarget(n: NetTuningSnapshot): boolean {
+    return n.tuned === false && !!n.cc && n.cc !== 'bbr'
+  }
+  // Only Linux and macOS clients measure their tuning; any other OS has no detection.
+  function tuningUnreadText(os: string | undefined): string {
+    const verb = os === 'linux' || os === 'darwin' ? 'not reported' : 'not supported'
+    return `${verb} on ${formatOsName(os ?? '')}`
   }
 
   // "addr" is a big-endian uint32 IPv4 the server packs the pool's node
@@ -820,6 +866,7 @@
       {@const drv = getDriverMetrics(m)}
       {@const driverSites = Object.entries(drv?.invariantSites ?? {}).sort(([a], [b]) => a.localeCompare(b))}
       {@const poolHealth = getPoolHealth(m)}
+      {@const netTuning = getNetTuning(m)}
       <div class="corner-brackets relative border border-border/30 rounded-sm">
         <div class="tech-grid absolute inset-0 pointer-events-none"></div>
         <div class="relative p-5">
@@ -1017,6 +1064,33 @@
                 {/if}
               </div>
             {/each}
+            {#if netTuning}
+              <div class="metric-group">
+                <p class="detail-label">Network Tuning</p>
+                {#if netTuning.supported}
+                  <div class="metric-row {netTuning.tuned === false ? 'text-warning' : ''}">
+                    <span class="inline-flex items-center gap-0.5">Tuned<InfoTip text="The target is a receive and send buffer maximum of 32 MB or more. On Linux, block data connections also use the bbr congestion control." /></span>
+                    <span>{netTuning.tuned === undefined ? 'not reported' : netTuning.tuned ? 'yes' : 'below target'}</span>
+                  </div>
+                  {#if netTuning.os === 'linux'}
+                    <div class="metric-row {ccFailsTarget(netTuning) ? 'text-warning' : ''}">
+                      {#if netTuning.ccOverride}
+                        <span class="inline-flex items-center gap-0.5">Congestion Control<InfoTip text="This client process does not set bbr on its block data connections. They use another algorithm, or the system default." /></span>
+                      {:else}
+                        <span>Congestion Control</span>
+                      {/if}
+                      <span>{ccText(netTuning)}</span>
+                    </div>
+                  {:else}
+                    <div class="metric-row"><span>Congestion Control</span><span>{netTuning.cc || '·'}</span></div>
+                  {/if}
+                  <div class="metric-row"><span>Receive Buffer Max</span><span>{netTuning.rcvMax ? formatBytes(netTuning.rcvMax) : '·'}</span></div>
+                  <div class="metric-row"><span>Send Buffer Max</span><span>{netTuning.sndMax ? formatBytes(netTuning.sndMax) : '·'}</span></div>
+                {:else}
+                  <div class="metric-row"><span>Tuned</span><span>{tuningUnreadText(netTuning.os)}</span></div>
+                {/if}
+              </div>
+            {/if}
           </div>
         </div>
       </div>
