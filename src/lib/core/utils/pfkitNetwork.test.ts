@@ -80,14 +80,14 @@ describe('parseFlowStats', () => {
   })
 
   it('returns null when the section is entirely absent', () => {
-    const blob = 'uptime_seconds 1.0\npid 123\n\n# Runtime\ngoroutines 4\n'
+    const blob = 'uptime_seconds 1.0\npid 123\n\n# Runtime\ntask_runners 4\n'
     expect(parseFlowStats(blob)).toBeNull()
   })
 
   it('finds the section regardless of what precedes or follows it in the blob', () => {
     const blob = [
       '# Runtime',
-      'goroutines 4',
+      'task_runners 4',
       '',
       '# Network (per peer)',
       '# real OS-level TCP counters (pfkit), joined against this service\'s own peer/connection tracking',

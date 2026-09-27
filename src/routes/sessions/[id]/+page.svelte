@@ -1022,7 +1022,7 @@
             </div>
             <div class="metric-group">
               <p class="detail-label">Runtime</p>
-              <div class="metric-row"><span>Goroutines</span><span>{formatNum(m.goroutines ?? 0)}</span></div>
+              <div class="metric-row"><span>Task Runners</span><span>{formatNum(m.taskRunners ?? m.goroutines ?? 0)}</span></div>
               <div class="metric-row"><span>Mem Alloc</span><span style="color: {memAllocColor(m.memAlloc ?? 0)}">{formatBytes(m.memAlloc ?? 0)}</span></div>
               <div class="metric-row"><span>Mem Sys</span><span>{formatBytes(m.memSys ?? 0)}</span></div>
               <div class="metric-row"><span>GC Count</span><span>{formatNum(m.gcNum ?? 0)}</span></div>

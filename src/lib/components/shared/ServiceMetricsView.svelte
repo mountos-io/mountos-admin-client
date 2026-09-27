@@ -284,7 +284,7 @@
 
   const uptime = $derived(sv(sections, "Overview", "uptime_seconds"));
   const pid = $derived(sv(sections, "Overview", "pid"));
-  const goroutines = $derived(sv(sections, "Runtime", "goroutines"));
+  const taskRunners = $derived(sv(sections, "Runtime", "task_runners") || sv(sections, "Runtime", "goroutines"));
   const memAlloc = $derived(sv(sections, "Runtime", "memory_alloc_bytes"));
   const memSys = $derived(sv(sections, "Runtime", "memory_sys_bytes"));
   const memHeap = $derived(sv(sections, "Runtime", "memory_heap_inuse_bytes"));
@@ -439,8 +439,8 @@
           <div class="gauge-sub">PID {pid}</div>
         </div>
         <div class="gauge-cell bg-card px-4 py-3 corner-plus">
-          <div class="gauge-lbl">Goroutines</div>
-          <div class="gauge-val">{goroutines}</div>
+          <div class="gauge-lbl">Task Runners</div>
+          <div class="gauge-val">{taskRunners}</div>
         </div>
         <div class="gauge-cell bg-card px-4 py-3 corner-plus">
           <div class="gauge-lbl">Heap Alloc</div>
