@@ -85,7 +85,8 @@
 
   // ── Directory listing state ─────────────────────────────────────────
   let entries = $state<ForkTreeEntry[]>([])
-  let cursor = $state<number | null>(null)
+  // Opaque server cursor, sent back unchanged. Never parsed or built here.
+  let cursor = $state<string | null>(null)
   let loading = $state(false)
   let loadingMore = $state(false)
   let listError = $state<string | null>(null)
