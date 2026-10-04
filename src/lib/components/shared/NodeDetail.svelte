@@ -32,7 +32,7 @@
   import { showErrorToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
   import { formatRelative, nodeStatusVariant, formatDate, formatBinaryVersion } from '$lib/core/utils/format'
-  import { humanizeKey, metadataRows, type MetaEntry } from '$lib/core/utils/node-meta'
+  import { addressRows, humanizeKey, metadataRows, type MetaEntry } from '$lib/core/utils/node-meta'
   import type { ServiceNode, BlockVolume } from '$lib/core/api/types'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import Copy from '@lucide/svelte/icons/copy'
@@ -160,6 +160,7 @@
   const nodeProcessId = $derived(node?.metadata?.['processId'] ?? null)
   const nodeBinaryVersion = $derived(node?.binaryVersion != null ? formatBinaryVersion(node.binaryVersion) : null)
   const nodeCommitHash = $derived(node?.metadata?.['commitHash'] ? String(node.metadata['commitHash']) : null)
+  const nodeAddressRows = $derived(addressRows(node?.addrs))
   const instanceInfo = $derived(node?.instanceInfo ?? null)
 
   // The service's live "# Config" block (service, build time, go version, internal RPC port, ...)
@@ -322,6 +323,22 @@
             <dt class="text-muted-foreground text-sm">Address</dt>
             <dd class="font-mono text-sm mt-0.5">{node.advertiseAddr}</dd>
           </div>
+          {#if nodeAddressRows.length > 0}
+            <div class="col-span-full">
+              <dt class="text-muted-foreground text-sm">All Addresses</dt>
+              <dd class="mt-0.5">
+                <ul class="grid gap-1 sm:grid-cols-2">
+                  {#each nodeAddressRows as a (a.key)}
+                    <li class="flex flex-wrap items-baseline gap-x-2 text-sm">
+                      <span class="text-muted-foreground">{a.label}</span>
+                      <span class="font-mono break-all">{a.advertise}</span>
+                      {#if a.rpc}<span class="font-mono text-muted-foreground break-all">RPC {a.rpc}</span>{/if}
+                    </li>
+                  {/each}
+                </ul>
+              </dd>
+            </div>
+          {/if}
           {#if node.metricsEndpoint}
             <div class="col-span-full">
               <dt class="text-muted-foreground text-sm">Metrics Endpoint</dt>

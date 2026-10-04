@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { metadataRows } from './node-meta'
+import { addressRows, metadataRows } from './node-meta'
 
 describe('metadataRows', () => {
   it('renders blockserv network tuning keys with labels, badge, byte sizes and order', () => {
@@ -57,5 +57,27 @@ describe('metadataRows', () => {
     expect(rows.map((r) => r.key)).toEqual(['ready', 'net_tuned'])
     expect(rows[1]).toMatchObject({ label: 'Network Tuned', kind: 'text', text: 'Not reported' })
     expect(metadataRows(null, true)).toEqual([expect.objectContaining({ key: 'net_tuned', text: 'Not reported' })])
+  })
+})
+
+describe('addressRows', () => {
+  it('labels each address by scope and family and keeps server order', () => {
+    const rows = addressRows([
+      { scope: 'private', family: 4, advertise: '10.0.1.5:6464', rpc: '10.0.1.5:6466' },
+      { scope: 'private', family: 6, advertise: '[fd00::5]:6464', rpc: '[fd00::5]:6464' },
+      { scope: 'public', family: 6, advertise: '[2001:db8::5]:6464' },
+    ])
+    expect(rows.map((r) => r.label)).toEqual(['Private IPv4', 'Private IPv6', 'Public IPv6'])
+    expect(rows[0]).toMatchObject({ advertise: '10.0.1.5:6464', rpc: '10.0.1.5:6466' })
+    expect(rows[1].rpc).toBeUndefined()
+    expect(rows[2].rpc).toBeUndefined()
+  })
+
+  it('returns no rows for a node without an address list', () => {
+    expect(addressRows(undefined)).toEqual([])
+  })
+
+  it('hides the raw addrs metadata key', () => {
+    expect(metadataRows({ ready: true, addrs: [{ scope: 'public', ip: '203.0.113.5', family: 4 }] }).map((r) => r.key)).toEqual(['ready'])
   })
 })

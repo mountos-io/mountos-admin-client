@@ -1,4 +1,5 @@
 import { formatBytes } from '$lib/core/utils/format'
+import type { NodeAddress } from '$lib/core/api/types'
 
 // Node metadata is service-specific; NodeDetail renders it as labeled fields (not raw JSON).
 // Known keys (mostly blockserv) get friendly labels, ordering and typed rendering;
@@ -32,8 +33,24 @@ const META_ORDER = [
   'net_tuned', 'net_cc', 'net_system_cc', 'net_cc_override', 'net_qdisc', 'net_rmem_max', 'net_wmem_max',
 ]
 // processId/commitHash/metrics_port/metrics_path surface elsewhere on the node card;
-// storage_id folds into the linked "Storage" field instead of a bare ID.
-const META_HIDDEN = new Set(['processId', 'commitHash', 'metrics_port', 'metrics_path', 'storage_id'])
+// storage_id folds into the linked "Storage" field instead of a bare ID; addrs shows
+// as the node's address list (addressRows).
+const META_HIDDEN = new Set(['processId', 'commitHash', 'metrics_port', 'metrics_path', 'storage_id', 'addrs'])
+
+export type AddressRow = { key: string; label: string; advertise: string; rpc?: string }
+
+// The rows NodeDetail shows for a node's registered addresses, in server order:
+// private before public, IPv4 before IPv6. The RPC address shows only when it
+// differs from the advertise address.
+export function addressRows(addrs: readonly NodeAddress[] | undefined | null): AddressRow[] {
+  return (addrs ?? []).map((a) => {
+    const family = a.family === 6 ? 'IPv6' : a.family === 4 ? 'IPv4' : 'Host'
+    const scope = a.scope === 'private' ? 'Private' : 'Public'
+    const row: AddressRow = { key: `${a.scope}-${a.family}-${a.advertise}`, label: `${scope} ${family}`, advertise: a.advertise }
+    if (a.rpc && a.rpc !== a.advertise) row.rpc = a.rpc
+    return row
+  })
+}
 
 export function humanizeKey(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())

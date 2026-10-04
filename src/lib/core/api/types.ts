@@ -12,6 +12,7 @@ export type {
   Fork,
   AuditLog,
   ServiceNode,
+  NodeAddress,
   DiscoverMetaResponse,
   DiscoverEndpoint,
   MetricsTarget,
