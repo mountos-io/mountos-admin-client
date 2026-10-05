@@ -305,11 +305,14 @@
 
   // Windows mountosio kernel-driver diagnostics: invariant-violation hits
   // (with per-site breakdown), suppressed IRP double completions, and
-  // dev-build fault injections. The server sends this group, all-zero
-  // counters included, whenever the driver is queryable: presence alone
-  // confirms "Windows client, driver present, no issues". Omission means
-  // no driver (non-Windows, not installed, or inaccessible).
+  // dev-build fault injections. The client sends this group, all-zero
+  // counters included, whenever the driver answers: presence alone confirms
+  // "Windows client, driver present, no issues". A driver that is installed
+  // but does not answer in time sends only notAnswering=true, and the page
+  // shows no counters for it. Omission means no driver (non-Windows, not
+  // installed, or inaccessible).
   interface DriverSnapshot {
+    notAnswering?: boolean
     invariantTotal?: number
     irpDoubleCompletions?: number
     faultInjections?: number
@@ -864,7 +867,7 @@
     <!-- Metrics -->
     {#if m.reads !== undefined}
       {@const drv = getDriverMetrics(m)}
-      {@const driverSites = Object.entries(drv?.invariantSites ?? {}).sort(([a], [b]) => a.localeCompare(b))}
+      {@const driverSites = Object.entries(drv?.notAnswering ? {} : drv?.invariantSites ?? {}).sort(([a], [b]) => a.localeCompare(b))}
       {@const poolHealth = getPoolHealth(m)}
       {@const netTuning = getNetTuning(m)}
       <div class="corner-brackets relative border border-border/30 rounded-sm">
@@ -1031,17 +1034,24 @@
               <div class="metric-row {(m.rpcErrors ?? 0) ? 'text-destructive' : ''}"><span>RPC Errors</span><span>{formatNum(m.rpcErrors ?? 0)}</span></div>
             </div>
             {#if drv}
-              <!-- Windows mountosio kernel driver. Shown whenever the driver is present and queryable, all-zero counters included, so presence alone confirms the driver is healthy. -->
+              <!-- Windows mountosio kernel driver. Shown whenever the driver is present. A driver that answers shows its counters, all-zero included, so presence alone confirms it is healthy. A driver that does not answer shows a warning and no counters. -->
               <div class="metric-group">
                 <p class="detail-label">Driver</p>
-                <div class="metric-row"><span>Invariant Hits</span><span>{formatNum(drv.invariantTotal ?? 0)}</span></div>
-                <div class="metric-row"><span>IRP Double Compl.</span><span>{formatNum(drv.irpDoubleCompletions ?? 0)}</span></div>
-                <div class="metric-row"><span>Fault Injections</span><span>{formatNum(drv.faultInjections ?? 0)}</span></div>
-                {#if driverSites.length > 0}
-                  <p class="text-xs text-muted-foreground uppercase tracking-wider mt-1 pt-1 border-t border-border/30">Kernel Diagnostic Error Sites</p>
-                  {#each driverSites as [site, count]}
-                    <div class="metric-row"><span class="truncate" title={site}>{site}</span><span>{formatNum(count)}</span></div>
-                  {/each}
+                {#if drv.notAnswering}
+                  <div class="metric-row text-warning">
+                    <span class="inline-flex items-center gap-0.5">Status<InfoTip text="The driver is installed but did not reply in time. Its counters are unavailable." /></span>
+                    <span><Badge variant="warning" class="font-mono text-xs">Not Answering</Badge></span>
+                  </div>
+                {:else}
+                  <div class="metric-row"><span>Invariant Hits</span><span>{formatNum(drv.invariantTotal ?? 0)}</span></div>
+                  <div class="metric-row"><span>IRP Double Compl.</span><span>{formatNum(drv.irpDoubleCompletions ?? 0)}</span></div>
+                  <div class="metric-row"><span>Fault Injections</span><span>{formatNum(drv.faultInjections ?? 0)}</span></div>
+                  {#if driverSites.length > 0}
+                    <p class="text-xs text-muted-foreground uppercase tracking-wider mt-1 pt-1 border-t border-border/30">Kernel Diagnostic Error Sites</p>
+                    {#each driverSites as [site, count]}
+                      <div class="metric-row"><span class="truncate" title={site}>{site}</span><span>{formatNum(count)}</span></div>
+                    {/each}
+                  {/if}
                 {/if}
               </div>
             {/if}

@@ -231,3 +231,39 @@ describe('sessions/[id] network tuning', () => {
     expect(screen.queryByText('Network Tuning')).not.toBeInTheDocument()
   })
 })
+
+describe('sessions/[id] kernel driver', () => {
+  it('shows a warning and no counters when the driver does not answer', async () => {
+    getSession.mockResolvedValue({
+      ...baseSession,
+      metrics: { reads: 10, driver: { notAnswering: true } },
+    })
+    render(Page)
+
+    await waitFor(() => expect(screen.getByText('Driver')).toBeInTheDocument())
+    expect(screen.getByText('Not Answering')).toBeInTheDocument()
+    expect(screen.queryByText('Invariant Hits')).not.toBeInTheDocument()
+    expect(screen.queryByText('IRP Double Compl.')).not.toBeInTheDocument()
+    expect(screen.queryByText('Fault Injections')).not.toBeInTheDocument()
+  })
+
+  it('shows zero counters and no warning when the driver answers', async () => {
+    getSession.mockResolvedValue({
+      ...baseSession,
+      metrics: { reads: 10, driver: { invariantTotal: 0, irpDoubleCompletions: 0, faultInjections: 0 } },
+    })
+    render(Page)
+
+    await waitFor(() => expect(screen.getByText('Invariant Hits')).toBeInTheDocument())
+    expect(screen.queryByText('Not Answering')).not.toBeInTheDocument()
+  })
+
+  it('omits the driver card when the client reported no driver', async () => {
+    getSession.mockResolvedValue(baseSession)
+    render(Page)
+
+    await waitFor(() => expect(screen.getByText('Metrics')).toBeInTheDocument())
+    expect(screen.queryByText('Invariant Hits')).not.toBeInTheDocument()
+    expect(screen.queryByText('Not Answering')).not.toBeInTheDocument()
+  })
+})
