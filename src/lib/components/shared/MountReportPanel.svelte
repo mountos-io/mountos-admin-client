@@ -115,24 +115,24 @@
             <Copy class="h-4 w-4" aria-hidden="true" />
           </Button>
         </div>
-        <pre class="text-sm font-mono whitespace-pre-wrap break-all rounded-sm bg-muted/40 px-3 py-2">{cmd}</pre>
+        <pre class="text-sm font-mono whitespace-pre-wrap [overflow-wrap:anywhere] rounded-sm bg-muted/40 px-3 py-2">{cmd}</pre>
         <p class="text-sm text-muted-foreground">Rebuilt from the stored report. Flags are sorted by name. Values that look like secrets are never stored.</p>
       </div>
 
       <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
         {#if mount.mountPoint}
-          <div class="min-w-0"><dt class="detail-label">Mount point</dt><dd class="text-sm font-mono break-all">{mount.mountPoint}</dd></div>
+          <div class="min-w-0"><dt class="detail-label">Mount point</dt><dd class="text-sm font-mono [overflow-wrap:anywhere]">{mount.mountPoint}</dd></div>
         {/if}
         {#if mount.args?.length}
           <div class="min-w-0">
             <dt class="detail-label">Arguments</dt>
-            <dd class="text-sm font-mono break-all">{mount.args.join(' ')}</dd>
+            <dd class="text-sm font-mono [overflow-wrap:anywhere]">{mount.args.join(' ')}</dd>
           </div>
         {/if}
         {#if mount.mountOptions?.length}
           <div class="min-w-0 sm:col-span-2">
             <dt class="detail-label">Mount options (-o)</dt>
-            <dd class="text-sm font-mono break-all">{mount.mountOptions.join(', ')}</dd>
+            <dd class="text-sm font-mono [overflow-wrap:anywhere]">{mount.mountOptions.join(', ')}</dd>
           </div>
         {/if}
       </dl>
@@ -156,8 +156,8 @@
             <TableBody>
               {#each flags as f (f.name + '=' + f.value)}
                 <TableRow>
-                  <TableCell class="text-sm font-mono align-top break-all">{f.name}</TableCell>
-                  <TableCell class="text-sm font-mono align-top break-all">{f.value === '' ? '·' : f.value}</TableCell>
+                  <TableCell class="text-sm font-mono align-top [overflow-wrap:anywhere]">{f.name}</TableCell>
+                  <TableCell class="text-sm font-mono align-top [overflow-wrap:anywhere]">{f.value === '' ? '·' : f.value}</TableCell>
                   <TableCell class="text-sm text-muted-foreground hidden sm:table-cell align-top">{f.source ?? '·'}</TableCell>
                 </TableRow>
               {/each}

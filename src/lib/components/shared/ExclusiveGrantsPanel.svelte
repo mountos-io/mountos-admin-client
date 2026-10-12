@@ -24,8 +24,7 @@
         <TableRow>
           <TableHead class="th-cyber">Holder</TableHead>
           <TableHead class="th-cyber">Scope</TableHead>
-          <TableHead class="th-cyber">Role</TableHead>
-          <TableHead class="th-cyber">State</TableHead>
+          <TableHead class="th-cyber">Grant</TableHead>
           <TableHead class="th-cyber hidden xl:table-cell">Durability</TableHead>
           <TableHead class="th-cyber hidden xl:table-cell">Window</TableHead>
           <TableHead class="th-cyber hidden md:table-cell">Since</TableHead>
@@ -38,15 +37,19 @@
         {#each result.grants as g (g.sessionId + g.scopeInode + g.role + g.standbyPosition)}
           <TableRow>
             <TableCell class="text-sm">
-              <div class="font-mono whitespace-nowrap">{g.sessionName || '·'}</div>
-              <div class="text-muted-foreground font-mono whitespace-nowrap">{g.holderIp || '·'}</div>
+              <div class="font-mono break-all sm:break-normal sm:whitespace-nowrap">{g.sessionName || '·'}</div>
+              <div class="text-muted-foreground font-mono break-all sm:break-normal sm:whitespace-nowrap">{g.holderIp || '·'}</div>
             </TableCell>
             <TableCell class="text-sm">
-              <div class="font-mono whitespace-nowrap">{scopeLabel(g)}</div>
-              {#if g.takeOverText}<div class="text-muted-foreground max-w-xs">{g.takeOverText}</div>{/if}
+              <div class="font-mono break-all sm:break-normal sm:whitespace-nowrap">{scopeLabel(g)}</div>
+              {#if g.takeOverText}<div class="text-muted-foreground max-w-xs hidden sm:block">{g.takeOverText}</div>{/if}
             </TableCell>
-            <TableCell class="text-sm"><Badge variant={g.role === 'primary' ? 'primary' : 'secondary'}>{grantRoleLabel(g)}</Badge></TableCell>
-            <TableCell><Badge variant={grantStateVariant(g.state)}>{g.state}</Badge></TableCell>
+            <TableCell>
+              <div class="flex flex-col items-start gap-1">
+                <Badge variant={g.role === 'primary' ? 'primary' : 'secondary'}>{grantRoleLabel(g)}</Badge>
+                <Badge variant={grantStateVariant(g.state)}>{g.state}</Badge>
+              </div>
+            </TableCell>
             <TableCell class="text-sm text-muted-foreground hidden xl:table-cell">{g.durability}</TableCell>
             <TableCell class="text-sm text-muted-foreground hidden xl:table-cell tabular-nums">{g.windowSeconds} s</TableCell>
             <TableCell class="text-sm text-muted-foreground hidden md:table-cell whitespace-nowrap" title={formatDate(new Date(g.sinceUnixMs))}>{formatRelative(new Date(g.sinceUnixMs))}</TableCell>
