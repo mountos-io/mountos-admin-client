@@ -14,7 +14,7 @@
 <Card>
   <CardHeader>
     <CardTitle>Exclusive grants ({result.grants.length}{result.truncated ? '+' : ''})</CardTitle>
-    <p class="text-sm text-muted-foreground">{result.fork ? `Fork ${result.fork}` : 'All forks'}. Includes standby places.</p>
+    <p class="text-sm text-muted-foreground">All forks. Includes standby places.</p>
   </CardHeader>
   <CardContent class="space-y-3">
     {#if !result.ownerReachable}

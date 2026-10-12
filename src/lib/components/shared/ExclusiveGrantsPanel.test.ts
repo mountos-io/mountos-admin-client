@@ -11,7 +11,7 @@ const grant = (over: Partial<ExclusiveGrant> = {}): ExclusiveGrant => ({
 })
 
 const result = (over: Partial<ExclusiveGrantsResponse> = {}): ExclusiveGrantsResponse => ({
-  fork: '', ownerReachable: true, truncated: false, grants: [grant()], ...over,
+  ownerReachable: true, truncated: false, grants: [grant()], ...over,
 } as ExclusiveGrantsResponse)
 
 describe('ExclusiveGrantsPanel', () => {
@@ -50,11 +50,6 @@ describe('ExclusiveGrantsPanel', () => {
     expect(screen.getByRole('columnheader', { name: 'Fork' })).toBeInTheDocument()
     expect(screen.getByText('dev')).toBeInTheDocument()
     expect(screen.getByText('main')).toBeInTheDocument()
-  })
-
-  it('names the fork in the header when the list is for one fork', () => {
-    render(ExclusiveGrantsPanel, { result: result({ fork: 'dev' }) })
-    expect(screen.getByText('Fork dev. Includes standby places.')).toBeInTheDocument()
   })
 
   it('shows unknown for null clocks', () => {

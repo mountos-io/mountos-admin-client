@@ -111,7 +111,7 @@ import type {
 // and re-export the SDK types once the installed SDK version has it.
 export type ExclusiveGrantWithFork = SDKExclusiveGrant & { fork?: string }
 export type ExclusiveGrant = ExclusiveGrantWithFork
-export type ExclusiveGrantsResponse = Omit<SDKExclusiveGrantsResponse, 'grants'> & { grants: ExclusiveGrantWithFork[] }
+export type ExclusiveGrantsResponse = Omit<SDKExclusiveGrantsResponse, 'grants' | 'fork'> & { grants: ExclusiveGrantWithFork[] }
 
 // Dispatcher telemetry is emitted by newer dataserv nodes before it becomes
 // part of the released SDK contract. Keeping the extension here makes the UI
