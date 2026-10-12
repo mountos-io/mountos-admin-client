@@ -79,35 +79,3 @@ export function grantRoleLabel(g: Pick<ExclusiveGrant, 'role' | 'standbyPosition
 export function scopeLabel(g: Pick<ExclusiveGrant, 'path' | 'kind'>): string {
   return `${g.path || '/'} (${g.kind})`
 }
-
-export interface MountIdentity {
-  ipAddr?: string
-  hostname?: string
-  friendlyName?: string
-}
-
-// The session record holds no data-plane session id, so a mount is matched to
-// its grants by holder IP and holder name. An empty grant field matches any
-// mount. A grant on a NAT'd address can miss. When the mount report carries an
-// exclusive path flag, only grants on that path are kept.
-export function grantsForMount(grants: ExclusiveGrant[], mount: MountIdentity, exclusivePath?: string): ExclusiveGrant[] {
-  const names = new Set([mount.hostname, mount.friendlyName].filter((n): n is string => !!n))
-  const matched = grants.filter((g) => {
-    if (g.holderIp && mount.ipAddr && g.holderIp !== mount.ipAddr) return false
-    if (g.sessionName && names.size > 0 && !names.has(g.sessionName)) return false
-    return true
-  })
-  if (!exclusivePath) return matched
-  const want = normalizePath(exclusivePath)
-  const onPath = matched.filter((g) => normalizePath(g.path) === want)
-  return onPath.length > 0 ? onPath : matched
-}
-
-function normalizePath(p: string): string {
-  const t = p.replace(/\/+$/, '')
-  return t.startsWith('/') ? t : `/${t}`
-}
-
-export function exclusivePathFromFlags(flags: MountFlag[] | undefined): string | undefined {
-  return flags?.find((f) => f.name === 'exclusive')?.value || undefined
-}

@@ -7,12 +7,13 @@
   import { formatDate, formatRelative } from '$lib/core/utils/format'
 
   let { result }: { result: ExclusiveGrantsResponse } = $props()
+  const unreachable = $derived(result.ownerReachable === false)
 </script>
 
 <Card>
   <CardHeader>
     <CardTitle>Exclusive grants ({result.grants.length}{result.truncated ? '+' : ''})</CardTitle>
-    <p class="text-sm text-muted-foreground">Fork {result.fork || 'main'}. Includes standby places that have no live mount.</p>
+    <p class="text-sm text-muted-foreground">Fork {result.fork || 'main'}. Includes standby places.</p>
   </CardHeader>
   <CardContent class="space-y-3">
     {#if !result.ownerReachable}
@@ -21,27 +22,37 @@
     <Table containerLabel="Exclusive grants">
       <TableHeader>
         <TableRow>
+          <TableHead class="th-cyber">Holder</TableHead>
+          <TableHead class="th-cyber">Scope</TableHead>
           <TableHead class="th-cyber">Role</TableHead>
           <TableHead class="th-cyber">State</TableHead>
-          <TableHead class="th-cyber">Scope</TableHead>
-          <TableHead class="th-cyber hidden md:table-cell">Holder</TableHead>
-          <TableHead class="th-cyber hidden lg:table-cell">Durability</TableHead>
-          <TableHead class="th-cyber hidden lg:table-cell">Live</TableHead>
-          <TableHead class="th-cyber hidden lg:table-cell">Last renew</TableHead>
+          <TableHead class="th-cyber hidden xl:table-cell">Durability</TableHead>
+          <TableHead class="th-cyber hidden xl:table-cell">Window</TableHead>
           <TableHead class="th-cyber hidden md:table-cell">Since</TableHead>
+          <TableHead class="th-cyber hidden xl:table-cell">Live</TableHead>
+          <TableHead class="th-cyber hidden xl:table-cell">Last renew</TableHead>
+          <TableHead class="th-cyber hidden xl:table-cell">Last seen</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {#each result.grants as g (g.sessionId + g.scopeInode + g.role + g.standbyPosition)}
           <TableRow>
+            <TableCell class="text-sm">
+              <div class="font-mono whitespace-nowrap">{g.sessionName || '·'}</div>
+              <div class="text-muted-foreground font-mono whitespace-nowrap">{g.holderIp || '·'}</div>
+            </TableCell>
+            <TableCell class="text-sm">
+              <div class="font-mono whitespace-nowrap">{scopeLabel(g)}</div>
+              {#if g.takeOverText}<div class="text-muted-foreground max-w-xs">{g.takeOverText}</div>{/if}
+            </TableCell>
             <TableCell class="text-sm"><Badge variant={g.role === 'primary' ? 'primary' : 'secondary'}>{grantRoleLabel(g)}</Badge></TableCell>
             <TableCell><Badge variant={grantStateVariant(g.state)}>{g.state}</Badge></TableCell>
-            <TableCell class="text-sm font-mono whitespace-nowrap">{scopeLabel(g)}</TableCell>
-            <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono whitespace-nowrap">{g.sessionName || g.holderIp || '·'}</TableCell>
-            <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{g.durability}</TableCell>
-            <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{liveLabel(result?.ownerReachable === false ? null : g.live)}</TableCell>
-            <TableCell class="text-sm text-muted-foreground hidden lg:table-cell tabular-nums">{formatClockMs(result?.ownerReachable === false ? null : g.lastRenewAgeMs)}</TableCell>
-            <TableCell class="text-sm text-muted-foreground hidden md:table-cell" title={formatDate(new Date(g.sinceUnixMs))}>{formatRelative(new Date(g.sinceUnixMs))}</TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell">{g.durability}</TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell tabular-nums">{g.windowSeconds} s</TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden md:table-cell whitespace-nowrap" title={formatDate(new Date(g.sinceUnixMs))}>{formatRelative(new Date(g.sinceUnixMs))}</TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell">{liveLabel(unreachable ? null : g.live)}</TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell tabular-nums">{formatClockMs(unreachable ? null : g.lastRenewAgeMs)}</TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell tabular-nums">{formatClockMs(unreachable ? null : g.lastSeenAgeMs)}</TableCell>
           </TableRow>
         {/each}
       </TableBody>

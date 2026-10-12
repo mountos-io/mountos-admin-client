@@ -24,9 +24,6 @@
   import Layers from '@lucide/svelte/icons/layers'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
   import MountReportPanel from '$lib/components/shared/MountReportPanel.svelte'
-  import ExclusiveGrantDetail from '$lib/components/shared/ExclusiveGrantDetail.svelte'
-  import { exclusivePathFromFlags } from '$lib/core/utils/exclusive'
-  import type { MountDetails } from '$lib/core/api/types'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
 
   const auth = useAuth()
@@ -37,9 +34,6 @@
   let error = $state<string | null>(null)
   let fetchCtrl: AbortController | null = null
   let redirected = false
-
-  // Mount report flags tell which path the mount asked to hold exclusively.
-  let mountDetails = $state<MountDetails | null>(null)
 
   let pollValue = $state('')
   let poll: ActivePoll | null = null
@@ -647,13 +641,7 @@
     </div>
 
     {#if role === 'mount' && !auth.isUserRole}
-      <MountReportPanel sessionId={session.id} onloaded={(d) => { mountDetails = d }} />
-      <ExclusiveGrantDetail
-        volumeId={session.volume.id}
-        fork={session.forkName || undefined}
-        mount={{ ipAddr: session.ipAddr, hostname: session.hostname, friendlyName: getFriendlyName(session) }}
-        exclusivePath={exclusivePathFromFlags(mountDetails?.flags)}
-      />
+      <MountReportPanel sessionId={session.id} />
     {/if}
 
     {#if gw}

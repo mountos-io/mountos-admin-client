@@ -3,7 +3,7 @@
   import { Button } from '$lib/components/ui/button'
   import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
   import { api } from '$lib/core/stores/client.svelte'
-  import type { MountDetails, MountReportResponse } from '$lib/core/api/types'
+  import type { MountReportResponse } from '$lib/core/api/types'
   import { classifyFailure, commandLine, flagsAsText, hasReportContent, sortFlags, type LoadFailure } from '$lib/core/utils/exclusive'
   import { copyText } from '$lib/core/utils/clipboard'
   import { downloadTextFile } from '$lib/core/utils/download'
@@ -13,10 +13,7 @@
   import Download from '@lucide/svelte/icons/download'
   import LoaderCircle from '@lucide/svelte/icons/loader-circle'
 
-  let { sessionId, onloaded }: {
-    sessionId: number
-    onloaded?: (mount: MountDetails | null) => void
-  } = $props()
+  let { sessionId }: { sessionId: number } = $props()
 
   let report = $state<MountReportResponse | null>(null)
   let loading = $state(true)
@@ -38,13 +35,11 @@
       const r = await api.clientSessions.mountReport(id, c.signal)
       if (ctrl !== c) return
       report = r
-      onloaded?.(r.mount ?? null)
     } catch (e) {
       if ((e as Error).name === 'AbortError') return
       if (ctrl !== c) return
       report = null
       failure = classifyFailure(e)
-      onloaded?.(null)
     } finally {
       if (ctrl === c) loading = false
     }

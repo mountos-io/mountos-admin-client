@@ -36,10 +36,8 @@
   import { isCopysetState } from '$lib/core/api/copyset-ui-types'
   import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right'
   import { ApiError } from '$lib/core/api/errors'
-  import ExclusiveChip from '$lib/components/shared/ExclusiveChip.svelte'
   import ExclusiveGrantsPanel from '$lib/components/shared/ExclusiveGrantsPanel.svelte'
   import type { ExclusiveGrantsResponse } from '$lib/core/api/types'
-  import { grantsForMount } from '$lib/core/utils/exclusive'
   import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
   import VolumeCopysetCountControl from '$lib/components/shared/VolumeCopysetCountControl.svelte'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
@@ -890,7 +888,6 @@
     <TableHead class="th-cyber">Status</TableHead>
     <TableHead class="th-cyber hidden md:table-cell">Duration</TableHead>
     <TableHead class="th-cyber hidden lg:table-cell">Last Heartbeat</TableHead>
-    {#if showGrants}<TableHead class="th-cyber">Exclusive</TableHead>{/if}
   </TableRow>
 {/snippet}
 
@@ -1546,7 +1543,6 @@
                 { width: 'w-16', height: 'h-5' },
                 { width: 'w-20', class: 'hidden md:table-cell' },
                 { width: 'w-20', class: 'hidden lg:table-cell' },
-                ...(showGrants ? [{ width: 'w-24' }] : []),
               ]}
             />
           {:else if volSessions.length === 0}
@@ -1579,14 +1575,6 @@
                     <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
                       {session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}
                     </TableCell>
-                    {#if showGrants}
-                      {@const mine = !session.forkName && grantsResult ? grantsForMount(grantsResult.grants, { ipAddr: session.ipAddr, hostname: session.hostname }) : []}
-                      <TableCell class="text-sm">
-                        {#if mine.length === 0}<span class="text-muted-foreground">·</span>{:else}
-                          <div class="flex flex-col items-start gap-1 min-w-0">{#each mine as g (g.sessionId + g.scopeInode + g.role)}<ExclusiveChip grant={g} />{/each}</div>
-                        {/if}
-                      </TableCell>
-                    {/if}
                   </TableRow>
                 {/each}
               </TableBody>

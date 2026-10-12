@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { ApiError } from '../api/errors'
 import type { ExclusiveGrant } from '../api/types'
 import {
-  classifyFailure, commandLine, exclusivePathFromFlags, formatClockMs, grantRoleLabel,
-  grantsForMount, grantStateVariant, hasReportContent, liveLabel, sortFlags,
+  classifyFailure, commandLine, formatClockMs, grantRoleLabel,
+  grantStateVariant, hasReportContent, liveLabel, sortFlags,
 } from './exclusive'
 
 const grant = (over: Partial<ExclusiveGrant> = {}): ExclusiveGrant => ({
@@ -64,20 +64,5 @@ describe('grants', () => {
     expect(grantRoleLabel(grant({ role: 'standby', standbyPosition: 2 }))).toBe('standby #2')
     expect(grantStateVariant('fenced')).toBe('destructive')
     expect(grantStateVariant('unknown')).toBe('secondary')
-  })
-
-  it('matches a mount by address and name', () => {
-    const gs = [grant(), grant({ sessionId: '2', holderIp: '10.0.0.9', sessionName: 'host-b' })]
-    expect(grantsForMount(gs, { ipAddr: '10.0.0.5', hostname: 'host-a' }).map((g) => g.sessionId)).toEqual(['1'])
-    expect(grantsForMount(gs, { ipAddr: '10.0.0.5', friendlyName: 'host-a' }).map((g) => g.sessionId)).toEqual(['1'])
-    expect(grantsForMount(gs, { ipAddr: '10.0.0.77', hostname: 'other' })).toEqual([])
-  })
-
-  it('narrows by the exclusive path when it matches', () => {
-    const gs = [grant({ path: '/a' }), grant({ sessionId: '3', path: '/b' })]
-    expect(grantsForMount(gs, { ipAddr: '10.0.0.5' }, 'b/').map((g) => g.path)).toEqual(['/b'])
-    expect(grantsForMount(gs, { ipAddr: '10.0.0.5' }, '/zzz')).toHaveLength(2)
-    expect(exclusivePathFromFlags([{ name: 'exclusive', value: '/a' }])).toBe('/a')
-    expect(exclusivePathFromFlags(undefined)).toBeUndefined()
   })
 })
