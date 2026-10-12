@@ -36,6 +36,10 @@
   import { isCopysetState } from '$lib/core/api/copyset-ui-types'
   import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right'
   import { ApiError } from '$lib/core/api/errors'
+  import ExclusiveChip from '$lib/components/shared/ExclusiveChip.svelte'
+  import ExclusiveGrantsPanel from '$lib/components/shared/ExclusiveGrantsPanel.svelte'
+  import type { ExclusiveGrantsResponse } from '$lib/core/api/types'
+  import { grantsForMount } from '$lib/core/utils/exclusive'
   import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
   import VolumeCopysetCountControl from '$lib/components/shared/VolumeCopysetCountControl.svelte'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
@@ -399,12 +403,14 @@
     volSessions = []; sessionsTotal = 0; sessionsTotalPages = 0; sessionsPage = 1
     apiKeysCtrl?.abort(); apiKeys = []; apiKeysKnown = false; newKeyName = ''
     copysetConfigCtrl?.abort()
+    grantsCtrl?.abort(); grantsResult = null
     loading = true
     store.getVolume(id).then(v => {
       if (ctrl.signal.aborted) return
       volume = v
       syncEditFields(v)
       fetchVolumeSessions()
+      fetchGrants()
       fetchForks()
       fetchApiKeys()
       fetchCopysetConfig().then(fetchVolumeCopysets)
@@ -582,6 +588,25 @@
       if (sessionsCtrl === ctrl) sessionsLoading = false
     }
   }
+
+  // One grants read per page load, main fork. Admin roles only: the user role gets 403.
+  let grantsResult = $state<ExclusiveGrantsResponse | null>(null)
+  let grantsCtrl: AbortController | null = null
+
+  async function fetchGrants() {
+    grantsCtrl?.abort()
+    if (auth.isUserRole || !volume) { grantsResult = null; return }
+    const ctrl = grantsCtrl = new AbortController()
+    try {
+      const r = await api.volumes.exclusiveGrants(id, undefined, undefined, ctrl.signal)
+      if (grantsCtrl === ctrl) grantsResult = r
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return
+      if (grantsCtrl === ctrl) grantsResult = null
+    }
+  }
+
+  const showGrants = $derived((grantsResult?.grants.length ?? 0) > 0)
 
   let forks = $state<Fork[]>([])
   let forksLoading = $state(false)
@@ -865,6 +890,7 @@
     <TableHead class="th-cyber">Status</TableHead>
     <TableHead class="th-cyber hidden md:table-cell">Duration</TableHead>
     <TableHead class="th-cyber hidden lg:table-cell">Last Heartbeat</TableHead>
+    {#if showGrants}<TableHead class="th-cyber">Exclusive</TableHead>{/if}
   </TableRow>
 {/snippet}
 
@@ -1520,6 +1546,7 @@
                 { width: 'w-16', height: 'h-5' },
                 { width: 'w-20', class: 'hidden md:table-cell' },
                 { width: 'w-20', class: 'hidden lg:table-cell' },
+                ...(showGrants ? [{ width: 'w-24' }] : []),
               ]}
             />
           {:else if volSessions.length === 0}
@@ -1552,6 +1579,14 @@
                     <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
                       {session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}
                     </TableCell>
+                    {#if showGrants}
+                      {@const mine = !session.forkName && grantsResult ? grantsForMount(grantsResult.grants, { ipAddr: session.ipAddr, hostname: session.hostname }) : []}
+                      <TableCell class="text-sm">
+                        {#if mine.length === 0}<span class="text-muted-foreground">·</span>{:else}
+                          <div class="flex flex-col items-start gap-1 min-w-0">{#each mine as g (g.sessionId + g.scopeInode + g.role)}<ExclusiveChip grant={g} />{/each}</div>
+                        {/if}
+                      </TableCell>
+                    {/if}
                   </TableRow>
                 {/each}
               </TableBody>
@@ -1562,6 +1597,9 @@
           {/if}
         </CardContent>
       </Card>
+      {#if grantsResult && showGrants}
+        <div class="mt-6"><ExclusiveGrantsPanel result={grantsResult} /></div>
+      {/if}
     {:else}
       <EmptyState title="Sessions restricted" description="Your role does not allow viewing client sessions for this volume." />
     {/if}

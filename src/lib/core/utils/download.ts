@@ -1,7 +1,7 @@
 // Triggers a browser download of in-memory text content, without a round trip
 // to the server (the content, e.g. backup codes, never left the browser).
-export function downloadTextFile(filename: string, content: string): void {
-  const blob = new Blob([content], { type: 'text/plain' })
+export function downloadTextFile(filename: string, content: string, mime = 'text/plain'): void {
+  const blob = new Blob([content], { type: mime })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
