@@ -26,11 +26,35 @@ describe('ExclusiveGrantsPanel', () => {
     expect(screen.getAllByText('400 ms')).toHaveLength(2)
   })
 
-  it('shows unknown clocks when the owner is not reachable', () => {
-    render(ExclusiveGrantsPanel, { result: result({ ownerReachable: false }) })
+  it('shows unknown clocks for the rows of a fork whose owner is not reachable', () => {
+    const down = grant({ sessionId: '2', fork: 'dev', live: undefined, lastRenewAgeMs: undefined, lastSeenAgeMs: undefined })
+    render(ExclusiveGrantsPanel, { result: result({ ownerReachable: false, grants: [grant({ fork: 'main' }), down] }) })
     expect(screen.getByText(/owner is not reachable/)).toBeInTheDocument()
     expect(screen.getAllByText('unknown')).toHaveLength(3)
-    expect(screen.queryByText('400 ms')).not.toBeInTheDocument()
+    expect(screen.getAllByText('400 ms')).toHaveLength(1)
+  })
+
+  it('hides the fork column when every row is in the main fork', () => {
+    render(ExclusiveGrantsPanel, { result: result({ grants: [grant({ fork: 'main' }), grant({ sessionId: '2', fork: 'main' })] }) })
+    expect(screen.queryByRole('columnheader', { name: 'Fork' })).not.toBeInTheDocument()
+    expect(screen.getByText('All forks. Includes standby places.')).toBeInTheDocument()
+  })
+
+  it('hides the fork column for rows that carry no fork name', () => {
+    render(ExclusiveGrantsPanel, { result: result() })
+    expect(screen.queryByRole('columnheader', { name: 'Fork' })).not.toBeInTheDocument()
+  })
+
+  it('shows the fork of each row when the volume has more than the main fork', () => {
+    render(ExclusiveGrantsPanel, { result: result({ grants: [grant({ fork: 'main' }), grant({ sessionId: '2', fork: 'dev' })] }) })
+    expect(screen.getByRole('columnheader', { name: 'Fork' })).toBeInTheDocument()
+    expect(screen.getByText('dev')).toBeInTheDocument()
+    expect(screen.getByText('main')).toBeInTheDocument()
+  })
+
+  it('names the fork in the header when the list is for one fork', () => {
+    render(ExclusiveGrantsPanel, { result: result({ fork: 'dev' }) })
+    expect(screen.getByText('Fork dev. Includes standby places.')).toBeInTheDocument()
   })
 
   it('shows unknown for null clocks', () => {

@@ -587,7 +587,7 @@
     }
   }
 
-  // One grants read per page load, main fork. Admin roles only: the user role gets 403.
+  // One grants read per page load, covering every fork of the volume. Admin roles only: the user role gets 403.
   let grantsResult = $state<ExclusiveGrantsResponse | null>(null)
   let grantsCtrl: AbortController | null = null
 

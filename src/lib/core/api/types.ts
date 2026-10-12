@@ -72,8 +72,6 @@ export type {
   MountFlag,
   MountReportResponse,
   SupportBundle,
-  ExclusiveGrant,
-  ExclusiveGrantsResponse,
   SessionSummary,
   StandardResponse,
   LicenseDetails,
@@ -102,7 +100,18 @@ export type {
   VolumeForkSearchListOptions,
 } from '@mountos-io/admin-sdk'
 
-import type { NodeStatsSample as SDKNodeStatsSample } from '@mountos-io/admin-sdk'
+import type {
+  NodeStatsSample as SDKNodeStatsSample,
+  ExclusiveGrant as SDKExclusiveGrant,
+  ExclusiveGrantsResponse as SDKExclusiveGrantsResponse,
+} from '@mountos-io/admin-sdk'
+
+// The grants list covers every fork of a volume, and each row names its fork.
+// The installed SDK types do not carry that field yet. Remove this extension
+// and re-export the SDK types once the installed SDK version has it.
+export type ExclusiveGrantWithFork = SDKExclusiveGrant & { fork?: string }
+export type ExclusiveGrant = ExclusiveGrantWithFork
+export type ExclusiveGrantsResponse = Omit<SDKExclusiveGrantsResponse, 'grants'> & { grants: ExclusiveGrantWithFork[] }
 
 // Dispatcher telemetry is emitted by newer dataserv nodes before it becomes
 // part of the released SDK contract. Keeping the extension here makes the UI

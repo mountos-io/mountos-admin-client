@@ -7,21 +7,23 @@
   import { formatDate, formatRelative } from '$lib/core/utils/format'
 
   let { result }: { result: ExclusiveGrantsResponse } = $props()
-  const unreachable = $derived(result.ownerReachable === false)
+  // A fork column appears only when a row belongs to a fork other than main.
+  const showFork = $derived(result.grants.some((g) => g.fork && g.fork !== 'main'))
 </script>
 
 <Card>
   <CardHeader>
     <CardTitle>Exclusive grants ({result.grants.length}{result.truncated ? '+' : ''})</CardTitle>
-    <p class="text-sm text-muted-foreground">Fork {result.fork || 'main'}. Includes standby places.</p>
+    <p class="text-sm text-muted-foreground">{result.fork ? `Fork ${result.fork}` : 'All forks'}. Includes standby places.</p>
   </CardHeader>
   <CardContent class="space-y-3">
     {#if !result.ownerReachable}
-      <p class="text-sm text-warning" role="note">The owner is not reachable. Live status is unknown.</p>
+      <p class="text-sm text-warning" role="note">An owner is not reachable. Live status is unknown for the grants of its forks.</p>
     {/if}
     <Table containerLabel="Exclusive grants">
       <TableHeader>
         <TableRow>
+          {#if showFork}<TableHead class="th-cyber">Fork</TableHead>{/if}
           <TableHead class="th-cyber">Holder</TableHead>
           <TableHead class="th-cyber">Scope</TableHead>
           <TableHead class="th-cyber">Grant</TableHead>
@@ -34,8 +36,9 @@
         </TableRow>
       </TableHeader>
       <TableBody>
-        {#each result.grants as g (g.sessionId + g.scopeInode + g.role + g.standbyPosition)}
+        {#each result.grants as g (g.fork + g.sessionId + g.scopeInode + g.role + g.standbyPosition)}
           <TableRow>
+            {#if showFork}<TableCell class="text-sm font-mono break-all sm:break-normal sm:whitespace-nowrap">{g.fork || 'main'}</TableCell>{/if}
             <TableCell class="text-sm">
               <div class="font-mono break-all sm:break-normal sm:whitespace-nowrap">{g.sessionName || '·'}</div>
               <div class="text-muted-foreground font-mono break-all sm:break-normal sm:whitespace-nowrap">{g.holderIp || '·'}</div>
@@ -53,9 +56,9 @@
             <TableCell class="text-sm text-muted-foreground hidden xl:table-cell">{g.durability}</TableCell>
             <TableCell class="text-sm text-muted-foreground hidden xl:table-cell tabular-nums">{g.windowSeconds} s</TableCell>
             <TableCell class="text-sm text-muted-foreground hidden md:table-cell whitespace-nowrap" title={formatDate(new Date(g.sinceUnixMs))}>{formatRelative(new Date(g.sinceUnixMs))}</TableCell>
-            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell">{liveLabel(unreachable ? null : g.live)}</TableCell>
-            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell tabular-nums">{formatClockMs(unreachable ? null : g.lastRenewAgeMs)}</TableCell>
-            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell tabular-nums">{formatClockMs(unreachable ? null : g.lastSeenAgeMs)}</TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell">{liveLabel(g.live)}</TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell tabular-nums">{formatClockMs(g.lastRenewAgeMs)}</TableCell>
+            <TableCell class="text-sm text-muted-foreground hidden xl:table-cell tabular-nums">{formatClockMs(g.lastSeenAgeMs)}</TableCell>
           </TableRow>
         {/each}
       </TableBody>
