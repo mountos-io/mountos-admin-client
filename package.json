@@ -1,6 +1,12 @@
 {
   "name": "mountos-admin-client",
   "version": "0.1.0",
+  "description": "Open-source admin dashboard for mountOS, a cross-platform, forkable, time-traveling distributed filesystem over object storage.",
+  "homepage": "https://mountos.io",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mountos-io/mountos-admin-client.git"
+  },
   "private": true,
   "license": "Apache-2.0",
   "type": "module",
@@ -19,7 +25,7 @@
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.700.0",
     "@hono/node-server": "^1.14.0",
-    "@mountos-io/admin-sdk": "^1.27.0",
+    "@mountos-io/admin-sdk": "^1.28.0",
     "@simplewebauthn/server": "^13.3.0",
     "hono": "^4.12.15",
     "ioredis": "^5.10.1",

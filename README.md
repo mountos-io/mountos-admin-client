@@ -1,6 +1,6 @@
 # mountOS Admin Client
 
-SvelteKit admin dashboard for mountOS.
+Open-source admin dashboard for [mountOS](https://mountos.io), a cross-platform, forkable, time-traveling distributed filesystem over object storage. Manage accounts, users, volumes, storages, regions, nodes, alerts, and audit logs from a SvelteKit web UI. Use it as is, or fork it to build a customer portal on the mountOS Admin SDK.
 
 ## Setup
 
