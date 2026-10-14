@@ -96,7 +96,7 @@ const USER_ROLE_ALLOWED: Array<[method: string, path: RegExp]> = [
 // move-cluster is infra placement, floored to system admin on the POST.
 const USER_ROLE_VOLUME_DENIED: RegExp[] = [
   /^\/api\/v1\/volumes\/\d+\/quota$/,
-  /^\/api\/v1\/volumes\/\d+\/move-cluster(\/status)?$/,
+  /^\/api\/v1\/volumes\/\d+\/move-cluster$/,
 ]
 
 function userRoleAllows(method: string, path: string): boolean {
