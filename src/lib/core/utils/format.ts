@@ -247,6 +247,18 @@ export function sinkStateVariant(state: string): StatusVariant {
   return SINK_STATE_MAP[state] ?? 'primary'
 }
 
+// Clone and rm job states (metadata.clone.state, metadata.rm.state).
+const TREE_JOB_STATE_MAP: Record<string, StatusVariant> = {
+  running: 'primary',
+  completed: 'success',
+  halted: 'destructive',
+  resumable: 'warning',
+}
+
+export function treeJobStateVariant(state: string): StatusVariant {
+  return TREE_JOB_STATE_MAP[state] ?? 'outline'
+}
+
 export interface PrometheusMetric {
   name: string
   labels: Record<string, string>

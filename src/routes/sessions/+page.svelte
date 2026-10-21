@@ -21,7 +21,8 @@
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import SessionSummaryStrip from '$lib/components/shared/SessionSummaryStrip.svelte'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
-  import { formatRelative, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant } from '$lib/core/utils/format'
+  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant, treeJobStateVariant } from '$lib/core/utils/format'
+  import { sessionRole, roleSpec, isTreeJobRole, treeJobInfo, treeJobOutcomes, truncateForkPath } from '$lib/core/utils/session-roles'
   import { SESSION_POLL_OPTIONS } from '$lib/core/utils/options'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
   import { showErrorToast } from '$lib/core/utils/toast'
@@ -103,16 +104,19 @@
     return typeof name === 'string' && name !== '' ? name : undefined
   }
 
-  // Session kind reported under metadata.role: a gateway has no FUSE mount
-  // (path "."), a utility is a one-shot tool, an upload/download is a
-  // bulk-copy job (also no FUSE mount, metadata.upload/download carries its
-  // job id/paths/progress instead), a sink is an HLS-to-mountOS ingest
-  // process (also no FUSE mount, metadata.sink carries its job identity and
-  // live lag/rate progress). Absent/unknown reads as a mount.
-  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' | 'download' | 'sink' {
-    const md = s.metadata
-    const r = md != null && typeof md === 'object' ? (md as Record<string, unknown>).role : undefined
-    return r === 'gateway' || r === 'utility' || r === 'upload' || r === 'download' || r === 'sink' ? r : 'mount'
+  // Session kind reported under metadata.role. The table in session-roles.ts
+  // decides how each kind renders. Absent reads as a mount, and a kind this
+  // build does not know reads as a neutral job.
+  function getSessionRole(s: ClientSession): string { return sessionRole(s.metadata) }
+
+  // The state badge of a job row: a sink runner state or a clone/rm job state.
+  function getJobState(s: ClientSession, role: string): { state: string; variant: ReturnType<typeof sinkStateVariant> } | undefined {
+    if (role === 'sink') {
+      const st = getSinkDetails(s)?.state
+      return st ? { state: st, variant: sinkStateVariant(st) } : undefined
+    }
+    const st = treeJobInfo(s.metadata, role)?.state
+    return st ? { state: st, variant: treeJobStateVariant(st) } : undefined
   }
 
   interface UploadSessionDetails {
@@ -345,19 +349,24 @@
               </TableCell>
               <TableCell><Badge variant={statusVariant(session.status)}>{session.status}</Badge></TableCell>
               <TableCell class="hidden md:table-cell">
-                {#if getSessionRole(session) === 'gateway'}<Badge variant="primary" title="S3/HDFS gateway, no FUSE mount">Gateway</Badge>{:else if getSessionRole(session) === 'utility'}<Badge variant="outline" title="One-shot utility session, not a mount">Utility</Badge>{:else if getSessionRole(session) === 'upload'}<Badge variant="secondary" title="Bulk upload job, no FUSE mount">Upload</Badge>{:else if getSessionRole(session) === 'download'}<Badge variant="secondary" title="Bulk download job, no FUSE mount">Download</Badge>{:else if getSessionRole(session) === 'sink'}
-                  {@const skState = getSinkDetails(session)?.state}
+                {@const role = getSessionRole(session)}
+                {#if role === 'mount'}
+                  {#if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
+                {:else}
+                  {@const spec = roleSpec(role)}
+                  {@const jobState = getJobState(session, role)}
                   <span class="inline-flex items-center gap-1">
-                    <Badge variant="secondary" title="HLS-to-mountOS ingest sink, no FUSE mount">Sink</Badge>
-                    {#if skState}<Badge variant={sinkStateVariant(skState)} class="font-mono text-xs" title="Sink state">{skState}</Badge>{/if}
+                    <Badge variant={spec.variant} title={spec.title}>{spec.label}</Badge>
+                    {#if jobState}<Badge variant={jobState.variant} class="font-mono text-xs" title="Job state">{jobState.state}</Badge>{/if}
                   </span>
-                {:else if session.mountMode}<Badge variant={mountModeVariant(session.mountMode)} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'}>{session.mountMode}</Badge>{:else}·{/if}
+                {/if}
               </TableCell>
               <TableCell class="text-sm tabular-nums hidden md:table-cell">{sessionDuration(session)}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}</TableCell>
             </TableRow>
             {#if store.expanded.has(session.id)}
               {@const m = getMetrics(session)}
+              {@const role = getSessionRole(session)}
               <TableRow>
                 <TableCell></TableCell>
                 <TableCell colspan={9}>
@@ -368,7 +377,7 @@
                     </a>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm" onclick={(e: MouseEvent) => e.stopPropagation()}>{session.account.name}</a></div>
-                        <div><p class="detail-label">Mount Path</p>{#if getSessionRole(session) === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else if getSessionRole(session) === 'upload'}<p class="text-sm text-muted-foreground" title="Upload job, no FUSE mount">N/A</p>{:else if getSessionRole(session) === 'download'}<p class="text-sm text-muted-foreground" title="Download job, no FUSE mount">N/A</p>{:else if getSessionRole(session) === 'sink'}<p class="text-sm text-muted-foreground" title="Sink ingest process, no FUSE mount">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
+                        <div><p class="detail-label">Mount Path</p>{#if !roleSpec(role).showsMountPath}<p class="text-sm text-muted-foreground" title={role === 'gateway' ? `Gateway process, no FUSE mount (path ${session.mountPath ?? '·'})` : roleSpec(role).title}>N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
                         <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
                         <div>
                           <div class="detail-label flex items-center gap-0.5">
@@ -389,21 +398,27 @@
                         {#if session.forkName}
                           <div><p class="detail-label">Fork</p><span class="inline-flex items-center gap-1.5"><Badge variant="outline">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning">Temporary</Badge>{/if}</span></div>
                         {/if}
-                        {#if getSessionRole(session) === 'upload'}
+                        {#if role === 'upload'}
                           {@const up = getUploadDetails(session)}
                           {#if up?.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={up.jobId}>{up.jobId}</p></div>{/if}
                           {#if up?.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={up.sourcePath}>{up.sourcePath}</p></div>{/if}
                           {#if up?.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={up.destPath}>{up.destPath}</p></div>{/if}
-                        {:else if getSessionRole(session) === 'download'}
+                        {:else if role === 'download'}
                           {@const dl = getDownloadDetails(session)}
                           {#if dl?.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={dl.jobId}>{dl.jobId}</p></div>{/if}
                           {#if dl?.sourcePath}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={dl.sourcePath}>{dl.sourcePath}</p></div>{/if}
                           {#if dl?.destPath}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={dl.destPath}>{dl.destPath}</p></div>{/if}
-                        {:else if getSessionRole(session) === 'sink'}
+                        {:else if role === 'sink'}
                           {@const sk = getSinkDetails(session)}
                           {#if sk?.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={sk.jobId}>{sk.jobId}</p></div>{/if}
                           {#if sk?.source}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={sk.source}>{sk.source}</p></div>{/if}
                           {#if sk?.sinkTemplate}<div class="min-w-0"><p class="detail-label">Sink</p><p class="text-sm font-mono truncate" title={sk.sinkTemplate}>{sk.sinkTemplate}</p></div>{/if}
+                        {:else if isTreeJobRole(role)}
+                          {@const tj = treeJobInfo(session.metadata, role)}
+                          {#if tj?.jobId}<div><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={tj.jobId}>{tj.jobId}</p></div>{/if}
+                          {#if tj?.source}<div class="min-w-0"><p class="detail-label">Source</p><p class="text-sm font-mono truncate" title={truncateForkPath(tj.source)}>{truncateForkPath(tj.source)}</p></div>{/if}
+                          {#if tj?.destination}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={truncateForkPath(tj.destination)}>{truncateForkPath(tj.destination)}</p></div>{/if}
+                          {#if tj?.snapshotTs}<div class="min-w-0"><p class="detail-label">Snapshot</p><p class="text-sm">{formatDate(tj.snapshotTs / 1000)}</p></div>{/if}
                         {/if}
                         <div><p class="detail-label">Session ID</p><p class="text-sm font-mono">#{session.id}</p></div>
                         {#if session.appVersion}
@@ -413,7 +428,7 @@
                     {#if m.reads !== undefined}
                       <div class="border-t border-border pt-3">
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2">
-                          {#if getSessionRole(session) === 'upload'}
+                          {#if role === 'upload'}
                             {@const upCounts = getUploadDetails(session)?.counts}
                             {#if upCounts}
                               <div class="metric-group">
@@ -425,7 +440,7 @@
                                 <div class="metric-row"><span>Skipped</span><span>{formatNum(upCounts.skipped ?? 0)}</span></div>
                               </div>
                             {/if}
-                          {:else if getSessionRole(session) === 'download'}
+                          {:else if role === 'download'}
                             {@const dlCounts = getDownloadDetails(session)?.counts}
                             {#if dlCounts}
                               <div class="metric-group">
@@ -438,7 +453,7 @@
                                 <div class="metric-row"><span>Skipped</span><span>{formatNum(dlCounts.skipped ?? 0)}</span></div>
                               </div>
                             {/if}
-                          {:else if getSessionRole(session) === 'sink'}
+                          {:else if role === 'sink'}
                             {@const sk = getSinkDetails(session)}
                             {#if sk}
                               <div class="metric-group">
@@ -449,7 +464,18 @@
                                 <div class="metric-row {(sk.discontinuities ?? 0) ? 'text-destructive' : ''}"><span>Discontinuities</span><span>{formatNum(sk.discontinuities ?? 0)}</span></div>
                               </div>
                             {/if}
-                          {:else}
+                          {:else if isTreeJobRole(role)}
+                            {@const tj = treeJobInfo(session.metadata, role)}
+                            {#if tj}
+                              <div class="metric-group">
+                                <p class="detail-label">Progress</p>
+                                {#each treeJobOutcomes(role, tj) as o (o.label)}
+                                  <div class="metric-row {o.tone === 'bad' ? 'text-destructive' : ''}"><span>{o.label}</span><span>{formatNum(o.value)}</span></div>
+                                {/each}
+                                <div class="metric-row"><span>Processed</span><span>{formatNum(tj.processed ?? 0)}</span></div>
+                              </div>
+                            {/if}
+                          {:else if roleSpec(role).showsFuseIo}
                             <div class="metric-group">
                               <p class="detail-label">I/O</p>
                               <div class="metric-row"><span>Reads</span><span>{formatNum(m.reads ?? 0)}</span></div>
@@ -472,7 +498,7 @@
                               <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
                             </div>
                           {/if}
-                          {#if getSessionRole(session) === 'upload' || getSessionRole(session) === 'download' || getSessionRole(session) === 'sink'}
+                          {#if roleSpec(role).jobTitle}
                             <!-- Jobs skip the mount branch above, so this is their only object-store
                                  view. Progress counts entries the job has finished; these count what
                                  actually moved, which is what diverges when a job is retrying. -->

@@ -10,7 +10,8 @@
   import { api } from '$lib/core/stores/client.svelte'
   import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
   import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatBitrate, formatNum, formatIPv4, formatPlatform, formatOs, formatOsName, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant } from '$lib/core/utils/format'
+  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatBitrate, formatNum, formatIPv4, formatPlatform, formatOs, formatOsName, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant, treeJobStateVariant } from '$lib/core/utils/format'
+  import { sessionRole, roleSpec, isTreeJobRole, treeJobInfo, treeJobOutcomes, truncateForkPath } from '$lib/core/utils/session-roles'
   import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, objectLatencyColor, pingRttColor, memAllocColor, cvClass, bucketBarColor, estimateCV, interpolatePercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
@@ -116,17 +117,10 @@
     return typeof name === 'string' && name !== '' ? name : undefined
   }
 
-  // Session kind reported by the client under metadata.role. A gateway process
-  // has no FUSE mount (mount path "."); a utility is a one-shot tool; an
-  // upload/download is a bulk-copy job (also no FUSE mount, metadata.upload
-  // or metadata.download carries its job id/paths/progress instead); a sink
-  // is an HLS-to-mountOS ingest process (also no FUSE mount, metadata.sink
-  // carries its job identity and live lag/rate progress). Absent or unknown
-  // reads as a regular mount.
-  function getSessionRole(s: ClientSession): 'mount' | 'gateway' | 'utility' | 'upload' | 'download' | 'sink' {
-    const r = getMetaProp(s, 'role')
-    return r === 'gateway' || r === 'utility' || r === 'upload' || r === 'download' || r === 'sink' ? r : 'mount'
-  }
+  // Session kind reported by the client under metadata.role. The table in
+  // session-roles.ts decides how each kind renders. Absent reads as a regular
+  // mount, and a kind this build does not know reads as a neutral job.
+  function getSessionRole(s: ClientSession): string { return sessionRole(s.metadata) }
 
   interface GatewayInfo { endpoints: Record<string, string> }
   // Gateway endpoints reported under metadata.gateway.endpoints (protocol -> URL).
@@ -562,6 +556,8 @@
     {@const up = getUploadInfo(session)}
     {@const dl = getDownloadInfo(session)}
     {@const sk = getSinkInfo(session)}
+    {@const spec = roleSpec(role)}
+    {@const tj = treeJobInfo(session.metadata, role)}
 
     {#if error}
       <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-4 py-2 text-sm text-destructive">
@@ -585,9 +581,10 @@
             <Badge variant="secondary" class="text-sm px-3 py-1">{formatOs(session.osName)}</Badge>
             <Badge class="text-sm px-3 py-1">{session.region.name}</Badge>
             {#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="text-sm px-3 py-1 capitalize">{session.volume.type}</Badge>{/if}
-            {#if session.mountMode && role !== 'upload' && role !== 'download' && role !== 'sink'}<Badge variant={isReadOnlyMountMode(session.mountMode) ? 'outline' : 'default'} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
+            {#if session.mountMode && (role === 'mount' || role === 'gateway' || role === 'utility')}<Badge variant={isReadOnlyMountMode(session.mountMode) ? 'outline' : 'default'} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
             {#if session.forkName}<Badge variant="outline" class="text-sm px-3 py-1">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning" class="text-sm px-3 py-1">Temporary</Badge>{/if}{/if}
-            {#if role === 'gateway'}<Badge variant="primary" class="text-sm px-3 py-1" title="S3/HDFS gateway process, no FUSE mount">Gateway</Badge>{:else if role === 'utility'}<Badge variant="outline" class="text-sm px-3 py-1" title="One-shot utility session, not a mount">Utility</Badge>{:else if role === 'upload'}<Badge variant="secondary" class="text-sm px-3 py-1" title="Bulk upload job, no FUSE mount">Upload</Badge>{:else if role === 'download'}<Badge variant="secondary" class="text-sm px-3 py-1" title="Bulk download job, no FUSE mount">Download</Badge>{:else if role === 'sink'}<Badge variant="secondary" class="text-sm px-3 py-1" title="HLS-to-mountOS ingest sink, no FUSE mount">Sink</Badge>{/if}
+            {#if role !== 'mount'}<Badge variant={spec.variant} class="text-sm px-3 py-1" title={spec.title}>{spec.label}</Badge>{/if}
+            {#if tj?.state}<Badge variant={treeJobStateVariant(tj.state)} class="text-sm px-3 py-1 font-mono" title="Job state">{tj.state}</Badge>{/if}
             <Badge variant="secondary" class="text-sm px-3 py-1">{session.clientType}</Badge>
           </div>
         </div>
@@ -598,7 +595,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
           <div><p class="detail-label">Account</p><a href="/accounts/{session.account.id}" class="detail-link text-sm">{session.account.name}</a></div>
           <div><p class="detail-label">Volume</p><a href="/volumes/{session.volume.id}" class="detail-link text-sm">{session.volume.name || `#${session.volume.id}`}</a></div>
-          {#if role !== 'upload' && role !== 'download' && role !== 'sink'}
+          {#if role === 'mount' || role === 'gateway' || role === 'utility'}
             <div><p class="detail-label">Mount Path</p>{#if role === 'gateway'}<p class="text-sm text-muted-foreground" title="Gateway process, no FUSE mount (path {session.mountPath ?? '·'})">N/A</p>{:else}<p class="text-sm font-mono truncate" title={session.mountPath ?? ''}>{session.mountPath ?? '·'}</p>{/if}</div>
           {/if}
           <div><p class="detail-label">OS / Arch</p><p class="text-sm font-mono">{session.osVersion ?? session.osName}</p></div>
@@ -764,6 +761,38 @@
       </div>
     {/if}
 
+    {#if isTreeJobRole(role) && tj}
+      <!-- Clone or remove job (identity and live outcome counts; no FUSE mount).
+           Paths come from the client, so only the fork and the start of the path show. -->
+      <div class="corner-brackets relative border border-border/30 rounded-sm">
+        <div class="tech-grid absolute inset-0 pointer-events-none"></div>
+        <div class="relative p-5 space-y-5">
+          <h2 class="text-lg font-semibold">{spec.jobTitle}</h2>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-x-6 gap-y-4">
+            {#if tj.jobId}<div class="min-w-0"><p class="detail-label">Job ID</p><p class="text-sm font-mono truncate" title={tj.jobId}>{tj.jobId}</p></div>{/if}
+            {#if tj.state}<div class="min-w-0"><p class="detail-label">State</p><Badge variant={treeJobStateVariant(tj.state)} class="font-mono text-xs">{tj.state}</Badge></div>{/if}
+            {#if tj.haltReason}<div class="min-w-0"><p class="detail-label">Halt Reason</p><p class="text-sm text-destructive truncate" title={tj.haltReason}>{tj.haltReason}</p></div>{/if}
+            {#if tj.source}<div class="min-w-0"><p class="detail-label">{role === 'rm' ? 'Path' : 'Source'}</p><p class="text-sm font-mono truncate" title={truncateForkPath(tj.source)}>{truncateForkPath(tj.source)}</p></div>{/if}
+            {#if tj.destination}<div class="min-w-0"><p class="detail-label">Destination</p><p class="text-sm font-mono truncate" title={truncateForkPath(tj.destination)}>{truncateForkPath(tj.destination)}</p></div>{/if}
+            {#if tj.snapshotTs}<div class="min-w-0"><p class="detail-label">Snapshot</p><p class="text-sm">{formatDate(tj.snapshotTs / 1000)}</p></div>{/if}
+            {#if tj.actionsTotal}<div class="min-w-0"><p class="detail-label">Actions</p><p class="text-sm tabular-nums">{formatNum(tj.actionsDone ?? 0)} of {formatNum(tj.actionsTotal)}</p></div>{/if}
+            {#if tj.logPath}<div class="min-w-0"><p class="detail-label">Log</p><p class="text-sm font-mono truncate" title={tj.logPath}>{tj.logPath}</p></div>{/if}
+          </div>
+          <div class="border-t border-border/40 pt-4">
+            <div class="metric-group">
+              <p class="detail-label">Progress</p>
+              <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-2">
+                {#each treeJobOutcomes(role, tj) as o (o.label)}
+                  <div class="metric-row {o.tone === 'bad' ? 'text-destructive' : ''}"><span>{o.label}</span><span>{formatNum(o.value)}</span></div>
+                {/each}
+                <div class="metric-row"><span>Processed</span><span>{formatNum(tj.processed ?? 0)}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
     {#if role === 'sink' && sk}
       <!-- Sink job (HLS-to-mountOS ingest identity + live progress; no FUSE mount).
            No bounded work list to count over, unlike upload/download: this ingests
@@ -880,7 +909,7 @@
         <div class="relative p-5">
           <h2 class="text-lg font-semibold mb-4">Metrics</h2>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-8 gap-y-5">
-            {#if role !== 'upload' && role !== 'sink'}
+            {#if spec.showsFuseIo}
               <div class="metric-group">
                 <p class="detail-label">I/O</p>
                 <div class="metric-row"><span>Reads</span><span>{formatNum(m.reads ?? 0)}</span></div>
