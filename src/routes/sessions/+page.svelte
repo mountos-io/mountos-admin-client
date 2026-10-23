@@ -24,6 +24,7 @@
   import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatNum, formatPlatform, formatOs, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant, treeJobStateVariant } from '$lib/core/utils/format'
   import { sessionRole, roleSpec, isTreeJobRole, treeJobInfo, treeJobOutcomes, truncateForkPath } from '$lib/core/utils/session-roles'
   import { SESSION_POLL_OPTIONS } from '$lib/core/utils/options'
+  import { volumeTypeVariant } from '$lib/core/utils/volume-type'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
   import { showErrorToast } from '$lib/core/utils/toast'
   import type { ClientSession } from '$lib/core/api/types'
@@ -336,7 +337,7 @@
               <TableCell class="text-sm max-w-[120px]">
                 <div class="flex flex-col gap-1 min-w-0">
                   <span class="truncate" title={session.volume.name || String(session.volume.id)}>{session.volume.name || `#${session.volume.id}`}</span>
-                  {#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="w-fit capitalize">{session.volume.type}</Badge>{/if}
+                  {#if session.volume.type}<Badge variant={volumeTypeVariant(session.volume.type)} class="w-fit capitalize">{session.volume.type}</Badge>{/if}
                 </div>
               </TableCell>
               <TableCell><span class="session-region">{session.region.name}</span></TableCell>
@@ -389,7 +390,7 @@
                           <p class="text-sm">{m.uptimeSeconds != null ? formatUptime(m.uptimeSeconds) : '·'}</p>
                         </div>
                         <div><p class="detail-label">Session Age</p><p class="text-sm tabular-nums">{sessionDuration(session)}</p></div>
-                        <div class="min-w-0"><p class="detail-label">Volume</p><span class="inline-flex items-center gap-1.5 min-w-0"><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate" title={session.volume.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volume.name || `#${session.volume.id}`}</a>{#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="shrink-0 capitalize">{session.volume.type}</Badge>{/if}</span></div>
+                        <div class="min-w-0"><p class="detail-label">Volume</p><span class="inline-flex items-center gap-1.5 min-w-0"><a href="/volumes/{session.volume.id}" class="detail-link text-sm font-mono truncate" title={session.volume.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.volume.name || `#${session.volume.id}`}</a>{#if session.volume.type}<Badge variant={volumeTypeVariant(session.volume.type)} class="shrink-0 capitalize">{session.volume.type}</Badge>{/if}</span></div>
                       {#if session.metadataCluster}
                         <div class="min-w-0"><p class="detail-label">Cluster</p><a href="/regions/{session.region.id}?cluster={session.metadataCluster.id}" class="detail-link text-sm font-mono truncate inline-block max-w-full" aria-label="View region {session.region.name} scoped to cluster {session.metadataCluster.name}" title={session.metadataCluster.name} onclick={(e: MouseEvent) => e.stopPropagation()}>{session.metadataCluster.name}</a></div>
                       {/if}

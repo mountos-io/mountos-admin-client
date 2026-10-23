@@ -15,6 +15,7 @@
   import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, objectLatencyColor, pingRttColor, memAllocColor, cvClass, bucketBarColor, estimateCV, interpolatePercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import { POLL_OPTIONS } from '$lib/core/utils/options'
+  import { volumeTypeVariant } from '$lib/core/utils/volume-type'
   import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
   import { showErrorToast } from '$lib/core/utils/toast'
   import { HISTOGRAM_BOUNDS } from '$lib/core/constants'
@@ -580,7 +581,7 @@
             {#if getPlatform(session)}<Badge variant="primary" class="text-sm px-3 py-1">{formatPlatform(getPlatform(session))}</Badge>{/if}
             <Badge variant="secondary" class="text-sm px-3 py-1">{formatOs(session.osName)}</Badge>
             <Badge class="text-sm px-3 py-1">{session.region.name}</Badge>
-            {#if session.volume.type}<Badge variant={session.volume.type === 'iceberg' ? 'primary' : 'secondary'} class="text-sm px-3 py-1 capitalize">{session.volume.type}</Badge>{/if}
+            {#if session.volume.type}<Badge variant={volumeTypeVariant(session.volume.type)} class="text-sm px-3 py-1 capitalize">{session.volume.type}</Badge>{/if}
             {#if session.mountMode && (role === 'mount' || role === 'gateway' || role === 'utility')}<Badge variant={isReadOnlyMountMode(session.mountMode) ? 'outline' : 'default'} title={isReadOnlyMountMode(session.mountMode) ? 'Read-only mount' : 'Read-write mount'} class="text-sm px-3 py-1">{session.mountMode}</Badge>{/if}
             {#if session.forkName}<Badge variant="outline" class="text-sm px-3 py-1">{session.forkName}</Badge>{#if session.isTemporaryFork}<Badge variant="warning" class="text-sm px-3 py-1">Temporary</Badge>{/if}{/if}
             {#if role !== 'mount'}<Badge variant={spec.variant} class="text-sm px-3 py-1" title={spec.title}>{spec.label}</Badge>{/if}

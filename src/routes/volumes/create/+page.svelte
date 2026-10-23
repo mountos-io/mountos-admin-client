@@ -22,6 +22,7 @@
   import { copyText } from '$lib/core/utils/clipboard'
   import { HUB_REGION_NAME } from '$lib/core/constants'
   import { gbToBytes } from '$lib/core/utils/format'
+  import { VOLUME_TYPE_OPTIONS } from '$lib/core/utils/volume-type'
   import Copy from '@lucide/svelte/icons/copy'
 
   const volumeStore = useVolumes()
@@ -264,14 +265,11 @@
             {/if}
           </div>
           <div class="space-y-2">
-            <FieldLabel for="volumeType" tooltip={"**General:** POSIX filesystem volume.\n**Iceberg:** lake catalog for query engines."}>
+            <FieldLabel for="volumeType" tooltip={"**General:** POSIX filesystem volume.\n**Iceberg:** lake catalog for query engines.\n**Lance:** Lance datasets for vector and ML workloads."}>
               Volume Kind
             </FieldLabel>
             <Select id="volumeType" bind:value={volumeType} placeholder="Select kind..."
-              options={[
-                { value: 'general', label: 'General' },
-                { value: 'iceberg', label: 'Iceberg' },
-              ]} />
+              options={VOLUME_TYPE_OPTIONS} />
           </div>
 
           <Separator />

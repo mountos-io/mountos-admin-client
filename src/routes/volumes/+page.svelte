@@ -17,6 +17,7 @@
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { formatBytes, formatQuota } from '$lib/core/utils/format'
   import { showErrorToast } from '$lib/core/utils/toast'
+  import { VOLUME_TYPE_OPTIONS, volumeTypeVariant } from '$lib/core/utils/volume-type'
   import { HUB_REGION_NAME } from '$lib/core/constants'
   import PageHeader from '$lib/components/shared/PageHeader.svelte'
   import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
@@ -76,11 +77,7 @@
       .map(s => ({ value: String(s.id), label: s.name })),
   ])
 
-  const volumeTypeOptions = [
-    { value: '', label: 'Any type' },
-    { value: 'general', label: 'General' },
-    { value: 'iceberg', label: 'Iceberg' },
-  ]
+  const volumeTypeOptions = [{ value: '', label: 'Any type' }, ...VOLUME_TYPE_OPTIONS]
 
   const statusOptions = [
     { value: 'active', label: 'Active' },
@@ -277,7 +274,7 @@
                 <a href="/volumes/{volume.id}" class="after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring" aria-label="Volume {volume.name}{volume.isActive ? '' : ', deactivated'}">{volume.name}</a>
               </TableCell>
               <TableCell>
-                <Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize">{volume.volumeType}</Badge>
+                <Badge variant={volumeTypeVariant(volume.volumeType)} class="capitalize">{volume.volumeType}</Badge>
               </TableCell>
               <TableCell class="hidden sm:table-cell">
                 {#if volume.storageType}<Badge variant="outline" class="capitalize">{volume.storageType}</Badge>{/if}

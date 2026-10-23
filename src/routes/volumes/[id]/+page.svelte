@@ -42,6 +42,7 @@
   import VolumeCopysetCountControl from '$lib/components/shared/VolumeCopysetCountControl.svelte'
   import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
   import { copyText } from '$lib/core/utils/clipboard'
+  import { volumeTypeVariant } from '$lib/core/utils/volume-type'
   import ArrowLeft from '@lucide/svelte/icons/arrow-left'
   import InfoTip from '$lib/components/shared/InfoTip.svelte'
   import FieldLabel from '$lib/components/shared/FieldLabel.svelte'
@@ -354,18 +355,25 @@
   // so it isn't offered as a choice there. A non-admin still sees "GC
   // Server" listed when that's the volume's CURRENT mode (set by an admin
   // earlier) so the dropdown reflects reality instead of silently not
-  // matching any option, they just can't newly switch TO it.
+  // matching any option, they just can't newly switch TO it. A Lance volume
+  // has no compaction path, so it offers only "off" (plus its current mode).
   const compactionOptions = $derived.by(() => {
     const opts = [{ value: 'off', label: COMPACTION_LABELS.off }]
+    if (volume?.volumeType === 'lance') {
+      if (volume.compaction && volume.compaction !== 'off') opts.push({ value: volume.compaction, label: compactionLabel(volume.compaction) })
+      return opts
+    }
     if (volume?.volumeType !== 'iceberg') opts.push({ value: 'client', label: COMPACTION_LABELS.client })
     if (!auth.isUserRole || volume?.compaction === 'server') opts.push({ value: 'server', label: COMPACTION_LABELS.server })
     return opts
   })
   const compactionTooltip = $derived(
-    "Sets who compacts this volume's storage.\n\n• **Off:** no compaction runs.\n• **GC Server:** compacts it. Only an admin can set this option.\n"
-    + (volume?.volumeType === 'iceberg'
-      ? "• **External engines (analytical):** compact it directly against the catalog."
-      : "• **mountOS client:** compacts it while mounted, when resources allow (general volumes only).")
+    volume?.volumeType === 'lance'
+      ? "Lance volumes do not support compaction, so **Off** is the only choice."
+      : "Sets who compacts this volume's storage.\n\n• **Off:** no compaction runs.\n• **GC Server:** compacts it. Only an admin can set this option.\n"
+        + (volume?.volumeType === 'iceberg'
+          ? "• **External engines (analytical):** compact it directly against the catalog."
+          : "• **mountOS client:** compacts it while mounted, when resources allow (general volumes only).")
   )
 
   const editDirty = $derived(
@@ -897,7 +905,7 @@
     <h1 class="text-2xl font-bold tracking-tight min-w-0 truncate">{volume?.name ?? 'Volume'}</h1>
     {#if volume}
       <Badge variant="outline" style="border-color: var(--pastel-volume); color: var(--pastel-volume-text)">Volume</Badge>
-      <Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize" aria-label="Volume type {volume.volumeType}">{volume.volumeType}</Badge>
+      <Badge variant={volumeTypeVariant(volume.volumeType)} class="capitalize" aria-label="Volume type {volume.volumeType}">{volume.volumeType}</Badge>
     {/if}
   </div>
   {#if volume}
@@ -1021,7 +1029,7 @@
             </div>
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Kind</span>
-              <div class="mt-1"><Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize">{volume.volumeType}</Badge></div>
+              <div class="mt-1"><Badge variant={volumeTypeVariant(volume.volumeType)} class="capitalize">{volume.volumeType}</Badge></div>
             </div>
             <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Encryption</span>

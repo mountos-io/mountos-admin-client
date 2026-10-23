@@ -6,6 +6,7 @@
   import Pagination from '$lib/components/shared/Pagination.svelte'
   import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
   import { formatBytes } from '$lib/core/utils/format'
+  import { volumeTypeVariant } from '$lib/core/utils/volume-type'
   import { api } from '$lib/core/stores/client.svelte'
   import type { Volume } from '$lib/core/api/types'
   import DatabaseIcon from '@lucide/svelte/icons/database'
@@ -98,7 +99,7 @@
                 {#if volume.locked}<Lock class="ml-1 inline size-3.5 align-text-bottom text-warning" aria-label="Locked" />{/if}
               </TableCell>
               <TableCell>
-                <Badge variant={volume.volumeType === 'iceberg' ? 'primary' : 'secondary'} class="capitalize">{volume.volumeType}</Badge>
+                <Badge variant={volumeTypeVariant(volume.volumeType)} class="capitalize">{volume.volumeType}</Badge>
               </TableCell>
               <TableCell class="text-sm text-muted-foreground hidden md:table-cell">{volume.region.name}</TableCell>
               <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">{volume.metadataCluster?.name || '(not set)'}</TableCell>
