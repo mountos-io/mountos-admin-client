@@ -1,5 +1,5 @@
 <script lang="ts">
-  import SystemMotion from '$lib/components/diagrams/SystemMotion.svelte'
+  import SystemMotion from '#lib/components/diagrams/SystemMotion.svelte'
 
   const facets = [
     {

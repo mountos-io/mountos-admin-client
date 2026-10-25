@@ -1,16 +1,16 @@
 <script lang="ts">
-  import type { ForkEntryVersion } from '$lib/core/api/types'
-  import * as Dialog from '$lib/components/ui/dialog'
-  import { Button } from '$lib/components/ui/button'
-  import { formatBytes, formatRelative, formatTzFull } from '$lib/core/utils/format'
-  import { tz } from '$lib/core/stores/tz.svelte'
-  import { userCache } from '$lib/core/stores/user-cache.svelte'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import type { ForkEntryVersion } from '#lib/core/api/types.js'
+  import * as Dialog from '#lib/components/ui/dialog/index.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { formatBytes, formatRelative, formatTzFull } from '#lib/core/utils/format.js'
+  import { tz } from '#lib/core/stores/tz.svelte.js'
+  import { userCache } from '#lib/core/stores/user-cache.svelte.js'
+  import LoadingSpinner from '#lib/components/shared/LoadingSpinner.svelte'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import { showErrorToast } from '$lib/core/utils/toast'
-  import { copyText } from '$lib/core/utils/clipboard'
+  import { showErrorToast } from '#lib/core/utils/toast.js'
+  import { copyText } from '#lib/core/utils/clipboard.js'
 
   let {
     open = $bindable(false),

@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import LoginPage from '$provider/pages/login.svelte'
-  import LocalLoginForm from '$lib/components/auth/LocalLoginForm.svelte'
-  import { fetchLocalLoginEnabled } from '$lib/core/api/localauth'
+  import LoginPage from '#provider/pages/login.svelte'
+  import LocalLoginForm from '#lib/components/auth/LocalLoginForm.svelte'
+  import { fetchLocalLoginEnabled } from '#lib/core/api/localauth.js'
 
   let checked = $state(false)
   let localEnabled = $state(false)

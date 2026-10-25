@@ -1,10 +1,10 @@
 <script lang="ts">
   import { tick } from "svelte";
   import { goto } from "$app/navigation";
-  import { useRegions } from "$lib/core/stores/regions.svelte";
-  import { useAccounts } from "$lib/core/stores/accounts.svelte";
-  import { useAuth } from "$lib/core/stores/auth.svelte";
-  import { usePreferences } from "$lib/stores/preferences.svelte";
+  import { useRegions } from "#lib/core/stores/regions.svelte.js";
+  import { useAccounts } from "#lib/core/stores/accounts.svelte.js";
+  import { useAuth } from "#lib/core/stores/auth.svelte.js";
+  import { usePreferences } from "#lib/stores/preferences.svelte.js";
   import {
     Table,
     TableHeader,
@@ -12,37 +12,37 @@
     TableRow,
     TableHead,
     TableCell,
-  } from "$lib/components/ui/table";
-  import { Button } from "$lib/components/ui/button";
-  import StatusBadge from "$lib/components/shared/StatusBadge.svelte";
-  import Pagination from "$lib/components/shared/Pagination.svelte";
-  import EmptyState from "$lib/components/shared/EmptyState.svelte";
-  import TableSkeleton from "$lib/components/shared/TableSkeleton.svelte";
-  import ConfirmDialog from "$lib/components/shared/ConfirmDialog.svelte";
-  import { formatDate, formatBytes } from "$lib/core/utils/format";
-  import { handleApiError, showErrorToast } from "$lib/core/utils/toast";
-  import { useConfirmDialog } from "$lib/stores/confirm-dialog.svelte";
-  import { Input } from "$lib/components/ui/input";
-  import { HUB_REGION_NAME } from "$lib/core/constants";
+  } from "#lib/components/ui/table/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
+  import StatusBadge from "#lib/components/shared/StatusBadge.svelte";
+  import Pagination from "#lib/components/shared/Pagination.svelte";
+  import EmptyState from "#lib/components/shared/EmptyState.svelte";
+  import TableSkeleton from "#lib/components/shared/TableSkeleton.svelte";
+  import ConfirmDialog from "#lib/components/shared/ConfirmDialog.svelte";
+  import { formatDate, formatBytes } from "#lib/core/utils/format.js";
+  import { handleApiError, showErrorToast } from "#lib/core/utils/toast.js";
+  import { useConfirmDialog } from "#lib/stores/confirm-dialog.svelte.js";
+  import { Input } from "#lib/components/ui/input/index.js";
+  import { HUB_REGION_NAME } from "#lib/core/constants.js";
   import Plus from "@lucide/svelte/icons/plus";
   import Power from "@lucide/svelte/icons/power";
-  import PageHeader from '$lib/components/shared/PageHeader.svelte';
-  import HowItWorks from '$lib/components/shared/HowItWorks.svelte';
-  import FilterPanel from '$lib/components/shared/FilterPanel.svelte';
-  import FilterSelect from '$lib/components/shared/FilterSelect.svelte';
-  import InfoTip from '$lib/components/shared/InfoTip.svelte';
+  import PageHeader from '#lib/components/shared/PageHeader.svelte';
+  import HowItWorks from '#lib/components/shared/HowItWorks.svelte';
+  import FilterPanel from '#lib/components/shared/FilterPanel.svelte';
+  import FilterSelect from '#lib/components/shared/FilterSelect.svelte';
+  import InfoTip from '#lib/components/shared/InfoTip.svelte';
   import HardDriveIcon from "@lucide/svelte/icons/hard-drive";
   import KeyRound from "@lucide/svelte/icons/key-round";
   import Copy from "@lucide/svelte/icons/copy";
   import Check from "@lucide/svelte/icons/check";
   import ShieldAlert from "@lucide/svelte/icons/shield-alert";
   import Loader2 from "@lucide/svelte/icons/loader-2";
-  import * as Dialog from "$lib/components/ui/dialog";
-  import { Select } from "$lib/components/ui/select";
-  import Label from "$lib/components/ui/label/label.svelte";
-  import { api } from "$lib/core/stores/client.svelte";
-  import { ROLE } from "$lib/core/auth/adapter";
-  import { copyText } from "$lib/core/utils/clipboard";
+  import * as Dialog from "#lib/components/ui/dialog/index.js";
+  import { Select } from "#lib/components/ui/select/index.js";
+  import Label from "#lib/components/ui/label/label.svelte";
+  import { api } from "#lib/core/stores/client.svelte.js";
+  import { ROLE } from "#lib/core/auth/adapter.js";
+  import { copyText } from "#lib/core/utils/clipboard.js";
 
   const store = useRegions();
   const accountStore = useAccounts();

@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/svelte'
 import NodeGrid from './NodeGrid.svelte'
-import type { Copyset, BlockVolume, ServiceNode } from '$lib/core/api/types'
+import type { Copyset, BlockVolume, ServiceNode } from '#lib/core/api/types.js'
 
 const { statsHistory } = vi.hoisted(() => ({ statsHistory: vi.fn() }))
 
-vi.mock('$lib/core/stores/client.svelte', () => ({
+vi.mock('#lib/core/stores/client.svelte.js', () => ({
   api: { serviceNodes: { statsHistory } },
 }))
 

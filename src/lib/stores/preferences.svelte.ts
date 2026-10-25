@@ -1,5 +1,5 @@
-import { findPreset, applySkin, clearSkin, familyVariant, defaultSkin, type SkinMode } from '$lib/core/themes'
-import { applyAccent, DEFAULT_ACCENT_CHROMA } from '$lib/core/accent-palette'
+import { findPreset, applySkin, clearSkin, familyVariant, defaultSkin, type SkinMode } from '#lib/core/themes.js'
+import { applyAccent, DEFAULT_ACCENT_CHROMA } from '#lib/core/accent-palette.js'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type FontSize = 'standard' | 'medium' | 'large' | 'extra-large' | 'jumbo'

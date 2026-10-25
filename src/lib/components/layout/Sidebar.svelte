@@ -1,37 +1,36 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { cn } from '$lib/utils.js'
-  import { visibleNavItems } from '$lib/config/navigation'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { useAlerts } from '$lib/core/stores/alerts.svelte'
-  import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
-  import { isMacPlatform } from '$lib/utils.js'
-  import AccountSwitcher from './AccountSwitcher.svelte'
-  import type { Component } from 'svelte'
-  import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
-  import SettingsIcon from '@lucide/svelte/icons/settings'
-  import Building2 from '@lucide/svelte/icons/building-2'
-  import Users from '@lucide/svelte/icons/users'
-  import Globe from '@lucide/svelte/icons/globe'
-  import HardDrive from '@lucide/svelte/icons/hard-drive'
-  import Database from '@lucide/svelte/icons/database'
-  import ScrollText from '@lucide/svelte/icons/scroll-text'
-  import Server from '@lucide/svelte/icons/server'
-  import MonitorDot from '@lucide/svelte/icons/monitor-dot'
-  import Box from '@lucide/svelte/icons/box'
-  import Bell from '@lucide/svelte/icons/bell'
+  import { page } from '$app/state';
+  import { cn } from '#lib/utils.js';
+  import { visibleNavItems } from '#lib/config/navigation.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { useAccounts } from '#lib/core/stores/accounts.svelte.js';
+  import { useAlerts } from '#lib/core/stores/alerts.svelte.js';
+  import { useSettingsModal } from '#lib/stores/settings-modal.svelte.js';
+  import { isMacPlatform } from '#lib/utils.js';
+  import AccountSwitcher from './AccountSwitcher.svelte';
+  import type { Component } from 'svelte';
+  import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard';
+  import SettingsIcon from '@lucide/svelte/icons/settings';
+  import Building2 from '@lucide/svelte/icons/building-2';
+  import Users from '@lucide/svelte/icons/users';
+  import Globe from '@lucide/svelte/icons/globe';
+  import HardDrive from '@lucide/svelte/icons/hard-drive';
+  import Database from '@lucide/svelte/icons/database';
+  import ScrollText from '@lucide/svelte/icons/scroll-text';
+  import Server from '@lucide/svelte/icons/server';
+  import MonitorDot from '@lucide/svelte/icons/monitor-dot';
+  import Box from '@lucide/svelte/icons/box';
+  import Bell from '@lucide/svelte/icons/bell';
 
-  let { collapsed = false }: { collapsed?: boolean } = $props()
-
-  const auth = useAuth()
-  const accountStore = useAccounts()
-  const alertStore = useAlerts()
-  const settingsModal = useSettingsModal()
-  const hasAccount = $derived(accountStore.selectedAccountId !== null)
-  const mac = isMacPlatform()
-  const settingsShortcut = mac ? '⌘,' : 'Ctrl+,'
-  const navShortcutPrefix = mac ? '⌘⇧' : 'Ctrl+Shift+'
+  let { collapsed = false }: { collapsed?: boolean } = $props();
+  const auth = useAuth();
+  const accountStore = useAccounts();
+  const alertStore = useAlerts();
+  const settingsModal = useSettingsModal();
+  const hasAccount = $derived(accountStore.selectedAccountId !== null);
+  const mac = isMacPlatform();
+  const settingsShortcut = mac ? '⌘,' : 'Ctrl+,';
+  const navShortcutPrefix = mac ? '⌘⇧' : 'Ctrl+Shift+';
 
   const iconMap: Record<string, Component> = {
     'layout-dashboard': LayoutDashboard, 'building-2': Building2,
@@ -45,9 +44,10 @@
   // Number-key nav shortcuts only appear while both keys of the combo are
   // held, so the hint always matches what actually triggers the jump and
   // never competes visually with the item label the rest of the time.
-  let cmdDown = $state(false)
-  let shiftDown = $state(false)
-  const modHeld = $derived(cmdDown && shiftDown)
+  let cmdDown = $state(false);
+
+  let shiftDown = $state(false);
+  const modHeld = $derived(cmdDown && shiftDown);
 
   function onWindowKeydown(e: KeyboardEvent) {
     if (e.key === (mac ? 'Meta' : 'Control')) cmdDown = true
@@ -68,20 +68,26 @@
   }
 </script>
 
-<svelte:window onkeydown={onWindowKeydown} onkeyup={onWindowKeyup} onblur={clearModHeld} />
+<svelte:window
+  onkeydown={onWindowKeydown}
+  onkeyup={onWindowKeyup}
+  onblur={clearModHeld}
+></svelte:window>
 
 <aside
   class={cn(
     'flex h-full w-full flex-col border-r bg-sidebar',
   )}
 >
-  <div class={cn('p-4', collapsed && 'px-2')}>
-    <AccountSwitcher {collapsed} />
-  </div>
-  <nav aria-label="Main navigation" class={cn('flex-1 space-y-1 py-2', collapsed ? 'px-1.5' : 'px-3')}>
+  <div class={cn('p-4', collapsed && 'px-2')}><AccountSwitcher collapsed={collapsed} /></div>
+
+  <nav
+    aria-label="Main navigation"
+    class={cn('flex-1 space-y-1 py-2', collapsed ? 'px-1.5' : 'px-3')}
+  >
     {#each visibleNav as item, i (item.href)}
       {@const Icon = item.iconComponent ?? iconMap[item.icon] ?? Box}
-      {@const active = $page.url.pathname === item.href || (item.href !== '/' && $page.url.pathname.startsWith(item.href + '/'))}
+      {@const active = page.url.pathname === item.href || item.href !== '/' && page.url.pathname.startsWith(item.href + '/')}
       {@const isBell = item.icon === 'bell'}
       {@const shortcut = navShortcut(i)}
       <a

@@ -1,5 +1,5 @@
 import type { Capabilities, UserInfo } from './adapter'
-import { providerAuthorize } from '$provider/config/auth'
+import { providerAuthorize } from '#provider/config/auth.js'
 import { canCreate, canRead, canUpdate, canDelete } from './capabilities'
 
 export type Action = 'create' | 'read' | 'update' | 'delete'

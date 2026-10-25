@@ -1,4 +1,4 @@
-import type { Account, CreateAccountRequest, EditAccountRequest, UpdateAccountQuotaRequest } from '$lib/core/api/types'
+import type { Account, CreateAccountRequest, EditAccountRequest, UpdateAccountQuotaRequest } from '#lib/core/api/types.js'
 import { api } from './client.svelte'
 
 let accounts = $state<Account[]>([])

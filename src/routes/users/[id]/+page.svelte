@@ -1,30 +1,42 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useUsers } from '$lib/core/stores/users.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { ROLE, isAdmin } from '$lib/core/auth/adapter'
-  import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
-  import { Button } from '$lib/components/ui/button'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import { Badge } from '$lib/components/ui/badge'
-  import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
-  import TextTooltip from '$lib/components/shared/TextTooltip.svelte'
-  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
-  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import PencilIcon from '@lucide/svelte/icons/pencil'
-  import { showErrorToast, showSuccessToast, showWarningToast, handleApiError } from '$lib/core/utils/toast'
-  import { isUsernameValid, usernameErrorMessage } from '$lib/core/utils/validation'
-  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
-  import type { User } from '$lib/core/api/types'
-  import { fetchLocalLoginEnabled, localAuthApi, type PortalInviteStatus } from '$lib/core/api/localauth'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useUsers } from '#lib/core/stores/users.svelte.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { ROLE, isAdmin } from '#lib/core/auth/adapter.js';
+  import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '#lib/components/ui/card/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import Input from '#lib/components/ui/input/input.svelte';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import StatusBadge from '#lib/components/shared/StatusBadge.svelte';
+  import TextTooltip from '#lib/components/shared/TextTooltip.svelte';
+  import ConfirmDialog from '#lib/components/shared/ConfirmDialog.svelte';
+  import DetailSkeleton from '#lib/components/shared/DetailSkeleton.svelte';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import PencilIcon from '@lucide/svelte/icons/pencil';
 
-  const store = useUsers()
-  const auth = useAuth()
-  const id = $derived(Number($page.params.id))
-  const editOnLoad = $derived($page.url.searchParams.has('edit'))
+  import {
+    showErrorToast,
+    showSuccessToast,
+    showWarningToast,
+    handleApiError
+  } from '#lib/core/utils/toast.js';
+
+  import { isUsernameValid, usernameErrorMessage } from '#lib/core/utils/validation.js';
+  import { useConfirmDialog } from '#lib/stores/confirm-dialog.svelte.js';
+  import type { User } from '#lib/core/api/types.js';
+
+  import {
+    fetchLocalLoginEnabled,
+    localAuthApi,
+    type PortalInviteStatus
+  } from '#lib/core/api/localauth.js';
+
+  const store = useUsers();
+  const auth = useAuth();
+  const id = $derived(Number(page.params.id));
+  const editOnLoad = $derived(page.url.searchParams.has('edit'));
 
   $effect(() => {
     if (!auth.loading && !auth.can('users', 'read')) {
@@ -33,17 +45,19 @@
     }
   })
 
-  let user = $state<User | null>(null)
-  let loading = $state(true)
-  const dialog = useConfirmDialog()
+  let user = $state<User | null>(null);
+  let loading = $state(true);
+  const dialog = useConfirmDialog();
+  let localLoginEnabled = $state(false);
+  let inviteStatus = $state<PortalInviteStatus | null>(null);
+  let inviteRole = $state<string | undefined>(undefined);
+  let inviteEmailVerified = $state(false);
+  let inviteTotpEnabled = $state(false);
+  let inviteSubmitting = $state(false);
 
-  let localLoginEnabled = $state(false)
-  let inviteStatus = $state<PortalInviteStatus | null>(null)
-  let inviteRole = $state<string | undefined>(undefined)
-  let inviteEmailVerified = $state(false)
-  let inviteTotpEnabled = $state(false)
-  let inviteSubmitting = $state(false)
-  fetchLocalLoginEnabled().then((v) => { localLoginEnabled = v })
+  fetchLocalLoginEnabled().then((v) => {
+    localLoginEnabled = v;
+  });
 
   const portalRoleTooltip = $derived(
     inviteRole ? `This email's portal sign-in is a ${inviteRole} dashboard account, separate from this account-scoped user record. It no longer carries this account's data scope.` : '',
@@ -95,14 +109,13 @@
     }
   }
 
-  let editing = $state(false)
-  let editUsername = $state('')
-  let editEmail = $state('')
-  let editName = $state('')
-  let editSubmitting = $state(false)
-
-  const usernameValid = $derived(isUsernameValid(editUsername))
-  const usernameError = $derived(usernameErrorMessage(editUsername))
+  let editing = $state(false);
+  let editUsername = $state('');
+  let editEmail = $state('');
+  let editName = $state('');
+  let editSubmitting = $state(false);
+  const usernameValid = $derived(isUsernameValid(editUsername));
+  const usernameError = $derived(usernameErrorMessage(editUsername));
 
   function startEdit() {
     if (!user) return
@@ -139,13 +152,27 @@
 
   let fetchCtrl: AbortController | undefined
   $effect(() => {
-    if (Number.isNaN(id)) { loading = false; return }
-    fetchCtrl?.abort()
-    fetchCtrl = new AbortController()
-    const ctrl = fetchCtrl
-    loading = true
-    store.getUser(id).then(u => { if (!ctrl.signal.aborted) user = u }).catch(() => { if (!ctrl.signal.aborted) user = null }).finally(() => { if (!ctrl.signal.aborted) loading = false })
-  })
+    if (Number.isNaN(id)) {
+      loading = false;
+
+      return;
+    }
+
+    fetchCtrl?.abort();
+    fetchCtrl = new AbortController();
+
+    const ctrl = fetchCtrl;
+
+    loading = true;
+
+    store.getUser(id).then((u) => {
+      if (!ctrl.signal.aborted) user = u;
+    }).catch(() => {
+      if (!ctrl.signal.aborted) user = null;
+    }).finally(() => {
+      if (!ctrl.signal.aborted) loading = false;
+    });
+  });
 
   $effect(() => {
     if (editOnLoad && user && !editing && auth.can('users', 'update')) startEdit()
@@ -264,15 +291,23 @@
           {#if auth.can('users', 'update')}
             <CardFooter class="gap-2">
               {#if user.isActive}
-                <Button variant="destructive" size="sm" onclick={() => dialog.confirm('Deactivate', `Permanently deactivate "${user!.username}"?`, () => act(() => store.deactivateUser(id)), 'destructive')}>Deactivate</Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onclick={() => dialog.confirm('Deactivate', `Permanently deactivate "${(user!).username}"?`, () => act(() => store.deactivateUser(id)), 'destructive')}
+                >Deactivate</Button>
               {/if}
               {#if auth.user?.role === ROLE.superadmin && user.username}
                 <Button variant="outline" size="sm" onclick={() => dialog.confirm(
-                  'Revoke Admin Sessions',
-                  `Revoke all admin dashboard sessions for "${user!.username}"? They will be signed out immediately.`,
-                  async () => { await store.revokeAdminSessions(user!.username!); showSuccessToast('Admin sessions revoked') },
-                  'destructive',
-                )}>Revoke Sessions</Button>
+                    'Revoke Admin Sessions',
+                    `Revoke all admin dashboard sessions for "${(user!).username}"? They will be signed out immediately.`,
+                    async () => {
+                      await store.revokeAdminSessions((user!).username!);
+                      showSuccessToast('Admin sessions revoked');
+                    },
+                    'destructive'
+                  )}
+                >Revoke Sessions</Button>
               {/if}
               {#if localLoginEnabled}
                 {#if inviteStatus === 'none'}

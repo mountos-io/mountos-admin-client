@@ -1,7 +1,7 @@
-import type { AuthAdapter } from '$lib/core/auth/adapter'
-import { TokenAuthAdapter } from '$lib/core/auth/token'
+import type { AuthAdapter } from '#lib/core/auth/adapter.js'
+import { TokenAuthAdapter } from '#lib/core/auth/token.js'
 import { appConfig } from './app'
-import { providerAuthAdapter } from '$provider/config/auth'
+import { providerAuthAdapter } from '#provider/config/auth.js'
 
 const defaults: AuthAdapter = new TokenAuthAdapter({
   loginUrl: appConfig.loginUrl,

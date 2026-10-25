@@ -1,8 +1,8 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog'
-  import { Button } from '$lib/components/ui/button'
-  import { Checkbox } from '$lib/components/ui/checkbox'
-  import { handleApiError } from '$lib/core/utils/toast'
+  import * as Dialog from '#lib/components/ui/dialog/index.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { Checkbox } from '#lib/components/ui/checkbox/index.js'
+  import { handleApiError } from '#lib/core/utils/toast.js'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
 
   let { open = $bindable(false), volumeName, onConfirm }: {

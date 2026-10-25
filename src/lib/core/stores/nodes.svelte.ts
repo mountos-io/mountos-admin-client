@@ -1,7 +1,7 @@
-import type { ServiceNode, NodeStatsSample } from '$lib/core/api/types'
-import { parsePrometheusText, type PrometheusMetric } from '$lib/core/utils/format'
-import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
-import { isNodeUnreachableError } from '$lib/core/api/errors'
+import type { ServiceNode, NodeStatsSample } from '#lib/core/api/types.js'
+import { parsePrometheusText, type PrometheusMetric } from '#lib/core/utils/format.js'
+import { createActivePoll, type ActivePoll } from '#lib/core/utils/activePoll.js'
+import { isNodeUnreachableError } from '#lib/core/api/errors.js'
 import { api } from './client.svelte'
 
 let nodes = $state<ServiceNode[]>([])

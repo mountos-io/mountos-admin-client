@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/svelte'
 import { readable } from 'svelte/store'
 import Page from './+page.svelte'
-import { ApiError } from '$lib/core/api/errors'
-import type { Copyset, BlockVolume, ServiceNode, Storage } from '$lib/core/api/types'
+import { ApiError } from '#lib/core/api/errors.js'
+import type { Copyset, BlockVolume, ServiceNode, Storage } from '#lib/core/api/types.js'
 
 const {
   getStorage, getCopysetStatus, listBlockVolumes, serviceNodesList, gotoMock, showErrorToast, showSuccessToast, handleApiError, authCan,
@@ -23,20 +23,20 @@ const {
 }))
 
 vi.mock('$app/navigation', () => ({ goto: gotoMock }))
-vi.mock('$app/stores', () => ({
-  page: readable({ params: { id: '1', copysetId: 'copyset-1' }, url: new URL('http://localhost/storages/1/copysets/copyset-1') }),
+vi.mock('$app/state', () => ({
+  page: { params: { id: '1', copysetId: 'copyset-1' }, url: new URL('http://localhost/storages/1/copysets/copyset-1') },
 }))
-vi.mock('$lib/core/stores/auth.svelte', () => ({
+vi.mock('#lib/core/stores/auth.svelte.js', () => ({
   useAuth: () => ({ loading: false, can: authCan }),
 }))
-vi.mock('$lib/core/stores/storages.svelte', () => ({
+vi.mock('#lib/core/stores/storages.svelte.js', () => ({
   useStorages: () => ({ getStorage, getCopysetStatus, listBlockVolumes, markMemberLost, addCopysetMember }),
 }))
-vi.mock('$lib/core/stores/client.svelte', () => ({
+vi.mock('#lib/core/stores/client.svelte.js', () => ({
   api: { serviceNodes: { list: serviceNodesList } },
 }))
-vi.mock('$lib/core/utils/toast', () => ({ showErrorToast, showSuccessToast, handleApiError }))
-vi.mock('$lib/components/shared/NodeDetail.svelte', async () => {
+vi.mock('#lib/core/utils/toast.js', () => ({ showErrorToast, showSuccessToast, handleApiError }))
+vi.mock('#lib/components/shared/NodeDetail.svelte', async () => {
   const mod = await import('./__mocks__/node-detail-test-stub.svelte')
   return { default: mod.default }
 })

@@ -1,7 +1,7 @@
 import type {
   Storage, CreateStorageRequest, EditStorageRequest, TestStorageNewBucketRequest, MoveStorageVolumesRequest,
   RegisterStorageCopysetRequest, RegisterStorageCopysetsBulkRequest, AddStorageCopysetMemberRequest, MarkStorageMemberLostRequest,
-} from '$lib/core/api/types'
+} from '#lib/core/api/types.js'
 import { api } from './client.svelte'
 
 let storages = $state<Storage[]>([])

@@ -1,4 +1,4 @@
-import type { DashboardStats } from '$lib/core/api/types'
+import type { DashboardStats } from '#lib/core/api/types.js'
 import { api } from './client.svelte'
 
 let stats = $state<DashboardStats | null>(null)

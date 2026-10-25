@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Input } from '$lib/components/ui/input'
+  import { Input } from '#lib/components/ui/input/index.js'
   import GitFork from '@lucide/svelte/icons/git-fork'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
 

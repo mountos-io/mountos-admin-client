@@ -1,6 +1,6 @@
 <script lang="ts">
-  import DiagramViewer from '$lib/components/shared/DiagramViewer.svelte'
-  import BlockStorageHaDiagram from '$lib/components/diagrams/BlockStorageHaDiagram.svelte'
+  import DiagramViewer from '#lib/components/shared/DiagramViewer.svelte'
+  import BlockStorageHaDiagram from '#lib/components/diagrams/BlockStorageHaDiagram.svelte'
 </script>
 
 <div class="space-y-4">

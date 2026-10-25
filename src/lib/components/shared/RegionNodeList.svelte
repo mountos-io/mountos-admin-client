@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { Card } from '$lib/components/ui/card'
-  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
-  import { Badge } from '$lib/components/ui/badge'
-  import { formatBinaryVersion } from '$lib/core/utils/format'
-  import type { ServiceNode } from '$lib/core/api/types'
+  import { Card } from '#lib/components/ui/card/index.js'
+  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '#lib/components/ui/table/index.js'
+  import { Badge } from '#lib/components/ui/badge/index.js'
+  import { formatBinaryVersion } from '#lib/core/utils/format.js'
+  import type { ServiceNode } from '#lib/core/api/types.js'
 
   type TierData = {
     id: string

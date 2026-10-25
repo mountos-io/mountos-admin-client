@@ -1,4 +1,4 @@
-import { providerAppConfig } from "$provider/config/app";
+import { providerAppConfig } from "#provider/config/app.js";
 
 export interface AppConfig {
   appName: string;

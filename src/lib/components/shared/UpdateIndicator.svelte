@@ -2,11 +2,11 @@
   // Marks a running version as behind the latest published one. Renders NOTHING when the
   // release index is unavailable, disabled, or has no entry for this unit: an absent
   // indicator must never be read as "up to date".
-  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
-  import { Badge } from '$lib/components/ui/badge'
+  import { Popover, PopoverTrigger, PopoverContent } from '#lib/components/ui/popover/index.js'
+  import { Badge } from '#lib/components/ui/badge/index.js'
   import ArrowUpCircle from '@lucide/svelte/icons/arrow-up-circle'
-  import { cn } from '$lib/utils'
-  import { severityClass, severityLabel, type UpdateStatus } from '$lib/core/stores/releases.svelte'
+  import { cn } from '#lib/utils.js'
+  import { severityClass, severityLabel, type UpdateStatus } from '#lib/core/stores/releases.svelte.js'
 
   interface Props {
     status: UpdateStatus | null

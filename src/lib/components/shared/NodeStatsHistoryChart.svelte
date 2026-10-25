@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
-  import { Skeleton } from '$lib/components/ui/skeleton'
-  import TextTooltip from '$lib/components/shared/TextTooltip.svelte'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { Card, CardContent, CardHeader, CardTitle } from '#lib/components/ui/card/index.js'
+  import { Skeleton } from '#lib/components/ui/skeleton/index.js'
+  import TextTooltip from '#lib/components/shared/TextTooltip.svelte'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import { formatBytes } from '$lib/core/utils/format'
-  import type { NodeStatsSample } from '$lib/core/api/types'
+  import { formatBytes } from '#lib/core/utils/format.js'
+  import type { NodeStatsSample } from '#lib/core/api/types.js'
 
   let { samples, intervalMs, cpuCores = 0, loading = false, error = '' }: {
     samples: NodeStatsSample[]

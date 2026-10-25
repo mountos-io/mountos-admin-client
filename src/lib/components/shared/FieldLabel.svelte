@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Label from '$lib/components/ui/label/label.svelte'
-  import InfoTip from '$lib/components/shared/InfoTip.svelte'
+  import Label from '#lib/components/ui/label/label.svelte'
+  import InfoTip from '#lib/components/shared/InfoTip.svelte'
   import type { Snippet } from 'svelte'
 
   let {

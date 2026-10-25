@@ -109,7 +109,7 @@ import type {
 // The grants list covers every fork of a volume, and each row names its fork.
 // The installed SDK types do not carry that field yet. Remove this extension
 // and re-export the SDK types once the installed SDK version has it.
-export type ExclusiveGrantWithFork = SDKExclusiveGrant & { fork?: string }
+export type ExclusiveGrantWithFork = SDKExclusiveGrant
 export type ExclusiveGrant = ExclusiveGrantWithFork
 export type ExclusiveGrantsResponse = Omit<SDKExclusiveGrantsResponse, 'grants' | 'fork'> & { grants: ExclusiveGrantWithFork[] }
 

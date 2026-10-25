@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/svelte'
 import VolumeCopysetCountControl from './VolumeCopysetCountControl.svelte'
 
-vi.mock('$lib/core/utils/toast', () => ({
+vi.mock('#lib/core/utils/toast.js', () => ({
   showSuccessToast: vi.fn(),
   showWarningToast: vi.fn(),
   handleApiError: vi.fn(),
 }))
-import { showSuccessToast, showWarningToast, handleApiError } from '$lib/core/utils/toast'
+import { showSuccessToast, showWarningToast, handleApiError } from '#lib/core/utils/toast.js'
 
 beforeEach(() => { vi.clearAllMocks() })
 

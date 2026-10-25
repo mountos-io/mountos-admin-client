@@ -1,5 +1,5 @@
-import { ROLE } from '../../../../server/types'
-export { ROLE, isAdmin, type Role } from '../../../../server/types'
+import { ROLE } from './roles'
+export { ROLE, isAdmin, type Role } from './roles'
 
 export type Capabilities = Record<string, number>
 

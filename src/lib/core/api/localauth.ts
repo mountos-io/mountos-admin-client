@@ -2,7 +2,7 @@
 // These sit outside the generated appserv SDK, so requests go straight through
 // fetch with the same auth-header + cookie pattern used by revokeAdminSessions
 // in stores/users.svelte.ts.
-import { authAdapter } from '$lib/config/auth'
+import { authAdapter } from '#lib/config/auth.js'
 
 async function authHeaders(): Promise<Record<string, string>> {
   return { 'Content-Type': 'application/json', ...await authAdapter.getRequestHeaders() }

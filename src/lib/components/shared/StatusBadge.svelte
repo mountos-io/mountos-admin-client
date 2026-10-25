@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Badge } from '$lib/components/ui/badge'
+  import { Badge } from '#lib/components/ui/badge/index.js'
   import Lock from '@lucide/svelte/icons/lock'
   import CheckCircle2 from '@lucide/svelte/icons/check-circle-2'
   import CircleDashed from '@lucide/svelte/icons/circle-dashed'

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { Table, TableHeader, TableBody, TableRow, TableCell } from '$lib/components/ui/table'
-  import { CyberSkeleton } from '$lib/components/ui/skeleton'
+  import { Table, TableHeader, TableBody, TableRow, TableCell } from '#lib/components/ui/table/index.js'
+  import { CyberSkeleton } from '#lib/components/ui/skeleton/index.js'
 
   type Cell = { width: string; class?: string; height?: string }
 

@@ -1,15 +1,15 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import type { Fork, Volume } from '$lib/core/api/types'
-  import { Input } from '$lib/components/ui/input'
-  import { Button } from '$lib/components/ui/button'
+  import type { Fork, Volume } from '#lib/core/api/types.js'
+  import { Input } from '#lib/components/ui/input/index.js'
+  import { Button } from '#lib/components/ui/button/index.js'
   import {
     forkAsOfMin, forkAsOfMax, toDatetimeTz, parseDatetimeTz, gcFloorMs, forkAnchorFloorMs,
     asOfCeilingMs, SNAPSHOT_FLOOR_MS,
-  } from '$lib/core/utils/forkRetention'
-  import { tz } from '$lib/core/stores/tz.svelte'
-  import { formatTzShort } from '$lib/core/utils/format'
-  import { showWarningToast } from '$lib/core/utils/toast'
+  } from '#lib/core/utils/forkRetention.js'
+  import { tz } from '#lib/core/stores/tz.svelte.js'
+  import { formatTzShort } from '#lib/core/utils/format.js'
+  import { showWarningToast } from '#lib/core/utils/toast.js'
 
   let {
     volume,

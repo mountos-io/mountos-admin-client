@@ -1,6 +1,6 @@
-import type { User, AddUserRequest, EditUserRequest } from '$lib/core/api/types'
-import { authAdapter } from '$lib/config/auth'
-import { createStepUpHandler } from '$lib/core/stores/stepup.svelte'
+import type { User, AddUserRequest, EditUserRequest } from '#lib/core/api/types.js'
+import { authAdapter } from '#lib/config/auth.js'
+import { createStepUpHandler } from '#lib/core/stores/stepup.svelte.js'
 import { api } from './client.svelte'
 
 let users = $state<User[]>([])

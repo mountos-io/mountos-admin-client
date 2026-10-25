@@ -1,4 +1,4 @@
-import type { LicenseDetails, LicenseStatus } from '$lib/core/api/types'
+import type { LicenseDetails, LicenseStatus } from '#lib/core/api/types.js'
 import { api, request } from './client.svelte'
 
 let license = $state<LicenseDetails | null>(null)

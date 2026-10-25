@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { Card, CardHeader, CardContent, CardFooter } from '$lib/components/ui/card'
-  import { Skeleton } from '$lib/components/ui/skeleton'
+  import { Card, CardHeader, CardContent, CardFooter } from '#lib/components/ui/card/index.js'
+  import { Skeleton } from '#lib/components/ui/skeleton/index.js'
 
   let {
     fields = 4,

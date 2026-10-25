@@ -1,6 +1,6 @@
 import { startRegistration, startAuthentication } from '@simplewebauthn/browser'
-import { authAdapter } from '$lib/config/auth'
-import type { WebAuthnState } from '$lib/core/auth/adapter'
+import { authAdapter } from '#lib/config/auth.js'
+import type { WebAuthnState } from '#lib/core/auth/adapter.js'
 
 interface ClientCredential {
   id: string

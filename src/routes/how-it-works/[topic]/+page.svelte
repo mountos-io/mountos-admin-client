@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { Button } from '$lib/components/ui/button'
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import { EXPLAINERS, isExplainerTopic } from '$lib/components/explainers'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { showErrorToast } from '$lib/core/utils/toast'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import { EXPLAINERS, isExplainerTopic } from '#lib/components/explainers/index.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { showErrorToast } from '#lib/core/utils/toast.js';
 
   // Static page mirror of the "How it works" modal, for mobile viewing.
   // Explainers describe operator internals; admins only.
@@ -17,8 +17,8 @@
     }
   })
 
-  const topic = $derived($page.params.topic ?? '')
-  const meta = $derived(isExplainerTopic(topic) ? EXPLAINERS[topic] : null)
+  const topic = $derived(page.params.topic ?? '');
+  const meta = $derived(isExplainerTopic(topic) ? EXPLAINERS[topic] : null);
 
   function back() {
     if (history.length > 1) history.back()

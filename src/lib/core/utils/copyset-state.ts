@@ -1,7 +1,7 @@
 // Single source of truth for Copyset.state -> label/variant/title.
 // Shared by CopysetStateBadge (the pill) and NodeGrid (the copyset-group border tint) so both
 // stay on the same four-state color scheme instead of drifting into a second one.
-import type { CopysetState } from '$lib/core/api/types'
+import type { CopysetState } from '#lib/core/api/types.js'
 
 export const COPYSET_STATE_LABEL: Record<CopysetState, string> = {
   active: 'Active',

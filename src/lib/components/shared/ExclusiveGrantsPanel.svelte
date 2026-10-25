@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
-  import type { ExclusiveGrantsResponse } from '$lib/core/api/types'
-  import { formatClockMs, grantRoleLabel, grantStateVariant, liveLabel, scopeLabel } from '$lib/core/utils/exclusive'
-  import { formatDate, formatRelative } from '$lib/core/utils/format'
+  import { Card, CardHeader, CardTitle, CardContent } from '#lib/components/ui/card/index.js'
+  import { Badge } from '#lib/components/ui/badge/index.js'
+  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '#lib/components/ui/table/index.js'
+  import type { ExclusiveGrantsResponse } from '#lib/core/api/types.js'
+  import { formatClockMs, grantRoleLabel, grantStateVariant, liveLabel, scopeLabel } from '#lib/core/utils/exclusive.js'
+  import { formatDate, formatRelative } from '#lib/core/utils/format.js'
 
   let { result }: { result: ExclusiveGrantsResponse } = $props()
   // A fork column appears only when a row belongs to a fork other than main.

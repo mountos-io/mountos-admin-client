@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { Badge } from '$lib/components/ui/badge'
-  import { COPYSET_STATE_LABEL, COPYSET_STATE_VARIANT, COPYSET_STATE_TITLE } from '$lib/core/utils/copyset-state'
-  import type { CopysetState } from '$lib/core/api/types'
+  import { Badge } from '#lib/components/ui/badge/index.js'
+  import { COPYSET_STATE_LABEL, COPYSET_STATE_VARIANT, COPYSET_STATE_TITLE } from '#lib/core/utils/copyset-state.js'
+  import type { CopysetState } from '#lib/core/api/types.js'
 
   let { state }: { state: CopysetState } = $props()
 </script>

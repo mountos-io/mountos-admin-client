@@ -1,7 +1,7 @@
-import type { GCWorkerEvent, GCWorkerEventListOptions, GCWorkerEventBucket } from '$lib/core/api/types'
+import type { GCWorkerEvent, GCWorkerEventListOptions, GCWorkerEventBucket } from '#lib/core/api/types.js'
 import { api } from './client.svelte'
 import { TIME_RANGES } from './alerts.svelte'
-import { readCached, writeCached } from '$lib/core/utils/cache'
+import { readCached, writeCached } from '#lib/core/utils/cache.js'
 
 export type { GCWorkerEvent, GCWorkerEventBucket }
 

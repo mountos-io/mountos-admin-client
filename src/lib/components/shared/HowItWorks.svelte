@@ -1,9 +1,9 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog'
-  import { Button } from '$lib/components/ui/button'
+  import * as Dialog from '#lib/components/ui/dialog/index.js'
+  import { Button } from '#lib/components/ui/button/index.js'
   import BookOpen from '@lucide/svelte/icons/book-open'
-  import { EXPLAINERS, explainerHref, type ExplainerTopic } from '$lib/components/explainers'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
+  import { EXPLAINERS, explainerHref, type ExplainerTopic } from '#lib/components/explainers/index.js'
+  import { useAuth } from '#lib/core/stores/auth.svelte.js'
 
   // Desktop opens the explainer in a modal; mobile navigates to the static page
   // (a zoomable diagram is cramped in a small modal). Same content either way.

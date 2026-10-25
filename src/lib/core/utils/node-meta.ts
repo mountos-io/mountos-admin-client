@@ -1,5 +1,5 @@
-import { formatBytes } from '$lib/core/utils/format'
-import type { NodeAddress } from '$lib/core/api/types'
+import { formatBytes } from '#lib/core/utils/format.js'
+import type { NodeAddress } from '#lib/core/api/types.js'
 
 // Node metadata is service-specific; NodeDetail renders it as labeled fields (not raw JSON).
 // Known keys (mostly blockserv) get friendly labels, ordering and typed rendering;

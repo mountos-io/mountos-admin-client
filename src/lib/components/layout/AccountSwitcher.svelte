@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { cn } from '$lib/utils.js'
-  import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Button } from '$lib/components/ui/button'
-  import * as Dialog from '$lib/components/ui/dialog'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import AccountIcon from '$lib/components/shared/AccountIcon.svelte'
+  import { cn } from '#lib/utils.js'
+  import { useAccounts } from '#lib/core/stores/accounts.svelte.js'
+  import { useAuth } from '#lib/core/stores/auth.svelte.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import * as Dialog from '#lib/components/ui/dialog/index.js'
+  import Input from '#lib/components/ui/input/input.svelte'
+  import AccountIcon from '#lib/components/shared/AccountIcon.svelte'
   import Check from '@lucide/svelte/icons/check'
   import Plus from '@lucide/svelte/icons/plus'
 

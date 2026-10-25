@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { formatTzShort } from '$lib/core/utils/format'
-  import { tz } from '$lib/core/stores/tz.svelte'
+  import { formatTzShort } from '#lib/core/utils/format.js'
+  import { tz } from '#lib/core/stores/tz.svelte.js'
   import GitFork from '@lucide/svelte/icons/git-fork'
   import LockIcon from '@lucide/svelte/icons/lock'
   import Clock from '@lucide/svelte/icons/clock'

@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
-  import { Badge } from '$lib/components/ui/badge'
-  import { formatBytes } from '$lib/core/utils/format'
-  import type { ParsedFlowStats } from '$lib/core/utils/pfkitNetwork'
+  import { Card, CardContent, CardHeader, CardTitle } from '#lib/components/ui/card/index.js'
+  import { Badge } from '#lib/components/ui/badge/index.js'
+  import { formatBytes } from '#lib/core/utils/format.js'
+  import type { ParsedFlowStats } from '#lib/core/utils/pfkitNetwork.js'
 
   let { stats }: { stats: ParsedFlowStats } = $props()
 

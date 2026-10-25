@@ -1,5 +1,5 @@
-import type { AuthAdapter, Capabilities, UserInfo } from '$lib/core/auth/adapter'
-import type { Action } from '$lib/core/auth/authorize'
+import type { AuthAdapter, Capabilities, UserInfo } from '#lib/core/auth/adapter.js'
+import type { Action } from '#lib/core/auth/authorize.js'
 
 export type AuthorizeCheck = (
   resource: string, action: Action, caps: Capabilities, user: UserInfo | null

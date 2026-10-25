@@ -1,33 +1,38 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useStorages } from '$lib/core/stores/storages.svelte'
-  import { useRegions } from '$lib/core/stores/regions.svelte'
-  import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import { SecretInput } from '$lib/components/ui/input'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import { Select } from '$lib/components/ui/select'
-  import { Separator } from '$lib/components/ui/separator'
-  import Combobox from '$lib/components/shared/Combobox.svelte'
-  import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
-  import BucketTester from '$lib/components/shared/BucketTester.svelte'
-  import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
-  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useStorages } from '#lib/core/stores/storages.svelte.js';
+  import { useRegions } from '#lib/core/stores/regions.svelte.js';
+  import { useAccounts } from '#lib/core/stores/accounts.svelte.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#lib/components/ui/card/index.js';
+  import Input from '#lib/components/ui/input/input.svelte';
+  import { SecretInput } from '#lib/components/ui/input/index.js';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import { Select } from '#lib/components/ui/select/index.js';
+  import { Separator } from '#lib/components/ui/separator/index.js';
+  import Combobox from '#lib/components/shared/Combobox.svelte';
+  import EmptyState from '#lib/components/shared/EmptyState.svelte';
+  import FormSkeleton from '#lib/components/shared/FormSkeleton.svelte';
+  import BucketTester from '#lib/components/shared/BucketTester.svelte';
+  import HowItWorks from '#lib/components/shared/HowItWorks.svelte';
+  import { showSuccessToast, showErrorToast, handleApiError } from '#lib/core/utils/toast.js';
   import {
-    PROVIDER_OPTIONS, generateEndpoint, isCustomEndpoint, getProvider, isAzureProvider,
-  } from '$lib/core/utils/object-storage-providers'
-  import { HUB_REGION_NAME } from '$lib/core/constants'
+    PROVIDER_OPTIONS,
+    generateEndpoint,
+    isCustomEndpoint,
+    getProvider,
+    isAzureProvider
+  } from '#lib/core/utils/object-storage-providers.js';
 
-  const storageStore = useStorages()
-  const regionStore = useRegions()
-  const accountStore = useAccounts()
-  const auth = useAuth()
-  const accountId = $derived(accountStore.selectedAccountId)
+  import { HUB_REGION_NAME } from '#lib/core/constants.js';
+
+  const storageStore = useStorages();
+  const regionStore = useRegions();
+  const accountStore = useAccounts();
+  const auth = useAuth();
+  const accountId = $derived(accountStore.selectedAccountId);
 
   $effect(() => {
     if (!auth.loading && !auth.can('storages', 'create')) {
@@ -36,9 +41,9 @@
     }
   })
 
-  const preselectedRegionId = $page.url.searchParams.get('regionId') ?? ''
+  const preselectedRegionId = page.url.searchParams.get('regionId') ?? '';
+  let regionsLoaded = $state(false);
 
-  let regionsLoaded = $state(false)
   $effect(() => {
     if (accountId) {
       regionId = ''
@@ -50,11 +55,8 @@
     }
   })
 
-  const regionOptions = $derived(
-    regionStore.regions
-      .filter(r => r.name !== HUB_REGION_NAME)
-      .map(r => ({ value: String(r.id), label: r.name }))
-  )
+  const regionOptions = $derived(regionStore.regions.filter((r) => r.name !== HUB_REGION_NAME).map((r) => ({ value: String(r.id), label: r.name })));
+
   const BLOCK_SIZES = [
     { value: '65536', label: '64 KiB' },
     { value: '131072', label: '128 KiB' },
@@ -66,22 +68,22 @@
     { value: '8388608', label: '8 MiB' },
   ]
 
-  let name = $state('')
-  let description = $state('')
-  let regionId = $state('')
-  let storageType = $state('')
-  let providerType = $state('')
-  let endpoint = $state('')
-  let region = $state('')
-  let bucket = $state('')
-  let base = $state('')
-  let blockSize = $state('4194304')
-  let accessKey = $state('')
-  let secretKey = $state('')
-  let submitting = $state(false)
-  let bucketVerified = $state(false)
+  let name = $state('');
+  let description = $state('');
+  let regionId = $state('');
+  let storageType = $state('');
+  let providerType = $state('');
+  let endpoint = $state('');
+  let region = $state('');
+  let bucket = $state('');
+  let base = $state('');
+  let blockSize = $state('4194304');
+  let accessKey = $state('');
+  let secretKey = $state('');
+  let submitting = $state(false);
+  let bucketVerified = $state(false);
+  const isBlock = $derived(storageType === 'block');
 
-  const isBlock = $derived(storageType === 'block')
   // Every block storage is object-backed (durable S3 floor), so both object and block
   // collect a backing object store. Clients discover the member nodes via appserv.
   // blockserv needs no DNS endpoint.
@@ -135,14 +137,8 @@
   // Azure is a valid backing store for both object and hybrid storage.
   const providerOptionsForContext = $derived(PROVIDER_OPTIONS)
 
-  const objectStoreReady = $derived(
-    !!(endpoint.trim() && bucket.trim() && accessKey.trim() && secretKey.trim())
-  )
-
-  const canSubmit = $derived(
-    !!(name.trim() && regionId && storageType && providerType
-      && objectStoreReady && bucketVerified)
-  )
+  const objectStoreReady = $derived(!!(endpoint.trim() && bucket.trim() && accessKey.trim() && secretKey.trim()));
+  const canSubmit = $derived(!!(name.trim() && regionId && storageType && providerType && objectStoreReady && bucketVerified));
 
   async function handleSubmit(e: Event) {
     e.preventDefault()
@@ -282,12 +278,12 @@
               {/if}
 
               <BucketTester
-                {endpoint}
-                {region}
-                {bucket}
-                {accessKey}
-                {secretKey}
-                {providerType}
+                endpoint={endpoint}
+                region={region}
+                bucket={bucket}
+                accessKey={accessKey}
+                secretKey={secretKey}
+                providerType={providerType}
                 disabled={!objectStoreReady}
                 onresult={(passed) => { bucketVerified = passed }}
               />

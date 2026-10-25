@@ -1,4 +1,4 @@
-import { providerFeatures } from '$provider/config/features'
+import { providerFeatures } from '#provider/config/features.js'
 
 export interface FeatureFlags {
   accounts: boolean

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button'
+  import { Button } from '#lib/components/ui/button/index.js'
   import ZoomIn from '@lucide/svelte/icons/zoom-in'
   import ZoomOut from '@lucide/svelte/icons/zoom-out'
   import Maximize2 from '@lucide/svelte/icons/maximize-2'

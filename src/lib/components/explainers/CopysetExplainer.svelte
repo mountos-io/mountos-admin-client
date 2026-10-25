@@ -1,6 +1,6 @@
 <script lang="ts">
-  import DiagramViewer from '$lib/components/shared/DiagramViewer.svelte'
-  import CopysetRegistrationDiagram from '$lib/components/diagrams/CopysetRegistrationDiagram.svelte'
+  import DiagramViewer from '#lib/components/shared/DiagramViewer.svelte'
+  import CopysetRegistrationDiagram from '#lib/components/diagrams/CopysetRegistrationDiagram.svelte'
 </script>
 
 <div class="space-y-4">

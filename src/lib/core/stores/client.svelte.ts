@@ -1,9 +1,9 @@
 import { createClient, type RequestFn, type AdminClient } from '@mountos-io/admin-sdk'
-import { createBrowserRequest } from '$lib/core/api/request'
-import { ApiError } from '$lib/core/api/errors'
-import { authAdapter } from '$lib/config/auth'
-import { createStepUpHandler } from '$lib/core/stores/stepup.svelte'
-import { showErrorToast } from '$lib/core/utils/toast'
+import { createBrowserRequest } from '#lib/core/api/request.js'
+import { ApiError } from '#lib/core/api/errors.js'
+import { authAdapter } from '#lib/config/auth.js'
+import { createStepUpHandler } from '#lib/core/stores/stepup.svelte.js'
+import { showErrorToast } from '#lib/core/utils/toast.js'
 
 const baseRequest = createBrowserRequest({
   getHeaders: async () => await authAdapter.getRequestHeaders(),

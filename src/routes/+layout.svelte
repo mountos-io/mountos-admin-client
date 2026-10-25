@@ -1,22 +1,22 @@
 <script lang="ts">
-  import '../app.css'
-  import { onMount, type Component } from 'svelte'
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { appConfig } from '$lib/config/app'
-  import { authAdapter } from '$lib/config/auth'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { usePreferences } from '$lib/stores/preferences.svelte'
-  import { TokenAuthAdapter } from '$lib/core/auth/token'
-  import Shell from '$lib/components/layout/Shell.svelte'
-  import { Skeleton } from '$lib/components/ui/skeleton'
+  import '../app.css';
+  import { onMount, type Component } from 'svelte';
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { appConfig } from '#lib/config/app.js';
+  import { authAdapter } from '#lib/config/auth.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { useAccounts } from '#lib/core/stores/accounts.svelte.js';
+  import { usePreferences } from '#lib/stores/preferences.svelte.js';
+  import { TokenAuthAdapter } from '#lib/core/auth/token.js';
+  import Shell from '#lib/components/layout/Shell.svelte';
+  import { Skeleton } from '#lib/components/ui/skeleton/index.js';
 
   // Toaster carries the heaviest dep (svelte-sonner) but is idle until a toast
   // fires; load it after mount to keep it out of the layout's critical chunk.
   let Toaster = $state<Component | null>(null)
   onMount(async () => {
-    Toaster = (await import('$lib/components/ui/sonner')).Toaster as Component
+    Toaster = (await import('#lib/components/ui/sonner/index.js')).Toaster as Component
   })
 
   const auth = useAuth()
@@ -48,8 +48,8 @@
       progress = 60
       const data = await res.json().catch(() => null)
       if (!res.ok) {
-        exchangeError = (data && typeof data.message === 'string' && data.message) || 'Authentication failed'
-        return
+        exchangeError = data && typeof data.message === 'string' && data.message || 'Authentication failed';
+        return;
       }
       progress = 80
       if (authAdapter instanceof TokenAuthAdapter) {
@@ -78,7 +78,7 @@
       await auth.init()
       if (!auth.authenticated) { bootDone = false; return }
       if (auth.isUserRole) {
-        const account = (authAdapter instanceof TokenAuthAdapter) ? authAdapter.getBootstrapAccount() : null
+        const account = authAdapter instanceof TokenAuthAdapter ? authAdapter.getBootstrapAccount() : null;
         if (account) {
           accountStore.setFixedAccount(account)
         } else {
@@ -93,19 +93,19 @@
         return
       }
       const defaultAcct = prefs.defaultAccountId !== null
-        ? accounts.find(a => a.id === prefs.defaultAccountId)
-        : undefined
-      accountStore.selectAccount((defaultAcct ?? accounts[0]).id)
-    } catch (e) {
-      bootDone = false
-      console.warn('Bootstrap failed:', e)
+        ? accounts.find((a) => a.id === prefs.defaultAccountId)
+        : undefined;
+      accountStore.selectAccount((defaultAcct ?? accounts[0]).id);
+    } catch(e) {
+      bootDone = false;
+      console.warn('Bootstrap failed:', e);
     }
   }
 
   $effect(() => {
-    if (CHROMELESS_ROUTES.has($page.url.pathname) || exchanging) return
+    if (CHROMELESS_ROUTES.has(page.url.pathname) || exchanging) return;
 
-    const providerToken = $page.url.searchParams.get('token')
+    const providerToken = page.url.searchParams.get('token');
     if (providerToken) {
       if (attemptedToken === providerToken) return
       attemptedToken = providerToken
@@ -147,8 +147,10 @@
       </button>
     </div>
   </div>
-{:else if CHROMELESS_ROUTES.has($page.url.pathname)}
-  {#if children}{@render children()}{/if}
+{:else if CHROMELESS_ROUTES.has(page.url.pathname)}
+  {#if children}
+    {@render children()}
+  {/if}
 {:else if auth.loading}
   <div class="flex h-screen items-center justify-center" role="status" aria-busy="true" aria-label="Authenticating">
     <div class="w-full max-w-sm space-y-3 px-6">

@@ -1,53 +1,54 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
+  import { onDestroy } from 'svelte';
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
   import type {
-    Fork, Volume, ForkTreeEntry, ForkEntryDetail, ForkTreeMatch, ForkEntryVersion,
-  } from '$lib/core/api/types'
-  import { api } from '$lib/core/stores/client.svelte'
-  import { ApiError } from '$lib/core/api/errors'
-  import { MAIN_FORK, gcFloorMs, forkAnchorFloorMs, asOfCeilingMs } from '$lib/core/utils/forkRetention'
-  import { showSuccessToast } from '$lib/core/utils/toast'
-  import { debounce } from '$lib/utils'
-  import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
-  import { Button } from '$lib/components/ui/button'
-  import ForkPicker from './ForkPicker.svelte'
-  import TimezonePicker from '$lib/components/shared/TimezonePicker.svelte'
-  import SearchIcon from '@lucide/svelte/icons/search'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import TreeBreadcrumb from './TreeBreadcrumb.svelte'
-  import TreeTimePicker from './TreeTimePicker.svelte'
-  import TreeList from './TreeList.svelte'
-  import TreeSearch from './TreeSearch.svelte'
-  import TreeFilePanel from './TreeFilePanel.svelte'
-  import TreeVersionsModal from './TreeVersionsModal.svelte'
-  import TreeContextChip from './TreeContextChip.svelte'
+    Fork,
+    Volume,
+    ForkTreeEntry,
+    ForkEntryDetail,
+    ForkTreeMatch,
+    ForkEntryVersion
+  } from '#lib/core/api/types.js';
 
-  let {
-    volumeId,
-    volume,
-    forks,
-  }: {
-    volumeId: number
-    volume: Volume | null
-    forks: Fork[]
-  } = $props()
+  import { api } from '#lib/core/stores/client.svelte.js';
+  import { ApiError } from '#lib/core/api/errors.js';
+  import { MAIN_FORK, gcFloorMs, forkAnchorFloorMs, asOfCeilingMs } from '#lib/core/utils/forkRetention.js';
+  import { showSuccessToast } from '#lib/core/utils/toast.js';
+  import { debounce } from '#lib/utils.js';
+  import { Card, CardHeader, CardTitle, CardContent } from '#lib/components/ui/card/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import ForkPicker from './ForkPicker.svelte';
+  import TimezonePicker from '#lib/components/shared/TimezonePicker.svelte';
+  import SearchIcon from '@lucide/svelte/icons/search';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import TreeBreadcrumb from './TreeBreadcrumb.svelte';
+  import TreeTimePicker from './TreeTimePicker.svelte';
+  import TreeList from './TreeList.svelte';
+  import TreeSearch from './TreeSearch.svelte';
+  import TreeFilePanel from './TreeFilePanel.svelte';
+  import TreeVersionsModal from './TreeVersionsModal.svelte';
+  import TreeContextChip from './TreeContextChip.svelte';
 
-  const PAGE_SIZE = 20
+  let { volumeId, volume, forks }: { volumeId: number; volume: Volume | null; forks: Fork[] } = $props();
+  const PAGE_SIZE = 20;
 
   // ── URL-backed state ────────────────────────────────────────────────
-  const params = $derived($page.url.searchParams)
-  const forkName = $derived(params.get('fork') ?? MAIN_FORK)
-  const path = $derived(normalisePath(params.get('path') ?? '/'))
+  const params = $derived(page.url.searchParams);
+  const forkName = $derived(params.get('fork') ?? MAIN_FORK);
+  const path = $derived(normalisePath(params.get('path') ?? '/'));
   const asOf = $derived.by(() => {
-    const v = params.get('asof')
-    if (!v) return null
-    const n = Number(v)
-    return Number.isFinite(n) && n > 0 ? n : null
-  })
-  const q = $derived(params.get('q') ?? '')
-  const exact = $derived(params.get('exact') === '1')
+    const v = params.get('asof');
+
+    if (!v) return null;
+
+    const n = Number(v);
+
+    return Number.isFinite(n) && n > 0 ? n : null;
+  });
+
+  const q = $derived(params.get('q') ?? '');
+  const exact = $derived(params.get('exact') === '1');
 
   // URL stores asof in ms (human-readable, matches Date.now() conventions);
   // backend tree APIs operate in microseconds (matching mtime/ctime).
@@ -68,29 +69,34 @@
   // Path / fork / asOf transitions push a new entry so browser Back unwinds the
   // traversal as operators expect. Search text edits stay in-place to avoid
   // littering history with every keystroke.
-  function updateUrl(next: Record<string, string | number | null>, opts: { replace?: boolean } = {}) {
-    const sp = new URLSearchParams($page.url.searchParams)
+  function updateUrl(
+    next: Record<string, string | number | null>,
+    opts: { replace?: boolean } = {}
+  ) {
+    const sp = new URLSearchParams(page.url.search);
+
     for (const [k, v] of Object.entries(next)) {
       if (v == null || v === '') sp.delete(k)
       else sp.set(k, String(v))
     }
-    goto(`?${sp.toString()}`, { replaceState: opts.replace === true, noScroll: true, keepFocus: true })
+    goto(`?${sp.toString()}`, { replaceState: opts.replace === true, reset: false })
   }
 
   // ── Fork picker options (active forks) ──────────────────────────────
   const forkOptions = $derived([
     { value: MAIN_FORK, label: MAIN_FORK },
-    ...forks.filter(f => f.status === 'active' && f.name !== MAIN_FORK).map(f => ({ value: f.name, label: f.name })),
-  ])
+    ...forks.filter((f) => f.status === 'active' && f.name !== MAIN_FORK).map((f) => ({ value: f.name, label: f.name }))
+  ]);
 
   // ── Directory listing state ─────────────────────────────────────────
   let entries = $state<ForkTreeEntry[]>([])
   // Opaque server cursor, sent back unchanged. Never parsed or built here.
-  let cursor = $state<string | null>(null)
-  let loading = $state(false)
-  let loadingMore = $state(false)
-  let listError = $state<string | null>(null)
-  let listCtrl: AbortController | null = null
+  let cursor = $state<string | null>(null);
+
+  let loading = $state(false);
+  let loadingMore = $state(false);
+  let listError = $state<string | null>(null);
+  let listCtrl: AbortController | null = null;
 
   async function loadDir(append: boolean) {
     if (!volume) return
@@ -100,17 +106,22 @@
     else { loading = true; entries = []; cursor = null; listError = null }
     try {
       const res = await api.volumeForkTrees.list(volumeId, forkName, {
-        path,
-        asOf: asOfMicros(),
-        cursor: append ? (cursor ?? undefined) : undefined,
-        limit: PAGE_SIZE,
-      }, listCtrl.signal)
-      entries = append ? [...entries, ...res.items] : res.items
-      cursor = res.nextCursor
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') return
-      listError = e instanceof ApiError ? e.message : 'Failed to load directory'
-      if (!append) entries = []
+          path,
+          asOf: asOfMicros(),
+          cursor: append ? cursor ?? undefined : undefined,
+          limit: PAGE_SIZE
+        },
+        listCtrl.signal
+      );
+
+      entries = append ? [...entries, ...res.items] : res.items;
+      cursor = res.nextCursor;
+    } catch(e) {
+      if ((e as Error).name === 'AbortError') return;
+
+      listError = e instanceof ApiError ? e.message : 'Failed to load directory';
+
+      if (!append) entries = [];
     } finally {
       if (append) loadingMore = false
       else loading = false
@@ -119,22 +130,28 @@
 
   // Trigger on (volumeId, forkName, path, asOf) changes.
   $effect(() => {
-    void volumeId; void forkName; void path; void asOf
-    if (!volume) return
-    void loadDir(false)
-  })
+    void volumeId;
+    void forkName;
+    void path;
+    void asOf;
+
+    if (!volume) return;
+
+    void loadDir(false);
+  });
 
   // ── Search state ────────────────────────────────────────────────────
-  let searchDraft = $state('')
-  let searchExact = $state(false)
-  let searchResults = $state<ForkTreeMatch[]>([])
-  let searchCursor = $state<number | null>(null)
-  let searchLoading = $state(false)
-  let searchLoadingMore = $state(false)
-  let searchError = $state<string | null>(null)
-  let searchOpen = $state(false)
-  let searchInputEl: HTMLInputElement | null = $state(null)
-  let searchCtrl: AbortController | null = null
+  let searchDraft = $state('');
+
+  let searchExact = $state(false);
+  let searchResults = $state<ForkTreeMatch[]>([]);
+  let searchCursor = $state<number | null>(null);
+  let searchLoading = $state(false);
+  let searchLoadingMore = $state(false);
+  let searchError = $state<string | null>(null);
+  let searchOpen = $state(false);
+  let searchInputEl: HTMLInputElement | null = $state(null);
+  let searchCtrl: AbortController | null = null;
 
   // Mirror q/exact into draft state only when they actually change, not on
   // every params object reshuffle. Without the lastSynced* trackers, edits
@@ -167,19 +184,24 @@
     else { searchLoading = true; searchResults = []; searchCursor = null; searchError = null }
     try {
       const res = await api.volumeForkSearches.find(volumeId, forkName, {
-        q,
-        path,
-        asOf: asOfMicros(),
-        exact,
-        cursor: append ? (searchCursor ?? undefined) : undefined,
-        limit: PAGE_SIZE,
-      }, searchCtrl.signal)
-      searchResults = append ? [...searchResults, ...res.items] : res.items
-      searchCursor = res.nextCursor
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') return
-      searchError = e instanceof ApiError ? e.message : 'Search failed'
-      if (!append) searchResults = []
+          q,
+          path,
+          asOf: asOfMicros(),
+          exact,
+          cursor: append ? searchCursor ?? undefined : undefined,
+          limit: PAGE_SIZE
+        },
+        searchCtrl.signal
+      );
+
+      searchResults = append ? [...searchResults, ...res.items] : res.items;
+      searchCursor = res.nextCursor;
+    } catch(e) {
+      if ((e as Error).name === 'AbortError') return;
+
+      searchError = e instanceof ApiError ? e.message : 'Search failed';
+
+      if (!append) searchResults = [];
     } finally {
       if (append) searchLoadingMore = false
       else searchLoading = false
@@ -189,10 +211,19 @@
   // Coalesce rapid (fork, path, asOf, q, exact) changes into a single fetch.
   const debouncedSearch = debounce(() => { void runSearch(false) }, 120)
   $effect(() => {
-    void volumeId; void forkName; void path; void asOf; void q; void exact
-    if (q) debouncedSearch()
-    else { searchResults = []; searchCursor = null; searchError = null }
-  })
+    void volumeId;
+    void forkName;
+    void path;
+    void asOf;
+    void q;
+    void exact;
+
+    if (q) debouncedSearch(); else {
+      searchResults = [];
+      searchCursor = null;
+      searchError = null;
+    }
+  });
 
   function submitSearch() {
     const trimmed = searchDraft.trim()
@@ -273,12 +304,13 @@
   function changeAsOf(next: number | null) { updateUrl({ asof: next ?? null }) }
 
   // ── File detail panel ───────────────────────────────────────────────
-  let panelOpen = $state(false)
-  let panelPath = $state('')
-  let detail = $state<ForkEntryDetail | null>(null)
-  let detailLoading = $state(false)
-  let detailError = $state<string | null>(null)
-  let detailCtrl: AbortController | null = null
+  let panelOpen = $state(false);
+
+  let panelPath = $state('');
+  let detail = $state<ForkEntryDetail | null>(null);
+  let detailLoading = $state(false);
+  let detailError = $state<string | null>(null);
+  let detailCtrl: AbortController | null = null;
 
   // Last identifier used to open the detail panel; retry replays whichever
   // mode opened the panel (path for breadcrumb nav, inode for search picks).
@@ -320,13 +352,14 @@
   }
 
   // ── Versions modal ──────────────────────────────────────────────────
-  let versionsOpen = $state(false)
-  let versions = $state<ForkEntryVersion[]>([])
-  let versionsCursor = $state<number | null>(null)
-  let versionsLoading = $state(false)
-  let versionsLoadingMore = $state(false)
-  let versionsError = $state<string | null>(null)
-  let versionsCtrl: AbortController | null = null
+  let versionsOpen = $state(false);
+
+  let versions = $state<ForkEntryVersion[]>([]);
+  let versionsCursor = $state<number | null>(null);
+  let versionsLoading = $state(false);
+  let versionsLoadingMore = $state(false);
+  let versionsError = $state<string | null>(null);
+  let versionsCtrl: AbortController | null = null;
 
   async function loadVersions(append: boolean) {
     if (!volume || !panelPath) return
@@ -336,15 +369,19 @@
     else { versionsLoading = true; versions = []; versionsCursor = null; versionsError = null }
     try {
       const res = await api.volumeForkEntries.versions(volumeId, forkName, {
-        path: panelPath,
-        cursor: append ? (versionsCursor ?? undefined) : undefined,
-        limit: PAGE_SIZE,
-      }, versionsCtrl.signal)
-      versions = append ? [...versions, ...res.items] : res.items
-      versionsCursor = res.nextCursor
-    } catch (e) {
-      if ((e as Error).name === 'AbortError') return
-      versionsError = e instanceof ApiError ? e.message : 'Failed to load versions'
+          path: panelPath,
+          cursor: append ? versionsCursor ?? undefined : undefined,
+          limit: PAGE_SIZE
+        },
+        versionsCtrl.signal
+      );
+
+      versions = append ? [...versions, ...res.items] : res.items;
+      versionsCursor = res.nextCursor;
+    } catch(e) {
+      if ((e as Error).name === 'AbortError') return;
+
+      versionsError = e instanceof ApiError ? e.message : 'Failed to load versions';
     } finally {
       if (append) versionsLoadingMore = false
       else versionsLoading = false
@@ -364,7 +401,7 @@
   })
 </script>
 
-<svelte:window onkeydown={handleGlobalKey} />
+<svelte:window onkeydown={handleGlobalKey}></svelte:window>
 
 <Card cornerBrackets>
   <CardHeader class="space-y-3">
@@ -379,20 +416,21 @@
           onchange={(v) => changeFork(v ?? MAIN_FORK)} />
         <TimezonePicker />
         <TreeTimePicker
-          {volume}
-          {forks}
-          {forkName}
-          {asOf}
-          onchange={changeAsOf} />
+          volume={volume}
+          forks={forks}
+          forkName={forkName}
+          asOf={asOf}
+          onchange={changeAsOf}
+        />
       </div>
     </div>
 
     <!-- Row 2: breadcrumb + (snapshot mode badge) + search trigger -->
     <div class="flex items-center justify-between gap-2 flex-wrap border-t border-border/30 pt-3">
       <div class="flex items-center gap-2 min-w-0 flex-wrap">
-        <TreeBreadcrumb {path} onselect={selectBreadcrumb} />
+        <TreeBreadcrumb path={path} onselect={selectBreadcrumb} />
         {#if asOf != null}
-          <TreeContextChip {forkName} {asOf} />
+          <TreeContextChip forkName={forkName} asOf={asOf} />
         {/if}
       </div>
       <Button
@@ -441,10 +479,10 @@
     {/if}
 
     <TreeList
-      {entries}
-      {loading}
+      entries={entries}
+      loading={loading}
       hasMore={cursor != null}
-      {loadingMore}
+      loadingMore={loadingMore}
       onenter={enterDir}
       onselect={selectFile}
       onloadMore={() => loadDir(true)} />
@@ -453,11 +491,11 @@
 
 <TreeFilePanel
   bind:open={panelOpen}
-  {detail}
+  detail={detail}
   loading={detailLoading}
   error={detailError}
-  {forkName}
-  {asOf}
+  forkName={forkName}
+  asOf={asOf}
   onclose={closePanel}
   onretry={retryDetail}
   onversions={openVersions} />
@@ -465,7 +503,7 @@
 <TreeVersionsModal
   bind:open={versionsOpen}
   path={panelPath}
-  {versions}
+  versions={versions}
   loading={versionsLoading}
   hasMore={versionsCursor != null}
   loadingMore={versionsLoadingMore}

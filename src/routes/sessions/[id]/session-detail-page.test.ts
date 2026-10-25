@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/svelte'
 import { readable } from 'svelte/store'
 import Page from './+page.svelte'
-import type { ClientSession } from '$lib/core/api/types'
+import type { ClientSession } from '#lib/core/api/types.js'
 
 const { getSession, gotoMock } = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -10,19 +10,19 @@ const { getSession, gotoMock } = vi.hoisted(() => ({
 }))
 
 vi.mock('$app/navigation', () => ({ goto: gotoMock }))
-vi.mock('$app/stores', () => ({
-  page: readable({ params: { id: '42' }, url: new URL('http://localhost/sessions/42') }),
+vi.mock('$app/state', () => ({
+  page: { params: { id: '42' }, url: new URL('http://localhost/sessions/42') },
 }))
-vi.mock('$lib/core/stores/auth.svelte', () => ({
+vi.mock('#lib/core/stores/auth.svelte.js', () => ({
   useAuth: () => ({ loading: false, can: () => true, isUserRole: false, userMountosUserId: null }),
 }))
-vi.mock('$lib/core/stores/client.svelte', () => ({
+vi.mock('#lib/core/stores/client.svelte.js', () => ({
   api: { clientSessions: { get: getSession } },
 }))
-vi.mock('$lib/core/stores/sessions.svelte', () => ({
+vi.mock('#lib/core/stores/sessions.svelte.js', () => ({
   getPlatform: (s: ClientSession) => (s.metadata as { platform?: string } | undefined)?.platform ?? '',
 }))
-vi.mock('$lib/core/utils/toast', () => ({ showErrorToast: vi.fn() }))
+vi.mock('#lib/core/utils/toast.js', () => ({ showErrorToast: vi.fn() }))
 
 const baseSession: ClientSession = {
   id: 42,

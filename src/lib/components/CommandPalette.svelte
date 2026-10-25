@@ -1,12 +1,12 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
-  import { visibleNavItems } from '$lib/config/navigation'
-  import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { usePreferences } from '$lib/stores/preferences.svelte'
-  import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
-  import { providerSettingsTabs } from '$provider/config/settings'
-  import * as Command from '$lib/components/ui/command'
+  import { visibleNavItems } from '#lib/config/navigation.js'
+  import { useAccounts } from '#lib/core/stores/accounts.svelte.js'
+  import { useAuth } from '#lib/core/stores/auth.svelte.js'
+  import { usePreferences } from '#lib/stores/preferences.svelte.js'
+  import { useSettingsModal } from '#lib/stores/settings-modal.svelte.js'
+  import { providerSettingsTabs } from '#provider/config/settings.js'
+  import * as Command from '#lib/components/ui/command/index.js'
   import type { Component } from 'svelte'
   import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
   import Building2 from '@lucide/svelte/icons/building-2'
@@ -21,8 +21,8 @@
   import Plus from '@lucide/svelte/icons/plus'
   import LogOut from '@lucide/svelte/icons/log-out'
   import Box from '@lucide/svelte/icons/box'
-  import { Badge } from '$lib/components/ui/badge'
-  import { isMacPlatform } from '$lib/utils'
+  import { Badge } from '#lib/components/ui/badge/index.js'
+  import { isMacPlatform } from '#lib/utils.js'
 
   let { open = $bindable(false) }: { open?: boolean } = $props()
 

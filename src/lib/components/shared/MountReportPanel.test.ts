@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/svelte'
 import MountReportPanel from './MountReportPanel.svelte'
-import { ApiError } from '$lib/core/api/errors'
+import { ApiError } from '#lib/core/api/errors.js'
 
 const { requestMock } = vi.hoisted(() => ({ requestMock: vi.fn() }))
-vi.mock('$lib/core/stores/client.svelte', () => ({ api: { clientSessions: { mountReport: requestMock, supportBundle: vi.fn() } } }))
-vi.mock('$lib/core/utils/toast', () => ({ showErrorToast: vi.fn(), showSuccessToast: vi.fn() }))
+vi.mock('#lib/core/stores/client.svelte.js', () => ({ api: { clientSessions: { mountReport: requestMock, supportBundle: vi.fn() } } }))
+vi.mock('#lib/core/utils/toast.js', () => ({ showErrorToast: vi.fn(), showSuccessToast: vi.fn() }))
 
 beforeEach(() => { vi.clearAllMocks() })
 

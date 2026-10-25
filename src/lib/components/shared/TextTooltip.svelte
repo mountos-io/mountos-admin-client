@@ -4,8 +4,8 @@
 
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { cn } from '$lib/utils.js'
-  import { copyText } from '$lib/core/utils/clipboard'
+  import { cn } from '#lib/utils.js'
+  import { copyText } from '#lib/core/utils/clipboard.js'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
 

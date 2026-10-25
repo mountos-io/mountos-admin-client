@@ -1,44 +1,83 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { onDestroy } from 'svelte'
-  import { untrack } from 'svelte'
-  import { Card, CardContent } from '$lib/components/ui/card'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Button } from '$lib/components/ui/button'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { api } from '$lib/core/stores/client.svelte'
-  import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
-  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import { formatRelative, formatDate, formatUptime, formatDuration, formatBytes, formatBitrate, formatNum, formatIPv4, formatPlatform, formatOs, formatOsName, formatSessionStatus, isReadOnlyMountMode, sinkStateVariant, treeJobStateVariant } from '$lib/core/utils/format'
-  import { sessionRole, roleSpec, isTreeJobRole, treeJobInfo, treeJobOutcomes, truncateForkPath } from '$lib/core/utils/session-roles'
-  import { formatUs, formatOpsPerSec, formatTotalTime, latencyColor, objectLatencyColor, pingRttColor, memAllocColor, cvClass, bucketBarColor, estimateCV, interpolatePercentile, CV_TOOLTIP_TEXT, type HistBucket } from '$lib/core/utils/metrics'
-  import ChevronRight from '@lucide/svelte/icons/chevron-right'
-  import { POLL_OPTIONS } from '$lib/core/utils/options'
-  import { volumeTypeVariant } from '$lib/core/utils/volume-type'
-  import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
-  import { showErrorToast } from '$lib/core/utils/toast'
-  import { HISTOGRAM_BOUNDS } from '$lib/core/constants'
-  import type { ClientSession } from '$lib/core/api/types'
-  import { getPlatform } from '$lib/core/stores/sessions.svelte'
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw'
-  import Layers from '@lucide/svelte/icons/layers'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import MountReportPanel from '$lib/components/shared/MountReportPanel.svelte'
-  import InfoTip from '$lib/components/shared/InfoTip.svelte'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { onDestroy } from 'svelte';
+  import { untrack } from 'svelte';
+  import { Card, CardContent } from '#lib/components/ui/card/index.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { api } from '#lib/core/stores/client.svelte.js';
+  import FilterSelect from '#lib/components/shared/FilterSelect.svelte';
+  import DetailSkeleton from '#lib/components/shared/DetailSkeleton.svelte';
 
-  const auth = useAuth()
-  const id = $derived(Number($page.params.id))
+  import {
+    formatRelative,
+    formatDate,
+    formatUptime,
+    formatDuration,
+    formatBytes,
+    formatBitrate,
+    formatNum,
+    formatIPv4,
+    formatPlatform,
+    formatOs,
+    formatOsName,
+    formatSessionStatus,
+    isReadOnlyMountMode,
+    sinkStateVariant,
+    treeJobStateVariant
+  } from '#lib/core/utils/format.js';
 
-  let session = $state<ClientSession | null>(null)
-  let loading = $state(true)
-  let error = $state<string | null>(null)
-  let fetchCtrl: AbortController | null = null
-  let redirected = false
+  import {
+    sessionRole,
+    roleSpec,
+    isTreeJobRole,
+    treeJobInfo,
+    treeJobOutcomes,
+    truncateForkPath
+  } from '#lib/core/utils/session-roles.js';
 
-  let pollValue = $state('')
-  let poll: ActivePoll | null = null
+  import {
+    formatUs,
+    formatOpsPerSec,
+    formatTotalTime,
+    latencyColor,
+    objectLatencyColor,
+    pingRttColor,
+    memAllocColor,
+    cvClass,
+    bucketBarColor,
+    estimateCV,
+    interpolatePercentile,
+    CV_TOOLTIP_TEXT,
+    type HistBucket
+  } from '#lib/core/utils/metrics.js';
+
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import { POLL_OPTIONS } from '#lib/core/utils/options.js';
+  import { volumeTypeVariant } from '#lib/core/utils/volume-type.js';
+  import { createActivePoll, type ActivePoll } from '#lib/core/utils/activePoll.js';
+  import { showErrorToast } from '#lib/core/utils/toast.js';
+  import { HISTOGRAM_BOUNDS } from '#lib/core/constants.js';
+  import type { ClientSession } from '#lib/core/api/types.js';
+  import { getPlatform } from '#lib/core/stores/sessions.svelte.js';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import Layers from '@lucide/svelte/icons/layers';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import MountReportPanel from '#lib/components/shared/MountReportPanel.svelte';
+  import InfoTip from '#lib/components/shared/InfoTip.svelte';
+
+  const auth = useAuth();
+  const id = $derived(Number(page.params.id));
+  let session = $state<ClientSession | null>(null);
+  let loading = $state(true);
+  let error = $state<string | null>(null);
+  let fetchCtrl: AbortController | null = null;
+  let redirected = false;
+  let pollValue = $state('');
+  let poll: ActivePoll | null = null;
 
   async function fetchSession() {
     fetchCtrl?.abort()
@@ -159,8 +198,8 @@
   }
   // Upload job identity/progress reported under metadata.upload.
   function getUploadInfo(s: ClientSession): UploadInfo | null {
-    const up = getMetaProp(s, 'upload')
-    return up != null && typeof up === 'object' ? (up as UploadInfo) : null
+    const up = getMetaProp(s, 'upload');
+    return up != null && typeof up === 'object' ? up as UploadInfo : null;
   }
 
   interface DownloadInfo {
@@ -182,8 +221,8 @@
   }
   // Download job identity/progress reported under metadata.download.
   function getDownloadInfo(s: ClientSession): DownloadInfo | null {
-    const dp = getMetaProp(s, 'download')
-    return dp != null && typeof dp === 'object' ? (dp as DownloadInfo) : null
+    const dp = getMetaProp(s, 'download');
+    return dp != null && typeof dp === 'object' ? dp as DownloadInfo : null;
   }
 
   // Sink job identity + live progress reported under metadata.sink. A sink
@@ -218,8 +257,8 @@
     lastSegmentAt?: number
   }
   function getSinkInfo(s: ClientSession): SinkInfo | null {
-    const sk = getMetaProp(s, 'sink')
-    return sk != null && typeof sk === 'object' ? (sk as SinkInfo) : null
+    const sk = getMetaProp(s, 'sink');
+    return sk != null && typeof sk === 'object' ? sk as SinkInfo : null;
   }
 
   // bytes pairs with durationNs (get/put only; RPC and FUSE entries never set it) so a
@@ -250,10 +289,18 @@
   // Derives average throughput (bits/sec, for formatBitrate) from the cumulative bytes,
   // avg latency, and op count already carried by collectMetrics' top-level object
   // scalars: avgUs * count reconstructs the total time the ops spent in flight.
-  function objectThroughputBps(bytes: number | undefined, avgUs: number | undefined, count: number | undefined): number {
-    const b = bytes ?? 0, u = avgUs ?? 0, c = count ?? 0
-    if (b <= 0 || u <= 0 || c <= 0) return 0
-    return (b * 8) / ((u * c) / 1e6)
+  function objectThroughputBps(
+    bytes: number | undefined,
+    avgUs: number | undefined,
+    count: number | undefined
+  ): number {
+    const b = bytes ?? 0,
+      u = avgUs ?? 0,
+      c = count ?? 0;
+
+    if (b <= 0 || u <= 0 || c <= 0) return 0;
+
+    return b * 8 / (u * c / 1e6);
   }
   const OBJECT_OP_LABELS: [string, string][] = [['get', 'GET'], ['get_ttfb', 'GET TTFB'], ['put', 'PUT']]
   function getObjectLatency(m: Record<string, any>): [string, RpcMethodLatency][] {
@@ -315,7 +362,7 @@
     invariantSites?: Record<string, number>
   }
   function getDriverMetrics(m: Record<string, any>): DriverSnapshot | null {
-    return (m.driver as DriverSnapshot | undefined) ?? null
+    return m.driver as DriverSnapshot | undefined ?? null;
   }
 
   // TCP connection-pool health per metadata-service node this mount talks to
@@ -337,8 +384,8 @@
     lastDownAt?: string
   }
   function getPoolHealth(m: Record<string, any>): PoolHealthEntry[] {
-    const p = m.poolHealth
-    return Array.isArray(p) ? (p as PoolHealthEntry[]) : []
+    const p = m.poolHealth;
+    return Array.isArray(p) ? p as PoolHealthEntry[] : [];
   }
 
   // Host TCP tuning of the client. The host values are read once per client
@@ -365,7 +412,7 @@
     tuned?: boolean
   }
   function getNetTuning(m: Record<string, any>): NetTuningSnapshot | null {
-    return (m.netTuning as NetTuningSnapshot | undefined) ?? null
+    return m.netTuning as NetTuningSnapshot | undefined ?? null;
   }
   // ccText is the one congestion control row of a Linux client. It gives the value, where
   // it comes from, and the system default when that differs. An override that is off or
@@ -574,8 +621,16 @@
         <!-- Host + badges -->
         <div class="flex flex-wrap items-center gap-4">
           <div class="min-w-0 flex-1">
-            <p class="text-xl font-bold truncate" title={getFriendlyName(session) || session.hostname || session.ipAddr}>{getFriendlyName(session) || session.hostname || session.ipAddr}</p>
-            <p class="text-sm text-muted-foreground font-mono">{#if getFriendlyName(session) && session.hostname}{session.hostname} &middot; {/if}{session.ipAddr}</p>
+            <p
+              class="text-xl font-bold truncate"
+              title={getFriendlyName(session) || session.hostname || session.ipAddr}
+            >{getFriendlyName(session) || session.hostname || session.ipAddr}</p>
+
+            <p class="text-sm text-muted-foreground font-mono">
+              {#if getFriendlyName(session) && session.hostname}
+                {session.hostname} ·
+              {/if}{session.ipAddr}
+            </p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             {#if getPlatform(session)}<Badge variant="primary" class="text-sm px-3 py-1">{formatPlatform(getPlatform(session))}</Badge>{/if}
@@ -694,13 +749,41 @@
             <div class="border-t border-border/40 pt-4">
               <div class="metric-group">
                 <p class="detail-label">Progress</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-2">
-                  <div class="metric-row"><span>Pending</span><span>{formatNum(up.counts.pending ?? 0)}</span></div>
-                  <div class="metric-row"><span>Uploading</span><span>{formatNum(up.counts.uploading ?? 0)}</span></div>
-                  <div class="metric-row"><span>Done</span><span>{formatNum(up.counts.done ?? 0)}</span></div>
-                  <div class="metric-row {(up.counts.failed ?? 0) ? 'text-destructive' : ''}"><span>Failed</span><span>{formatNum(up.counts.failed ?? 0)}</span></div>
-                  <div class="metric-row"><span>Skipped</span><span>{formatNum(up.counts.skipped ?? 0)}</span></div>
-                  <div class="metric-row"><span>Missing</span><span>{formatNum(up.counts.missing ?? 0)}</span></div>
+
+                <div
+                  class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-2"
+                >
+                  <div class="metric-row">
+                    <span>Pending</span>
+                    <span>{formatNum(up.counts.pending ?? 0)}</span>
+                  </div>
+
+                  <div class="metric-row">
+                    <span>Uploading</span>
+                    <span>{formatNum(up.counts.uploading ?? 0)}</span>
+                  </div>
+
+                  <div class="metric-row">
+                    <span>Done</span>
+                    <span>{formatNum(up.counts.done ?? 0)}</span>
+                  </div>
+
+                  <div
+                    class="metric-row {up.counts.failed ?? 0 ? 'text-destructive' : ''}"
+                  >
+                    <span>Failed</span>
+                    <span>{formatNum(up.counts.failed ?? 0)}</span>
+                  </div>
+
+                  <div class="metric-row">
+                    <span>Skipped</span>
+                    <span>{formatNum(up.counts.skipped ?? 0)}</span>
+                  </div>
+
+                  <div class="metric-row">
+                    <span>Missing</span>
+                    <span>{formatNum(up.counts.missing ?? 0)}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -734,18 +817,38 @@
             <div class="border-t border-border/40 pt-4">
               <div class="metric-group">
                 <p class="detail-label">Progress</p>
-                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-2">
-                  <div class="metric-row"><span>Pending</span><span>{formatNum(dl.counts.pending ?? 0)}</span></div>
-                  <div class="metric-row"><span>Downloading</span><span>{formatNum(dl.counts.downloading ?? 0)}</span></div>
-                  <div class="metric-row"><span>Done</span><span>{formatNum(dl.counts.done ?? 0)}</span></div>
-                  <div class="metric-row {(dl.counts.retrying ?? 0) ? 'text-warning' : ''}">
+
+                <div
+                  class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-2"
+                >
+                  <div class="metric-row">
+                    <span>Pending</span>
+                    <span>{formatNum(dl.counts.pending ?? 0)}</span>
+                  </div>
+
+                  <div class="metric-row">
+                    <span>Downloading</span>
+                    <span>{formatNum(dl.counts.downloading ?? 0)}</span>
+                  </div>
+
+                  <div class="metric-row">
+                    <span>Done</span>
+                    <span>{formatNum(dl.counts.done ?? 0)}</span>
+                  </div>
+
+                  <div
+                    class="metric-row {dl.counts.retrying ?? 0 ? 'text-warning' : ''}"
+                  >
                     <span class="inline-flex items-center gap-0.5">
                       Retrying
                       <InfoTip text="The job retries this file after a temporary error (quota, volume lock, or read failure). It clears on its own." />
                     </span>
                     <span>{formatNum(dl.counts.retrying ?? 0)}</span>
                   </div>
-                  <div class="metric-row {(dl.counts.failed ?? 0) ? 'text-destructive' : ''}">
+
+                  <div
+                    class="metric-row {dl.counts.failed ?? 0 ? 'text-destructive' : ''}"
+                  >
                     <span class="inline-flex items-center gap-0.5">
                       Failed
                       <InfoTip text="This status does not clear on its own. The job stopped retrying this path. Fix the cause, then use Retry failed, or accept the loss." />
@@ -816,25 +919,147 @@
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-5">
               <div class="metric-group">
                 <p class="detail-label">Stream Health</p>
-                <div class="metric-row"><span>State</span><span>{#if sk.state}<Badge variant={sinkStateVariant(sk.state)} class="font-mono text-xs">{sk.state}</Badge>{:else}·{/if}</span></div>
-                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Lag (segments)<InfoTip text="Segments behind the live edge. A rising count means the sink falls behind." /></span><span>{formatNum(sk.lagSegments ?? 0)}</span></div>
-                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Lag (time)<InfoTip text="Time behind the live edge, in wall-clock time." /></span><span>{sk.lagSeconds ? formatTotalTime(sk.lagSeconds) : '0s'}</span></div>
-                <div class="metric-row"><span class="inline-flex items-center gap-0.5">Buffered Bytes<InfoTip text="Local buffer of segments not yet uploaded. A rising value means uploads fall behind or fail." /></span><span>{formatBytes(sk.walBytes ?? 0)}</span></div>
-                <div class="metric-row"><span>Buffered Segments</span><span>{formatNum(sk.walSegments ?? 0)}</span></div>
-                <div class="metric-row {(sk.discontinuities ?? 0) ? 'text-destructive' : ''}"><span>Discontinuities</span><span>{formatNum(sk.discontinuities ?? 0)}</span></div>
+
+                <div class="metric-row">
+                  <span>State</span>
+
+                  <span>
+                    {#if sk.state}
+                      <Badge
+                        variant={sinkStateVariant(sk.state)}
+                        class="font-mono text-xs"
+                      >{sk.state}</Badge>
+                    {:else}
+                      ·
+                    {/if}
+                  </span>
+                </div>
+
+                <div class="metric-row">
+                  <span class="inline-flex items-center gap-0.5">
+                    Lag (segments)
+
+                    <InfoTip
+                      text="Segments behind the live edge. A rising count means the sink falls behind."
+                    />
+                  </span>
+
+                  <span>{formatNum(sk.lagSegments ?? 0)}</span>
+                </div>
+
+                <div class="metric-row">
+                  <span class="inline-flex items-center gap-0.5">
+                    Lag (time)
+
+                    <InfoTip
+                      text="Time behind the live edge, in wall-clock time."
+                    />
+                  </span>
+
+                  <span>{sk.lagSeconds ? formatTotalTime(sk.lagSeconds) : '0s'}</span>
+                </div>
+
+                <div class="metric-row">
+                  <span class="inline-flex items-center gap-0.5">
+                    Buffered Bytes
+
+                    <InfoTip
+                      text="Local buffer of segments not yet uploaded. A rising value means uploads fall behind or fail."
+                    />
+                  </span>
+
+                  <span>{formatBytes(sk.walBytes ?? 0)}</span>
+                </div>
+
+                <div class="metric-row">
+                  <span>Buffered Segments</span>
+                  <span>{formatNum(sk.walSegments ?? 0)}</span>
+                </div>
+
+                <div
+                  class="metric-row {sk.discontinuities ?? 0 ? 'text-destructive' : ''}"
+                >
+                  <span>Discontinuities</span>
+                  <span>{formatNum(sk.discontinuities ?? 0)}</span>
+                </div>
               </div>
+
               <div class="metric-group">
                 <p class="detail-label">Activity</p>
-                <div class="metric-row"><span>Segments Fetched</span><span>{formatNum(sk.segmentsFetched ?? 0)}</span></div>
-                <div class="metric-row"><span>Segments Committed</span><span>{formatNum(sk.segmentsCommitted ?? 0)}</span></div>
-                <div class="metric-row"><span>Bytes Committed</span><span>{formatBytes(sk.bytesCommitted ?? 0)}</span></div>
-                <div class="metric-row"><span>File Size</span><span>{formatBytes(sk.fileSize ?? 0)}</span></div>
-                {#if sk.sinkCurrent}<div class="metric-row"><span>Current Segment</span><span class="truncate max-w-[16rem]" title={sk.sinkCurrent}>{sk.sinkCurrent}</span></div>{/if}
-                {#if sk.bitrateObserved != null}<div class="metric-row"><span>Bitrate</span><span>{formatBitrate(sk.bitrateObserved)}</span></div>{/if}
-                <div class="metric-row {(sk.fetchErrors ?? 0) ? 'text-destructive' : ''}"><span>Fetch Errors</span><span>{formatNum(sk.fetchErrors ?? 0)}</span></div>
-                <div class="metric-row {(sk.commitRetries ?? 0) ? 'text-warning' : ''}"><span>Commit Retries</span><span>{formatNum(sk.commitRetries ?? 0)}</span></div>
-                {#if sk.lastCommitAt}<div class="metric-row"><span>Last Commit</span><span class="inline-flex items-center gap-0.5">{formatRelative(sk.lastCommitAt)}<InfoTip text={formatDate(sk.lastCommitAt)} /></span></div>{/if}
-                {#if sk.lastSegmentAt}<div class="metric-row"><span>Last Segment</span><span class="inline-flex items-center gap-0.5">{formatRelative(sk.lastSegmentAt)}<InfoTip text={formatDate(sk.lastSegmentAt)} /></span></div>{/if}
+
+                <div class="metric-row">
+                  <span>Segments Fetched</span>
+                  <span>{formatNum(sk.segmentsFetched ?? 0)}</span>
+                </div>
+
+                <div class="metric-row">
+                  <span>Segments Committed</span>
+                  <span>{formatNum(sk.segmentsCommitted ?? 0)}</span>
+                </div>
+
+                <div class="metric-row">
+                  <span>Bytes Committed</span>
+                  <span>{formatBytes(sk.bytesCommitted ?? 0)}</span>
+                </div>
+
+                <div class="metric-row">
+                  <span>File Size</span>
+                  <span>{formatBytes(sk.fileSize ?? 0)}</span>
+                </div>
+
+                {#if sk.sinkCurrent}
+                  <div class="metric-row">
+                    <span>Current Segment</span>
+
+                    <span
+                      class="truncate max-w-[16rem]"
+                      title={sk.sinkCurrent}
+                    >{sk.sinkCurrent}</span>
+                  </div>
+                {/if}
+
+                {#if sk.bitrateObserved != null}
+                  <div class="metric-row">
+                    <span>Bitrate</span>
+                    <span>{formatBitrate(sk.bitrateObserved)}</span>
+                  </div>
+                {/if}
+
+                <div
+                  class="metric-row {sk.fetchErrors ?? 0 ? 'text-destructive' : ''}"
+                >
+                  <span>Fetch Errors</span>
+                  <span>{formatNum(sk.fetchErrors ?? 0)}</span>
+                </div>
+
+                <div
+                  class="metric-row {sk.commitRetries ?? 0 ? 'text-warning' : ''}"
+                >
+                  <span>Commit Retries</span>
+                  <span>{formatNum(sk.commitRetries ?? 0)}</span>
+                </div>
+
+                {#if sk.lastCommitAt}
+                  <div class="metric-row">
+                    <span>Last Commit</span>
+
+                    <span class="inline-flex items-center gap-0.5">
+                      {formatRelative(sk.lastCommitAt)}
+                      <InfoTip text={formatDate(sk.lastCommitAt)} />
+                    </span>
+                  </div>
+                {/if}
+
+                {#if sk.lastSegmentAt}
+                  <div class="metric-row">
+                    <span>Last Segment</span>
+
+                    <span class="inline-flex items-center gap-0.5">
+                      {formatRelative(sk.lastSegmentAt)}
+                      <InfoTip text={formatDate(sk.lastSegmentAt)} />
+                    </span>
+                  </div>
+                {/if}
               </div>
             </div>
           </div>
@@ -936,9 +1161,21 @@
                 {#if m.prefetchFetchedBlocks != null}
                   {@const pf = Number(m.prefetchFetchedBlocks ?? 0)}
                   {@const pw = Number(m.prefetchWastedBlocks ?? 0)}
-                  {@const wastePct = pf > 0 ? (pw / pf) * 100 : 0}
-                  <div class="metric-row"><span>Prefetch Used</span><span>{formatNum(m.prefetchUsedBlocks ?? 0)}</span></div>
-                  <div class="metric-row {wastePct >= 50 ? 'text-destructive' : wastePct >= 30 ? 'text-warning' : ''}"><span>Prefetch Wasted</span><span>{formatNum(pw)} ({wastePct.toFixed(1)}%)</span></div>
+                  {@const wastePct = pf > 0 ? pw / pf * 100 : 0}
+
+                  <div class="metric-row">
+                    <span>Prefetch Used</span>
+                    <span>{formatNum(m.prefetchUsedBlocks ?? 0)}</span>
+                  </div>
+
+                  <div
+                    class="metric-row {wastePct >= 50
+                      ? 'text-destructive'
+                      : wastePct >= 30 ? 'text-warning' : ''}"
+                  >
+                    <span>Prefetch Wasted</span>
+                    <span>{formatNum(pw)} ({wastePct.toFixed(1)}%)</span>
+                  </div>
                 {/if}
               </div>
             {/if}
@@ -1027,17 +1264,53 @@
                 <div class="metric-row"><span>PUT Avg Latency</span><span style="color: {objectLatencyColor(m.objectPutAvgUs ?? 0)}">{formatUs(m.objectPutAvgUs ?? 0)}</span></div>
                 <div class="metric-row"><span>PUT Throughput</span><span>{formatBitrate(objectThroughputBps(m.objectPutBytes, m.objectPutAvgUs, m.objectPutCount))}</span></div>
               {/if}
-              <div class="metric-row {(m.objectErrors ?? 0) ? 'text-destructive' : ''}"><span>Errors</span><span>{formatNum(m.objectErrors ?? 0)}</span></div>
+
+              <div
+                class="metric-row {m.objectErrors ?? 0 ? 'text-destructive' : ''}"
+              >
+                <span>Errors</span>
+                <span>{formatNum(m.objectErrors ?? 0)}</span>
+              </div>
+
               {#if m.s3RetryAttempts != null}
-                <div class="metric-row"><span>Retries</span><span>{formatNum(m.s3RetryAttempts ?? 0)}</span></div>
-                <div class="metric-row {(m.s3RetryThrottled ?? 0) ? 'text-warning' : ''}"><span>Throttled</span><span>{formatNum(m.s3RetryThrottled ?? 0)}</span></div>
-                <div class="metric-row {(m.s3RetryExhausted ?? 0) ? 'text-destructive' : ''}"><span>Exhausted</span><span>{formatNum(m.s3RetryExhausted ?? 0)}</span></div>
+                <div class="metric-row">
+                  <span>Retries</span>
+                  <span>{formatNum(m.s3RetryAttempts ?? 0)}</span>
+                </div>
+
+                <div
+                  class="metric-row {m.s3RetryThrottled ?? 0 ? 'text-warning' : ''}"
+                >
+                  <span>Throttled</span>
+                  <span>{formatNum(m.s3RetryThrottled ?? 0)}</span>
+                </div>
+
+                <div
+                  class="metric-row {m.s3RetryExhausted ?? 0 ? 'text-destructive' : ''}"
+                >
+                  <span>Exhausted</span>
+                  <span>{formatNum(m.s3RetryExhausted ?? 0)}</span>
+                </div>
               {/if}
             </div>
             <div class="metric-group">
               <p class="detail-label">Network</p>
-              <div class="metric-row"><span>Ping RTT</span><span style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}>{m.pingRttMs ? `${m.pingRttMs} ms` : '·'}</span></div>
-              <div class="metric-row {(m.connFailures ?? 0) ? 'text-destructive' : ''}"><span>Conn Failures</span><span>{formatNum(m.connFailures ?? 0)}</span></div>
+
+              <div class="metric-row">
+                <span>Ping RTT</span>
+
+                <span
+                  style={m.pingRttMs ? `color: ${pingRttColor(m.pingRttMs)}` : ''}
+                >{m.pingRttMs ? `${m.pingRttMs} ms` : '·'}</span>
+              </div>
+
+              <div
+                class="metric-row {m.connFailures ?? 0 ? 'text-destructive' : ''}"
+              >
+                <span>Conn Failures</span>
+                <span>{formatNum(m.connFailures ?? 0)}</span>
+              </div>
+
               <div class="metric-row" title={cd.tooltip}>
                 <span>Conn Dropped</span>
                 <span class="inline-flex items-baseline gap-1">
@@ -1060,14 +1333,45 @@
             </div>
             <div class="metric-group">
               <p class="detail-label">Runtime</p>
-              <div class="metric-row"><span>Task Runners</span><span>{formatNum(m.taskRunners ?? m.goroutines ?? 0)}</span></div>
-              <div class="metric-row"><span>Mem Alloc</span><span style="color: {memAllocColor(m.memAlloc ?? 0)}">{formatBytes(m.memAlloc ?? 0)}</span></div>
-              <div class="metric-row"><span>Mem Sys</span><span>{formatBytes(m.memSys ?? 0)}</span></div>
-              <div class="metric-row"><span>GC Count</span><span>{formatNum(m.gcNum ?? 0)}</span></div>
-              <div class="metric-row"><span>CPU Time</span><span>{m.cpuSeconds != null ? formatUptime(m.cpuSeconds) : '·'}</span></div>
-              <div class="metric-row"><span>RPC Count</span><span>{formatNum(m.rpcCount ?? 0)}</span></div>
-              <div class="metric-row {(m.rpcErrors ?? 0) ? 'text-destructive' : ''}"><span>RPC Errors</span><span>{formatNum(m.rpcErrors ?? 0)}</span></div>
+
+              <div class="metric-row">
+                <span>Task Runners</span>
+                <span>{formatNum(m.taskRunners ?? m.goroutines ?? 0)}</span>
+              </div>
+
+              <div class="metric-row">
+                <span>Mem Alloc</span>
+                <span style="color: {memAllocColor(m.memAlloc ?? 0)}">{formatBytes(m.memAlloc ?? 0)}</span>
+              </div>
+
+              <div class="metric-row">
+                <span>Mem Sys</span>
+                <span>{formatBytes(m.memSys ?? 0)}</span>
+              </div>
+
+              <div class="metric-row">
+                <span>GC Count</span>
+                <span>{formatNum(m.gcNum ?? 0)}</span>
+              </div>
+
+              <div class="metric-row">
+                <span>CPU Time</span>
+                <span>{m.cpuSeconds != null ? formatUptime(m.cpuSeconds) : '·'}</span>
+              </div>
+
+              <div class="metric-row">
+                <span>RPC Count</span>
+                <span>{formatNum(m.rpcCount ?? 0)}</span>
+              </div>
+
+              <div
+                class="metric-row {m.rpcErrors ?? 0 ? 'text-destructive' : ''}"
+              >
+                <span>RPC Errors</span>
+                <span>{formatNum(m.rpcErrors ?? 0)}</span>
+              </div>
             </div>
+
             {#if drv}
               <!-- Windows mountosio kernel driver. Shown whenever the driver is present. A driver that answers shows its counters, all-zero included, so presence alone confirms it is healthy. A driver that does not answer shows a warning and no counters. -->
               <div class="metric-group">
@@ -1095,12 +1399,43 @@
             {#each poolHealth as node, i (node.node ?? i)}
               <div class="metric-group">
                 <p class="detail-label">Pool Health{poolHealth.length > 1 ? ` · ${poolNodeLabel(node, i)}` : ''}</p>
-                <div class="metric-row"><span>Connections</span><span>{formatNum(node.healthy ?? 0)}/{formatNum(node.totalConnections ?? 0)}</span></div>
-                <div class="metric-row"><span>Authenticated</span><span>{formatNum(node.authenticated ?? 0)}</span></div>
-                <div class="metric-row"><span>Pending</span><span>{formatNum(node.pending ?? 0)}</span></div>
-                <div class="metric-row {node.serverDown ? 'text-destructive' : ''}"><span>Server Down</span><span>{node.serverDown ? 'yes' : 'no'}</span></div>
-                <div class="metric-row {node.congestionActive ? 'text-warning' : ''}"><span>Congestion</span><span>{node.congestionActive ? 'active' : 'none'}</span></div>
-                <div class="metric-row {(node.serverDownCount ?? 0) ? 'text-warning' : ''}"><span>Down Events</span><span>{formatNum(node.serverDownCount ?? 0)}</span></div>
+
+                <div class="metric-row">
+                  <span>Connections</span>
+                  <span>{formatNum(node.healthy ?? 0)}/{formatNum(node.totalConnections ?? 0)}</span>
+                </div>
+
+                <div class="metric-row">
+                  <span>Authenticated</span>
+                  <span>{formatNum(node.authenticated ?? 0)}</span>
+                </div>
+
+                <div class="metric-row">
+                  <span>Pending</span>
+                  <span>{formatNum(node.pending ?? 0)}</span>
+                </div>
+
+                <div
+                  class="metric-row {node.serverDown ? 'text-destructive' : ''}"
+                >
+                  <span>Server Down</span>
+                  <span>{node.serverDown ? 'yes' : 'no'}</span>
+                </div>
+
+                <div
+                  class="metric-row {node.congestionActive ? 'text-warning' : ''}"
+                >
+                  <span>Congestion</span>
+                  <span>{node.congestionActive ? 'active' : 'none'}</span>
+                </div>
+
+                <div
+                  class="metric-row {node.serverDownCount ?? 0 ? 'text-warning' : ''}"
+                >
+                  <span>Down Events</span>
+                  <span>{formatNum(node.serverDownCount ?? 0)}</span>
+                </div>
+
                 {#if node.serverDown && node.reconnectBackoff}
                   <div class="metric-row"><span>Reconnect Backoff</span><span>{node.reconnectBackoff}</span></div>
                 {/if}
@@ -1148,165 +1483,184 @@
     <!-- Gateway Activity (embedded per-volume S3 / WebHDFS gateway). -->
     <!-- Present only when the client reported gateway counters; mount-only sessions skip. -->
     {@const gwMetrics = getGatewayMetrics(m)}
-      {#if gwMetrics}
+    {#if gwMetrics}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
           <div class="tech-grid absolute inset-0 pointer-events-none"></div>
-          <div class="relative p-5">
-            <div class="flex flex-wrap items-center gap-3 mb-4">
-              <h2 class="text-lg font-semibold">Gateway Activity</h2>
-              <span class="text-sm text-muted-foreground font-mono">embedded per-volume</span>
-            </div>
-            <div class="grid gap-4 sm:grid-cols-2">
-              {#each gatewayProtocols(gwMetrics) as { proto, snap }}
-                {@const errPct = snap.requests > 0 ? (snap.errors * 100) / snap.requests : (snap.errors > 0 ? 100 : 0)}
-                {@const errBad = errPct > 1}
-                <div class="border border-border/30 rounded-sm p-4">
-                  <div class="flex items-center justify-between mb-2">
-                    <span class="font-mono text-sm uppercase tracking-wider">{proto}</span>
+        <div class="relative p-5">
+          <div class="flex flex-wrap items-center gap-3 mb-4">
+            <h2 class="text-lg font-semibold">Gateway Activity</h2>
+            <span class="text-sm text-muted-foreground font-mono">embedded per-volume</span>
+          </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            {#each gatewayProtocols(gwMetrics) as { proto, snap }}
+              {@const errPct = snap.requests > 0
+                ? snap.errors * 100 / snap.requests
+                : snap.errors > 0 ? 100 : 0}
+
+              {@const errBad = errPct > 1}
+              <div class="border border-border/30 rounded-sm p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-mono text-sm uppercase tracking-wider">{proto}</span>
                     <Badge variant={errBad ? 'destructive' : 'outline'} class="font-mono text-xs" aria-label={errBad ? `${proto} error rate ${errPct.toFixed(1)} percent` : `${proto} error rate normal`}>
                       {snap.errors}/{snap.requests} err
                     </Badge>
-                  </div>
-                  <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono">
-                    <dt class="text-muted-foreground">requests</dt>
-                    <dd class="text-right">{formatNum(snap.requests)}</dd>
-                    <dt class="text-muted-foreground">errors</dt>
-                    <dd class="text-right">{formatNum(snap.errors)}</dd>
-                    <dt class="text-muted-foreground">in</dt>
-                    <dd class="text-right">{formatBytes(snap.bytes_in)}</dd>
-                    <dt class="text-muted-foreground">out</dt>
-                    <dd class="text-right">{formatBytes(snap.bytes_out)}</dd>
-                  </dl>
                 </div>
-              {/each}
-            </div>
+                  <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono">
+                  <dt class="text-muted-foreground">requests</dt>
+                  <dd class="text-right">{formatNum(snap.requests)}</dd>
+                  <dt class="text-muted-foreground">errors</dt>
+                  <dd class="text-right">{formatNum(snap.errors)}</dd>
+                  <dt class="text-muted-foreground">in</dt>
+                  <dd class="text-right">{formatBytes(snap.bytes_in)}</dd>
+                  <dt class="text-muted-foreground">out</dt>
+                  <dd class="text-right">{formatBytes(snap.bytes_out)}</dd>
+                </dl>
+              </div>
+            {/each}
           </div>
         </div>
-      {/if}
+      </div>
+    {/if}
 
     <!-- Watcher Activity: folders this mount watches (live gauge) plus push-driven cache invalidation. -->
     <!-- Shown whenever the mount watches any folder; a lone client on a folder still watches it but sees zero pushes (excluded from its own broadcasts). -->
     {@const wt = getWatcherMetrics(m)}
-      {#if wt}
+    {#if wt}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
           <div class="tech-grid absolute inset-0 pointer-events-none"></div>
-          <div class="relative p-5">
+        <div class="relative p-5">
             <div class="flex flex-wrap items-center gap-3 mb-4">
               <h2 class="text-lg font-semibold">Watcher Activity</h2>
             </div>
             <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm font-mono max-w-sm">
-              <dt class="text-muted-foreground">folders watched</dt>
-              <dd class="text-right">{formatNum(wt.watchedFolders ?? 0)}</dd>
-              <dt class="text-muted-foreground">folders tracked</dt>
-              <dd class="text-right">{formatNum(wt.trackedFolders ?? 0)}</dd>
-              <dt class="text-muted-foreground">pushes received</dt>
-              <dd class="text-right">{formatNum(wt.pushesReceived ?? 0)}</dd>
-              <dt class="text-muted-foreground">change entries</dt>
-              <dd class="text-right">{formatNum(wt.pushEntries ?? 0)}</dd>
-              <dt class="text-muted-foreground">invalidations</dt>
-              <dd class="text-right">{formatNum(wt.invalidations ?? 0)}</dd>
-            </dl>
-          </div>
+            <dt class="text-muted-foreground">folders watched</dt>
+            <dd class="text-right">{formatNum(wt.watchedFolders ?? 0)}</dd>
+            <dt class="text-muted-foreground">folders tracked</dt>
+            <dd class="text-right">{formatNum(wt.trackedFolders ?? 0)}</dd>
+            <dt class="text-muted-foreground">pushes received</dt>
+            <dd class="text-right">{formatNum(wt.pushesReceived ?? 0)}</dd>
+            <dt class="text-muted-foreground">change entries</dt>
+            <dd class="text-right">{formatNum(wt.pushEntries ?? 0)}</dd>
+            <dt class="text-muted-foreground">invalidations</dt>
+            <dd class="text-right">{formatNum(wt.invalidations ?? 0)}</dd>
+          </dl>
         </div>
-      {/if}
+      </div>
+    {/if}
 
-      {#snippet latencyBreakdown(title: string, ariaLabel: string, entries: [string, RpcMethodLatency][], expanded: Set<string>, toggleExpand: (m: string) => void, metricMode: 'minMax' | 'percentiles', setMode: (m: 'minMax' | 'percentiles') => void, labels: LatencyTableLabels, scale: LatencyScale)}
-        {@const totalHits = entries.reduce((s, [, l]) => s + l.count, 0)}
-        {@const totalTimeSec = entries.reduce((s, [, l]) => s + (l.durationNs != null ? l.durationNs / 1e9 : (l.count * l.avgUs) / 1e6), 0)}
-        {@const bands = latencyBands(entries, scale.bands)}
-        {@const hasBuckets = entries.some(([, l]) => l.buckets?.some(c => c > 0))}
-        {@const hasBytes = entries.some(([, l]) => (l.bytes ?? 0) > 0)}
-        <!-- Without buckets there are no percentiles to show, and the mode toggle is
+    {#snippet latencyBreakdown(title: string, ariaLabel: string, entries: [string, RpcMethodLatency][], expanded: Set<string>, toggleExpand: (m: string) => void, metricMode: 'minMax' | 'percentiles', setMode: (m: 'minMax' | 'percentiles') => void, labels: LatencyTableLabels, scale: LatencyScale)}
+      {@const totalHits = entries.reduce((s, [, l]) => s + l.count, 0)}
+      {@const totalTimeSec = entries.reduce((s, [, l]) => s + (l.durationNs != null ? l.durationNs / 1e9 : l.count * l.avgUs / 1e6), 0)}
+      {@const bands = latencyBands(entries, scale.bands)}
+      {@const hasBuckets = entries.some(([, l]) => l.buckets?.some((c) => c > 0))}
+      {@const hasBytes = entries.some(([, l]) => (l.bytes ?? 0) > 0)}
+      <!-- Without buckets there are no percentiles to show, and the mode toggle is
              hidden, so honouring a 'percentiles' preference would strand the reader on
              three empty columns while min/max sit unused in the same payload. -->
-        {@const mode = hasBuckets ? metricMode : 'minMax'}
+      {@const mode = hasBuckets ? metricMode : 'minMax'}
         <div class="corner-brackets relative border border-border/30 rounded-sm">
           <div class="tech-grid absolute inset-0 pointer-events-none"></div>
-          <div class="relative p-5">
-            <div class="flex flex-wrap items-center gap-3 mb-4">
-              <h2 class="text-lg font-semibold">{title}</h2>
-              <span class="text-sm text-muted-foreground font-mono">{entries.length} {labels.items}</span>
-              <span class="text-sm text-muted-foreground font-mono">{formatNum(totalHits)} hits</span>
-              <span class="text-sm text-muted-foreground font-mono">{formatTotalTime(totalTimeSec)} total</span>
-              <div class="flex items-center gap-1.5 ml-auto">
-                {#each bands as { band, count } (band.label)}
-                  <Badge variant={band.variant} class="font-mono text-xs">{band.label}: {count}</Badge>
-                {/each}
-                {#if hasBuckets}
+        <div class="relative p-5">
+          <div class="flex flex-wrap items-center gap-3 mb-4">
+            <h2 class="text-lg font-semibold">{title}</h2>
+            <span class="text-sm text-muted-foreground font-mono">{entries.length} {labels.items}</span>
+            <span class="text-sm text-muted-foreground font-mono">{formatNum(totalHits)} hits</span>
+            <span class="text-sm text-muted-foreground font-mono">{formatTotalTime(totalTimeSec)} total</span>
+            <div class="flex items-center gap-1.5 ml-auto">
+              {#each bands as { band, count } (band.label)}
+                <Badge variant={band.variant} class="font-mono text-xs">{band.label}: {count}</Badge>
+              {/each}
+              {#if hasBuckets}
                   <div class="rpc-toggle-group flex items-center font-mono overflow-hidden ml-2" role="group" aria-label="{title} display mode">
                     <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={metricMode === 'minMax'} aria-pressed={metricMode === 'minMax'} onclick={() => setMode('minMax')}>Min/Max</button>
-                    <span class="text-border/40" aria-hidden="true">|</span>
+                  <span class="text-border/40" aria-hidden="true">|</span>
                     <button type="button" class="rpc-toggle-btn" class:rpc-toggle-active={metricMode === 'percentiles'} aria-pressed={metricMode === 'percentiles'} onclick={() => setMode('percentiles')}>Percentiles</button>
-                  </div>
-                {/if}
-              </div>
+                </div>
+              {/if}
             </div>
-            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+          </div>
+          <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
             <div class="overflow-x-auto rpc-scroll-hint" tabindex="0" role="region" aria-label={ariaLabel}>
-              <table class="rpc-table">
-                <caption class="sr-only">{title} breakdown</caption>
-                <thead>
-                  <tr>
+            <table class="rpc-table">
+              <caption class="sr-only">{title} breakdown</caption>
+              <thead>
+                <tr>
                     {#if hasBuckets}<th scope="col" class="w-6"></th>{/if}
-                    <th scope="col" class="text-left">{labels.column}</th>
-                    <th scope="col" class="text-right">Count</th>
-                    <th scope="col" class="text-right">Ops/s</th>
-                    <th scope="col" class="text-right">Total</th>
-                    <th scope="col" class="text-right">Avg</th>
-                    {#if hasBytes}
-                      <th scope="col" class="text-right">Avg Bytes/op</th>
-                      <th scope="col" class="text-right">Throughput</th>
-                    {/if}
+                  <th scope="col" class="text-left">{labels.column}</th>
+                  <th scope="col" class="text-right">Count</th>
+                  <th scope="col" class="text-right">Ops/s</th>
+                  <th scope="col" class="text-right">Total</th>
+                  <th scope="col" class="text-right">Avg</th>
+                  {#if hasBytes}
+                    <th scope="col" class="text-right">Avg Bytes/op</th>
+                    <th scope="col" class="text-right">Throughput</th>
+                  {/if}
                     {#if hasBuckets}<th scope="col" class="text-right"><span class="inline-flex items-center justify-end gap-0.5">σ/μ<InfoTip text={CV_TOOLTIP_TEXT} width={420} /></span></th>{/if}
-                    {#if mode === 'minMax'}
-                      <th scope="col" class="text-right">Min</th>
-                      <th scope="col" class="text-right">Max</th>
-                    {:else}
-                      <th scope="col" class="text-right">p50</th>
-                      <th scope="col" class="text-right">p95</th>
-                      <th scope="col" class="text-right">p99</th>
-                    {/if}
-                  </tr>
-                </thead>
-                <tbody>
-                  {#each entries as [method, lat], i}
-                    {@const bkts = toBuckets(lat.buckets)}
-                    {@const isOpen = expanded.has(method)}
-                    {@const cv = bkts.length > 0 ? estimateCV(bkts, lat.avgUs) : -1}
-                    {@const durationSec = lat.durationNs != null ? lat.durationNs / 1e9 : (lat.count * lat.avgUs) / 1e6}
-                    {@const throughputBps = lat.bytes && durationSec > 0 ? (lat.bytes * 8) / durationSec : 0}
-                    <tr class="{bkts.length > 0 ? 'cursor-pointer' : ''} hover:bg-muted/50 transition-colors {isOpen ? 'bg-muted/30' : ''}" class:rpc-zebra={!isOpen && i % 2 === 1} onclick={() => bkts.length > 0 && toggleExpand(method)}>
-                      {#if hasBuckets}
-                        <td class="w-6">
-                          {#if bkts.length > 0}
+                  {#if mode === 'minMax'}
+                    <th scope="col" class="text-right">Min</th>
+                    <th scope="col" class="text-right">Max</th>
+                  {:else}
+                    <th scope="col" class="text-right">p50</th>
+                    <th scope="col" class="text-right">p95</th>
+                    <th scope="col" class="text-right">p99</th>
+                  {/if}
+                </tr>
+              </thead>
+              <tbody>
+                {#each entries as [method, lat], i}
+                  {@const bkts = toBuckets(lat.buckets)}
+                  {@const isOpen = expanded.has(method)}
+                  {@const cv = bkts.length > 0 ? estimateCV(bkts, lat.avgUs) : -1}
+                  {@const durationSec = lat.durationNs != null ? lat.durationNs / 1e9 : lat.count * lat.avgUs / 1e6}
+                  {@const throughputBps = lat.bytes && durationSec > 0 ? lat.bytes * 8 / durationSec : 0}
+
+                  <tr
+                    class="{bkts.length > 0 ? 'cursor-pointer' : ''} hover:bg-muted/50 transition-colors {isOpen ? 'bg-muted/30' : ''}"
+                    class:rpc-zebra={!isOpen && i % 2 === 1}
+                    onclick={() => bkts.length > 0 && toggleExpand(method)}
+                  >
+                    {#if hasBuckets}
+                      <td class="w-6">
+                        {#if bkts.length > 0}
                             <button type="button"
-                              class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
+                            class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0"
                               onclick={(e) => { e.stopPropagation(); toggleExpand(method) }}
                               aria-expanded={isOpen} aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${method} latency buckets`}>
                               <ChevronRight class="h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 {isOpen ? 'rotate-90' : ''}" aria-hidden="true" />
-                            </button>
-                          {/if}
-                        </td>
-                      {/if}
-                      <td class="font-mono text-sm">{method}</td>
-                      <td class="text-right font-mono text-sm tabular-nums">{formatNum(lat.count)}</td>
-                      <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{formatOpsPerSec(lat.avgUs)}</td>
-                      <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{formatTotalTime(lat.durationNs != null ? lat.durationNs / 1e9 : (lat.count * lat.avgUs) / 1e6)}</td>
-                      <td class="text-right font-mono text-sm tabular-nums" style="color: {scale.color(lat.avgUs)}">{formatUs(lat.avgUs)}</td>
-                      {#if hasBytes}
+                          </button>
+                        {/if}
+                      </td>
+                    {/if}
+                    <td class="font-mono text-sm">{method}</td>
+                    <td class="text-right font-mono text-sm tabular-nums">{formatNum(lat.count)}</td>
+
+                    <td
+                      class="text-right font-mono text-sm tabular-nums text-muted-foreground"
+                    >{formatOpsPerSec(lat.avgUs)}</td>
+
+                    <td
+                      class="text-right font-mono text-sm tabular-nums text-muted-foreground"
+                    >{formatTotalTime(lat.durationNs != null ? lat.durationNs / 1e9 : lat.count * lat.avgUs / 1e6)}</td>
+
+                    <td
+                      class="text-right font-mono text-sm tabular-nums"
+                      style="color: {scale.color(lat.avgUs)}"
+                    >{formatUs(lat.avgUs)}</td>
+
+                    {#if hasBytes}
                         <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{lat.bytes ? formatBytes(lat.bytes / lat.count) : '-'}</td>
                         <td class="text-right font-mono text-sm tabular-nums text-muted-foreground">{throughputBps > 0 ? formatBitrate(throughputBps) : '-'}</td>
-                      {/if}
-                      {#if hasBuckets}
-                        <td class="text-right">
+                    {/if}
+                    {#if hasBuckets}
+                      <td class="text-right">
                           {#if cv >= 0}<Badge variant="outline" class="font-mono text-xs px-1 py-0 {cvClass(cv)}">{cv.toFixed(2)}</Badge>{/if}
-                        </td>
-                      {/if}
-                      {#if mode === 'minMax'}
+                      </td>
+                    {/if}
+                    {#if mode === 'minMax'}
                         <td class="text-right font-mono text-sm tabular-nums" style="color: {scale.color(lat.minUs)}">{formatUs(lat.minUs)}</td>
                         <td class="text-right font-mono text-sm tabular-nums" style="color: {scale.color(lat.maxUs)}">{formatUs(lat.maxUs)}</td>
-                      {:else}
-                        <!-- Each percentile is coloured by its own value. Colouring all three
+                    {:else}
+                      <!-- Each percentile is coloured by its own value. Colouring all three
                              by the mean hides the case the percentiles exist to expose: a fast
                              average with a slow tail. Without buckets there is no percentile to
                              colour, so the placeholder stays muted rather than reading as "fast". -->
@@ -1314,53 +1668,55 @@
                         <td class="text-right font-mono text-sm tabular-nums" style="color: {pcts ? scale.color(pcts[0]) : 'var(--muted-foreground)'}">{pcts ? formatUs(pcts[0]) : '-'}</td>
                         <td class="text-right font-mono text-sm tabular-nums" style="color: {pcts ? scale.color(pcts[1]) : 'var(--muted-foreground)'}">{pcts ? formatUs(pcts[1]) : '-'}</td>
                         <td class="text-right font-mono text-sm tabular-nums" style="color: {pcts ? scale.color(pcts[2]) : 'var(--muted-foreground)'}">{pcts ? formatUs(pcts[2]) : '-'}</td>
-                      {/if}
-                    </tr>
-                    {#if isOpen && bkts.length > 0}
-                      {@const totalCount = bkts.reduce((s, b) => s + b.count, 0)}
-                      {@const bktColspan = (mode === 'minMax' ? (hasBuckets ? 9 : 7) : (hasBuckets ? 10 : 8)) + (hasBytes ? 2 : 0)}
-                      <tr>
-                        <td colspan={bktColspan} class="p-0">
-                          <div class="py-2 px-4 space-y-1 ml-6">
-                            {#each bkts as bkt, bi}
-                              {@const bktPct = totalCount > 0 ? (bkt.count / totalCount) * 100 : 0}
-                              {#if bkt.count > 0}
-                                <div class="flex items-center gap-2 text-sm font-mono tabular-nums {bi % 2 === 1 ? 'rpc-zebra' : ''}">
-                                  <span class="w-16 text-muted-foreground">&le; {bkt.le}</span>
-                                  <span class="w-12 text-right">{bkt.count}</span>
-                                  <span class="w-14 text-right text-muted-foreground">{bktPct.toFixed(1)}%</span>
+                    {/if}
+                  </tr>
+                  {#if isOpen && bkts.length > 0}
+                    {@const totalCount = bkts.reduce((s, b) => s + b.count, 0)}
+                    {@const bktColspan = (mode === 'minMax' ? hasBuckets ? 9 : 7 : hasBuckets ? 10 : 8) + (hasBytes ? 2 : 0)}
+                    <tr>
+                      <td colspan={bktColspan} class="p-0">
+                        <div class="py-2 px-4 space-y-1 ml-6">
+                          {#each bkts as bkt, bi}
+                            {@const bktPct = totalCount > 0 ? bkt.count / totalCount * 100 : 0}
+                            {#if bkt.count > 0}
+                              <div
+                                class="flex items-center gap-2 text-sm font-mono tabular-nums {bi % 2 === 1 ? 'rpc-zebra' : ''}"
+                              >
+                                <span class="w-16 text-muted-foreground">≤ {bkt.le}</span>
+                                <span class="w-12 text-right">{bkt.count}</span>
+                                <span class="w-14 text-right text-muted-foreground">{bktPct.toFixed(1)}%</span>
                                   <div class="flex-1 h-3 rounded-sm bg-muted overflow-hidden">
                                     <div class="h-full rounded-sm transition-transform origin-left duration-500" style="background: {bucketBarColor(bkt.leUs)}; transform: scaleX({bktPct / 100})"></div>
-                                  </div>
                                 </div>
-                              {/if}
-                            {/each}
-                          </div>
-                        </td>
-                      </tr>
-                    {/if}
-                  {/each}
-                </tbody>
-              </table>
-            </div>
+                              </div>
+                            {/if}
+                          {/each}
+                        </div>
+                      </td>
+                    </tr>
+                  {/if}
+                {/each}
+              </tbody>
+            </table>
           </div>
         </div>
-      {/snippet}
+      </div>
+    {/snippet}
 
-      {@const rpcEntries = getRpcLatency(m)}
-      {#if rpcEntries.length > 0}
-        {@render latencyBreakdown('RPC Latency', 'RPC latency data', rpcEntries, rpcExpanded, toggleRpcExpand, rpcMetricMode, (v) => rpcMetricMode = v, OP_LABELS, OP_SCALE)}
-      {/if}
+    {@const rpcEntries = getRpcLatency(m)}
+    {#if rpcEntries.length > 0}
+      {@render latencyBreakdown('RPC Latency', 'RPC latency data', rpcEntries, rpcExpanded, toggleRpcExpand, rpcMetricMode, (v) => rpcMetricMode = v, OP_LABELS, OP_SCALE)}
+    {/if}
 
-      {@const fuseEntries = getFuseLatency(m)}
-      {#if fuseEntries.length > 0}
-        {@render latencyBreakdown('FUSE Latency', 'FUSE syscall latency data', fuseEntries, fuseExpanded, toggleFuseExpand, fuseMetricMode, (v) => fuseMetricMode = v, OP_LABELS, OP_SCALE)}
-      {/if}
+    {@const fuseEntries = getFuseLatency(m)}
+    {#if fuseEntries.length > 0}
+      {@render latencyBreakdown('FUSE Latency', 'FUSE syscall latency data', fuseEntries, fuseExpanded, toggleFuseExpand, fuseMetricMode, (v) => fuseMetricMode = v, OP_LABELS, OP_SCALE)}
+    {/if}
 
-      {@const objectEntries = getObjectLatency(m)}
-      {#if objectEntries.length > 0}
-        {@render latencyBreakdown('Object Store Latency', 'Object store GET, GET TTFB, and PUT latency data', objectEntries, objectExpanded, toggleObjectExpand, objectMetricMode, (v) => objectMetricMode = v, OBJECT_LABELS, OBJECT_SCALE)}
-      {/if}
+    {@const objectEntries = getObjectLatency(m)}
+    {#if objectEntries.length > 0}
+      {@render latencyBreakdown('Object Store Latency', 'Object store GET, GET TTFB, and PUT latency data', objectEntries, objectExpanded, toggleObjectExpand, objectMetricMode, (v) => objectMetricMode = v, OBJECT_LABELS, OBJECT_SCALE)}
+    {/if}
   {/if}
 </div>
 

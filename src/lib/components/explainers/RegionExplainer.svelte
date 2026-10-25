@@ -1,6 +1,6 @@
 <script lang="ts">
-  import DiagramViewer from '$lib/components/shared/DiagramViewer.svelte'
-  import RegionClusterDiagram from '$lib/components/diagrams/RegionClusterDiagram.svelte'
+  import DiagramViewer from '#lib/components/shared/DiagramViewer.svelte'
+  import RegionClusterDiagram from '#lib/components/diagrams/RegionClusterDiagram.svelte'
 </script>
 
 <div class="space-y-4">

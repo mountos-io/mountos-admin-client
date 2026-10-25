@@ -1,8 +1,8 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog'
-  import { Button } from '$lib/components/ui/button'
-  import { useStepUp, type StepUpRequest } from '$lib/core/stores/stepup.svelte'
-  import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
+  import * as Dialog from '#lib/components/ui/dialog/index.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { useStepUp, type StepUpRequest } from '#lib/core/stores/stepup.svelte.js'
+  import { useWebAuthn } from '#lib/core/stores/webauthn.svelte.js'
   import Shield from '@lucide/svelte/icons/shield'
   import KeyRound from '@lucide/svelte/icons/key-round'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'

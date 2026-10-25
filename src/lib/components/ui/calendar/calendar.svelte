@@ -4,7 +4,7 @@
   import ChevronLeft from '@lucide/svelte/icons/chevron-left'
   import ChevronRight from '@lucide/svelte/icons/chevron-right'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
-  import { cn } from '$lib/utils'
+  import { cn } from '#lib/utils.js'
 
   let {
     value = $bindable(),

@@ -6,48 +6,46 @@
   // in-memory topology. Polls copyset status on the same POLL_INTERVAL_MS as
   // BlockCopysets.svelte's list-page poll while the copyset is draining, so the backlog/elapsed
   // banner above doesn't go stale on a page the operator opened specifically to watch it.
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { useStorages } from '$lib/core/stores/storages.svelte'
-  import { api } from '$lib/core/stores/client.svelte'
-  import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
-  import { ApiError } from '$lib/core/api/errors'
-  import { groupNodesByVolume } from '$lib/core/utils/nodes'
-  import { isCopysetState } from '$lib/core/api/copyset-ui-types'
-  import { formatDuration } from '$lib/core/utils/format'
-  import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Button } from '$lib/components/ui/button'
-  import { Input } from '$lib/components/ui/input'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import CopysetStateBadge from '$lib/components/shared/CopysetStateBadge.svelte'
-  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
-  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
-  import NodeDetail from '$lib/components/shared/NodeDetail.svelte'
-  import * as Tabs from '$lib/components/ui/tabs'
-  import type { Copyset, BlockVolume, ServiceNode, Storage } from '$lib/core/api/types'
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import UserX from '@lucide/svelte/icons/user-x'
-  import Plus from '@lucide/svelte/icons/plus'
+  import { page } from '$app/state';
 
-  const POLL_INTERVAL_MS = 15_000
+  import { goto } from '$app/navigation';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { useStorages } from '#lib/core/stores/storages.svelte.js';
+  import { api } from '#lib/core/stores/client.svelte.js';
+  import { showErrorToast, showSuccessToast, handleApiError } from '#lib/core/utils/toast.js';
+  import { ApiError } from '#lib/core/api/errors.js';
+  import { groupNodesByVolume } from '#lib/core/utils/nodes.js';
+  import { isCopysetState } from '#lib/core/api/copyset-ui-types.js';
+  import { formatDuration } from '#lib/core/utils/format.js';
+  import { Card, CardHeader, CardTitle, CardContent } from '#lib/components/ui/card/index.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Input } from '#lib/components/ui/input/index.js';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import DetailSkeleton from '#lib/components/shared/DetailSkeleton.svelte';
+  import CopysetStateBadge from '#lib/components/shared/CopysetStateBadge.svelte';
+  import ConfirmDialog from '#lib/components/shared/ConfirmDialog.svelte';
+  import { useConfirmDialog } from '#lib/stores/confirm-dialog.svelte.js';
+  import NodeDetail from '#lib/components/shared/NodeDetail.svelte';
+  import * as Tabs from '#lib/components/ui/tabs/index.js';
+  import type { Copyset, BlockVolume, ServiceNode, Storage } from '#lib/core/api/types.js';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import UserX from '@lucide/svelte/icons/user-x';
+  import Plus from '@lucide/svelte/icons/plus';
 
-  const storageId = $derived(Number($page.params.id))
-  const copysetId = $derived($page.params.copysetId ?? '')
-
-  const store = useStorages()
-  const auth = useAuth()
-  const canUpdate = $derived(auth.can('storages', 'update'))
-
-  let storage = $state<Storage | null>(null)
-  let copyset = $state<Copyset | null>(null)
-  let blockVolumesById = $state<Map<string, BlockVolume>>(new Map())
-  let nodesByVolume = $state<Map<string, ServiceNode[]>>(new Map())
-  let loading = $state(true)
-  let error = $state(false)
+  const POLL_INTERVAL_MS = 15_000;
+  const storageId = $derived(Number(page.params.id));
+  const copysetId = $derived(page.params.copysetId ?? '');
+  const store = useStorages();
+  const auth = useAuth();
+  const canUpdate = $derived(auth.can('storages', 'update'));
+  let storage = $state<Storage | null>(null);
+  let copyset = $state<Copyset | null>(null);
+  let blockVolumesById = $state<Map<string, BlockVolume>>(new Map());
+  let nodesByVolume = $state<Map<string, ServiceNode[]>>(new Map());
+  let loading = $state(true);
+  let error = $state(false);
 
   $effect(() => {
     if (!auth.loading && !auth.can('storages', 'read')) {
@@ -81,22 +79,39 @@
   }
 
   $effect(() => {
-    const id = storageId
-    const cid = copysetId
-    if (Number.isNaN(id) || !cid) { loading = false; error = true; return }
-    const ctrl = new AbortController()
-    loading = true
-    error = false
-    ;(async () => {
-      const [s] = await Promise.all([store.getStorage(id), refreshCopysetStatus(id, cid, ctrl.signal)])
-      if (ctrl.signal.aborted) return
-      storage = s
-      await refreshTopology(id, s.regionInfo.id, ctrl.signal)
-    })()
-      .catch(() => { if (!ctrl.signal.aborted) error = true })
-      .finally(() => { if (!ctrl.signal.aborted) loading = false })
-    return () => ctrl.abort()
-  })
+    const id = storageId;
+    const cid = copysetId;
+
+    if (Number.isNaN(id) || !cid) {
+      loading = false;
+      error = true;
+
+      return;
+    }
+
+    const ctrl = new AbortController();
+
+    loading = true;
+    error = false;
+
+    (async () => {
+      const [s] = await Promise.all([
+        store.getStorage(id),
+        refreshCopysetStatus(id, cid, ctrl.signal)
+      ]);
+
+      if (ctrl.signal.aborted) return;
+
+      storage = s;
+      await refreshTopology(id, s.regionInfo.id, ctrl.signal);
+    })().catch(() => {
+      if (!ctrl.signal.aborted) error = true;
+    }).finally(() => {
+      if (!ctrl.signal.aborted) loading = false;
+    });
+
+    return () => ctrl.abort();
+  });
 
   // Refetches the copyset (and, since a slot's membership changed, the pool topology too) so
   // the member panels reflect the new state right away, without a full page reload.
@@ -111,9 +126,10 @@
   // refused specifically because the member's service node is not yet confirmed
   // deactivated. Kept as separate dialog state from `dialog` above so the routine
   // confirmation's own close doesn't race this one's open.
-  let forceMarkLostOpen = $state(false)
-  let forceMarkLostBlockVolumeId = $state('')
-  let forceMarkLostReason = $state('')
+  let forceMarkLostOpen = $state(false);
+
+  let forceMarkLostBlockVolumeId = $state('');
+  let forceMarkLostReason = $state('');
 
   async function attemptMarkLost(blockVolumeId: string) {
     try {
@@ -176,13 +192,14 @@
   // so switching to a different copyset while this page stays mounted stops the old poll
   // before any new one starts, instead of leaking a poll bound to the previous copysetId.
   $effect(() => {
-    const id = storageId
-    const cid = copysetId
-    if (loading || copyset?.state !== 'draining') return
+    const id = storageId;
+    const cid = copysetId;
 
-    let active = true
-    let handle: ReturnType<typeof setTimeout>
-    let abort: AbortController | undefined
+    if (loading || copyset?.state !== 'draining') return;
+
+    let active = true;
+    let handle: ReturnType<typeof setTimeout>;
+    let abort: AbortController | undefined;
 
     const tick = async () => {
       abort = new AbortController()
@@ -191,17 +208,23 @@
       } catch {
         // A transient poll failure just keeps the last-known-good copyset state on screen.
       }
-      if (active) handle = setTimeout(tick, POLL_INTERVAL_MS)
-    }
-    handle = setTimeout(tick, POLL_INTERVAL_MS)
 
-    return () => { active = false; clearTimeout(handle); abort?.abort() }
-  })
+      if (active) handle = setTimeout(tick, POLL_INTERVAL_MS);
+    };
 
-  const memberA = $derived(copyset?.memberA ? blockVolumesById.get(copyset.memberA) : undefined)
-  const memberB = $derived(copyset?.memberB ? blockVolumesById.get(copyset.memberB) : undefined)
-  const nodesA = $derived(copyset?.memberA ? nodesByVolume.get(copyset.memberA) ?? [] : [])
-  const nodesB = $derived(copyset?.memberB ? nodesByVolume.get(copyset.memberB) ?? [] : [])
+    handle = setTimeout(tick, POLL_INTERVAL_MS);
+
+    return () => {
+      active = false;
+      clearTimeout(handle);
+      abort?.abort();
+    };
+  });
+
+  const memberA = $derived(copyset?.memberA ? blockVolumesById.get(copyset.memberA) : undefined);
+  const memberB = $derived(copyset?.memberB ? blockVolumesById.get(copyset.memberB) : undefined);
+  const nodesA = $derived(copyset?.memberA ? nodesByVolume.get(copyset.memberA) ?? [] : []);
+  const nodesB = $derived(copyset?.memberB ? nodesByVolume.get(copyset.memberB) ?? [] : []);
 
   // The commit hash comes from the first registered blockserv for a member; a member with
   // zero or duplicate registrations is already flagged by memberPanel's own warnings, so
@@ -218,8 +241,9 @@
 
   // Backlog is only a confirmed number once both members have been observed at least once;
   // a null/undefined count means "not yet observed," not zero. Mirrors ServersList's own gate.
-  const backlogKnown = $derived(typeof copyset?.pendingSyncJobsA === 'number' && typeof copyset?.pendingSyncJobsB === 'number')
-  const pendingTotal = $derived((copyset?.pendingSyncJobsA ?? 0) + (copyset?.pendingSyncJobsB ?? 0))
+  const backlogKnown = $derived(typeof copyset?.pendingSyncJobsA === 'number' && typeof copyset?.pendingSyncJobsB === 'number');
+
+  const pendingTotal = $derived((copyset?.pendingSyncJobsA ?? 0) + (copyset?.pendingSyncJobsB ?? 0));
 
   // NodeDetail keeps its live stats/polling state in a single app-wide store (useNodes()),
   // not per-instance, so mounting both members' NodeDetail at once would have them clobber

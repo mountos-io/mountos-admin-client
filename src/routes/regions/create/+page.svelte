@@ -1,15 +1,15 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
-  import { useRegions } from '$lib/core/stores/regions.svelte'
-  import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
-  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
+  import { useRegions } from '#lib/core/stores/regions.svelte.js'
+  import { useAccounts } from '#lib/core/stores/accounts.svelte.js'
+  import { useAuth } from '#lib/core/stores/auth.svelte.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#lib/components/ui/card/index.js'
+  import Input from '#lib/components/ui/input/input.svelte'
+  import Label from '#lib/components/ui/label/label.svelte'
+  import EmptyState from '#lib/components/shared/EmptyState.svelte'
+  import HowItWorks from '#lib/components/shared/HowItWorks.svelte'
+  import { showSuccessToast, showErrorToast, handleApiError } from '#lib/core/utils/toast.js'
 
   const regionStore = useRegions()
   const accountStore = useAccounts()

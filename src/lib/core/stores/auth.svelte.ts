@@ -1,8 +1,8 @@
-import { ROLE, type Capabilities, type UserInfo } from '$lib/core/auth/adapter'
-import { authorize, type Action } from '$lib/core/auth/authorize'
-import { authAdapter } from '$lib/config/auth'
-import { showErrorToast } from '$lib/core/utils/toast'
-import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
+import { ROLE, type Capabilities, type UserInfo } from '#lib/core/auth/adapter.js'
+import { authorize, type Action } from '#lib/core/auth/authorize.js'
+import { authAdapter } from '#lib/config/auth.js'
+import { showErrorToast } from '#lib/core/utils/toast.js'
+import { useWebAuthn } from '#lib/core/stores/webauthn.svelte.js'
 
 const webauthn = useWebAuthn()
 

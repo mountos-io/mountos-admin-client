@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { HTMLInputAttributes } from "svelte/elements";
-  import { cn, type WithElementRef } from "$lib/utils.js";
+  import { cn, type WithElementRef } from "#lib/utils.js";
   import { Eye, EyeOff } from "@lucide/svelte";
 
   type Props = WithElementRef<Omit<HTMLInputAttributes, "type">>;

@@ -1,32 +1,41 @@
 <script lang="ts">
-  import { tick } from 'svelte'
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useClusters } from '$lib/core/stores/clusters.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
-  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
-  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
-  import * as Dialog from '$lib/components/ui/dialog'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import InfoTip from '$lib/components/shared/InfoTip.svelte'
-  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
-  import DeactivateClusterDialog from '$lib/components/shared/DeactivateClusterDialog.svelte'
-  import { formatRelative } from '$lib/core/utils/format'
-  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
-  import { copyText } from '$lib/core/utils/clipboard'
-  import { isClusterNameValid, clusterNameErrorMessage } from '$lib/core/utils/validation'
-  import type { MetadataCluster } from '$lib/core/api/types'
-  import Copy from '@lucide/svelte/icons/copy'
-  import MoreVertical from '@lucide/svelte/icons/more-vertical'
+  import { tick } from 'svelte';
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useClusters } from '#lib/core/stores/clusters.svelte.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Card, CardHeader, CardTitle, CardContent } from '#lib/components/ui/card/index.js';
 
-  const regionId = $derived(Number($page.params.regionId))
-  const store = useClusters()
-  const auth = useAuth()
+  import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableHead,
+    TableCell
+  } from '#lib/components/ui/table/index.js';
+
+  import { Popover, PopoverTrigger, PopoverContent } from '#lib/components/ui/popover/index.js';
+  import * as Dialog from '#lib/components/ui/dialog/index.js';
+  import Input from '#lib/components/ui/input/input.svelte';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import EmptyState from '#lib/components/shared/EmptyState.svelte';
+  import InfoTip from '#lib/components/shared/InfoTip.svelte';
+  import TableSkeleton from '#lib/components/shared/TableSkeleton.svelte';
+  import DeactivateClusterDialog from '#lib/components/shared/DeactivateClusterDialog.svelte';
+  import { formatRelative } from '#lib/core/utils/format.js';
+  import { showSuccessToast, showErrorToast, handleApiError } from '#lib/core/utils/toast.js';
+  import { copyText } from '#lib/core/utils/clipboard.js';
+  import { isClusterNameValid, clusterNameErrorMessage } from '#lib/core/utils/validation.js';
+  import type { MetadataCluster } from '#lib/core/api/types.js';
+  import Copy from '@lucide/svelte/icons/copy';
+  import MoreVertical from '@lucide/svelte/icons/more-vertical';
+
+  const regionId = $derived(Number(page.params.regionId));
+  const store = useClusters();
+  const auth = useAuth();
 
   $effect(() => {
     if (!auth.loading && !auth.can('regions', 'read')) {
@@ -34,22 +43,21 @@
       goto('/', { replaceState: true })
       return
     }
-    if (regionId) store.fetchClusters(regionId)
-  })
 
-  const clusters = $derived(store.clustersFor(regionId))
-  const loading = $derived(store.isLoading(regionId))
+    if (regionId) store.fetchClusters(regionId);
+  });
 
-  let openMenuId = $state<number | null>(null)
-  let renameTarget = $state<MetadataCluster | null>(null)
-  let renameDraft = $state('')
-  let renameSubmitting = $state(false)
-  let renameInputEl = $state<HTMLInputElement | null>(null)
-  let deactivateTarget = $state<MetadataCluster | null>(null)
-
-  const renameError = $derived(clusterNameErrorMessage(renameDraft))
-  const renameValid = $derived(isClusterNameValid(renameDraft))
-  const renameUnchanged = $derived(!!renameTarget && renameDraft.trim() === renameTarget.name)
+  const clusters = $derived(store.clustersFor(regionId));
+  const loading = $derived(store.isLoading(regionId));
+  let openMenuId = $state<number | null>(null);
+  let renameTarget = $state<MetadataCluster | null>(null);
+  let renameDraft = $state('');
+  let renameSubmitting = $state(false);
+  let renameInputEl = $state<HTMLInputElement | null>(null);
+  let deactivateTarget = $state<MetadataCluster | null>(null);
+  const renameError = $derived(clusterNameErrorMessage(renameDraft));
+  const renameValid = $derived(isClusterNameValid(renameDraft));
+  const renameUnchanged = $derived(!!renameTarget && renameDraft.trim() === renameTarget.name);
 
   async function copyExportId(exportId: string) {
     if (await copyText(exportId)) {
@@ -129,7 +137,10 @@
       </TableHead>
       <TableHead>State</TableHead>
       <TableHead>Updated</TableHead>
-      {#if !auth.isUserRole}<TableHead class="w-12"></TableHead>{/if}
+
+      {#if !auth.isUserRole}
+        <TableHead class="w-12" />
+      {/if}
     </TableRow>
   {/snippet}
 
@@ -161,7 +172,7 @@
             { width: 'w-40', class: 'hidden lg:table-cell' },
             { width: 'w-20', height: 'h-5' },
             { width: 'w-20' },
-            ...(!auth.isUserRole ? [{ width: 'w-8' }] : []),
+            ...!auth.isUserRole ? [{ width: 'w-8' }] : []
           ]}
         />
       {:else if clusters.length === 0}
@@ -211,69 +222,69 @@
                 </TableCell>
                 <TableCell>{formatRelative(c.updatedAt)}</TableCell>
                 {#if !auth.isUserRole}
-                <TableCell>
-                  <Popover
-                    open={openMenuId === c.id}
-                    onOpenChange={(v) => (openMenuId = v ? c.id : null)}
-                  >
-                    <PopoverTrigger>
-                      {#snippet child({ props })}
-                        <button
-                          {...props}
-                          type="button"
-                          aria-label="Cluster actions"
-                          aria-haspopup="menu"
-                          aria-expanded={openMenuId === c.id}
-                          class="inline-flex h-9 w-9 min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  <TableCell>
+                    <Popover
+                      open={openMenuId === c.id}
+                      onOpenChange={(v) => openMenuId = v ? c.id : null}
+                    >
+                      <PopoverTrigger>
+                        {#snippet child({ props })}
+                          <button
+                            {...props}
+                            type="button"
+                            aria-label="Cluster actions"
+                            aria-haspopup="menu"
+                            aria-expanded={openMenuId === c.id}
+                            class="inline-flex h-9 w-9 min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           <MoreVertical class="h-4 w-4" />
                         </button>
-                      {/snippet}
-                    </PopoverTrigger>
-                    <PopoverContent class="w-48 p-1" align="end">
-                      <div role="menu" aria-label="Cluster {c.name} actions">
-                        <button
-                          type="button"
-                          role="menuitem"
-                          class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
-                          onclick={() => openRename(c)}
-                        >Rename</button>
-                        {#if !c.defaultCluster && c.isActive}
+                        {/snippet}
+                      </PopoverTrigger>
+                      <PopoverContent class="w-48 p-1" align="end">
+                        <div role="menu" aria-label="Cluster {c.name} actions">
                           <button
                             type="button"
                             role="menuitem"
                             class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
-                            onclick={() => makeDefault(c)}
-                          >Mark default</button>
-                        {/if}
-                        {#if !c.isReady}
-                          <button
-                            type="button"
-                            role="menuitem"
-                            class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
-                            onclick={() => toggleReady(c, true)}
-                          >Mark ready</button>
-                        {:else if !c.defaultCluster}
-                          <button
-                            type="button"
-                            role="menuitem"
-                            class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
-                            onclick={() => toggleReady(c, false)}
-                          >Mark not-ready</button>
-                        {/if}
-                        {#if !c.defaultCluster && c.isActive}
-                          <div class="my-1 h-px bg-border/50" role="separator"></div>
-                          <button
-                            type="button"
-                            role="menuitem"
-                            class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:outline-none"
-                            onclick={() => openDeactivate(c)}
-                          >Deactivate</button>
-                        {/if}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </TableCell>
+                            onclick={() => openRename(c)}
+                          >Rename</button>
+                          {#if !c.defaultCluster && c.isActive}
+                            <button
+                              type="button"
+                              role="menuitem"
+                              class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                              onclick={() => makeDefault(c)}
+                            >Mark default</button>
+                          {/if}
+                          {#if !c.isReady}
+                            <button
+                              type="button"
+                              role="menuitem"
+                              class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                              onclick={() => toggleReady(c, true)}
+                            >Mark ready</button>
+                          {:else if !c.defaultCluster}
+                            <button
+                              type="button"
+                              role="menuitem"
+                              class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+                              onclick={() => toggleReady(c, false)}
+                            >Mark not-ready</button>
+                          {/if}
+                          {#if !c.defaultCluster && c.isActive}
+                            <div class="my-1 h-px bg-border/50" role="separator"></div>
+                            <button
+                              type="button"
+                              role="menuitem"
+                              class="flex w-full items-center rounded-sm px-2 py-1.5 text-sm text-destructive hover:bg-destructive/10 focus-visible:bg-destructive/10 focus-visible:outline-none"
+                              onclick={() => openDeactivate(c)}
+                            >Deactivate</button>
+                          {/if}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TableCell>
                 {/if}
               </TableRow>
             {/each}
@@ -306,10 +317,18 @@
         <p id="cluster-rename-input-error" class="text-destructive text-sm" role="alert">{renameError}</p>
       {/if}
       <Dialog.Footer>
-        <Button variant="outline" type="button" onclick={() => (renameTarget = null)} disabled={renameSubmitting}>Cancel</Button>
-        <Button variant="primary" type="submit" disabled={!renameValid || renameUnchanged || renameSubmitting}>
-          {renameSubmitting ? 'Saving…' : 'Save'}
-        </Button>
+        <Button
+          variant="outline"
+          type="button"
+          onclick={() => renameTarget = null}
+          disabled={renameSubmitting}
+        >Cancel</Button>
+
+        <Button
+          variant="primary"
+          type="submit"
+          disabled={!renameValid || renameUnchanged || renameSubmitting}
+        >{renameSubmitting ? 'Saving…' : 'Save'}</Button>
       </Dialog.Footer>
     </form>
   </Dialog.Content>

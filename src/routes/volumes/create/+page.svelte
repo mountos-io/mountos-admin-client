@@ -1,37 +1,46 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useVolumes } from '$lib/core/stores/volumes.svelte'
-  import { useStorages } from '$lib/core/stores/storages.svelte'
-  import { useRegions } from '$lib/core/stores/regions.svelte'
-  import { useClusters } from '$lib/core/stores/clusters.svelte'
-  import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '$lib/components/ui/card'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import { Select } from '$lib/components/ui/select'
-  import { Checkbox } from '$lib/components/ui/checkbox'
-  import { Separator } from '$lib/components/ui/separator'
-  import Combobox from '$lib/components/shared/Combobox.svelte'
-  import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
-  import FieldLabel from '$lib/components/shared/FieldLabel.svelte'
-  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
-  import { copyText } from '$lib/core/utils/clipboard'
-  import { HUB_REGION_NAME } from '$lib/core/constants'
-  import { gbToBytes } from '$lib/core/utils/format'
-  import { VOLUME_TYPE_OPTIONS } from '$lib/core/utils/volume-type'
-  import Copy from '@lucide/svelte/icons/copy'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useVolumes } from '#lib/core/stores/volumes.svelte.js';
+  import { useStorages } from '#lib/core/stores/storages.svelte.js';
+  import { useRegions } from '#lib/core/stores/regions.svelte.js';
+  import { useClusters } from '#lib/core/stores/clusters.svelte.js';
+  import { useAccounts } from '#lib/core/stores/accounts.svelte.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { Button } from '#lib/components/ui/button/index.js';
 
-  const volumeStore = useVolumes()
-  const storageStore = useStorages()
-  const regionStore = useRegions()
-  const clusterStore = useClusters()
-  const accountStore = useAccounts()
-  const auth = useAuth()
-  const accountId = $derived(accountStore.selectedAccountId)
+  import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+    CardFooter
+  } from '#lib/components/ui/card/index.js';
+
+  import Input from '#lib/components/ui/input/input.svelte';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import { Select } from '#lib/components/ui/select/index.js';
+  import { Checkbox } from '#lib/components/ui/checkbox/index.js';
+  import { Separator } from '#lib/components/ui/separator/index.js';
+  import Combobox from '#lib/components/shared/Combobox.svelte';
+  import EmptyState from '#lib/components/shared/EmptyState.svelte';
+  import FormSkeleton from '#lib/components/shared/FormSkeleton.svelte';
+  import FieldLabel from '#lib/components/shared/FieldLabel.svelte';
+  import { showSuccessToast, showErrorToast, handleApiError } from '#lib/core/utils/toast.js';
+  import { copyText } from '#lib/core/utils/clipboard.js';
+  import { HUB_REGION_NAME } from '#lib/core/constants.js';
+  import { gbToBytes } from '#lib/core/utils/format.js';
+  import { VOLUME_TYPE_OPTIONS } from '#lib/core/utils/volume-type.js';
+  import Copy from '@lucide/svelte/icons/copy';
+
+  const volumeStore = useVolumes();
+  const storageStore = useStorages();
+  const regionStore = useRegions();
+  const clusterStore = useClusters();
+  const accountStore = useAccounts();
+  const auth = useAuth();
+  const accountId = $derived(accountStore.selectedAccountId);
 
   $effect(() => {
     if (!auth.loading && !auth.can('volumes', 'create')) {
@@ -40,27 +49,26 @@
     }
   })
 
-  let name = $state('')
-  let description = $state('')
-  let regionId = $state('')
-  let storageId = $state('')
-  let metadataClusterId = $state('')
-  let volumeType = $state('general')
-  let encryption = $state(false)
-  let encryptionKey = $state('')
-  let encryptionKeyRef = $state<HTMLInputElement | null>(null)
-  let retentionPeriod = $state('30')
-  let gracePeriod = $state('14')
-  let forkGracePeriod = $state('1')
-  let eventLogRetentionPeriod = $state('0')
-  let quotaLimit = $state('')
-  let submitting = $state(false)
-  let createResult = $state<{ id: number; encryptionKey: string } | null>(null)
+  let name = $state('');
+  let description = $state('');
+  let regionId = $state('');
+  let storageId = $state('');
+  let metadataClusterId = $state('');
+  let volumeType = $state('general');
+  let encryption = $state(false);
+  let encryptionKey = $state('');
+  let encryptionKeyRef = $state<HTMLInputElement | null>(null);
+  let retentionPeriod = $state('30');
+  let gracePeriod = $state('14');
+  let forkGracePeriod = $state('1');
+  let eventLogRetentionPeriod = $state('0');
+  let quotaLimit = $state('');
+  let submitting = $state(false);
+  let createResult = $state<{ id: number; encryptionKey: string } | null>(null);
+  const preselectedStorageId = page.url.searchParams.get('storageId') ?? '';
+  const preselectedRegionId = page.url.searchParams.get('regionId') ?? '';
+  let regionsLoaded = $state(false);
 
-  const preselectedStorageId = $page.url.searchParams.get('storageId') ?? ''
-  const preselectedRegionId = $page.url.searchParams.get('regionId') ?? ''
-
-  let regionsLoaded = $state(false)
   $effect(() => {
     if (accountId) {
       regionId = ''
@@ -83,11 +91,7 @@
   })
 
   // Volumes attach to a storage within a region; the hub region has no attachable storages.
-  const regionOptions = $derived(
-    regionStore.regions
-      .filter(r => r.name !== HUB_REGION_NAME)
-      .map(r => ({ value: String(r.id), label: r.name }))
-  )
+  const regionOptions = $derived(regionStore.regions.filter((r) => r.name !== HUB_REGION_NAME).map((r) => ({ value: String(r.id), label: r.name })));
 
   // Storage options are scoped to the selected region and refetched whenever it changes.
   let lastStorageRegion = ''
@@ -99,45 +103,47 @@
     if (!rid || !accountId) return
     storageStore.fetchStorages({ accountId, page: 1, limit: 100, filters: { regionId: Number(rid) } }).finally(() => {
       // Only honor the preselection when that storage is active and attachable.
-      if (preselectedStorageId && storageStore.storages.some(s => String(s.id) === preselectedStorageId && s.isActive)) {
-        storageId = preselectedStorageId
+      if (preselectedStorageId && storageStore.storages.some((s) => String(s.id) === preselectedStorageId && s.isActive)) {
+        storageId = preselectedStorageId;
       }
     })
   })
 
   // A volume can only attach to an active storage (the API rejects inactive ones).
-  const storageOptions = $derived(
-    storageStore.storages
-      .filter(s => s.isActive)
-      .map(s => ({ value: String(s.id), label: s.name }))
-  )
-  const storagesLoading = $derived(!!regionId && storageStore.loading)
+  const storageOptions = $derived(storageStore.storages.filter((s) => s.isActive).map((s) => ({ value: String(s.id), label: s.name })));
+
+  const storagesLoading = $derived(!!regionId && storageStore.loading);
 
   // Volumes are placed on a region cluster; load the selected region's clusters so the
   // operator can pick the availability/placement boundary explicitly.
   let lastClusterRegion = ''
   $effect(() => {
-    const rid = regionId
-    if (rid === lastClusterRegion) return
-    lastClusterRegion = rid
-    metadataClusterId = ''
-    if (rid) clusterStore.fetchClusters(Number(rid), { isActive: true })
-  })
+    const rid = regionId;
+
+    if (rid === lastClusterRegion) return;
+
+    lastClusterRegion = rid;
+    metadataClusterId = '';
+
+    if (rid) clusterStore.fetchClusters(Number(rid), { isActive: true });
+  });
 
   // Only ready+active clusters can host a volume; each is an availability/placement boundary.
-  const clusterOptions = $derived(
-    clusterStore.clustersFor(Number(regionId))
-      .filter(c => c.isActive && c.isReady)
-      .map(c => ({ value: String(c.id), label: c.defaultCluster ? `${c.name} (default)` : c.name }))
-  )
-  const clustersLoading = $derived(!!regionId && clusterStore.isLoading(Number(regionId)))
+  const clusterOptions = $derived(clusterStore.clustersFor(Number(regionId)).filter((c) => c.isActive && c.isReady).map((c) => ({
+    value: String(c.id),
+    label: c.defaultCluster ? `${c.name} (default)` : c.name
+  })));
+
+  const clustersLoading = $derived(!!regionId && clusterStore.isLoading(Number(regionId)));
 
   // Preselect the region's default cluster so the prior default-only behaviour is preserved.
   $effect(() => {
-    if (metadataClusterId || !clusterOptions.length) return
-    const def = clusterStore.clustersFor(Number(regionId)).find(c => c.defaultCluster && c.isActive && c.isReady)
-    metadataClusterId = String(def?.id ?? clusterOptions[0].value)
-  })
+    if (metadataClusterId || !clusterOptions.length) return;
+
+    const def = clusterStore.clustersFor(Number(regionId)).find((c) => c.defaultCluster && c.isActive && c.isReady);
+
+    metadataClusterId = String(def?.id ?? clusterOptions[0].value);
+  });
 
   $effect(() => {
     if (encryption && encryptionKeyRef) encryptionKeyRef.focus()
@@ -158,7 +164,7 @@
         description: description.trim() || undefined,
         volumeType,
         encryption: encryption ? true : undefined,
-        encryptionKey: (encryption && encryptionKey.trim()) ? encryptionKey.trim() : undefined,
+        encryptionKey: encryption && encryptionKey.trim() ? encryptionKey.trim() : undefined,
         retention: {
           dataDays: retentionPeriod ? Number(retentionPeriod) : undefined,
           forkGraceDays: forkGracePeriod ? Number(forkGracePeriod) : undefined,

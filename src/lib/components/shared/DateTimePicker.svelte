@@ -1,13 +1,13 @@
 <script lang="ts">
   import { CalendarDateTime, parseDateTime, type DateValue } from '@internationalized/date'
-  import * as Popover from '$lib/components/ui/popover'
-  import { Calendar } from '$lib/components/ui/calendar'
+  import * as Popover from '#lib/components/ui/popover/index.js'
+  import { Calendar } from '#lib/components/ui/calendar/index.js'
   import CalendarIcon from '@lucide/svelte/icons/calendar'
   import ClockIcon from '@lucide/svelte/icons/clock'
   import ChevronUp from '@lucide/svelte/icons/chevron-up'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import X from '@lucide/svelte/icons/x'
-  import { cn } from '$lib/utils'
+  import { cn } from '#lib/utils.js'
 
   let {
     value = $bindable<string>(''),

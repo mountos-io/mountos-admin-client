@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { useStorages } from '$lib/core/stores/storages.svelte'
-  import { Button } from '$lib/components/ui/button'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Separator } from '$lib/components/ui/separator'
+  import { useStorages } from '#lib/core/stores/storages.svelte.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { Badge } from '#lib/components/ui/badge/index.js'
+  import { Separator } from '#lib/components/ui/separator/index.js'
   import CheckCircle from '@lucide/svelte/icons/check-circle'
   import XCircle from '@lucide/svelte/icons/x-circle'
   import FlaskConical from '@lucide/svelte/icons/flask-conical'

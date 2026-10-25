@@ -1,4 +1,4 @@
-import { useWebAuthn } from '$lib/core/stores/webauthn.svelte'
+import { useWebAuthn } from '#lib/core/stores/webauthn.svelte.js'
 
 export class StepUpCancelledError extends Error {
   constructor() { super('cancelled'); this.name = 'StepUpCancelledError' }

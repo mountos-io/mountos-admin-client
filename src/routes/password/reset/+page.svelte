@@ -1,20 +1,23 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import { fetchMinPasswordLength, DEFAULT_MIN_PASSWORD_LENGTH } from '$lib/core/api/localauth'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#lib/components/ui/card/index.js';
+  import Input from '#lib/components/ui/input/input.svelte';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import { fetchMinPasswordLength, DEFAULT_MIN_PASSWORD_LENGTH } from '#lib/core/api/localauth.js';
 
-  const token = $page.url.searchParams.get('token') ?? ''
-  let newPassword = $state('')
-  let submitting = $state(false)
-  let error = $state('')
-  let done = $state(false)
-  let minPasswordLength = $state(DEFAULT_MIN_PASSWORD_LENGTH)
-  fetchMinPasswordLength().then((v) => { minPasswordLength = v })
+  const token = page.url.searchParams.get('token') ?? '';
+  let newPassword = $state('');
+  let submitting = $state(false);
+  let error = $state('');
+  let done = $state(false);
+  let minPasswordLength = $state(DEFAULT_MIN_PASSWORD_LENGTH);
+
+  fetchMinPasswordLength().then((v) => {
+    minPasswordLength = v;
+  });
 
   async function handleSubmit(e: Event) {
     e.preventDefault()

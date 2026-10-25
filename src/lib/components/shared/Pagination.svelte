@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button'
+  import { Button } from '#lib/components/ui/button/index.js'
   let { currentPage, totalPages, onPageChange }: {
     currentPage: number; totalPages: number; onPageChange: (page: number) => void
   } = $props()

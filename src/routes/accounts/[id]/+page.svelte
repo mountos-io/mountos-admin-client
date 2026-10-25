@@ -1,69 +1,86 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
-  import { Button } from '$lib/components/ui/button'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import * as Dialog from '$lib/components/ui/dialog'
-  import AccountIcon from '$lib/components/shared/AccountIcon.svelte'
-  import { Badge } from '$lib/components/ui/badge'
-  import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
-  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
-  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import PencilIcon from '@lucide/svelte/icons/pencil'
-  import { formatDate, formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes } from '$lib/core/utils/format'
-  import InfoTip from '$lib/components/shared/InfoTip.svelte'
-  import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
-  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
-  import { debounce } from '$lib/utils'
-  import { generateIdenticon } from '$lib/core/utils/identicon'
-  import { features } from '$lib/config/features'
-  import type { Account } from '$lib/core/api/types'
-  import { useAuditLogs } from '$lib/core/stores/audit.svelte'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useAccounts } from '#lib/core/stores/accounts.svelte.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '#lib/components/ui/card/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import Input from '#lib/components/ui/input/input.svelte';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import * as Dialog from '#lib/components/ui/dialog/index.js';
+  import AccountIcon from '#lib/components/shared/AccountIcon.svelte';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import StatusBadge from '#lib/components/shared/StatusBadge.svelte';
+  import ConfirmDialog from '#lib/components/shared/ConfirmDialog.svelte';
+  import DetailSkeleton from '#lib/components/shared/DetailSkeleton.svelte';
+  import ActivityFeed from '#lib/components/shared/ActivityFeed.svelte';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import PencilIcon from '@lucide/svelte/icons/pencil';
 
-  const store = useAccounts()
-  const auth = useAuth()
-  const auditStore = useAuditLogs()
-  const id = $derived(Number($page.params.id))
-  const editOnLoad = $derived($page.url.searchParams.has('edit'))
+  import {
+    formatDate,
+    formatBytes,
+    formatQuota,
+    quotaPercent,
+    bytesToGb,
+    gbToBytes
+  } from '#lib/core/utils/format.js';
+
+  import InfoTip from '#lib/components/shared/InfoTip.svelte';
+  import { showErrorToast, showSuccessToast, handleApiError } from '#lib/core/utils/toast.js';
+  import { useConfirmDialog } from '#lib/stores/confirm-dialog.svelte.js';
+  import { debounce } from '#lib/utils.js';
+  import { generateIdenticon } from '#lib/core/utils/identicon.js';
+  import { features } from '#lib/config/features.js';
+  import type { Account } from '#lib/core/api/types.js';
+  import { useAuditLogs } from '#lib/core/stores/audit.svelte.js';
+
+  const store = useAccounts();
+  const auth = useAuth();
+  const auditStore = useAuditLogs();
+  const id = $derived(Number(page.params.id));
+  const editOnLoad = $derived(page.url.searchParams.has('edit'));
 
   $effect(() => {
     if (!auth.loading && !auth.can('accounts', 'read')) {
       showErrorToast('Access denied')
       goto('/', { replaceState: true })
     }
-  })
-  let account = $state<Account | null>(null)
-  let loading = $state(true)
-  const dialog = useConfirmDialog()
+  });
 
-  let editing = $state(false)
-  let editName = $state('')
-  let editDescription = $state('')
-  let editIconUrl = $state('')
+  let account = $state<Account | null>(null);
+  let loading = $state(true);
+  const dialog = useConfirmDialog();
+  let editing = $state(false);
+  let editName = $state('');
+  let editDescription = $state('');
+  let editIconUrl = $state('');
+
   // Retention is a policy object on the account; the storage representation is a
   // server concern and never reaches this form. Held as a string and coerced on
   // submit, matching the quota fields: binding a number directly yields null the
   // moment the operator clears the input, which would post a null the server
   // then has to interpret.
-  let editClientSessionDays = $state('')
-  let editSubmitting = $state(false)
-  let editIconError = $state(false)
-  let editPreviewUrl = $state('')
+  let editClientSessionDays = $state('');
 
-  const updateEditPreview = debounce((url: string) => { editPreviewUrl = url }, 300)
+  let editSubmitting = $state(false);
+  let editIconError = $state(false);
+  let editPreviewUrl = $state('');
+
+  const updateEditPreview = debounce(
+    (url: string) => {
+      editPreviewUrl = url;
+    },
+    300
+  );
 
   $effect(() => {
-    const url = editIconUrl.trim()
-    editIconError = false
-    if (!url) editPreviewUrl = ''
-    else updateEditPreview(url)
-  })
+    const url = editIconUrl.trim();
+
+    editIconError = false;
+
+    if (!url) editPreviewUrl = ''; else updateEditPreview(url);
+  });
 
   const iconSrc = $derived.by(() => {
     if (!account) return ''
@@ -119,13 +136,27 @@
 
   let fetchCtrl: AbortController | undefined
   $effect(() => {
-    if (Number.isNaN(id)) { loading = false; return }
-    fetchCtrl?.abort()
-    fetchCtrl = new AbortController()
-    const ctrl = fetchCtrl
-    loading = true
-    store.getAccount(id).then(a => { if (!ctrl.signal.aborted) account = a }).catch(() => { if (!ctrl.signal.aborted) account = null }).finally(() => { if (!ctrl.signal.aborted) loading = false })
-  })
+    if (Number.isNaN(id)) {
+      loading = false;
+
+      return;
+    }
+
+    fetchCtrl?.abort();
+    fetchCtrl = new AbortController();
+
+    const ctrl = fetchCtrl;
+
+    loading = true;
+
+    store.getAccount(id).then((a) => {
+      if (!ctrl.signal.aborted) account = a;
+    }).catch(() => {
+      if (!ctrl.signal.aborted) account = null;
+    }).finally(() => {
+      if (!ctrl.signal.aborted) loading = false;
+    });
+  });
 
   $effect(() => {
     if (editOnLoad && account && !editing && auth.can('accounts', 'update')) startEdit()
@@ -239,7 +270,7 @@
         {:else}
           <CardHeader>
             <div class="flex items-center gap-3">
-              <AccountIcon {account} size={36} />
+              <AccountIcon account={account} size={36} />
               <CardTitle class="flex-1">{account.name}</CardTitle>
               {#if auth.can('accounts', 'update')}
                 <button
@@ -305,13 +336,24 @@
           {#if auth.can('accounts', 'update')}
             <CardFooter class="gap-2">
               {#if account.isActive}
-                <Button variant="destructive" size="sm" onclick={() => dialog.confirm('Deactivate', `Permanently deactivate "${account!.name}"? All users, regions, storages, and volumes must be deactivated first.`, () => act(() => store.deactivateAccount(id)), 'destructive')}>Deactivate</Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onclick={() => dialog.confirm('Deactivate', `Permanently deactivate "${(account!).name}"? All users, regions, storages, and volumes must be deactivated first.`, () => act(() => store.deactivateAccount(id)), 'destructive')}
+                >Deactivate</Button>
               {/if}
               {#if features.accountLock}
                 {#if account.locked}
-                  <Button size="sm" onclick={() => dialog.confirm('Unlock', `Unlock "${account!.name}"?`, () => act(() => store.unlockAccount(id)))}>Unlock</Button>
+                  <Button
+                    size="sm"
+                    onclick={() => dialog.confirm('Unlock', `Unlock "${(account!).name}"?`, () => act(() => store.unlockAccount(id)))}
+                  >Unlock</Button>
                 {:else}
-                  <Button variant="destructive" size="sm" onclick={() => dialog.confirm('Lock', `Lock "${account!.name}"?`, () => act(() => store.lockAccount(id)))}>Lock</Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onclick={() => dialog.confirm('Lock', `Lock "${(account!).name}"?`, () => act(() => store.lockAccount(id)))}
+                  >Lock</Button>
                 {/if}
               {/if}
             </CardFooter>

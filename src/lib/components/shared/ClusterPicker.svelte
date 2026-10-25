@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { MetadataCluster } from '$lib/core/api/types'
-  import * as Dialog from '$lib/components/ui/dialog'
-  import { Input } from '$lib/components/ui/input'
-  import { Badge } from '$lib/components/ui/badge'
+  import type { MetadataCluster } from '#lib/core/api/types.js'
+  import * as Dialog from '#lib/components/ui/dialog/index.js'
+  import { Input } from '#lib/components/ui/input/index.js'
+  import { Badge } from '#lib/components/ui/badge/index.js'
   import Layers from '@lucide/svelte/icons/layers'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import Check from '@lucide/svelte/icons/check'

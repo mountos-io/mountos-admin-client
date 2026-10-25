@@ -1,40 +1,40 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useRegions } from '$lib/core/stores/regions.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import FormSkeleton from '$lib/components/shared/FormSkeleton.svelte'
-  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
-  import type { Region } from '$lib/core/api/types'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useRegions } from '#lib/core/stores/regions.svelte.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#lib/components/ui/card/index.js';
+  import Input from '#lib/components/ui/input/input.svelte';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import EmptyState from '#lib/components/shared/EmptyState.svelte';
+  import FormSkeleton from '#lib/components/shared/FormSkeleton.svelte';
+  import { showSuccessToast, showErrorToast, handleApiError } from '#lib/core/utils/toast.js';
+  import type { Region } from '#lib/core/api/types.js';
 
-  const regionId = $derived(Number($page.params.regionId))
-  const regionStore = useRegions()
-  const auth = useAuth()
+  const regionId = $derived(Number(page.params.regionId));
+  const regionStore = useRegions();
+  const auth = useAuth();
+  const nameRe = /^[a-z][a-z0-9-]{2,}$/;
+  let region = $state<Region | null>(null);
+  let loading = $state(false);
+  let submitting = $state(false);
+  let name = $state('');
+  const nameValid = $derived(nameRe.test(name));
 
-  const nameRe = /^[a-z][a-z0-9-]{2,}$/
+  const nameError = $derived(!name
+    ? ''
+    : (/[A-Z]/).test(name)
+      ? 'Lowercase only'
+      : (/\s/).test(name)
+        ? 'Spaces not allowed'
+        : !(/^[a-z]/).test(name)
+          ? 'Must start with a letter'
+          : (/[^a-z0-9-]/).test(name)
+            ? 'Only lowercase letters, digits and hyphens'
+            : name.length < 3 ? 'At least 3 characters' : '');
 
-  let region = $state<Region | null>(null)
-  let loading = $state(false)
-  let submitting = $state(false)
-  let name = $state('')
-
-  const nameValid = $derived(nameRe.test(name))
-  const nameError = $derived(
-    !name ? '' :
-    /[A-Z]/.test(name) ? 'Lowercase only' :
-    /\s/.test(name) ? 'Spaces not allowed' :
-    !/^[a-z]/.test(name) ? 'Must start with a letter' :
-    /[^a-z0-9-]/.test(name) ? 'Only lowercase letters, digits and hyphens' :
-    name.length < 3 ? 'At least 3 characters' : ''
-  )
-  const unchanged = $derived(
-    !!region && name.trim() === region.name,
-  )
+  const unchanged = $derived(!!region && name.trim() === region.name);
 
   $effect(() => {
     if (!auth.loading && !auth.can('regions', 'update')) {

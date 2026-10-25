@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { cn } from '$lib/utils.js'
-  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
-  import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '$lib/components/ui/command'
-  import { Button } from '$lib/components/ui/button'
+  import { cn } from '#lib/utils.js'
+  import { Popover, PopoverTrigger, PopoverContent } from '#lib/components/ui/popover/index.js'
+  import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '#lib/components/ui/command/index.js'
+  import { Button } from '#lib/components/ui/button/index.js'
   import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
   import Check from '@lucide/svelte/icons/check'
 

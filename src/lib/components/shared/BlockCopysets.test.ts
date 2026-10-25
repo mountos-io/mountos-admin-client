@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/svelte'
 import BlockCopysets from './BlockCopysets.svelte'
-import type { Copyset, BlockVolume, ServiceNode } from '$lib/core/api/types'
+import type { Copyset, BlockVolume, ServiceNode } from '#lib/core/api/types.js'
 
 // Matches the component's own drain-poll tick.
 const POLL_INTERVAL_MS = 15_000
@@ -38,23 +38,23 @@ const {
   removeMember: vi.fn(),
 }))
 
-vi.mock('$lib/core/stores/storages.svelte', () => ({
+vi.mock('#lib/core/stores/storages.svelte.js', () => ({
   useStorages: () => ({ listCopysets, listBlockVolumes, drainCopyset, cancelDrain, registerCopyset, registerCopysetsBulk, removeMember }),
 }))
 
-vi.mock('$lib/core/stores/client.svelte', () => ({
+vi.mock('#lib/core/stores/client.svelte.js', () => ({
   api: { serviceNodes: { list: serviceNodesList }, volumes: { list: volumesList } },
 }))
 
-vi.mock('$lib/core/utils/toast', () => ({
+vi.mock('#lib/core/utils/toast.js', () => ({
   showSuccessToast: vi.fn(),
   showErrorToast: vi.fn(),
   showWarningToast: vi.fn(),
   handleApiError: vi.fn(),
 }))
-import { handleApiError } from '$lib/core/utils/toast'
+import { handleApiError } from '#lib/core/utils/toast.js'
 
-vi.mock('$lib/core/utils/clipboard', () => ({ copyText: vi.fn().mockResolvedValue(true) }))
+vi.mock('#lib/core/utils/clipboard.js', () => ({ copyText: vi.fn().mockResolvedValue(true) }))
 
 beforeEach(() => {
   vi.clearAllMocks()

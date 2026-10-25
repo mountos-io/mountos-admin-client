@@ -19,6 +19,8 @@ interface UserRow {
   updated_at: Date
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function mapUser(row: UserRow): PortalUser {
   return {
     id: row.id,
@@ -47,7 +49,10 @@ export class PortalStore {
     return rows[0] ? mapUser(rows[0]) : null
   }
 
+  // portal_users.id is a uuid. Provider-JWT identities carry non-uuid subjects
+  // and have no portal row, so they are answered without a query.
   async findById(id: string): Promise<PortalUser | null> {
+    if (!UUID_RE.test(id)) return null
     const { rows } = await this.pool.query<UserRow>('SELECT * FROM portal_users WHERE id = $1', [id])
     return rows[0] ? mapUser(rows[0]) : null
   }

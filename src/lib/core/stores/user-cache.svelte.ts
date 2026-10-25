@@ -1,5 +1,5 @@
-import { api } from '$lib/core/stores/client.svelte'
-import { ApiError } from '$lib/core/api/errors'
+import { api } from '#lib/core/stores/client.svelte.js'
+import { ApiError } from '#lib/core/api/errors.js'
 
 // Minimum record kept per id (enough to render a badge without exposing
 // email / accountId). Persisted across page navigations in localStorage;

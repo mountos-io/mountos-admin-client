@@ -1,5 +1,5 @@
 import { toUserInfo, type AuthAdapter, type UserInfo } from './adapter.js'
-import type { Account } from '$lib/core/api/types'
+import type { Account } from '#lib/core/api/types.js'
 
 export interface TokenAuthConfig {
   loginUrl: string

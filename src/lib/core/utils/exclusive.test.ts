@@ -7,7 +7,7 @@ import {
 } from './exclusive'
 
 const grant = (over: Partial<ExclusiveGrant> = {}): ExclusiveGrant => ({
-  sessionId: '1', sessionName: 'host-a', holderIp: '10.0.0.5', path: '/data', scopeInode: '7',
+  sessionId: '1', sessionName: 'host-a', fork: '', holderIp: '10.0.0.5', path: '/data', scopeInode: '7',
   kind: 'tree', state: 'active', windowSeconds: 30, sinceUnixMs: 1, role: 'primary', standbyPosition: 0,
   durability: 'writethrough', holderEpoch: 1, live: true, lastRenewAgeMs: 10, lastSeenAgeMs: 10,
   takeOverText: '', ...over,

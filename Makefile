@@ -4,7 +4,7 @@ TS_EXEC_deno  := deno run -A
 TS_EXEC_node  := npx tsx
 TS_EXEC       := $(or $(TS_EXEC_$(TS_RUNTIME)),$(TS_RUNTIME))
 
-.PHONY: help dev build check proxy dev-all gen generate-test-token test-auto-login clean setup-certs set-local-admin-sdk reset-local-admin-sdk prepare export portal-migrate seed-admin
+.PHONY: help dev build check vuln proxy dev-all gen generate-test-token test-auto-login clean setup-certs set-local-admin-sdk reset-local-admin-sdk prepare export portal-migrate seed-admin
 
 help: ## Show available targets
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | awk -F ':.*## ' '{printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
@@ -29,6 +29,9 @@ export: build ## Bundle build/ into one tracked archive (build.tar.gz) — the r
 
 check: ## Type-check
 	npm run check
+
+vuln: ## Fail on known vulnerabilities in TypeScript dependencies (npm audit)
+	PATH=/opt/homebrew/bin:$$PATH npm audit
 
 proxy: ## Run proxy server (TS_RUNTIME=node|bun|deno)
 	$(TS_EXEC) server/server.ts

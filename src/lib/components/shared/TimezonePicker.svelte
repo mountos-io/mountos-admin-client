@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { tz, ALL_TZ } from '$lib/core/stores/tz.svelte'
-  import { Input } from '$lib/components/ui/input'
+  import { tz, ALL_TZ } from '#lib/core/stores/tz.svelte.js'
+  import { Input } from '#lib/components/ui/input/index.js'
   import Globe from '@lucide/svelte/icons/globe'
 
   // GMT-offset short label per IANA zone. Cached because Intl construction is

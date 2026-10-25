@@ -1,4 +1,4 @@
-import type { AuditLog } from '$lib/core/api/types'
+import type { AuditLog } from '#lib/core/api/types.js'
 import { api } from './client.svelte'
 
 let logs = $state<AuditLog[]>([])

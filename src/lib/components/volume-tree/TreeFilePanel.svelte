@@ -4,22 +4,22 @@
   // its Content and we need a right-side drawer. Focus trap, Esc, portal,
   // and inert are still delegated to bits-ui; the divergence is positioning
   // only. The Versions modal (centered) uses the wrapper.
-  import type { ForkEntryDetail } from '$lib/core/api/types'
+  import type { ForkEntryDetail } from '#lib/core/api/types.js'
   import { Dialog as DialogPrimitive } from 'bits-ui'
-  import { Button } from '$lib/components/ui/button'
-  import { Badge } from '$lib/components/ui/badge'
-  import { formatBytes, formatRelative, formatTzShort } from '$lib/core/utils/format'
-  import { tz } from '$lib/core/stores/tz.svelte'
-  import { userCache } from '$lib/core/stores/user-cache.svelte'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { Badge } from '#lib/components/ui/badge/index.js'
+  import { formatBytes, formatRelative, formatTzShort } from '#lib/core/utils/format.js'
+  import { tz } from '#lib/core/stores/tz.svelte.js'
+  import { userCache } from '#lib/core/stores/user-cache.svelte.js'
   import XIcon from '@lucide/svelte/icons/x'
   import HistoryIcon from '@lucide/svelte/icons/history'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import LoadingSpinner from '$lib/components/shared/LoadingSpinner.svelte'
+  import LoadingSpinner from '#lib/components/shared/LoadingSpinner.svelte'
   import TreeContextChip from './TreeContextChip.svelte'
-  import { showErrorToast } from '$lib/core/utils/toast'
-  import { copyText } from '$lib/core/utils/clipboard'
+  import { showErrorToast } from '#lib/core/utils/toast.js'
+  import { copyText } from '#lib/core/utils/clipboard.js'
 
   let {
     open = $bindable(false),

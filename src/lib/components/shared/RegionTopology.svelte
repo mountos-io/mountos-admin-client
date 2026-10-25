@@ -1,87 +1,111 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
-  import { page } from '$app/stores'
-  import { untrack } from 'svelte'
-  import { useNodes } from '$lib/core/stores/nodes.svelte'
-  import { useRegions } from '$lib/core/stores/regions.svelte'
-  import { useClusters } from '$lib/core/stores/clusters.svelte'
-  import { useRegionAuditLogs } from '$lib/core/stores/regionAudit.svelte'
-  import { useRegionAlerts } from '$lib/core/stores/regionAlerts.svelte'
-  import { SEVERITY_LABELS } from '$lib/core/stores/alerts.svelte'
-  import { severityBadgeVariant, severityIcon, severityOptions, categoryOptions, timeOptions, handleTabKeydown } from '$lib/core/utils/alert'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { ROLE } from '$lib/core/auth/adapter'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardHeader, CardTitle, CardContent } from '$lib/components/ui/card'
-  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
-  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
-  import { Skeleton } from '$lib/components/ui/skeleton'
-  import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
-  import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import ActivityChart from '$lib/components/shared/ActivityChart.svelte'
-  import ActivityFeed from '$lib/components/shared/ActivityFeed.svelte'
-  import FilterPanel from '$lib/components/shared/FilterPanel.svelte'
-  import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
-  import Pagination from '$lib/components/shared/Pagination.svelte'
-  import RegionNodeList from '$lib/components/shared/RegionNodeList.svelte'
-  import ClusterPicker from '$lib/components/shared/ClusterPicker.svelte'
-  import { showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
-  import { formatRelative, formatBinaryVersion } from '$lib/core/utils/format'
-  import type { Region, ServiceNode } from '$lib/core/api/types'
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import Plus from '@lucide/svelte/icons/plus'
-  import ChevronDown from '@lucide/svelte/icons/chevron-down'
-  import ChevronRight from '@lucide/svelte/icons/chevron-right'
-  import MoreVertical from '@lucide/svelte/icons/more-vertical'
-  import Pencil from '@lucide/svelte/icons/pencil'
-  import PowerOff from '@lucide/svelte/icons/power-off'
-  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
-  import Shield from '@lucide/svelte/icons/shield'
-  import Database from '@lucide/svelte/icons/database'
-  import Trash2 from '@lucide/svelte/icons/trash-2'
-  import Box from '@lucide/svelte/icons/box'
-  import ServerOff from '@lucide/svelte/icons/server-off'
-  import RefreshCw from '@lucide/svelte/icons/refresh-cw'
-  import CheckCircle from '@lucide/svelte/icons/check-circle'
-  import Loader2 from '@lucide/svelte/icons/loader-2'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import InfoTip from '$lib/components/shared/InfoTip.svelte'
-  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
-  import HowItWorks from '$lib/components/shared/HowItWorks.svelte'
-  import { api } from '$lib/core/stores/client.svelte'
-  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
+  import { untrack } from 'svelte';
+  import { useNodes } from '#lib/core/stores/nodes.svelte.js';
+  import { useRegions } from '#lib/core/stores/regions.svelte.js';
+  import { useClusters } from '#lib/core/stores/clusters.svelte.js';
+  import { useRegionAuditLogs } from '#lib/core/stores/regionAudit.svelte.js';
+  import { useRegionAlerts } from '#lib/core/stores/regionAlerts.svelte.js';
+  import { SEVERITY_LABELS } from '#lib/core/stores/alerts.svelte.js';
 
-  let { regionId, basePath, initialTab }: { regionId: number; basePath: string; initialTab?: 'overview' | 'activity' | 'alerts' } = $props()
+  import {
+    severityBadgeVariant,
+    severityIcon,
+    severityOptions,
+    categoryOptions,
+    timeOptions,
+    handleTabKeydown
+  } from '#lib/core/utils/alert.js';
 
-  const nodeStore = useNodes()
-  const regionStore = useRegions()
-  const clusterStore = useClusters()
-  const regionAudit = useRegionAuditLogs()
-  const auth = useAuth()
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { ROLE } from '#lib/core/auth/adapter.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Card, CardHeader, CardTitle, CardContent } from '#lib/components/ui/card/index.js';
 
-  const dialog = useConfirmDialog()
-  const isSuperAdmin = $derived(auth.user?.role === ROLE.superadmin)
-  const canEditRegion = $derived(auth.can('regions', 'update'))
-  let resyncInFlight = $state(false)
-  let regionMenuOpen = $state(false)
+  import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableHead,
+    TableCell
+  } from '#lib/components/ui/table/index.js';
 
-  let activeTab = $state<'overview' | 'activity' | 'alerts'>(untrack(() => initialTab) ?? 'overview')
-  $effect(() => { if (initialTab) activeTab = initialTab })
-  let topoView = $state<'graphical' | 'list'>('graphical')
+  import TableSkeleton from '#lib/components/shared/TableSkeleton.svelte';
+  import { Skeleton } from '#lib/components/ui/skeleton/index.js';
+  import ListSkeleton from '#lib/components/shared/ListSkeleton.svelte';
+  import EmptyState from '#lib/components/shared/EmptyState.svelte';
+  import ActivityChart from '#lib/components/shared/ActivityChart.svelte';
+  import ActivityFeed from '#lib/components/shared/ActivityFeed.svelte';
+  import FilterPanel from '#lib/components/shared/FilterPanel.svelte';
+  import FilterSelect from '#lib/components/shared/FilterSelect.svelte';
+  import Pagination from '#lib/components/shared/Pagination.svelte';
+  import RegionNodeList from '#lib/components/shared/RegionNodeList.svelte';
+  import ClusterPicker from '#lib/components/shared/ClusterPicker.svelte';
+  import { showErrorToast, showSuccessToast } from '#lib/core/utils/toast.js';
+  import { formatRelative, formatBinaryVersion } from '#lib/core/utils/format.js';
+  import type { Region, ServiceNode } from '#lib/core/api/types.js';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import Plus from '@lucide/svelte/icons/plus';
+  import ChevronDown from '@lucide/svelte/icons/chevron-down';
+  import ChevronRight from '@lucide/svelte/icons/chevron-right';
+  import MoreVertical from '@lucide/svelte/icons/more-vertical';
+  import Pencil from '@lucide/svelte/icons/pencil';
+  import PowerOff from '@lucide/svelte/icons/power-off';
+  import { Popover, PopoverTrigger, PopoverContent } from '#lib/components/ui/popover/index.js';
+  import Shield from '@lucide/svelte/icons/shield';
+  import Database from '@lucide/svelte/icons/database';
+  import Trash2 from '@lucide/svelte/icons/trash-2';
+  import Box from '@lucide/svelte/icons/box';
+  import ServerOff from '@lucide/svelte/icons/server-off';
+  import RefreshCw from '@lucide/svelte/icons/refresh-cw';
+  import CheckCircle from '@lucide/svelte/icons/check-circle';
+  import Loader2 from '@lucide/svelte/icons/loader-2';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import InfoTip from '#lib/components/shared/InfoTip.svelte';
+  import ConfirmDialog from '#lib/components/shared/ConfirmDialog.svelte';
+  import HowItWorks from '#lib/components/shared/HowItWorks.svelte';
+  import { api } from '#lib/core/stores/client.svelte.js';
+  import { useConfirmDialog } from '#lib/stores/confirm-dialog.svelte.js';
 
-  let region = $state<Region | null>(null)
-  let hoveredNode = $state<{ node: ServiceNode; x: number; y: number } | null>(null)
-  let expandedGroups = $state(new Set<string>())
-  let dimmedServices = $state(new Set<string>())
-  let auditView = $state<'chart' | 'feed'>('chart')
-  let activityDays = $state<7 | 15 | 30 | 'auto'>('auto')
+  let { regionId, basePath, initialTab }: { 
+    regionId: number;
+    basePath: string;
+    initialTab?: 'overview' | 'activity' | 'alerts'
+   } = $props();
+
+  const nodeStore = useNodes();
+  const regionStore = useRegions();
+  const clusterStore = useClusters();
+  const regionAudit = useRegionAuditLogs();
+  const auth = useAuth();
+  const dialog = useConfirmDialog();
+  const isSuperAdmin = $derived(auth.user?.role === ROLE.superadmin);
+  const canEditRegion = $derived(auth.can('regions', 'update'));
+  let resyncInFlight = $state(false);
+  let regionMenuOpen = $state(false);
+  let activeTab = $state<'overview' | 'activity' | 'alerts'>(untrack(() => initialTab) ?? 'overview');
+
+  $effect(() => {
+    if (initialTab) activeTab = initialTab;
+  });
+
+  let topoView = $state<'graphical' | 'list'>('graphical');
+  let region = $state<Region | null>(null);
+  let hoveredNode = $state<{ node: ServiceNode; x: number; y: number } | null>(null);
+  let expandedGroups = $state(new Set<string>());
+  let dimmedServices = $state(new Set<string>());
+  let auditView = $state<'chart' | 'feed'>('chart');
+  let activityDays = $state<7 | 15 | 30 | 'auto'>('auto');
 
   // Alerts tab state
-  const alertStore = useRegionAlerts(() => regionId, undefined, () => selectedCluster)
-  let resolvingId = $state<string | null>(null)
+  const alertStore = useRegionAlerts(() => regionId, undefined, () => selectedCluster);
 
-  const COLLAPSE_THRESHOLD = 8
+  let resolvingId = $state<string | null>(null);
+  const COLLAPSE_THRESHOLD = 8;
+
   const STATUS_COLORS: Record<string, string> = {
     healthy: 'var(--success)',
     registered: 'var(--primary)',
@@ -108,34 +132,36 @@
     { id: 'storage', label: 'STORAGE', types: ['blockserv'] },
   ]
 
-  const isHubRegion = $derived(nodeStore.nodesByType.has('hub'))
-  const hasRegionalDB = $derived(nodeStore.nodesByType.has('dataserv') || nodeStore.nodesByType.has('gcserv'))
-  const canReadAudit = $derived(auth.can('auditLogs', 'read'))
-  const canReadAlerts = $derived(auth.can('alerts', 'read'))
+  const isHubRegion = $derived(nodeStore.nodesByType.has('hub'));
+  const hasRegionalDB = $derived(nodeStore.nodesByType.has('dataserv') || nodeStore.nodesByType.has('gcserv'));
+  const canReadAudit = $derived(auth.can('auditLogs', 'read'));
+  const canReadAlerts = $derived(auth.can('alerts', 'read'));
+  const clusters = $derived(clusterStore.clustersFor(regionId));
 
-  const clusters = $derived(clusterStore.clustersFor(regionId))
   const clusterNameById = $derived.by(() => {
     const m: Record<number, string> = {}
     for (const c of clusters) m[c.id] = c.name
     return m
   })
   const selectedCluster = $derived.by<number | null>(() => {
-    const raw = $page.url.searchParams.get('cluster')
-    if (!raw) return null
-    const n = Number(raw)
-    if (!Number.isFinite(n)) return null
+    const raw = page.url.searchParams.get('cluster');
+    if (!raw) return null;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return null;
     // Trust the URL until clusters load; only drop a stale/invalid id once the list is known.
     // Returning null mid-load then flipping to the id double-fires the cluster-scoped
     // nodes/alerts fetches (a deep-linked ?cluster=).
-    if (clusters.length > 0 && !clusters.some(c => c.id === n)) return null
-    return n
-  })
+    if (clusters.length > 0 && !clusters.some((c) => c.id === n)) return null;
+
+    return n;
+  });
 
   function setSelectedCluster(v: number | null) {
-    const url = new URL($page.url)
-    if (v == null) url.searchParams.delete('cluster')
-    else url.searchParams.set('cluster', String(v))
-    goto(url, { replaceState: true, noScroll: true, keepFocus: true })
+    const url = new URL(page.url.href);
+
+    if (v == null) url.searchParams.delete('cluster'); else url.searchParams.set('cluster', String(v));
+
+    goto(url, { replaceState: true, reset: false });
   }
 
   function buildTierData(forNodes: ServiceNode[]) {
@@ -145,15 +171,18 @@
       list.push(n)
       byType.set(n.serviceType, list)
     }
-    const hub = byType.has('hub')
-    const relevant = hub ? TIERS.filter(t => t.id === 'control') : TIERS.filter(t => t.id !== 'control')
-    return relevant.map(tier => ({
+
+    const hub = byType.has('hub');
+
+    const relevant = hub
+      ? TIERS.filter((t) => t.id === 'control')
+      : TIERS.filter((t) => t.id !== 'control');
+
+    return relevant.map((tier) => ({
       ...tier,
-      groups: tier.types
-        .map(type => ({ type, nodes: byType.get(type) ?? [] }))
-        .filter(g => g.nodes.length > 0),
-      nodeCount: tier.types.reduce((sum, t) => sum + (byType.get(t)?.length ?? 0), 0),
-    }))
+      groups: tier.types.map((type) => ({ type, nodes: byType.get(type) ?? [] })).filter((g) => g.nodes.length > 0),
+      nodeCount: tier.types.reduce((sum, t) => sum + (byType.get(t)?.length ?? 0), 0)
+    }));
   }
 
   const tierData = $derived(buildTierData(nodeStore.nodes))
@@ -162,61 +191,70 @@
   // grid per cluster instead of one merged grid; preserves cluster cohesion.
   const showPerClusterGrouping = $derived(selectedCluster === null && clusters.length >= 2 && !isHubRegion)
   const clusterTierGroups = $derived.by(() => {
-    if (!showPerClusterGrouping) return []
-    return clusters
-      .map(c => {
-        const cn = nodeStore.nodes.filter(n => n.metadataClusterId === c.id)
-        return { cluster: c, tierData: buildTierData(cn), nodeCount: cn.length }
-      })
-      .filter(g => g.nodeCount > 0)
-  })
+    if (!showPerClusterGrouping) return [];
+
+    return clusters.map((c) => {
+      const cn = nodeStore.nodes.filter((n) => n.metadataClusterId === c.id);
+
+      return {
+        cluster: c,
+        tierData: buildTierData(cn),
+        nodeCount: cn.length
+      };
+    }).filter((g) => g.nodeCount > 0);
+  });
 
   // Master rail: every active cluster (default first, then name) with its node
   // counts; empties stay visible but unselectable so operators see the cluster
   // exists yet has nothing to inspect.
   const clusterRail = $derived.by(() => {
-    if (!showPerClusterGrouping) return []
-    return clusters
-      .filter(c => c.isActive)
-      .map(c => {
-        const cn = nodeStore.nodes.filter(n => n.metadataClusterId === c.id)
-        return {
-          cluster: c,
-          nodeCount: cn.length,
-          healthyCount: cn.filter(n => n.status === 'healthy').length,
-          empty: cn.length === 0,
-        }
-      })
-      .sort((a, b) => {
-        if (a.cluster.defaultCluster !== b.cluster.defaultCluster) return a.cluster.defaultCluster ? -1 : 1
-        return a.cluster.name.localeCompare(b.cluster.name)
-      })
-  })
+    if (!showPerClusterGrouping) return [];
+
+    return clusters.filter((c) => c.isActive).map((c) => {
+      const cn = nodeStore.nodes.filter((n) => n.metadataClusterId === c.id);
+
+      return {
+        cluster: c,
+        nodeCount: cn.length,
+        healthyCount: cn.filter((n) => n.status === 'healthy').length,
+        empty: cn.length === 0
+      };
+    }).sort((a, b) => {
+      if (a.cluster.defaultCluster !== b.cluster.defaultCluster) return a.cluster.defaultCluster ? -1 : 1;
+
+      return a.cluster.name.localeCompare(b.cluster.name);
+    });
+  });
 
   // Rail selection is local (not the ?cluster URL) so the top-level picker stays
   // on "All" and the Stats HUD keeps aggregate totals while a single cluster is
   // detailed on the right. Resolved purely (no effect) to dodge update loops.
   let detailCluster = $state<number | null>(null)
   const detailClusterId = $derived.by<number | null>(() => {
-    const rail = clusterRail
-    const selectable = rail.filter(r => !r.empty)
-    if (selectable.length === 0) return null
-    if (detailCluster != null && selectable.some(r => r.cluster.id === detailCluster)) return detailCluster
-    return selectable[0].cluster.id
-  })
-  const detailGroup = $derived(clusterTierGroups.find(g => g.cluster.id === detailClusterId) ?? null)
+    const rail = clusterRail;
+    const selectable = rail.filter((r) => !r.empty);
+
+    if (selectable.length === 0) return null;
+    if (detailCluster != null && selectable.some((r) => r.cluster.id === detailCluster)) return detailCluster;
+
+    return selectable[0].cluster.id;
+  });
+
+  const detailGroup = $derived(clusterTierGroups.find((g) => g.cluster.id === detailClusterId) ?? null);
 
   // Rail can group by cluster or by storage. A storage is the set of blockserv
   // nodes sharing a storage_id; a live storage replicates one serving node into
   // each cluster, so the storage detail surfaces per-cluster coverage and gaps.
-  let railMode = $state<'clusters' | 'storages'>('clusters')
-  let detailStorage = $state<string | null>(null)
+  let railMode = $state<'clusters' | 'storages'>('clusters');
 
-  const blockNodes = $derived(
-    showPerClusterGrouping ? nodeStore.nodes.filter(n => n.serviceType === 'blockserv') : [],
-  )
-  const hasStorages = $derived(blockNodes.length > 0)
-  const showStorages = $derived(railMode === 'storages' && hasStorages)
+  let detailStorage = $state<string | null>(null);
+
+  const blockNodes = $derived(showPerClusterGrouping
+    ? nodeStore.nodes.filter((n) => n.serviceType === 'blockserv')
+    : []);
+
+  const hasStorages = $derived(blockNodes.length > 0);
+  const showStorages = $derived(railMode === 'storages' && hasStorages);
 
   // Prefer the human storage name the node reports; fall back to the short
   // storage UUID until the backend populates storage_name in node metadata.
@@ -229,60 +267,71 @@
   }
 
   const storageRail = $derived.by(() => {
-    if (!showPerClusterGrouping) return []
-    return groupByStorage(blockNodes).map(sg => ({
+    if (!showPerClusterGrouping) return [];
+    return groupByStorage(blockNodes).map((sg) => ({
       storageId: sg.storageId,
       label: storageName(sg.nodes, sg.storageId),
       nodes: sg.nodes,
       nodeCount: sg.nodes.length,
-      healthyCount: sg.nodes.filter(n => n.status === 'healthy').length,
-      clusterCount: new Set(sg.nodes.map(n => n.metadataClusterId)).size,
-    }))
-  })
+      healthyCount: sg.nodes.filter((n) => n.status === 'healthy').length,
+      clusterCount: new Set(sg.nodes.map((n) => n.metadataClusterId)).size
+    }));
+  });
 
   const detailStorageId = $derived.by<string | null>(() => {
-    const rail = storageRail
-    if (rail.length === 0) return null
-    if (detailStorage != null && rail.some(s => s.storageId === detailStorage)) return detailStorage
-    return rail[0].storageId
-  })
+    const rail = storageRail;
+
+    if (rail.length === 0) return null;
+    if (detailStorage != null && rail.some((s) => s.storageId === detailStorage)) return detailStorage;
+
+    return rail[0].storageId;
+  });
 
   const storageDetail = $derived.by(() => {
-    const group = storageRail.find(s => s.storageId === detailStorageId)
-    if (!group) return null
-    const activeClusters = clusters.filter(c => c.isActive)
-    const perCluster = activeClusters.map(c => ({
+    const group = storageRail.find((s) => s.storageId === detailStorageId);
+    if (!group) return null;
+    const activeClusters = clusters.filter((c) => c.isActive);
+    const perCluster = activeClusters.map((c) => ({
       cluster: c,
-      nodes: group.nodes.filter(n => n.metadataClusterId === c.id),
-    }))
+      nodes: group.nodes.filter((n) => n.metadataClusterId === c.id)
+    }));
     return {
       ...group,
       perCluster,
       clustersTotal: activeClusters.length,
-      clustersCovered: perCluster.filter(p => p.nodes.length > 0).length,
-    }
-  })
+      clustersCovered: perCluster.filter((p) => p.nodes.length > 0).length
+    };
+  });
 
   const legendEntries = $derived.by(() => {
     const byType = nodeStore.nodesByType
     const types = isHubRegion
-      ? TIERS.filter(t => t.id === 'control').flatMap(t => t.types)
-      : TIERS.filter(t => t.id !== 'control').flatMap(t => t.types)
-    return types.map(type => {
-      const p = palette(type)
-      const count = byType.get(type)?.length ?? 0
-      return { type, label: p.label, accent: p.accent, icon: p.icon, count, hasNodes: count > 0 }
-    })
-  })
+      ? TIERS.filter((t) => t.id === 'control').flatMap((t) => t.types)
+      : TIERS.filter((t) => t.id !== 'control').flatMap((t) => t.types);
+
+    return types.map((type) => {
+      const p = palette(type);
+      const count = byType.get(type)?.length ?? 0;
+
+      return {
+        type,
+        label: p.label,
+        accent: p.accent,
+        icon: p.icon,
+        count,
+        hasNodes: count > 0
+      };
+    });
+  });
 
   const topoStats = $derived.by(() => {
     const n = nodeStore.nodes
     return {
       total: n.length,
-      healthy: n.filter(x => x.status === 'healthy').length,
-      types: nodeStore.nodesByType.size,
-    }
-  })
+      healthy: n.filter((x) => x.status === 'healthy').length,
+      types: nodeStore.nodesByType.size
+    };
+  });
 
   function statusColor(s: string) { return STATUS_COLORS[s] ?? 'var(--muted-foreground)' }
 
@@ -296,13 +345,19 @@
     const order: string[] = []
     const map = new Map<string, ServiceNode[]>()
     for (const n of nodes) {
-      const raw = n.metadata?.['storage_id']
-      const sid = typeof raw === 'string' && raw ? raw : 'unassigned'
-      if (!map.has(sid)) { map.set(sid, []); order.push(sid) }
-      map.get(sid)!.push(n)
+      const raw = n.metadata?.['storage_id'];
+      const sid = typeof raw === 'string' && raw ? raw : 'unassigned';
+
+      if (!map.has(sid)) {
+        map.set(sid, []);
+        order.push(sid);
+      }
+      (map.get(sid)!).push(n);
     }
-    return order.map(sid => ({ storageId: sid, nodes: map.get(sid)! }))
+
+    return order.map((sid) => ({ storageId: sid, nodes: map.get(sid)! }));
   }
+
   function shortStorageId(sid: string) {
     return sid === 'unassigned' ? 'unassigned' : `storage ${sid.slice(0, 8)}`
   }
@@ -333,7 +388,7 @@
 
   $effect(() => {
     if (regionId) {
-      regionStore.getRegion(regionId).then(r => region = r).catch(() => showErrorToast('Failed to load region details'))
+      regionStore.getRegion(regionId).then((r) => region = r).catch(() => showErrorToast('Failed to load region details'));
     }
   })
 
@@ -395,12 +450,14 @@
     untrack(() => {
       // Seed the cluster gate so the cluster-change effect below doesn't
       // double-fetch on initial mount when the URL already pins a cluster.
-      lastAlertCluster = selectedCluster
-      s.fetchAlerts()
-      s.startPolling()
-    })
-    return () => s.reset()
-  })
+      lastAlertCluster = selectedCluster;
+
+      s.fetchAlerts();
+      s.startPolling();
+    });
+
+    return () => s.reset();
+  });
 
   // Refetch alerts + count when cluster filter changes (initial fetch is
   // handled above; this branch reacts only to subsequent selectedCluster
@@ -599,293 +656,302 @@
   <!-- Tab content -->
   {#if activeTab === 'overview'}
     <div role="tabpanel" id="panel-overview" aria-labelledby="tab-overview" class="space-y-6">
-    <!-- Stats HUD -->
+      <!-- Stats HUD -->
     <div class="corner-brackets relative border border-border/30 rounded-sm p-5 w-fit max-w-full">
       <div class="tech-grid absolute inset-0 pointer-events-none"></div>
       <div class="relative flex flex-wrap items-end gap-x-6 gap-y-3">
-        <div class="flex items-baseline gap-6">
-          <div class="flex items-baseline gap-1.5">
+          <div class="flex items-baseline gap-6">
+            <div class="flex items-baseline gap-1.5">
             <span class="text-2xl font-bold tabular-nums leading-none tracking-tight">{topoStats.total}</span>
             <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">nodes</span>
-          </div>
-          <div class="h-7 w-px bg-border/40"></div>
-          <div class="flex items-baseline gap-1.5">
+            </div>
+            <div class="h-7 w-px bg-border/40"></div>
+            <div class="flex items-baseline gap-1.5">
             <span class="text-2xl font-bold tabular-nums leading-none tracking-tight" style="color: {STATUS_COLORS.healthy};">{topoStats.healthy}</span>
             <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">healthy</span>
-          </div>
-          <div class="h-7 w-px bg-border/40"></div>
-          <div class="flex items-baseline gap-1.5">
+            </div>
+            <div class="h-7 w-px bg-border/40"></div>
+            <div class="flex items-baseline gap-1.5">
             <span class="text-2xl font-bold tabular-nums leading-none tracking-tight">{topoStats.types}</span>
             <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">types</span>
+            </div>
           </div>
-        </div>
-        {#if !nodeStore.loading && nodeStore.nodes.length > 0}
-          <div class="hud-divider"></div>
-          <div class="flex flex-wrap items-center gap-1.5">
-            {#each legendEntries as entry (entry.type)}
-              {#if entry.hasNodes}
-                <button
-                  class="legend-chip"
-                  class:legend-dimmed={isDimmed(entry.type)}
-                  style="--chip-accent: {entry.accent};"
-                  onclick={() => toggleDim(entry.type)}
-                  aria-pressed={!isDimmed(entry.type)}
-                  title="{entry.label} ({entry.count})"
-                >
+          {#if !nodeStore.loading && nodeStore.nodes.length > 0}
+            <div class="hud-divider"></div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              {#each legendEntries as entry (entry.type)}
+                {#if entry.hasNodes}
+                  <button
+                    class="legend-chip"
+                    class:legend-dimmed={isDimmed(entry.type)}
+                    style="--chip-accent: {entry.accent};"
+                    onclick={() => toggleDim(entry.type)}
+                    aria-pressed={!isDimmed(entry.type)}
+                    title="{entry.label} ({entry.count})"
+                  >
                   <span class="legend-dot" style="background: {entry.accent};"></span>
-                  <span class="legend-label">{entry.label}</span>
-                  <span class="legend-count">{entry.count}</span>
-                </button>
-              {:else}
+                    <span class="legend-label">{entry.label}</span>
+                    <span class="legend-count">{entry.count}</span>
+                  </button>
+                {:else}
                 <span class="legend-chip legend-inert" title="{entry.label}; no nodes">
                   <span class="legend-dot" style="background: color-mix(in oklch, var(--muted-foreground) 30%, transparent);"></span>
-                  <span class="legend-label">{entry.label}</span>
-                </span>
-              {/if}
-            {/each}
-          </div>
-        {/if}
+                    <span class="legend-label">{entry.label}</span>
+                  </span>
+                {/if}
+              {/each}
+            </div>
+          {/if}
+        </div>
       </div>
-    </div>
 
-    {#snippet viewToggle()}
+      {#snippet viewToggle()}
       <div class="flex items-center rounded-md border border-border/50 p-0.5" role="tablist" aria-label="Topology view">
-        <button
-          role="tab"
-          aria-selected={topoView === 'list'}
-          tabindex={topoView === 'list' ? 0 : -1}
+          <button
+            role="tab"
+            aria-selected={topoView === 'list'}
+            tabindex={topoView === 'list' ? 0 : -1}
           class="min-h-[44px] px-3 py-1 text-sm font-medium rounded transition-colors {topoView === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
-          onclick={() => topoView = 'list'}
-          onkeydown={handleTabKeydown}
-        >List</button>
-        <button
-          role="tab"
-          aria-selected={topoView === 'graphical'}
-          tabindex={topoView === 'graphical' ? 0 : -1}
+            onclick={() => topoView = 'list'}
+            onkeydown={handleTabKeydown}
+          >List</button>
+          <button
+            role="tab"
+            aria-selected={topoView === 'graphical'}
+            tabindex={topoView === 'graphical' ? 0 : -1}
           class="min-h-[44px] px-3 py-1 text-sm font-medium rounded transition-colors {topoView === 'graphical' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
-          onclick={() => topoView = 'graphical'}
-          onkeydown={handleTabKeydown}
-        >Graphical</button>
-      </div>
-    {/snippet}
+            onclick={() => topoView = 'graphical'}
+            onkeydown={handleTabKeydown}
+          >Graphical</button>
+        </div>
+      {/snippet}
 
-    <!-- View toggle (master-detail moves it into the detail panel header) -->
-    {#if !nodeStore.loading && nodeStore.nodes.length > 0 && !showPerClusterGrouping}
+      <!-- View toggle (master-detail moves it into the detail panel header) -->
+      {#if !nodeStore.loading && nodeStore.nodes.length > 0 && !showPerClusterGrouping}
       <div class="flex justify-end">
         {@render viewToggle()}
       </div>
-    {/if}
+      {/if}
 
-    <!-- Topology -->
-    {#if nodeStore.loading}
+      <!-- Topology -->
+      {#if nodeStore.loading}
       <div class="flex flex-wrap gap-5" role="status" aria-busy="true" aria-label="Loading topology">
-        {#each { length: 3 } as _, i (i)}
+          {#each { length: 3 } as _, i (i)}
           <div class="flex flex-col gap-3 w-full md:w-72 border border-border/50 rounded-sm p-3">
-            <Skeleton class="h-4 w-24" />
-            {#each { length: 3 } as _, j (j)}
-              <Skeleton class="h-12 w-full" />
-            {/each}
-          </div>
-        {/each}
-      </div>
-    {:else if nodeStore.nodes.length === 0}
-      <EmptyState title="No nodes" description="No nodes registered in this region." />
-    {:else if showPerClusterGrouping}
-      <div class="corner-brackets relative flex flex-col md:flex-row border border-border/60 rounded-sm overflow-hidden md:h-[56vh] md:min-h-[420px] md:max-h-[680px]">
-        <!-- Master rail: pick a cluster or storage -->
-        <aside class="md:w-60 shrink-0 md:border-r border-b md:border-b-0 border-border/60 bg-foreground/[0.02] flex flex-col min-h-0" aria-label="Clusters and storages">
-          {#if hasStorages}
-            <div class="p-2 border-b border-border/40">
-              <div class="flex items-center rounded-md border border-border/50 p-0.5" role="tablist" aria-label="Group rail by">
-                {#each [['clusters', 'Clusters'], ['storages', 'Storages']] as [mode, label]}
-                  <button
-                    role="tab"
-                    aria-selected={railMode === mode}
-                    aria-controls="topo-rail-list"
-                    tabindex={railMode === mode ? 0 : -1}
-                    class="flex-1 min-h-[36px] px-2 py-1 text-xs font-medium rounded transition-colors {railMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
-                    onclick={() => railMode = mode as 'clusters' | 'storages'}
-                    onkeydown={handleTabKeydown}
-                  >{label}</button>
-                {/each}
-              </div>
+              <Skeleton class="h-4 w-24" />
+              {#each { length: 3 } as _, j (j)}
+                <Skeleton class="h-12 w-full" />
+              {/each}
             </div>
-          {:else}
+          {/each}
+        </div>
+      {:else if nodeStore.nodes.length === 0}
+      <EmptyState title="No nodes" description="No nodes registered in this region." />
+      {:else if showPerClusterGrouping}
+      <div class="corner-brackets relative flex flex-col md:flex-row border border-border/60 rounded-sm overflow-hidden md:h-[56vh] md:min-h-[420px] md:max-h-[680px]">
+          <!-- Master rail: pick a cluster or storage -->
+        <aside class="md:w-60 shrink-0 md:border-r border-b md:border-b-0 border-border/60 bg-foreground/[0.02] flex flex-col min-h-0" aria-label="Clusters and storages">
+            {#if hasStorages}
+              <div class="p-2 border-b border-border/40">
+              <div class="flex items-center rounded-md border border-border/50 p-0.5" role="tablist" aria-label="Group rail by">
+                  {#each [['clusters', 'Clusters'], ['storages', 'Storages']] as [mode, label]}
+                    <button
+                      role="tab"
+                      aria-selected={railMode === mode}
+                      aria-controls="topo-rail-list"
+                      tabindex={railMode === mode ? 0 : -1}
+                    class="flex-1 min-h-[36px] px-2 py-1 text-xs font-medium rounded transition-colors {railMode === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+                      onclick={() => railMode = mode as 'clusters' | 'storages'}
+                      onkeydown={handleTabKeydown}
+                    >{label}</button>
+                  {/each}
+                </div>
+              </div>
+            {:else}
             <div class="px-3 py-2 border-b border-border/40 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Clusters</div>
-          {/if}
-          {#if showStorages}
+            {/if}
+            {#if showStorages}
             <div id="topo-rail-list" class="flex flex-col gap-1 p-2 flex-1 overflow-y-auto" role="group" aria-label="Select storage to inspect">
-              {#each storageRail as s (s.storageId)}
-                {@const active = s.storageId === detailStorageId}
-                {@const dotColor = statusColor(s.healthyCount === s.nodeCount ? 'healthy' : 'draining')}
-                <button
-                  type="button"
-                  aria-pressed={active}
-                  title={s.storageId}
+                {#each storageRail as s (s.storageId)}
+                  {@const active = s.storageId === detailStorageId}
+                  {@const dotColor = statusColor(s.healthyCount === s.nodeCount ? 'healthy' : 'draining')}
+                  <button
+                    type="button"
+                    aria-pressed={active}
+                    title={s.storageId}
                   class="flex items-center gap-2 rounded-sm border px-2.5 py-2 text-left transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring {active ? 'border-primary bg-primary/10' : 'border-transparent hover:border-border/60 hover:bg-foreground/[0.03]'}"
-                  onclick={() => detailStorage = s.storageId}
-                >
-                  <span
-                    class="led-dot block h-2 w-2 shrink-0 rounded-full"
-                    class:led-ping={s.healthyCount === s.nodeCount}
-                    style="background: {dotColor}; --led: {dotColor};"
-                    aria-hidden="true"
-                  ></span>
+                    onclick={() => detailStorage = s.storageId}
+                  >
+                    <span
+                      class="led-dot block h-2 w-2 shrink-0 rounded-full"
+                      class:led-ping={s.healthyCount === s.nodeCount}
+                      style="background: {dotColor}; --led: {dotColor};"
+                      aria-hidden="true"
+                    ></span>
                   <span class="min-w-0 flex-1 truncate font-mono text-xs font-medium">{s.label}</span>
                   <span class="shrink-0 text-xs uppercase tracking-wider text-muted-foreground" aria-label="{s.clusterCount} clusters">{s.clusterCount}c</span>
                   <span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground" aria-label="{s.healthyCount} healthy of {s.nodeCount} nodes">{s.healthyCount}/{s.nodeCount}</span>
-                </button>
-              {/each}
-            </div>
-          {:else}
+                  </button>
+                {/each}
+              </div>
+            {:else}
             <div id="topo-rail-list" class="flex flex-col gap-1 p-2 flex-1 overflow-y-auto" role="group" aria-label="Select cluster to inspect">
-              {#each clusterRail as r (r.cluster.id)}
-                {@const active = r.cluster.id === detailClusterId}
+                {#each clusterRail as r (r.cluster.id)}
+                  {@const active = r.cluster.id === detailClusterId}
                 {@const dotColor = r.empty ? 'var(--muted-foreground)' : statusColor(r.healthyCount === r.nodeCount ? 'healthy' : 'draining')}
-                <button
-                  type="button"
-                  aria-pressed={active}
-                  disabled={r.empty}
-                  title={r.empty ? 'No nodes' : undefined}
+                  <button
+                    type="button"
+                    aria-pressed={active}
+                    disabled={r.empty}
+                    title={r.empty ? 'No nodes' : undefined}
                   class="flex items-center gap-2 rounded-sm border px-2.5 py-2 text-left transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 {active ? 'border-primary bg-primary/10' : 'border-transparent hover:border-border/60 hover:bg-foreground/[0.03]'}"
-                  onclick={() => detailCluster = r.cluster.id}
-                >
-                  <span
-                    class="led-dot block h-2 w-2 shrink-0 rounded-full"
-                    class:led-ping={!r.empty && r.healthyCount === r.nodeCount}
-                    style="background: {dotColor}; --led: {dotColor};"
-                    aria-hidden="true"
-                  ></span>
+                    onclick={() => detailCluster = r.cluster.id}
+                  >
+                    <span
+                      class="led-dot block h-2 w-2 shrink-0 rounded-full"
+                      class:led-ping={!r.empty && r.healthyCount === r.nodeCount}
+                      style="background: {dotColor}; --led: {dotColor};"
+                      aria-hidden="true"
+                    ></span>
                   <span class="min-w-0 flex-1 truncate text-sm font-medium">{r.cluster.name}</span>
                   {#if r.cluster.defaultCluster}<span aria-hidden="true" class="rounded-sm bg-muted px-1 text-xs uppercase tracking-wider opacity-80">def</span>{/if}
                   {#if !r.cluster.isReady}<span aria-hidden="true" class="rounded-sm bg-warning/15 px-1 text-xs uppercase tracking-wider text-warning">prep</span>{/if}
                   <span class="shrink-0 font-mono text-xs tabular-nums text-muted-foreground" aria-label="{r.healthyCount} healthy of {r.nodeCount} nodes">{r.healthyCount}/{r.nodeCount}</span>
-                </button>
-              {/each}
-            </div>
-          {/if}
-        </aside>
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </aside>
 
-        <!-- Detail panel -->
-        <div class="flex-1 min-w-0 flex flex-col min-h-0">
-          {#if showStorages}
-            {#if storageDetail}
+          <!-- Detail panel -->
+          <div class="flex-1 min-w-0 flex flex-col min-h-0">
+            {#if showStorages}
+              {#if storageDetail}
               <div class="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b border-border/40 shrink-0">
                 <Box class="size-4 shrink-0" style="color: var(--pastel-storage);" aria-hidden="true" />
                 <span class="font-semibold font-mono text-sm" title={storageDetail.storageId}>{storageDetail.label}</span>
                 <span class="font-mono text-xs text-muted-foreground tabular-nums">{storageDetail.nodeCount} {storageDetail.nodeCount === 1 ? 'node' : 'nodes'}</span>
-                {#if storageDetail.clustersCovered < storageDetail.clustersTotal}
+                  {#if storageDetail.clustersCovered < storageDetail.clustersTotal}
                   <Badge variant="warning" class="h-4 text-xs uppercase tracking-wider">{storageDetail.clustersCovered}/{storageDetail.clustersTotal} clusters</Badge>
-                {:else}
+                  {:else}
                   <span class="font-mono text-xs text-muted-foreground tabular-nums">{storageDetail.clustersCovered}/{storageDetail.clustersTotal} clusters</span>
-                {/if}
-              </div>
-              <div class="flex-1 overflow-auto p-3 space-y-2.5">
-                {#each storageDetail.perCluster as pc (pc.cluster.id)}
+                  {/if}
+                </div>
+                <div class="flex-1 overflow-auto p-3 space-y-2.5">
+                  {#each storageDetail.perCluster as pc (pc.cluster.id)}
                   <div class="rounded-sm border border-border/50 overflow-hidden">
                     <div class="flex items-center gap-2 px-3 py-1.5 border-b border-border/30 bg-foreground/[0.02]">
-                      <span class="text-sm font-medium">{pc.cluster.name}</span>
+                        <span class="text-sm font-medium">{pc.cluster.name}</span>
                       {#if pc.cluster.defaultCluster}<Badge variant="outline" class="h-4 text-xs uppercase tracking-wider">default</Badge>{/if}
                       <span class="ml-auto font-mono text-xs tabular-nums text-muted-foreground">{pc.nodes.length} {pc.nodes.length === 1 ? 'node' : 'nodes'}</span>
-                    </div>
-                    {#if pc.nodes.length === 0}
+                      </div>
+                      {#if pc.nodes.length === 0}
                       <div class="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground/70">
-                        <ServerOff class="size-3.5 shrink-0" aria-hidden="true" />
-                        <span>not served in this cluster</span>
-                      </div>
-                    {:else}
-                      <div role="list" class="divide-y divide-border/20">
-                        {#each pc.nodes as node (node.id)}
-                          <button
-                            class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
-                            aria-label="View node {node.nodeId}, status {node.status}"
-                            onclick={() => goto(`${basePath}/${regionId}/${node.nodeId}`)}
-                            onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
+                          <ServerOff class="size-3.5 shrink-0" aria-hidden="true" />
+                          <span>not served in this cluster</span>
+                        </div>
+                      {:else}
+                        <div role="list" class="divide-y divide-border/20">
+                          {#each pc.nodes as node (node.id)}
+                            <button
+                              class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
+                              aria-label="View node {node.nodeId}, status {node.status}"
+                              onclick={() => goto(`${basePath}/${regionId}/${node.nodeId}`)}
+                              onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
                             onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
-                            onpointerleave={() => hoveredNode = null}
+                              onpointerleave={() => hoveredNode = null}
                             onfocus={(e: FocusEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); hoveredNode = { node, x: r.right, y: r.top } }}
-                            onblur={() => hoveredNode = null}
-                          >
-                            <span
-                              class="led-dot block h-2 w-2 shrink-0 rounded-full"
-                              class:led-ping={node.status === 'healthy'}
-                              style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
-                              aria-hidden="true"
-                            ></span>
-                            <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
-                            {#if node.binaryVersion != null}
+                              onblur={() => hoveredNode = null}
+                            >
+                              <span
+                                class="led-dot block h-2 w-2 shrink-0 rounded-full"
+                                class:led-ping={node.status === 'healthy'}
+                                style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
+                                aria-hidden="true"
+                              ></span>
+                              <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
+                              {#if node.binaryVersion != null}
                               <Badge variant="outline" class="shrink-0 font-mono text-xs">{formatBinaryVersion(node.binaryVersion)}</Badge>
-                            {/if}
+                              {/if}
                             <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
-                          </button>
-                        {/each}
-                      </div>
-                    {/if}
-                  </div>
-                {/each}
+                            </button>
+                          {/each}
+                        </div>
+                      {/if}
+                    </div>
+                  {/each}
+                </div>
+              {:else}
+              <EmptyState title="No storages" description="No block storage nodes registered in this region." />
+              {/if}
+            {:else if detailGroup}
+            <div class="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b border-border/40 shrink-0">
+                <span class="font-semibold text-sm">{detailGroup.cluster.name}</span>
+                {#if detailGroup.cluster.defaultCluster}
+                <Badge variant="outline" class="h-4 text-xs uppercase tracking-wider">default</Badge>
+                {/if}
+                {#if !detailGroup.cluster.isReady}
+                <Badge variant="warning" class="h-4 text-xs uppercase tracking-wider">not ready</Badge>
+                {/if}
+              <span class="font-mono text-xs text-muted-foreground tabular-nums">{detailGroup.nodeCount} nodes</span>
+                <div class="ml-auto">{@render viewToggle()}</div>
+              </div>
+              <div class="flex-1 overflow-auto p-3">
+                {#if topoView === 'list'}
+                  <RegionNodeList
+                    tierData={detailGroup.tierData}
+                    basePath={basePath}
+                    regionId={regionId}
+                    embedded
+                  />
+                {:else}
+                  {@render graphicalGrid(detailGroup.tierData)}
+                {/if}
               </div>
             {:else}
-              <EmptyState title="No storages" description="No block storage nodes registered in this region." />
-            {/if}
-          {:else if detailGroup}
-            <div class="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b border-border/40 shrink-0">
-              <span class="font-semibold text-sm">{detailGroup.cluster.name}</span>
-              {#if detailGroup.cluster.defaultCluster}
-                <Badge variant="outline" class="h-4 text-xs uppercase tracking-wider">default</Badge>
-              {/if}
-              {#if !detailGroup.cluster.isReady}
-                <Badge variant="warning" class="h-4 text-xs uppercase tracking-wider">not ready</Badge>
-              {/if}
-              <span class="font-mono text-xs text-muted-foreground tabular-nums">{detailGroup.nodeCount} nodes</span>
-              <div class="ml-auto">{@render viewToggle()}</div>
-            </div>
-            <div class="flex-1 overflow-auto p-3">
-              {#if topoView === 'list'}
-                <RegionNodeList tierData={detailGroup.tierData} {basePath} {regionId} embedded />
-              {:else}
-                {@render graphicalGrid(detailGroup.tierData)}
-              {/if}
-            </div>
-          {:else}
             <EmptyState title="No nodes" description="No cluster in this region has registered nodes yet." />
-          {/if}
-        </div>
-      </div>
-    {:else if topoView === 'list'}
-      <RegionNodeList {tierData} {basePath} {regionId} />
-    {:else}
-      {@render graphicalGrid(tierData)}
-    {/if}
-
-    {#snippet graphicalGrid(td: ReturnType<typeof buildTierData>)}
-      <div class="topo-grid scanlines relative flex flex-wrap gap-5" style="contain: layout;">
-        {#snippet nodeRow(node: ServiceNode, isDataserv: boolean)}
-          <button
-            class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
-            aria-label="View node {node.nodeId}, status {node.status}"
-            onclick={() => goto(`${basePath}/${regionId}/${node.nodeId}`)}
-            onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
-            onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
-            onpointerleave={() => hoveredNode = null}
-            onfocus={(e: FocusEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); hoveredNode = { node, x: r.right, y: r.top } }}
-            onblur={() => hoveredNode = null}
-          >
-            <span
-              class="led-dot block h-2 w-2 shrink-0 rounded-full"
-              class:led-ping={node.status === 'healthy'}
-              class:led-raft={isDataserv}
-              style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
-              aria-hidden="true"
-            ></span>
-            <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
-            {#if node.binaryVersion != null}
-              <Badge variant="outline" class="shrink-0 font-mono text-xs">{formatBinaryVersion(node.binaryVersion)}</Badge>
             {/if}
+          </div>
+        </div>
+      {:else if topoView === 'list'}
+        <RegionNodeList
+          tierData={tierData}
+          basePath={basePath}
+          regionId={regionId}
+        />
+      {:else}
+        {@render graphicalGrid(tierData)}
+      {/if}
+
+      {#snippet graphicalGrid(td: ReturnType<typeof buildTierData>)}
+      <div class="topo-grid scanlines relative flex flex-wrap gap-5" style="contain: layout;">
+          {#snippet nodeRow(node: ServiceNode, isDataserv: boolean)}
+            <button
+              class="node-row flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer hover:bg-foreground/[0.04]"
+              aria-label="View node {node.nodeId}, status {node.status}"
+              onclick={() => goto(`${basePath}/${regionId}/${node.nodeId}`)}
+              onpointerenter={(e: PointerEvent) => hoveredNode = { node, x: e.clientX, y: e.clientY }}
+            onpointermove={(e: PointerEvent) => { if (hoveredNode) hoveredNode = { node, x: e.clientX, y: e.clientY } }}
+              onpointerleave={() => hoveredNode = null}
+            onfocus={(e: FocusEvent) => { const r = (e.target as HTMLElement).getBoundingClientRect(); hoveredNode = { node, x: r.right, y: r.top } }}
+              onblur={() => hoveredNode = null}
+            >
+              <span
+                class="led-dot block h-2 w-2 shrink-0 rounded-full"
+                class:led-ping={node.status === 'healthy'}
+                class:led-raft={isDataserv}
+                style="background: {statusColor(node.status)}; --led: {statusColor(node.status)};"
+                aria-hidden="true"
+              ></span>
+              <span class="min-w-0 flex-1 truncate font-mono text-sm">{node.nodeId}</span>
+              {#if node.binaryVersion != null}
+              <Badge variant="outline" class="shrink-0 font-mono text-xs">{formatBinaryVersion(node.binaryVersion)}</Badge>
+              {/if}
             <span class="shrink-0 font-mono text-xs text-muted-foreground">{node.advertiseAddr}</span>
-          </button>
-        {/snippet}
-        {#each td as tier (tier.id)}
-          {@const tierColor = TIER_COLORS[tier.id]}
+            </button>
+          {/snippet}
+          {#each td as tier (tier.id)}
+            {@const tierColor = TIER_COLORS[tier.id]}
           <section class="tier-column corner-brackets flex flex-col gap-3 w-full md:w-auto border border-border/80 rounded-sm p-3" aria-label="{tier.label} tier">
               <div class="flex items-center gap-2">
                 <span
@@ -901,10 +967,22 @@
                       <Database class="h-3.5 w-3.5" />
                     </span>
                   {/if}
-                  <span class="tier-infra-icon" style="color: var(--pastel-volume-key);" title="Regional Vault Access">
-                    <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-                      <polygon points="12,2 22,8 22,16 12,22 2,16 2,8" />
-                      <circle cx="12" cy="12" r="3" />
+
+                  <span
+                    class="tier-infra-icon"
+                    style="color: var(--pastel-volume-key);"
+                    title="Regional Vault Access"
+                  >
+                    <svg
+                      class="h-3.5 w-3.5"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <polygon points="12,2 22,8 22,16 12,22 2,16 2,8"></polygon>
+                      <circle cx="12" cy="12" r="3"></circle>
                     </svg>
                   </span>
                 </div>
@@ -997,277 +1075,277 @@
       </div>
     {/snippet}
 
-    <!-- Audit log card -->
-    {#if canReadAudit}
-      {#if !nodeStore.loading}
-        {#if hasRegionalDB}
-          <Card cornerPlus>
-            <CardHeader>
+      <!-- Audit log card -->
+      {#if canReadAudit}
+        {#if !nodeStore.loading}
+          {#if hasRegionalDB}
+            <Card cornerPlus>
+              <CardHeader>
               <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <CardTitle>Region Audit Log</CardTitle>
+                  <CardTitle>Region Audit Log</CardTitle>
                 <div class="relative border border-border/30 rounded-sm px-3 py-2 w-full sm:w-fit">
                   <div class="tech-grid absolute inset-0 pointer-events-none"></div>
                   <div class="relative flex flex-wrap items-center gap-1.5">
-                    <div class="flex items-center gap-1.5">
+                      <div class="flex items-center gap-1.5">
                       <Button variant={activityDays === 'auto' ? 'primary' : 'ghost'} size="sm"
-                        class="h-7 w-12 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                          class="h-7 w-12 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                         onclick={() => activityDays = 'auto'}>Auto</Button>
-                      {#each [7, 15, 30] as const as d}
+                        {#each [7, 15, 30] as const as d}
                         <Button variant={activityDays === d ? 'primary' : 'ghost'} size="sm"
-                          class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                            class="h-7 w-10 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
                           onclick={() => activityDays = d}>{d}d</Button>
-                      {/each}
-                    </div>
-                    <span class="filter-divider hidden sm:block"></span>
-                    <div class="flex items-center gap-1.5">
-                      {#each ['feed', 'chart'] as v}
+                        {/each}
+                      </div>
+                      <span class="filter-divider hidden sm:block"></span>
+                      <div class="flex items-center gap-1.5">
+                        {#each ['feed', 'chart'] as v}
                         <Button variant={auditView === v ? 'primary' : 'ghost'} size="sm"
-                          class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono capitalize justify-center"
+                            class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono capitalize justify-center"
                           onclick={() => auditView = v as 'chart' | 'feed'}>{v}</Button>
-                      {/each}
+                        {/each}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent aria-live="polite">
-              <div class="audit-content-scroll">
-                {#if regionAudit.loading && regionAudit.logs.length === 0}
-                  <ListSkeleton rows={5} class="py-2" />
-                {:else if regionAudit.error}
+              </CardHeader>
+              <CardContent aria-live="polite">
+                <div class="audit-content-scroll">
+                  {#if regionAudit.loading && regionAudit.logs.length === 0}
+                    <ListSkeleton rows={5} class="py-2" />
+                  {:else if regionAudit.error}
                   <div class="flex items-center justify-center gap-2 py-16 text-sm text-destructive">
-                    <span>Failed to load audit logs</span>
+                      <span>Failed to load audit logs</span>
                     <Button variant="ghost" size="sm" class="h-7 px-2 min-h-[44px] sm:min-h-0 text-xs"
                       onclick={() => regionAudit.fetchLogs(regionId, { limit: 200, reset: true, metadataClusterId: selectedCluster ?? undefined })}>Retry</Button>
-                  </div>
-                {:else if regionAudit.logs.length === 0}
+                    </div>
+                  {:else if regionAudit.logs.length === 0}
                   <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No regional audit activity</div>
-                {:else if auditView === 'chart'}
-                  {@const days = activityDays}
-                  {@const filtered = days === 'auto'
-                    ? regionAudit.logs
-                    : regionAudit.logs.filter(l => new Date(l.createdAt ?? '').getTime() >= Date.now() - days * 86400000)}
-                  {#if filtered.length === 0}
+                  {:else if auditView === 'chart'}
+                    {@const days = activityDays}
+                    {@const filtered = days === 'auto'
+                      ? regionAudit.logs
+                      : regionAudit.logs.filter((l) => new Date(l.createdAt ?? '').getTime() >= Date.now() - days * 86400000)}
+                    {#if filtered.length === 0}
                     <div class="flex items-center justify-center py-16 text-sm text-muted-foreground">No activity in last {activityDays} days</div>
-                  {:else}
+                    {:else}
                     <ActivityChart logs={filtered} rangeMs={days === 'auto' ? undefined : days * 86400000} />
+                    {/if}
+                  {:else}
+                    <ActivityFeed
+                      logs={regionAudit.logs}
+                      loading={regionAudit.loading}
+                      hasMore={regionAudit.hasMore}
+                      clusterNameById={clusterNameById}
+                      onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200, metadataClusterId: selectedCluster ?? undefined })}
+                    />
                   {/if}
-                {:else}
-                  <ActivityFeed
-                    logs={regionAudit.logs}
-                    loading={regionAudit.loading}
-                    hasMore={regionAudit.hasMore}
-                    {clusterNameById}
-                    onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200, metadataClusterId: selectedCluster ?? undefined })}
-                  />
-                {/if}
-              </div>
-            </CardContent>
-          </Card>
-        {:else}
+                </div>
+              </CardContent>
+            </Card>
+          {:else}
           <div class="flex items-center gap-2 rounded-sm border border-dashed border-border/50 px-4 py-6 text-sm text-muted-foreground">
-            <ServerOff class="h-4 w-4 shrink-0" />
-            <span>No dataserv or gcserv nodes in this region to fetch audit logs</span>
-          </div>
+              <ServerOff class="h-4 w-4 shrink-0" />
+              <span>No dataserv or gcserv nodes in this region to fetch audit logs</span>
+            </div>
+          {/if}
         {/if}
       {/if}
-    {/if}
     </div>
 
   {:else if activeTab === 'activity'}
     <div role="tabpanel" id="panel-activity" aria-labelledby="tab-activity">
-    <!-- Activity Logs tab -->
+      <!-- Activity Logs tab -->
     <div class="activity-tab-scroll" style="overflow-y: auto; max-height: calc(100vh - 180px);">
-      {#if !canReadAudit}
+        {#if !canReadAudit}
         <EmptyState title="Access denied" description="You do not have permission to view audit logs." />
-      {:else if !hasRegionalDB && !nodeStore.loading}
+        {:else if !hasRegionalDB && !nodeStore.loading}
         <div class="flex items-center gap-2 rounded-sm border border-dashed border-border/50 px-4 py-6 text-sm text-muted-foreground">
-          <ServerOff class="h-4 w-4 shrink-0" />
-          <span>No dataserv or gcserv nodes in this region to fetch audit logs</span>
-        </div>
-      {:else}
-        <ActivityFeed
-          logs={regionAudit.logs}
-          loading={regionAudit.loading}
-          hasMore={regionAudit.hasMore}
-          {clusterNameById}
-          onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200, metadataClusterId: selectedCluster ?? undefined })}
-        />
-      {/if}
-    </div>
+            <ServerOff class="h-4 w-4 shrink-0" />
+            <span>No dataserv or gcserv nodes in this region to fetch audit logs</span>
+          </div>
+        {:else}
+          <ActivityFeed
+            logs={regionAudit.logs}
+            loading={regionAudit.loading}
+            hasMore={regionAudit.hasMore}
+            clusterNameById={clusterNameById}
+            onLoadMore={() => regionAudit.fetchLogs(regionId, { limit: 200, metadataClusterId: selectedCluster ?? undefined })}
+          />
+        {/if}
+      </div>
     </div>
 
   {:else if activeTab === 'alerts'}
     <div role="tabpanel" id="panel-alerts" aria-labelledby="tab-alerts">
-    <!-- Alerts tab -->
-    <div class="space-y-4">
-      {#if alertStore.activeCount > 0}
-        <Badge variant="destructive" aria-live="polite">{alertStore.activeCount} active</Badge>
-      {/if}
-
-      <FilterPanel>
-        <FilterSelect
-          options={severityOptions}
-          value={sevFilterStr}
-          placeholder="Severity"
-          label="Filter by severity"
-          onchange={onSevChange}
-        />
-        <FilterSelect
-          options={categoryOptions}
-          value={alertStore.categoryFilter}
-          placeholder="Category"
-          label="Filter by category"
-          onchange={(v) => alertStore.setCategoryFilter(v)}
-        />
-        <FilterSelect
-          options={timeOptions}
-          value={alertStore.sinceFilter}
-          placeholder="Time range"
-          label="Filter by time range"
-          onchange={(v) => alertStore.setSinceFilter(v)}
-        />
-        {#if alertStore.severityFilter !== undefined || alertStore.categoryFilter || alertStore.sinceFilter !== '3d'}
-          <Button variant="ghost" size="sm" onclick={() => alertStore.clearFilters()}>Clear filters</Button>
+      <!-- Alerts tab -->
+      <div class="space-y-4">
+        {#if alertStore.activeCount > 0}
+          <Badge variant="destructive" aria-live="polite">{alertStore.activeCount} active</Badge>
         {/if}
-        <div class="ml-auto flex items-center rounded-md border border-border/50 p-0.5" role="tablist" aria-label="Alert status">
-          <button
-            role="tab"
-            aria-selected={alertStore.activeFilter}
-            tabindex={alertStore.activeFilter ? 0 : -1}
-            class="px-3 py-1 text-sm font-medium rounded transition-colors {alertStore.activeFilter ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
-            onclick={() => alertStore.setActiveFilter(true)}
-            onkeydown={handleTabKeydown}
-          >Active</button>
-          <button
-            role="tab"
-            aria-selected={!alertStore.activeFilter}
-            tabindex={!alertStore.activeFilter ? 0 : -1}
-            class="px-3 py-1 text-sm font-medium rounded transition-colors {!alertStore.activeFilter ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
-            onclick={() => alertStore.setActiveFilter(false)}
-            onkeydown={handleTabKeydown}
-          >All</button>
-        </div>
-      </FilterPanel>
 
-      {#snippet alertsHeaderRow()}
-        <TableRow>
-          <TableHead class="w-28">Severity</TableHead>
-          <TableHead class="w-24">Category</TableHead>
-          <TableHead>Title</TableHead>
-          <TableHead class="hidden lg:table-cell">Source</TableHead>
-          <TableHead class="hidden xl:table-cell">Node</TableHead>
-          <TableHead class="w-32">Time</TableHead>
-          <TableHead class="w-20">Actions</TableHead>
-        </TableRow>
-      {/snippet}
-
-      {#if alertStore.loading && alertStore.alerts.length === 0}
-        <Card cornerPlus class="px-4">
-          <TableSkeleton
-            header={alertsHeaderRow}
-            caption="Loading region alerts"
-            cells={[
-              { width: 'w-16', height: 'h-5' },
-              { width: 'w-14' },
-              { width: 'w-48' },
-              { width: 'w-20', class: 'hidden lg:table-cell' },
-              { width: 'w-24', class: 'hidden xl:table-cell' },
-              { width: 'w-20' },
-              { width: 'w-16', height: 'h-5' },
-            ]}
+        <FilterPanel>
+          <FilterSelect
+            options={severityOptions}
+            value={sevFilterStr}
+            placeholder="Severity"
+            label="Filter by severity"
+            onchange={onSevChange}
           />
-        </Card>
-      {:else if alertStore.error}
-        <Card cornerPlus>
-          <CardContent class="py-8 space-y-3">
+          <FilterSelect
+            options={categoryOptions}
+            value={alertStore.categoryFilter}
+            placeholder="Category"
+            label="Filter by category"
+            onchange={(v) => alertStore.setCategoryFilter(v)}
+          />
+          <FilterSelect
+            options={timeOptions}
+            value={alertStore.sinceFilter}
+            placeholder="Time range"
+            label="Filter by time range"
+            onchange={(v) => alertStore.setSinceFilter(v)}
+          />
+          {#if alertStore.severityFilter !== undefined || alertStore.categoryFilter || alertStore.sinceFilter !== '3d'}
+          <Button variant="ghost" size="sm" onclick={() => alertStore.clearFilters()}>Clear filters</Button>
+          {/if}
+        <div class="ml-auto flex items-center rounded-md border border-border/50 p-0.5" role="tablist" aria-label="Alert status">
+            <button
+              role="tab"
+              aria-selected={alertStore.activeFilter}
+              tabindex={alertStore.activeFilter ? 0 : -1}
+            class="px-3 py-1 text-sm font-medium rounded transition-colors {alertStore.activeFilter ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+              onclick={() => alertStore.setActiveFilter(true)}
+              onkeydown={handleTabKeydown}
+            >Active</button>
+            <button
+              role="tab"
+              aria-selected={!alertStore.activeFilter}
+              tabindex={!alertStore.activeFilter ? 0 : -1}
+            class="px-3 py-1 text-sm font-medium rounded transition-colors {!alertStore.activeFilter ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}"
+              onclick={() => alertStore.setActiveFilter(false)}
+              onkeydown={handleTabKeydown}
+            >All</button>
+          </div>
+        </FilterPanel>
+
+        {#snippet alertsHeaderRow()}
+          <TableRow>
+            <TableHead class="w-28">Severity</TableHead>
+            <TableHead class="w-24">Category</TableHead>
+            <TableHead>Title</TableHead>
+            <TableHead class="hidden lg:table-cell">Source</TableHead>
+            <TableHead class="hidden xl:table-cell">Node</TableHead>
+            <TableHead class="w-32">Time</TableHead>
+            <TableHead class="w-20">Actions</TableHead>
+          </TableRow>
+        {/snippet}
+
+        {#if alertStore.loading && alertStore.alerts.length === 0}
+          <Card cornerPlus class="px-4">
+            <TableSkeleton
+              header={alertsHeaderRow}
+              caption="Loading region alerts"
+              cells={[
+                { width: 'w-16', height: 'h-5' },
+                { width: 'w-14' },
+                { width: 'w-48' },
+                { width: 'w-20', class: 'hidden lg:table-cell' },
+                { width: 'w-24', class: 'hidden xl:table-cell' },
+                { width: 'w-20' },
+              { width: 'w-16', height: 'h-5' },
+              ]}
+            />
+          </Card>
+        {:else if alertStore.error}
+          <Card cornerPlus>
+            <CardContent class="py-8 space-y-3">
             <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
-              <TriangleAlert class="mt-0.5 size-4 shrink-0" />
-              <span>{alertStore.error}</span>
-            </div>
-            <div class="flex justify-center">
+                <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+                <span>{alertStore.error}</span>
+              </div>
+              <div class="flex justify-center">
               <Button variant="outline" size="sm" onclick={() => alertStore.fetchAlerts()}>Retry</Button>
-            </div>
-          </CardContent>
-        </Card>
-      {:else if alertStore.alerts.length === 0}
+              </div>
+            </CardContent>
+          </Card>
+        {:else if alertStore.alerts.length === 0}
         <EmptyState title="No alerts" description="No alerts match your current filters" />
-      {:else}
-        <Card cornerPlus class="px-4">
-          <Table>
-            <caption class="sr-only">Region alerts</caption>
+        {:else}
+          <Card cornerPlus class="px-4">
+            <Table>
+              <caption class="sr-only">Region alerts</caption>
             <TableHeader>
               {@render alertsHeaderRow()}
             </TableHeader>
-            <TableBody>
-              {#each alertStore.alerts as alert (alert.alertId)}
-                {@const SevIcon = severityIcon(alert.severity)}
-                <TableRow>
-                  <TableCell>
+              <TableBody>
+                {#each alertStore.alerts as alert (alert.alertId)}
+                  {@const SevIcon = severityIcon(alert.severity)}
+                  <TableRow>
+                    <TableCell>
                     <Badge variant={severityBadgeVariant(alert.severity)} class="gap-1">
-                      <SevIcon class="h-3 w-3" />
-                      {SEVERITY_LABELS[alert.severity] ?? 'Unknown'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <span class="capitalize">{alert.category}</span>
-                  </TableCell>
-                  <TableCell>
-                    <div class="min-w-0">
-                      <p class="font-medium truncate" title={alert.title}>{alert.title}</p>
-                      {#if alert.description}
-                        <p class="text-muted-foreground truncate mt-0.5" title={alert.description}>{alert.description}</p>
-                      {/if}
-                    </div>
-                  </TableCell>
-                  <TableCell class="hidden lg:table-cell">
-                    <div class="flex flex-wrap items-center gap-1">
-                      <Badge variant="outline" class="font-mono">{alert.source}</Badge>
-                      {#if selectedCluster === null && alert.metadataClusterId != null && clusterNameById[alert.metadataClusterId]}
-                        <Badge variant="outline" class="font-mono text-xs uppercase tracking-wider">{clusterNameById[alert.metadataClusterId]}</Badge>
-                      {/if}
-                    </div>
-                  </TableCell>
-                  <TableCell class="hidden xl:table-cell">
-                    {#if alert.nodeId}
-                      <a href="{basePath}/{regionId}/{alert.nodeId}" class="font-mono text-primary hover:underline">{alert.nodeId}</a>
-                    {:else}
-                      <span class="text-muted-foreground">(not set)</span>
-                    {/if}
-                  </TableCell>
-                  <TableCell>
-                    <span class="text-muted-foreground whitespace-nowrap">{formatRelative(alert.eventTime)}</span>
-                  </TableCell>
-                  <TableCell>
-                    {#if !alert.resolvedAt}
-                      {@const isResolving = resolvingId === alert.alertId}
-                      <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 min-h-[44px] gap-1">
-                        {#if isResolving}
-                          <Loader2 class="h-3.5 w-3.5 animate-spin" />
-                        {:else}
-                          <CheckCircle class="h-3.5 w-3.5" />
-                        {/if}
-                        Resolve
-                      </Button>
-                    {:else}
-                      <Badge variant="outline">Resolved</Badge>
-                    {/if}
-                  </TableCell>
-                </TableRow>
-              {/each}
-            </TableBody>
-          </Table>
-        </Card>
+                        <SevIcon class="h-3 w-3" />
+                        {SEVERITY_LABELS[alert.severity] ?? 'Unknown'}
+                      </Badge>
+                    </TableCell>
 
-        {#if alertStore.totalPages > 1}
-          <Pagination
-            currentPage={alertStore.page}
-            totalPages={alertStore.totalPages}
-            onPageChange={(p) => alertStore.setPage(p)}
-          />
+                    <TableCell><span class="capitalize">{alert.category}</span></TableCell>
+
+                    <TableCell>
+                      <div class="min-w-0">
+                        <p class="font-medium truncate" title={alert.title}>{alert.title}</p>
+                        {#if alert.description}
+                        <p class="text-muted-foreground truncate mt-0.5" title={alert.description}>{alert.description}</p>
+                        {/if}
+                      </div>
+                    </TableCell>
+                    <TableCell class="hidden lg:table-cell">
+                      <div class="flex flex-wrap items-center gap-1">
+                        <Badge variant="outline" class="font-mono">{alert.source}</Badge>
+                        {#if selectedCluster === null && alert.metadataClusterId != null && clusterNameById[alert.metadataClusterId]}
+                        <Badge variant="outline" class="font-mono text-xs uppercase tracking-wider">{clusterNameById[alert.metadataClusterId]}</Badge>
+                        {/if}
+                      </div>
+                    </TableCell>
+                    <TableCell class="hidden xl:table-cell">
+                      {#if alert.nodeId}
+                      <a href="{basePath}/{regionId}/{alert.nodeId}" class="font-mono text-primary hover:underline">{alert.nodeId}</a>
+                      {:else}
+                        <span class="text-muted-foreground">(not set)</span>
+                      {/if}
+                    </TableCell>
+
+                    <TableCell><span class="text-muted-foreground whitespace-nowrap">{formatRelative(alert.eventTime)}</span></TableCell>
+
+                    <TableCell>
+                      {#if !alert.resolvedAt}
+                        {@const isResolving = resolvingId === alert.alertId}
+                      <Button variant="ghost" size="sm" disabled={!!resolvingId} aria-busy={isResolving} onclick={() => handleResolve(alert.alertId)} class="h-7 min-h-[44px] gap-1">
+                          {#if isResolving}
+                            <Loader2 class="h-3.5 w-3.5 animate-spin" />
+                          {:else}
+                            <CheckCircle class="h-3.5 w-3.5" />
+                          {/if}
+                          Resolve
+                        </Button>
+                      {:else}
+                        <Badge variant="outline">Resolved</Badge>
+                      {/if}
+                    </TableCell>
+                  </TableRow>
+                {/each}
+              </TableBody>
+            </Table>
+          </Card>
+
+          {#if alertStore.totalPages > 1}
+            <Pagination
+              currentPage={alertStore.page}
+              totalPages={alertStore.totalPages}
+              onPageChange={(p) => alertStore.setPage(p)}
+            />
+          {/if}
         {/if}
-      {/if}
-    </div>
+      </div>
     </div>
   {/if}
 </div>

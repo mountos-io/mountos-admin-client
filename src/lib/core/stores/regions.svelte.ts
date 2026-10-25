@@ -1,4 +1,4 @@
-import type { Region, CreateRegionRequest, EditRegionRequest } from '$lib/core/api/types'
+import type { Region, CreateRegionRequest, EditRegionRequest } from '#lib/core/api/types.js'
 import { api } from './client.svelte'
 
 let regions = $state<Region[]>([])

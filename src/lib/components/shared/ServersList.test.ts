@@ -1,17 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/svelte'
 import ServersList from './ServersList.svelte'
-import { ApiError } from '$lib/core/api/errors'
-import type { Copyset, BlockVolume, ServiceNode } from '$lib/core/api/types'
+import { ApiError } from '#lib/core/api/errors.js'
+import type { Copyset, BlockVolume, ServiceNode } from '#lib/core/api/types.js'
 
-vi.mock('$lib/core/utils/toast', () => ({
+vi.mock('#lib/core/utils/toast.js', () => ({
   showSuccessToast: vi.fn(),
   showErrorToast: vi.fn(),
   handleApiError: vi.fn(),
 }))
-import { showSuccessToast, handleApiError } from '$lib/core/utils/toast'
+import { showSuccessToast, handleApiError } from '#lib/core/utils/toast.js'
 
-vi.mock('$lib/core/utils/clipboard', () => ({ copyText: vi.fn().mockResolvedValue(true) }))
+vi.mock('#lib/core/utils/clipboard.js', () => ({ copyText: vi.fn().mockResolvedValue(true) }))
 
 function bv(id: string, overrides: Partial<BlockVolume> = {}): BlockVolume {
   return { id, name: id, isActive: true, memberState: 'active', copysetId: undefined, ...overrides } as unknown as BlockVolume
@@ -127,7 +127,7 @@ describe('ServersList', () => {
   })
 
   it('copies a row\'s BLOCK_VOLUME_ID and toasts', async () => {
-    const { copyText } = await import('$lib/core/utils/clipboard')
+    const { copyText } = await import('#lib/core/utils/clipboard.js')
     render(ServersList, { props: baseProps() })
 
     await fireEvent.click(screen.getByRole('button', { name: 'Copy ID for bv-a' }))

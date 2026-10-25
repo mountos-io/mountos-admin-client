@@ -4,12 +4,12 @@
   // storage's pool itself has no separate admin-settable count; it grows by registering
   // copysets directly.
   // Presentational: the caller wires `onSave` to api.volumes.updateCopysetConfig.
-  import * as Dialog from '$lib/components/ui/dialog'
-  import { Button } from '$lib/components/ui/button'
-  import { Input } from '$lib/components/ui/input'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import { showSuccessToast, showWarningToast, handleApiError } from '$lib/core/utils/toast'
-  import type { VolumeBlockPlacementResizeResult } from '$lib/core/api/types'
+  import * as Dialog from '#lib/components/ui/dialog/index.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { Input } from '#lib/components/ui/input/index.js'
+  import Label from '#lib/components/ui/label/label.svelte'
+  import { showSuccessToast, showWarningToast, handleApiError } from '#lib/core/utils/toast.js'
+  import type { VolumeBlockPlacementResizeResult } from '#lib/core/api/types.js'
   import Pencil from '@lucide/svelte/icons/pencil'
 
   // Mirrors the server-enforced ceiling on a volume's own target copyset count.

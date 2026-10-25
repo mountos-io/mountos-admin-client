@@ -1,8 +1,8 @@
 import type { Component } from 'svelte'
-import type { Capabilities } from '$lib/core/auth/adapter'
-import type { Action } from '$lib/core/auth/authorize'
+import type { Capabilities } from '#lib/core/auth/adapter.js'
+import type { Action } from '#lib/core/auth/authorize.js'
 import type { FeatureFlags } from './features'
-import { providerNavItems, providerNavFilter } from '$provider/config/navigation'
+import { providerNavItems, providerNavFilter } from '#provider/config/navigation.js'
 import { features } from './features'
 
 export interface NavItem {

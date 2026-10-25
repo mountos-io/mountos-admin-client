@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { AuditLog } from '$lib/core/api/types'
-  import { getSubjectMeta, allSubjects as allSubjectKeys } from '$lib/core/utils/subjects'
-  import { copyText } from '$lib/core/utils/clipboard'
+  import type { AuditLog } from '#lib/core/api/types.js'
+  import { getSubjectMeta, allSubjects as allSubjectKeys } from '#lib/core/utils/subjects.js'
+  import { copyText } from '#lib/core/utils/clipboard.js'
   import CopyIcon from '@lucide/svelte/icons/copy'
   import CheckIcon from '@lucide/svelte/icons/check'
   import ZoomOutIcon from '@lucide/svelte/icons/zoom-out'

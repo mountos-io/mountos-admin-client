@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
-  import { Badge } from '$lib/components/ui/badge'
-  import InfoTip from '$lib/components/shared/InfoTip.svelte'
-  import { formatBytes } from '$lib/core/utils/format'
-  import { sv, formatUs, formatUptime, latencyColor, type MetricSection } from '$lib/core/utils/metrics'
+  import { Card, CardContent, CardHeader, CardTitle } from '#lib/components/ui/card/index.js'
+  import { Badge } from '#lib/components/ui/badge/index.js'
+  import InfoTip from '#lib/components/shared/InfoTip.svelte'
+  import { formatBytes } from '#lib/core/utils/format.js'
+  import { sv, formatUs, formatUptime, latencyColor, type MetricSection } from '#lib/core/utils/metrics.js'
 
   let { sections }: { sections: MetricSection[] } = $props()
 

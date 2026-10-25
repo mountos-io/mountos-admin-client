@@ -1,29 +1,33 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
-  import { SecretInput } from '$lib/components/ui/input'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import TotpSetupFlow from '$lib/components/auth/TotpSetupFlow.svelte'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import { fetchMinPasswordLength, DEFAULT_MIN_PASSWORD_LENGTH } from '$lib/core/api/localauth'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#lib/components/ui/card/index.js';
+  import { SecretInput } from '#lib/components/ui/input/index.js';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import TotpSetupFlow from '#lib/components/auth/TotpSetupFlow.svelte';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import { fetchMinPasswordLength, DEFAULT_MIN_PASSWORD_LENGTH } from '#lib/core/api/localauth.js';
 
-  const auth = useAuth()
-  const token = $page.url.searchParams.get('token') ?? ''
+  const auth = useAuth();
+  const token = page.url.searchParams.get('token') ?? '';
 
-  type Step = 'set_password' | 'totp_setup'
-  let step = $state<Step>('set_password')
-  let password = $state('')
-  let error = $state('')
-  let submitting = $state(false)
-  let minPasswordLength = $state(DEFAULT_MIN_PASSWORD_LENGTH)
-  fetchMinPasswordLength().then((v) => { minPasswordLength = v })
+  type Step = 'set_password' | 'totp_setup';
 
-  let setupToken = $state('')
-  let secretBase32 = $state('')
-  let otpauthUri = $state('')
+  let step = $state<Step>('set_password');
+  let password = $state('');
+  let error = $state('');
+  let submitting = $state(false);
+  let minPasswordLength = $state(DEFAULT_MIN_PASSWORD_LENGTH);
+
+  fetchMinPasswordLength().then((v) => {
+    minPasswordLength = v;
+  });
+
+  let setupToken = $state('');
+  let secretBase32 = $state('');
+  let otpauthUri = $state('');
 
   async function completeSession() {
     await goto('/', { replaceState: true })
@@ -95,8 +99,8 @@
           </form>
         {:else}
           <TotpSetupFlow
-            {secretBase32}
-            {otpauthUri}
+            secretBase32={secretBase32}
+            otpauthUri={otpauthUri}
             onVerify={async (code) => {
               const res = await fetch('/api/auth/local/totp/setup/verify', {
                 method: 'POST',

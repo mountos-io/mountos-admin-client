@@ -4,9 +4,9 @@
     CardContent,
     CardHeader,
     CardTitle,
-  } from "$lib/components/ui/card";
-  import { Badge } from "$lib/components/ui/badge";
-  import { Button } from "$lib/components/ui/button";
+  } from "#lib/components/ui/card/index.js";
+  import { Badge } from "#lib/components/ui/badge/index.js";
+  import { Button } from "#lib/components/ui/button/index.js";
   import {
     Table,
     TableBody,
@@ -14,8 +14,8 @@
     TableHead,
     TableHeader,
     TableRow,
-  } from "$lib/components/ui/table";
-  import { formatBytes, formatUTCShort, formatRelative } from "$lib/core/utils/format";
+  } from "#lib/components/ui/table/index.js";
+  import { formatBytes, formatUTCShort, formatRelative } from "#lib/core/utils/format.js";
   import {
     parseMetrics,
     sv,
@@ -44,13 +44,13 @@
     type HistogramGroup,
     type SortCol,
     type SortDir,
-  } from "$lib/core/utils/metrics";
-  import InfoTip from "$lib/components/shared/InfoTip.svelte";
-  import TextTooltip from "$lib/components/shared/TextTooltip.svelte";
-  import BlockservStats from "$lib/components/shared/BlockservStats.svelte";
-  import PfkitNetworkStats from "$lib/components/shared/PfkitNetworkStats.svelte";
-  import { parseFlowStats } from "$lib/core/utils/pfkitNetwork";
-  import { copyText } from "$lib/core/utils/clipboard";
+  } from "#lib/core/utils/metrics.js";
+  import InfoTip from "#lib/components/shared/InfoTip.svelte";
+  import TextTooltip from "#lib/components/shared/TextTooltip.svelte";
+  import BlockservStats from "#lib/components/shared/BlockservStats.svelte";
+  import PfkitNetworkStats from "#lib/components/shared/PfkitNetworkStats.svelte";
+  import { parseFlowStats } from "#lib/core/utils/pfkitNetwork.js";
+  import { copyText } from "#lib/core/utils/clipboard.js";
   import ChevronRight from "@lucide/svelte/icons/chevron-right";
   import ChevronsDownUp from "@lucide/svelte/icons/chevrons-down-up";
   import ChevronsUpDown from "@lucide/svelte/icons/chevrons-up-down";

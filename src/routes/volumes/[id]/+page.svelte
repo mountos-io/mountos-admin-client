@@ -1,77 +1,128 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useVolumes } from '$lib/core/stores/volumes.svelte'
-  import { useStorages } from '$lib/core/stores/storages.svelte'
-  import { useClusters } from '$lib/core/stores/clusters.svelte'
-  import { useUsers } from '$lib/core/stores/users.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { cn, debounce } from '$lib/utils'
-  import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
-  import { Button } from '$lib/components/ui/button'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Input } from '$lib/components/ui/input'
-  import { Select } from '$lib/components/ui/select'
-  import { Textarea } from '$lib/components/ui/textarea'
-  import { Label } from '$lib/components/ui/label'
-  import { Separator } from '$lib/components/ui/separator'
-  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
-  import { Command, CommandInput, CommandList, CommandEmpty, CommandItem } from '$lib/components/ui/command'
-  import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
-  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
-  import DeactivateVolumeDialog from '$lib/components/shared/DeactivateVolumeDialog.svelte'
-  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import TableSkeleton from '$lib/components/shared/TableSkeleton.svelte'
-  import ListSkeleton from '$lib/components/shared/ListSkeleton.svelte'
-  import { formatBytes, formatQuota, quotaPercent, bytesToGb, gbToBytes, formatClientType, formatSessionStatus, formatDuration, formatRelative } from '$lib/core/utils/format'
-  import { toDatetimeTz, parseDatetimeTz, forkAsOfMin, forkAsOfMax, gcFloorMs, asOfCeilingMs, asOfFloorMinutes } from '$lib/core/utils/forkRetention'
-  import { tz } from '$lib/core/stores/tz.svelte'
-  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
-  import Pagination from '$lib/components/shared/Pagination.svelte'
-  import { api } from '$lib/core/stores/client.svelte'
-  import { userCache } from '$lib/core/stores/user-cache.svelte'
-  import type { Volume, User, DeactivateVolumeRequest, ClientSession, Fork, CreateVolumeForkRequest, VolumeSizePoint, VolumeApiKey, VolumeBlockPlacementConfig, Copyset } from '$lib/core/api/types'
-  import CopysetStateBadge from '$lib/components/shared/CopysetStateBadge.svelte'
-  import { isCopysetState } from '$lib/core/api/copyset-ui-types'
-  import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right'
-  import { ApiError } from '$lib/core/api/errors'
-  import ExclusiveGrantsPanel from '$lib/components/shared/ExclusiveGrantsPanel.svelte'
-  import type { ExclusiveGrantsResponse } from '$lib/core/api/types'
-  import VolumeSizeHistoryChart from '$lib/components/shared/VolumeSizeHistoryChart.svelte'
-  import VolumeCopysetCountControl from '$lib/components/shared/VolumeCopysetCountControl.svelte'
-  import { handleApiError, showErrorToast, showSuccessToast } from '$lib/core/utils/toast'
-  import { copyText } from '$lib/core/utils/clipboard'
-  import { volumeTypeVariant } from '$lib/core/utils/volume-type'
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import InfoTip from '$lib/components/shared/InfoTip.svelte'
-  import FieldLabel from '$lib/components/shared/FieldLabel.svelte'
-  import PencilIcon from '@lucide/svelte/icons/pencil'
-  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down'
-  import Check from '@lucide/svelte/icons/check'
-  import Loader2 from '@lucide/svelte/icons/loader-2'
-  import * as Dialog from '$lib/components/ui/dialog'
-  import Copy from '@lucide/svelte/icons/copy'
-  import Plus from '@lucide/svelte/icons/plus'
-  import KeyRound from '@lucide/svelte/icons/key-round'
-  import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import X from '@lucide/svelte/icons/x'
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert'
-  import GitFork from '@lucide/svelte/icons/git-fork'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import ForkPicker from '$lib/components/volume-tree/ForkPicker.svelte'
-  import FilterSelect from '$lib/components/shared/FilterSelect.svelte'
-  import { Checkbox } from '$lib/components/ui/checkbox'
-  import DateTimePicker from '$lib/components/shared/DateTimePicker.svelte'
-  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
-  import { sanitizeForkName, forkNameErrorMessage } from '$lib/core/utils/validation'
+  import { onDestroy } from 'svelte';
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useVolumes } from '#lib/core/stores/volumes.svelte.js';
+  import { useStorages } from '#lib/core/stores/storages.svelte.js';
+  import { useClusters } from '#lib/core/stores/clusters.svelte.js';
+  import { useUsers } from '#lib/core/stores/users.svelte.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { cn, debounce } from '#lib/utils.js';
+  import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '#lib/components/ui/card/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import { Input } from '#lib/components/ui/input/index.js';
+  import { Select } from '#lib/components/ui/select/index.js';
+  import { Textarea } from '#lib/components/ui/textarea/index.js';
+  import { Label } from '#lib/components/ui/label/index.js';
+  import { Separator } from '#lib/components/ui/separator/index.js';
+  import { Popover, PopoverTrigger, PopoverContent } from '#lib/components/ui/popover/index.js';
 
-  const store = useVolumes()
-  const storagesStore = useStorages()
-  const clusterStore = useClusters()
-  const userStore = useUsers()
-  const auth = useAuth()
-  const id = $derived(Number($page.params.id))
+  import {
+    Command,
+    CommandInput,
+    CommandList,
+    CommandEmpty,
+    CommandItem
+  } from '#lib/components/ui/command/index.js';
+
+  import StatusBadge from '#lib/components/shared/StatusBadge.svelte';
+  import ConfirmDialog from '#lib/components/shared/ConfirmDialog.svelte';
+  import DeactivateVolumeDialog from '#lib/components/shared/DeactivateVolumeDialog.svelte';
+  import DetailSkeleton from '#lib/components/shared/DetailSkeleton.svelte';
+  import TableSkeleton from '#lib/components/shared/TableSkeleton.svelte';
+  import ListSkeleton from '#lib/components/shared/ListSkeleton.svelte';
+
+  import {
+    formatBytes,
+    formatQuota,
+    quotaPercent,
+    bytesToGb,
+    gbToBytes,
+    formatClientType,
+    formatSessionStatus,
+    formatDuration,
+    formatRelative
+  } from '#lib/core/utils/format.js';
+
+  import {
+    toDatetimeTz,
+    parseDatetimeTz,
+    forkAsOfMin,
+    forkAsOfMax,
+    gcFloorMs,
+    asOfCeilingMs,
+    asOfFloorMinutes
+  } from '#lib/core/utils/forkRetention.js';
+
+  import { tz } from '#lib/core/stores/tz.svelte.js';
+
+  import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableHead,
+    TableCell
+  } from '#lib/components/ui/table/index.js';
+
+  import Pagination from '#lib/components/shared/Pagination.svelte';
+  import { api } from '#lib/core/stores/client.svelte.js';
+  import { userCache } from '#lib/core/stores/user-cache.svelte.js';
+
+  import type {
+    Volume,
+    User,
+    DeactivateVolumeRequest,
+    ClientSession,
+    Fork,
+    CreateVolumeForkRequest,
+    VolumeSizePoint,
+    VolumeApiKey,
+    VolumeBlockPlacementConfig,
+    Copyset
+  } from '#lib/core/api/types.js';
+
+  import CopysetStateBadge from '#lib/components/shared/CopysetStateBadge.svelte';
+  import { isCopysetState } from '#lib/core/api/copyset-ui-types.js';
+  import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right';
+  import { ApiError } from '#lib/core/api/errors.js';
+  import ExclusiveGrantsPanel from '#lib/components/shared/ExclusiveGrantsPanel.svelte';
+  import type { ExclusiveGrantsResponse } from '#lib/core/api/types.js';
+  import VolumeSizeHistoryChart from '#lib/components/shared/VolumeSizeHistoryChart.svelte';
+  import VolumeCopysetCountControl from '#lib/components/shared/VolumeCopysetCountControl.svelte';
+  import { handleApiError, showErrorToast, showSuccessToast } from '#lib/core/utils/toast.js';
+  import { copyText } from '#lib/core/utils/clipboard.js';
+  import { volumeTypeVariant } from '#lib/core/utils/volume-type.js';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import InfoTip from '#lib/components/shared/InfoTip.svelte';
+  import FieldLabel from '#lib/components/shared/FieldLabel.svelte';
+  import PencilIcon from '@lucide/svelte/icons/pencil';
+  import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
+  import Check from '@lucide/svelte/icons/check';
+  import Loader2 from '@lucide/svelte/icons/loader-2';
+  import * as Dialog from '#lib/components/ui/dialog/index.js';
+  import Copy from '@lucide/svelte/icons/copy';
+  import Plus from '@lucide/svelte/icons/plus';
+  import KeyRound from '@lucide/svelte/icons/key-round';
+  import EmptyState from '#lib/components/shared/EmptyState.svelte';
+  import X from '@lucide/svelte/icons/x';
+  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+  import GitFork from '@lucide/svelte/icons/git-fork';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import ForkPicker from '#lib/components/volume-tree/ForkPicker.svelte';
+  import FilterSelect from '#lib/components/shared/FilterSelect.svelte';
+  import { Checkbox } from '#lib/components/ui/checkbox/index.js';
+  import DateTimePicker from '#lib/components/shared/DateTimePicker.svelte';
+  import { useConfirmDialog } from '#lib/stores/confirm-dialog.svelte.js';
+  import { sanitizeForkName, forkNameErrorMessage } from '#lib/core/utils/validation.js';
+
+  const store = useVolumes();
+  const storagesStore = useStorages();
+  const clusterStore = useClusters();
+  const userStore = useUsers();
+  const auth = useAuth();
+  const id = $derived(Number(page.params.id));
 
   $effect(() => {
     if (auth.loading) return
@@ -86,17 +137,16 @@
     }
   })
 
-  let volume = $state<Volume | null>(null)
-  let loading = $state(true)
-  const dialog = useConfirmDialog(() => reload())
-  const canEdit = $derived(volume?.isActive && auth.can('volumes', 'update'))
-
-  let editing = $state(false)
-  let deactivateOpen = $state(false)
-  let reactivating = $state(false)
-  let moveClusterOpen = $state(false)
-  let moveClusterSubmitting = $state(false)
-  let moveTargetClusterId = $state('')
+  let volume = $state<Volume | null>(null);
+  let loading = $state(true);
+  const dialog = useConfirmDialog(() => reload());
+  const canEdit = $derived(volume?.isActive && auth.can('volumes', 'update'));
+  let editing = $state(false);
+  let deactivateOpen = $state(false);
+  let reactivating = $state(false);
+  let moveClusterOpen = $state(false);
+  let moveClusterSubmitting = $state(false);
+  let moveTargetClusterId = $state('');
 
   async function handleReactivate() {
     if (!volume) return
@@ -191,21 +241,25 @@
 
   // Mirrors createForkNameError's shape: empty string means valid.
   const createForkAsOfError = $derived.by(() => {
-    if (!createForkAsOfEnabled || !createForkAsOfLocal) return ''
-    const parsed = parseDatetimeTz(createForkAsOfLocal, tz.value)
-    if (!Number.isFinite(parsed)) return `That wall-clock time does not exist in ${tz.value} (DST spring-forward gap)`
-    if (parsed > asOfCeilingMs(Date.now(), volume)) return `Snapshot time must be at least ${asOfFloorMinutes(volume)} minutes in the past`
-    return ''
-  })
+    if (!createForkAsOfEnabled || !createForkAsOfLocal) return '';
 
-  const createForkSanitized = $derived(sanitizeForkName(createForkName.trim()))
+    const parsed = parseDatetimeTz(createForkAsOfLocal, tz.value);
+
+    if (!Number.isFinite(parsed)) return `That wall-clock time does not exist in ${tz.value} (DST spring-forward gap)`;
+    if (parsed > asOfCeilingMs(Date.now(), volume)) return `Snapshot time must be at least ${asOfFloorMinutes(volume)} minutes in the past`;
+
+    return '';
+  });
+
+  const createForkSanitized = $derived(sanitizeForkName(createForkName.trim()));
+
   const createForkNameError = $derived.by(() => {
-    const raw = createForkName.trim()
-    if (!raw) return ''
-    const sanitized = createForkSanitized
-    const sanitizedClean = !!sanitized && !forkNameErrorMessage(sanitized)
-    const sanitizedExists = sanitizedClean && forks.some(f => f.name === sanitized)
-    const rawErr = forkNameErrorMessage(raw)
+    const raw = createForkName.trim();
+    if (!raw) return '';
+    const sanitized = createForkSanitized;
+    const sanitizedClean = !!sanitized && !forkNameErrorMessage(sanitized);
+    const sanitizedExists = sanitizedClean && forks.some((f) => f.name === sanitized);
+    const rawErr = forkNameErrorMessage(raw);
     if (rawErr) {
       // Defer to the "Use <sanitized>" suggestion when sanitization yields
       // a clean, non-colliding name; otherwise surface the raw error so
@@ -214,8 +268,8 @@
       if (sanitizedClean && sanitized !== raw && !sanitizedExists) return ''
       return rawErr
     }
-    if (forks.some(f => f.name === sanitized)) {
-      return `Fork "${sanitized}" already exists`
+    if (forks.some((f) => f.name === sanitized)) {
+      return `Fork "${sanitized}" already exists`;
     }
     return ''
   })
@@ -257,16 +311,21 @@
     await reload()
   }
 
-  let revokeUserId = $state('')
-  let genResult = $state<{ apiKey: string; apiSecret: string; evictedApiKeys?: string[] } | null>(null)
-  let credentialsOpen = $state(false)
+  let revokeUserId = $state('');
 
-  const API_KEY_LIMIT = 2
-  let apiKeys = $state<VolumeApiKey[]>([])
-  let apiKeysLoading = $state(false)
+  let genResult = $state<
+    { apiKey: string; apiSecret: string; evictedApiKeys?: string[] } |
+    null>(null);
+
+  let credentialsOpen = $state(false);
+  const API_KEY_LIMIT = 2;
+  let apiKeys = $state<VolumeApiKey[]>([]);
+  let apiKeysLoading = $state(false);
+
   // False until a list succeeds; an unknown key set makes generateKeys confirm.
-  let apiKeysKnown = $state(false)
-  let apiKeysCtrl: AbortController | null = null
+  let apiKeysKnown = $state(false);
+
+  let apiKeysCtrl: AbortController | null = null;
 
   async function fetchApiKeys() {
     // Listing needs a linked mountOS user (403 otherwise) and an active volume
@@ -293,36 +352,40 @@
   function keyLabel(k: VolumeApiKey) {
     return k.name || `${k.apiKey.slice(0, 6)}…`
   }
-  let userSelectOpen = $state(false)
-  let userSearchQuery = $state('')
-  let userOptions = $state<User[]>([])
-  let userSearchLoading = $state(false)
-  const selectedUserLabel = $derived(userOptions.find(u => String(u.id) === revokeUserId)?.username ?? (revokeUserId ? `User #${revokeUserId}` : ''))
 
-  const debouncedUserSearch = debounce(async (accountId: number, query: string) => {
-    userSearchLoading = true
-    try {
+  let userSelectOpen = $state(false);
+  let userSearchQuery = $state('');
+  let userOptions = $state<User[]>([]);
+  let userSearchLoading = $state(false);
+  const selectedUserLabel = $derived(userOptions.find((u) => String(u.id) === revokeUserId)?.username ?? (revokeUserId ? `User #${revokeUserId}` : ''));
+
+  const debouncedUserSearch = debounce(
+    async (accountId: number, query: string) => {
+      userSearchLoading = true;
+
+      try {
       userOptions = await userStore.searchUsers(accountId, query)
     } catch { /* swallow */ }
     finally { userSearchLoading = false }
   }, 300)
 
   $effect(() => {
-    if (!userSelectOpen) return
-    if (!volume?.account?.id) return
-    debouncedUserSearch(volume.account.id, userSearchQuery)
-  })
+    if (!userSelectOpen) return;
+    if (!volume?.account?.id) return;
 
-  let revokeKey = $state('')
-  let editDesc = $state('')
-  let editRetention = $state('')
-  let editGrace = $state('')
-  let editForkGrace = $state('')
-  let editEventLog = $state('')
-  let editContentWindow = $state('')
-  let editQuota = $state('')
-  let editCompaction = $state('')
-  let editSaving = $state(false)
+    debouncedUserSearch(volume.account.id, userSearchQuery);
+  });
+
+  let revokeKey = $state('');
+  let editDesc = $state('');
+  let editRetention = $state('');
+  let editGrace = $state('');
+  let editForkGrace = $state('');
+  let editEventLog = $state('');
+  let editContentWindow = $state('');
+  let editQuota = $state('');
+  let editCompaction = $state('');
+  let editSaving = $state(false);
 
   // Every window a volume can be set to: sub-minute divisors of 60 (finer
   // than the default) plus whole-minute multiples of 60 up to 1h (coarser,
@@ -369,10 +432,10 @@
   })
   const compactionTooltip = $derived(
     volume?.volumeType === 'lance'
-      ? "Lance volumes do not support compaction, so **Off** is the only choice."
+    ? "Lance volumes do not support compaction, so **Off** is the only choice."
       : "Sets who compacts this volume's storage.\n\n• **Off:** no compaction runs.\n• **GC Server:** compacts it. Only an admin can set this option.\n"
         + (volume?.volumeType === 'iceberg'
-          ? "• **External engines (analytical):** compact it directly against the catalog."
+      ? "• **External engines (analytical):** compact it directly against the catalog."
           : "• **mountOS client:** compacts it while mounted, when resources allow (general volumes only).")
   )
 
@@ -402,28 +465,55 @@
 
   let volFetchCtrl: AbortController | undefined
   $effect(() => {
-    if (Number.isNaN(id)) { loading = false; return }
-    volFetchCtrl?.abort()
-    volFetchCtrl = new AbortController()
-    const ctrl = volFetchCtrl
-    volSessions = []; sessionsTotal = 0; sessionsTotalPages = 0; sessionsPage = 1
-    apiKeysCtrl?.abort(); apiKeys = []; apiKeysKnown = false; newKeyName = ''
-    copysetConfigCtrl?.abort()
-    grantsCtrl?.abort(); grantsResult = null
-    loading = true
-    store.getVolume(id).then(v => {
-      if (ctrl.signal.aborted) return
-      volume = v
-      syncEditFields(v)
-      fetchVolumeSessions()
-      fetchGrants()
-      fetchForks()
-      fetchApiKeys()
-      fetchCopysetConfig().then(fetchVolumeCopysets)
-    }).catch(() => { if (!ctrl.signal.aborted) volume = null }).finally(() => { if (!ctrl.signal.aborted) loading = false })
-  })
+    if (Number.isNaN(id)) {
+      loading = false;
 
-  onDestroy(() => { volFetchCtrl?.abort(); sessionsCtrl?.abort(); sizeCtrl?.abort(); apiKeysCtrl?.abort(); copysetConfigCtrl?.abort(); volumeCopysetsCtrl?.abort() })
+      return;
+    }
+
+    volFetchCtrl?.abort();
+    volFetchCtrl = new AbortController();
+
+    const ctrl = volFetchCtrl;
+
+    volSessions = [];
+    sessionsTotal = 0;
+    sessionsTotalPages = 0;
+    sessionsPage = 1;
+    apiKeysCtrl?.abort();
+    apiKeys = [];
+    apiKeysKnown = false;
+    newKeyName = '';
+    copysetConfigCtrl?.abort();
+    grantsCtrl?.abort();
+    grantsResult = null;
+    loading = true;
+
+    store.getVolume(id).then((v) => {
+      if (ctrl.signal.aborted) return;
+
+      volume = v;
+      syncEditFields(v);
+      fetchVolumeSessions();
+      fetchGrants();
+      fetchForks();
+      fetchApiKeys();
+      fetchCopysetConfig().then(fetchVolumeCopysets);
+    }).catch(() => {
+      if (!ctrl.signal.aborted) volume = null;
+    }).finally(() => {
+      if (!ctrl.signal.aborted) loading = false;
+    });
+  });
+
+  onDestroy(() => {
+    volFetchCtrl?.abort();
+    sessionsCtrl?.abort();
+    sizeCtrl?.abort();
+    apiKeysCtrl?.abort();
+    copysetConfigCtrl?.abort();
+    volumeCopysetsCtrl?.abort();
+  });
 
   async function reload() {
     const v = await store.getVolume(id)
@@ -440,12 +530,9 @@
     }
   })
 
-  const moveClusterCandidates = $derived(
-    volume?.region?.id
-      ? clusterStore.clustersFor(volume.region.id).filter(c =>
-          c.isActive && c.isReady && c.id !== (volume?.metadataCluster?.id ?? 0))
-      : [],
-  )
+  const moveClusterCandidates = $derived(volume?.region?.id
+    ? clusterStore.clustersFor(volume.region.id).filter((c) => c.isActive && c.isReady && c.id !== (volume?.metadataCluster?.id ?? 0))
+    : []);
 
   async function submitMoveCluster() {
     if (!volume || !moveTargetClusterId) return
@@ -480,7 +567,7 @@
       // it through even if it somehow were, same defense-in-depth the
       // server itself applies (a non-admin edit has "server" cleared and
       // falls back to whatever is persisted, it isn't rejected outright).
-      const compaction = editCompaction === 'server' && !isAdmin ? undefined : (editCompaction || undefined)
+      const compaction = editCompaction === 'server' && !isAdmin ? undefined : editCompaction || undefined;
       await store.editVolume(id, {
         description: editDesc.trim() || undefined,
         retention: {
@@ -578,10 +665,10 @@
     sessionsLoading = true
     try {
       const res = await api.clientSessions.list({
-        accountId: volume.account.id,
-        volumeId: id,
-        userId: auth.isUserRole ? (auth.userMountosUserId ?? undefined) : undefined,
-        page,
+          accountId: volume.account.id,
+          volumeId: id,
+          userId: auth.isUserRole ? auth.userMountosUserId ?? undefined : undefined,
+          page,
         limit: 10,
       }, ctrl.signal)
       volSessions = res.items
@@ -596,15 +683,16 @@
   }
 
   // One grants read per page load, covering every fork of the volume. Admin roles only: the user role gets 403.
-  let grantsResult = $state<ExclusiveGrantsResponse | null>(null)
-  let grantsCtrl: AbortController | null = null
+  let grantsResult = $state<ExclusiveGrantsResponse | null>(null);
+
+  let grantsCtrl: AbortController | null = null;
 
   async function fetchGrants() {
     grantsCtrl?.abort()
     if (auth.isUserRole || !volume) { grantsResult = null; return }
     const ctrl = grantsCtrl = new AbortController()
     try {
-      const r = await api.volumes.exclusiveGrants(id, undefined, undefined, ctrl.signal)
+      const r = await api.volumes.exclusiveGrants(id, undefined, ctrl.signal)
       if (grantsCtrl === ctrl) grantsResult = r
     } catch (e) {
       if ((e as Error).name === 'AbortError') return
@@ -612,18 +700,18 @@
     }
   }
 
-  const showGrants = $derived((grantsResult?.grants.length ?? 0) > 0)
-
-  let forks = $state<Fork[]>([])
-  let forksLoading = $state(false)
+  const showGrants = $derived((grantsResult?.grants.length ?? 0) > 0);
+  let forks = $state<Fork[]>([]);
+  let forksLoading = $state(false);
 
   // Volume-scoped block placement: a block-backed volume's own copyset working set,
   // distinct from the storage-level K shown on the storage detail page. Block-backed only;
   // a config row is missing (404) for a volume never bootstrapped into placement, rendered
   // as "not set" rather than a fabricated value.
-  let copysetConfig = $state<VolumeBlockPlacementConfig | null>(null)
-  let copysetConfigLoading = $state(false)
-  let copysetConfigCtrl: AbortController | null = null
+  let copysetConfig = $state<VolumeBlockPlacementConfig | null>(null);
+
+  let copysetConfigLoading = $state(false);
+  let copysetConfigCtrl: AbortController | null = null;
 
   async function fetchCopysetConfig() {
     if (!volume || volume.storageType !== 'block') { copysetConfig = null; return }
@@ -649,9 +737,10 @@
   // shown as links with a state badge instead of a bare count. Storage-scoped (all of a
   // volume's copysets belong to its own storage's pool), fetched once copysetConfig has ids
   // to resolve. Missing from the resolved map just falls back to the bare id in the markup.
-  let volumeCopysetsById = $state<Map<string, Copyset>>(new Map())
-  let volumeCopysetsLoading = $state(false)
-  let volumeCopysetsCtrl: AbortController | null = null
+  let volumeCopysetsById = $state<Map<string, Copyset>>(new Map());
+
+  let volumeCopysetsLoading = $state(false);
+  let volumeCopysetsCtrl: AbortController | null = null;
 
   async function fetchVolumeCopysets() {
     if (!volume || !copysetConfig || copysetConfig.copysetIds.length === 0) {
@@ -685,15 +774,17 @@
   type VolumeTabId = 'overview' | 'browse' | 'forks' | 'sessions' | 'apikeys'
   const TAB_IDS: ReadonlyArray<VolumeTabId> = ['overview', 'browse', 'forks', 'sessions', 'apikeys']
   const activeTab = $derived.by<VolumeTabId>(() => {
-    const v = $page.url.searchParams.get('tab') ?? ''
-    return (TAB_IDS as ReadonlyArray<string>).includes(v) ? (v as VolumeTabId) : 'overview'
-  })
+    const v = page.url.searchParams.get('tab') ?? '';
+    return (TAB_IDS as ReadonlyArray<string>).includes(v) ? v as VolumeTabId : 'overview';
+  });
   function setTab(t: VolumeTabId) {
-    const sp = new URLSearchParams($page.url.searchParams)
-    if (t === 'overview') sp.delete('tab')
-    else sp.set('tab', t)
-    const qs = sp.toString()
-    goto(qs ? `?${qs}` : window.location.pathname, { replaceState: true, noScroll: true, keepFocus: true })
+    const sp = new URLSearchParams(page.url.search);
+
+    if (t === 'overview') sp.delete('tab'); else sp.set('tab', t);
+
+    const qs = sp.toString();
+
+    goto(qs ? `?${qs}` : window.location.pathname, { replaceState: true, reset: false });
   }
   function handleTabKey(e: KeyboardEvent, current: VolumeTabId) {
     let next: VolumeTabId | null = null
@@ -713,12 +804,13 @@
     requestAnimationFrame(() => document.getElementById(targetId)?.focus())
   }
 
-  type SizeRange = '24h' | '7d' | '30d' | '1y'
-  const sizeRangeDays: Record<SizeRange, number> = { '24h': 1, '7d': 7, '30d': 30, '1y': 366 }
-  let sizeRange = $state<SizeRange>('30d')
-  let sizePoints = $state<VolumeSizePoint[]>([])
-  let sizeLoading = $state(false)
-  let sizeCtrl: AbortController | null = null
+  type SizeRange = '24h' | '7d' | '30d' | '1y';
+
+  const sizeRangeDays: Record<SizeRange, number> = { '24h': 1, '7d': 7, '30d': 30, '1y': 366 };
+  let sizeRange = $state<SizeRange>('30d');
+  let sizePoints = $state<VolumeSizePoint[]>([]);
+  let sizeLoading = $state(false);
+  let sizeCtrl: AbortController | null = null;
 
   async function fetchSizeHistory() {
     if (!volume) return
@@ -739,12 +831,16 @@
     }
   }
 
-  $effect(() => { void sizeRange; if (volume) fetchSizeHistory() })
+  $effect(() => {
+    void sizeRange;
+
+    if (volume) fetchSizeHistory();
+  });
 
   const forkParentOptions = $derived([
     { value: 'main', label: 'main' },
-    ...forks.filter(f => f.status === 'active' && f.name !== 'main').map(f => ({ value: f.name, label: f.name })),
-  ])
+    ...forks.filter((f) => f.status === 'active' && f.name !== 'main').map((f) => ({ value: f.name, label: f.name }))
+  ]);
 
   async function fetchForks() {
     if (!volume) return
@@ -782,16 +878,15 @@
     return new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
-  let forkView = $state<'list' | 'timeline'>('list')
-
-  const FORK_COLORS = 8
+  let forkView = $state<'list' | 'timeline'>('list');
+  const FORK_COLORS = 8;
 
   function graphColor(index: number): string {
     if (index < FORK_COLORS) {
       return `var(--fork-${index})`
     }
-    const hue = (index * 137.508) % 360
-    return `oklch(0.65 0.15 ${hue.toFixed(1)})`
+    const hue = index * 137.508 % 360;
+    return `oklch(0.65 0.15 ${hue.toFixed(1)})`;
   }
 
   interface BranchRow {
@@ -835,23 +930,52 @@
 
     for (const root of tree) walkRoot(root)
 
-    timestamps.sort((a, b) => a - b)
-    const minTs = timestamps[0] ?? 0, maxTs = timestamps[timestamps.length - 1] ?? 0, range = maxTs - minTs || 1
-    for (const r of rows) r.branchNorm = r.fid === 0 ? 0 : (r.snapshotTs - minTs) / range
+    timestamps.sort((a, b) => a - b);
 
-    const minRow = Math.min(...rows.map(r => r.row))
-    for (const r of rows) { r.row -= minRow; r.parentRow -= minRow }
-    const rowColorMap = new Map<number, string>()
-    for (const r of rows) rowColorMap.set(r.row, r.color)
-    return { rows, totalRows: Math.max(...rows.map(r => r.row)) + 1, rowColorMap }
+    const minTs = timestamps[0] ?? 0,
+      maxTs = timestamps[timestamps.length - 1] ?? 0,
+      range = maxTs - minTs || 1;
+
+    for (const r of rows) r.branchNorm = r.fid === 0 ? 0 : (r.snapshotTs - minTs) / range;
+
+    const minRow = Math.min(...rows.map((r) => r.row));
+
+    for (const r of rows) {
+      r.row -= minRow;
+      r.parentRow -= minRow;
+    }
+
+    const rowColorMap = new Map<number, string>();
+
+    for (const r of rows) rowColorMap.set(r.row, r.color);
+
+    return {
+      rows,
+      totalRows: Math.max(...rows.map((r) => r.row)) + 1,
+      rowColorMap
+    };
   }
 
   // G_RIGHT carries the created-at/size metadata label at 16px (the type floor); sized with
   // headroom for that width instead of a smaller font.
-  const G_ROW = 52, G_TOP = 20, G_LEFT = 24, G_LABEL = 160, G_TIMELINE = 480, G_RIGHT = 240, G_DOT = 5, G_CR = 12
-  function gRowY(row: number) { return G_TOP + row * G_ROW + G_ROW / 2 }
-  function gTimeX(norm: number) { return G_LEFT + G_LABEL + norm * G_TIMELINE }
-  const gNowX = G_LEFT + G_LABEL + G_TIMELINE
+  const G_ROW = 52,
+    G_TOP = 20,
+    G_LEFT = 24,
+    G_LABEL = 160,
+    G_TIMELINE = 480,
+    G_RIGHT = 240,
+    G_DOT = 5,
+    G_CR = 12;
+
+  function gRowY(row: number) {
+    return G_TOP + row * G_ROW + G_ROW / 2;
+  }
+
+  function gTimeX(norm: number) {
+    return G_LEFT + G_LABEL + norm * G_TIMELINE;
+  }
+
+  const gNowX = G_LEFT + G_LABEL + G_TIMELINE;
 
   function gBranchPath(pRow: number, cRow: number, bx: number) {
     const py = gRowY(pRow), cy = gRowY(cRow), dy = cy - py
@@ -961,776 +1085,848 @@
     <DetailSkeleton cards={[{ rows: 5, cols: 1 }]} />
   {:else if volume && activeTab === 'browse'}
     <div role="tabpanel" id="volume-tabpanel-browse" aria-labelledby="volume-tab-browse" tabindex={-1}>
-      {#await import('$lib/components/volume-tree/TreeTab.svelte')}
+      {#await import('#lib/components/volume-tree/TreeTab.svelte')}
         <ListSkeleton rows={6} />
       {:then { default: TreeTab }}
-        <TreeTab volumeId={id} {volume} {forks} />
+        <TreeTab volumeId={id} volume={volume} forks={forks} />
       {/await}
     </div>
   {:else if volume && activeTab === 'overview'}
     <div role="tabpanel" id="volume-tabpanel-overview" aria-labelledby="volume-tab-overview" tabindex={-1} class="space-y-6">
-    {#if !volume.isActive}
-      <section
-        aria-labelledby="volume-deactivated-heading"
-        class="rounded-md border border-warning/70 bg-warning/15 px-4 py-3 text-base flex flex-wrap items-center gap-3"
-      >
+      {#if !volume.isActive}
+        <section
+          aria-labelledby="volume-deactivated-heading"
+          class="rounded-md border border-warning/70 bg-warning/15 px-4 py-3 text-base flex flex-wrap items-center gap-3"
+        >
         <ShieldAlert class="size-4 shrink-0 text-warning" aria-hidden="true" />
-        <span class="flex-1 min-w-[200px]">
+          <span class="flex-1 min-w-[200px]">
           <span id="volume-deactivated-heading" class="font-semibold">Deactivated.</span>
-          Cleanup begins after the grace period. Reactivation is only possible while no cleanup flag has fired.
-        </span>
-        {#if auth.can('volumes', 'update')}
-          <Button
+            Cleanup begins after the grace period. Reactivation is only possible while no cleanup flag has fired.
+          </span>
+          {#if auth.can('volumes', 'update')}
+            <Button
             variant="primary" size="sm"
-            class="cyberpunk-skewed-sm min-h-[44px] sm:min-h-0"
-            disabled={reactivating}
-            aria-busy={reactivating}
-            onclick={handleReactivate}
-          >
+              class="cyberpunk-skewed-sm min-h-[44px] sm:min-h-0"
+              disabled={reactivating}
+              aria-busy={reactivating}
+              onclick={handleReactivate}
+            >
             {#if reactivating}<Loader2 class="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />{/if}
-            Reactivate
-          </Button>
-        {/if}
-      </section>
-    {/if}
-    <div class="grid gap-6">
-      <Card cornerBrackets>
-        <CardHeader>
-          <div class="flex items-center gap-3">
-            <CardTitle class="flex-1">Details</CardTitle>
-            {#if canEdit && !editing}
-              <button
-                type="button"
-                onclick={() => (editing = true)}
-                class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-50 hover:opacity-100 hover:text-primary transition-[color,opacity]"
+              Reactivate
+            </Button>
+          {/if}
+        </section>
+      {/if}
+      <div class="grid gap-6">
+        <Card cornerBrackets>
+          <CardHeader>
+            <div class="flex items-center gap-3">
+              <CardTitle class="flex-1">Details</CardTitle>
+              {#if canEdit && !editing}
+                <button
+                  type="button"
+                  onclick={() => editing = true}
+                  class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-50 hover:opacity-100 hover:text-primary transition-[color,opacity]"
                 title="Edit volume" aria-label="Edit volume"
               >
                 <PencilIcon class="size-4" aria-hidden="true" />
               </button>
-            {/if}
-          </div>
-        </CardHeader>
-        <CardContent class="grid gap-3">
-          {#if editing}
-            <div class="space-y-1.5">
+              {/if}
+            </div>
+          </CardHeader>
+          <CardContent class="grid gap-3">
+            {#if editing}
+              <div class="space-y-1.5">
               <Label for="edit-desc" class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</Label>
               <Textarea id="edit-desc" bind:value={editDesc} placeholder="Volume description" rows={2} />
-            </div>
-          {:else if volume.description}
-            <div>
+              </div>
+            {:else if volume.description}
+              <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Description</span>
-              <p class="mt-1 text-sm break-words">{volume.description}</p>
-            </div>
-          {/if}
-          <div class="flex flex-wrap gap-6">
-            <div>
+                <p class="mt-1 text-sm break-words">{volume.description}</p>
+              </div>
+            {/if}
+            <div class="flex flex-wrap gap-6">
+              <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Status</span>
-              <div class="mt-1"><StatusBadge active={volume.isActive} locked={volume.locked} /></div>
-            </div>
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Kind</span>
-              <div class="mt-1"><Badge variant={volumeTypeVariant(volume.volumeType)} class="capitalize">{volume.volumeType}</Badge></div>
-            </div>
-            <div>
-              <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Encryption</span>
-              <div class="mt-1"><Badge variant={volume.encryption ? 'default' : 'outline'}>{volume.encryption ? 'Enabled' : 'Disabled'}</Badge></div>
-            </div>
-            {#if volume.region?.id}
+                <div class="mt-1"><StatusBadge active={volume.isActive} locked={volume.locked} /></div>
+              </div>
               <div>
+                <span
+                  class="text-sm uppercase tracking-wider font-semibold text-muted-foreground"
+                >Kind</span>
+
+                <div class="mt-1">
+                  <Badge
+                    variant={volumeTypeVariant(volume.volumeType)}
+                    class="capitalize"
+                  >{volume.volumeType}</Badge>
+                </div>
+              </div>
+
+              <div>
+                <span
+                  class="text-sm uppercase tracking-wider font-semibold text-muted-foreground"
+                >Encryption</span>
+
+                <div class="mt-1">
+                  <Badge
+                    variant={volume.encryption ? 'default' : 'outline'}
+                  >{volume.encryption ? 'Enabled' : 'Disabled'}</Badge>
+                </div>
+              </div>
+
+              {#if volume.region?.id}
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Region</span>
-                <div class="mt-1">
-                  <a
-                    href="/regions/{volume.region.id}"
-                    aria-label="View region {volume.region.name} details"
-                    class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                  >{volume.region.name}</a>
+                  <div class="mt-1">
+                    <a
+                      href="/regions/{volume.region.id}"
+                      aria-label="View region {volume.region.name} details"
+                      class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                    >{volume.region.name}</a>
+                  </div>
                 </div>
-              </div>
-            {/if}
-            {#if volume.metadataCluster?.id}
-              <div>
+              {/if}
+              {#if volume.metadataCluster?.id}
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Cluster</span>
-                <div class="mt-1">
-                  <a
-                    href="/regions/{volume.region.id}?cluster={volume.metadataCluster.id}"
-                    aria-label="View region {volume.region.name} scoped to cluster {volume.metadataCluster.name}"
-                    class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                  >{volume.metadataCluster.name}</a>
+                  <div class="mt-1">
+                    <a
+                      href="/regions/{volume.region.id}?cluster={volume.metadataCluster.id}"
+                      aria-label="View region {volume.region.name} scoped to cluster {volume.metadataCluster.name}"
+                      class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                    >{volume.metadataCluster.name}</a>
+                  </div>
                 </div>
-              </div>
-            {/if}
-            {#if volume.storage?.id}
-              <div>
+              {/if}
+              {#if volume.storage?.id}
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">Storage</span>
-                <div class="mt-1">
-                  <a
-                    href="/storages/{volume.storage.id}"
-                    aria-label="View storage {volume.storage.name} details"
-                    class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
-                  >{volume.storage.name}</a>
+                  <div class="mt-1">
+                    <a
+                      href="/storages/{volume.storage.id}"
+                      aria-label="View storage {volume.storage.name} details"
+                      class="text-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+                    >{volume.storage.name}</a>
+                  </div>
                 </div>
-              </div>
-            {/if}
-          </div>
-          {#if editing}
-            <div class="flex flex-wrap gap-x-8 gap-y-4">
-              <div class="space-y-1.5">
+              {/if}
+            </div>
+            {#if editing}
+              <div class="flex flex-wrap gap-x-8 gap-y-4">
+                <div class="space-y-1.5">
                 <FieldLabel for="edit-retention" tooltip={"Number of days back snapshot traversal can reach.\n\nBeyond this window, snapshot mounts may show inconsistent data due to cleaned-up data. An active fork pinning older data may force retention beyond the configured window."} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Day Retention Window (days)
                 </FieldLabel>
                 <Input id="edit-retention" type="number" class="w-[120px]" bind:value={editRetention} placeholder="30" min="0" max="366" />
-              </div>
-              {#if !auth.isUserRole}
-                <div class="space-y-1.5">
+                </div>
+                {#if !auth.isUserRole}
+                  <div class="space-y-1.5">
                   <FieldLabel for="edit-grace" tooltip="After deactivation, this is the window to reactivate the volume. Once it expires, data is purged according to the cleanup options chosen at deactivation." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                     Grace Period (days)
                   </FieldLabel>
                   <Input id="edit-grace" type="number" class="w-[120px]" bind:value={editGrace} placeholder="14" min="0" max="91" />
-                </div>
-              {/if}
-              <div class="space-y-1.5">
+                  </div>
+                {/if}
+                <div class="space-y-1.5">
                 <FieldLabel for="edit-fork-grace" tooltip="After a named fork is deactivated, the window to restore it before its data is permanently cleaned up." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Fork Grace Period (days)
                 </FieldLabel>
                 <Input id="edit-fork-grace" type="number" class="w-[120px]" bind:value={editForkGrace} placeholder="1" min="0" max="30" />
-              </div>
-              <div class="space-y-1.5">
+                </div>
+                <div class="space-y-1.5">
                 <FieldLabel for="edit-event-log" tooltip="How many days of file/folder change events are kept for this volume. 0 disables change-event logging (saves resources)." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Event Log Retention (days)
                 </FieldLabel>
                 <Input id="edit-event-log" type="number" class="w-[120px]" bind:value={editEventLog} placeholder="0" min="0" max="30" />
-              </div>
-              <div class="space-y-1.5">
+                </div>
+                <div class="space-y-1.5">
                 <FieldLabel id="edit-content-window-label" tooltip={"How content edits (writes/truncates) are grouped into versions.\n\nSmaller windows (down to 1s) keep more, more-granular file-content versions, at the cost of more version rows and longer-retained storage. Larger windows (up to 1h) collapse more repeated edits into a single version. Metadata-only changes (rename, permissions) always version at the fixed 1m window regardless of this setting."} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Content Version Window
                 </FieldLabel>
                 <Select id="edit-content-window" ariaLabelledby="edit-content-window-label" class="w-[150px]" bind:value={editContentWindow}
-                  placeholder="Select window..."
-                  options={CONTENT_WINDOW_OPTIONS.map(n => ({ value: String(n), label: n === 60 ? `${formatContentWindow(n)} (default)` : formatContentWindow(n) }))} />
-              </div>
-              <div class="space-y-1.5">
+                    placeholder="Select window..."
+                    options={CONTENT_WINDOW_OPTIONS.map((n) => ({
+                      value: String(n),
+                      label: n === 60
+                        ? `${formatContentWindow(n)} (default)`
+                        : formatContentWindow(n)
+                    }))}
+                  />
+                </div>
+                <div class="space-y-1.5">
                 <FieldLabel id="edit-compaction-label" tooltip={compactionTooltip} class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                   Compaction
                 </FieldLabel>
                 <Select id="edit-compaction" ariaLabelledby="edit-compaction-label" class="w-[190px]" bind:value={editCompaction}
-                  placeholder="Select mode..."
+                    placeholder="Select mode..."
                   options={compactionOptions} />
+                </div>
               </div>
-            </div>
-          {:else}
-            <div class="flex flex-wrap gap-x-6 gap-y-2">
-              <div>
+            {:else}
+              <div class="flex flex-wrap gap-x-6 gap-y-2">
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                  Day Retention Window
+                    Day Retention Window 
                   <InfoTip text={"How far back you can browse snapshots.\n\nAn active fork pinning older data can extend this limit."} />
-                </span>
-                <p class="text-sm">{volume.retention?.dataDays ?? 0} days</p>
-              </div>
-              <div>
+                  </span>
+                  <p class="text-sm">{volume.retention?.dataDays ?? 0} days</p>
+                </div>
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                  Grace Period
+                    Grace Period 
                   <InfoTip text={"Reactivate the volume within this window after deactivation.\n\nAfter it ends, cleanup runs using the options chosen at deactivation."} />
-                </span>
-                <p class="text-sm">{volume.retention?.graceDays ?? 0} days</p>
-              </div>
-              <div>
+                  </span>
+                  <p class="text-sm">{volume.retention?.graceDays ?? 0} days</p>
+                </div>
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                  Fork Grace Period
+                    Fork Grace Period 
                   <InfoTip text="Restore a deactivated fork within this window. After it ends, cleanup deletes the fork's data permanently." />
-                </span>
-                <p class="text-sm">{volume.retention?.forkGraceDays ?? 0} days</p>
-              </div>
-              <div>
+                  </span>
+                  <p class="text-sm">{volume.retention?.forkGraceDays ?? 0} days</p>
+                </div>
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                  Event Log Retention
+                    Event Log Retention 
                   <InfoTip text="mountOS keeps file and folder change events for this many days. Set 0 to disable logging and save resources." />
-                </span>
-                <p class="text-sm">{volume.retention?.eventLogDays ?? 0} days</p>
-              </div>
-              <div>
+                  </span>
+                  <p class="text-sm">{volume.retention?.eventLogDays ?? 0} days</p>
+                </div>
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                  Content Version Window
+                    Content Version Window 
                   <InfoTip text={"Sets version granularity, in seconds, for content edits (`writes`, `truncates`).\n\n• Smaller windows keep more file versions but need more storage.\n• Metadata-only changes (`rename`, `permissions`) always use the fixed **60s** window."} />
-                </span>
-                <p class="text-sm">{formatContentWindow(volume.versioning?.contentWindowSeconds ?? 60)}</p>
-              </div>
-              <div>
+                  </span>
+                  <p class="text-sm">{formatContentWindow(volume.versioning?.contentWindowSeconds ?? 60)}</p>
+                </div>
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Compaction
                   <InfoTip text={compactionTooltip} />
                 </span>
-                <p class="text-sm">{compactionLabel(volume.compaction)}</p>
-              </div>
-              <div>
+                  <p class="text-sm">{compactionLabel(volume.compaction)}</p>
+                </div>
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                  Retention up to
+                    Retention up to 
                   <InfoTip text={"The earliest reachable snapshot is today minus the retention window, or the oldest active fork's snapshot, whichever is older."} />
-                </span>
-                <p class="text-sm">{formatTimestamp(gcFloorMs(volume, forks))}</p>
+                  </span>
+                  <p class="text-sm">{formatTimestamp(gcFloorMs(volume, forks))}</p>
+                </div>
               </div>
-            </div>
-          {/if}
-          {#if !volume.isActive}
-            <div>
+            {/if}
+            {#if !volume.isActive}
+              <div>
               <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                Cleanup
+                  Cleanup 
                 <InfoTip text="You set these flags when you deactivate the volume." />
-              </span>
+                </span>
               <div class="mt-1 flex gap-2" role="list" aria-label="Cleanup flags">
                 <span role="listitem"><Badge variant={volume.isCleanupMetaEnabled ? 'default' : 'outline'} aria-label="Meta: {volume.isCleanupMetaEnabled ? 'enabled' : 'disabled'}">Meta</Badge></span>
                 <span role="listitem"><Badge variant={volume.isCleanupStorageEnabled ? 'default' : 'outline'} aria-label="Storage: {volume.isCleanupStorageEnabled ? 'enabled' : 'disabled'}">Storage</Badge></span>
                 <span role="listitem"><Badge variant={volume.isCleanupVaultEnabled ? 'default' : 'outline'} aria-label="Vault: {volume.isCleanupVaultEnabled ? 'enabled' : 'disabled'}">Vault</Badge></span>
+                </div>
               </div>
-            </div>
-          {/if}
-          {#if editing && !auth.isUserRole}
-            <div class="space-y-1.5">
+            {/if}
+            {#if editing && !auth.isUserRole}
+              <div class="space-y-1.5">
               <FieldLabel for="edit-quota" tooltip="**0** means **unlimited**." class="text-sm uppercase tracking-wider font-semibold text-muted-foreground">
                 Quota Limit (GB)
               </FieldLabel>
               <Input id="edit-quota" type="number" class="w-[120px]" bind:value={editQuota} placeholder="0 = unlimited" min="0" step="0.01" />
-            </div>
-          {:else if !editing}
-            <div class="flex flex-wrap gap-x-6 gap-y-2">
-              <div class="min-w-[16rem]">
+              </div>
+            {:else if !editing}
+              <div class="flex flex-wrap gap-x-6 gap-y-2">
+                <div class="min-w-[16rem]">
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
                   Quota
                 </span>
-                <p class="mt-1 font-mono text-sm">{formatQuota(volume.totalVolume, volume.quotaLimit)}</p>
-                {#if volume.quotaLimit > 0}
-                  {@const pct = quotaPercent(volume.totalVolume, volume.quotaLimit)}
+                  <p class="mt-1 font-mono text-sm">{formatQuota(volume.totalVolume, volume.quotaLimit)}</p>
+                  {#if volume.quotaLimit > 0}
+                    {@const pct = quotaPercent(volume.totalVolume, volume.quotaLimit)}
                   <div class="mt-1.5 h-1.5 w-full rounded-sm bg-muted overflow-hidden" role="progressbar"
                     aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
                     aria-label="Quota usage {pct}%">
                     <div class="h-full rounded-sm transition-transform origin-left {pct > 90 ? 'bg-destructive' : pct > 70 ? 'bg-warning' : 'bg-primary'}" style="transform: scaleX({pct / 100})"></div>
-                  </div>
-                {/if}
-              </div>
-              <div>
+                    </div>
+                  {/if}
+                </div>
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                  Live
+                    Live 
                   <InfoTip text={"Sum of files across all forks.\n\nThis total can exceed volume size due to **clones**, **hard links**, and **sparse files**.\nOnly live (not deleted, current version) files count."} />
-                </span>
-                <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveVolume)}</p>
-              </div>
-              <div>
+                  </span>
+                  <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveVolume)}</p>
+                </div>
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                  Inactive
+                    Inactive 
                   <InfoTip text={"Size of live files in inactive (deleted) forks.\n\nCleanup for this data is pending. Clients cannot access it."} />
-                </span>
-                <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveInactiveVolume)}</p>
-              </div>
-              <div>
+                  </span>
+                  <p class="mt-1 font-mono text-sm">{formatBytes(volume.liveInactiveVolume)}</p>
+                </div>
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                  Total
+                    Total 
                   <InfoTip text={"Object or block storage space used.\n\nIncludes all versions, file segments not yet discarded, and **multipart uploads** in progress."} />
-                </span>
-                <p class="mt-1 font-mono text-sm">{formatBytes(volume.totalVolume)}</p>
-              </div>
-              <div>
+                  </span>
+                  <p class="mt-1 font-mono text-sm">{formatBytes(volume.totalVolume)}</p>
+                </div>
+                <div>
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground inline-flex items-center gap-1">
-                  Pending
+                    Pending 
                   <InfoTip text={"**Multipart uploads** in progress, not yet completed or aborted."} />
-                </span>
-                <p class="mt-1 font-mono text-sm">{formatBytes(volume.pendingVolume)}</p>
+                  </span>
+                  <p class="mt-1 font-mono text-sm">{formatBytes(volume.pendingVolume)}</p>
+                </div>
               </div>
-            </div>
-          {/if}
-        </CardContent>
-        {#if editing}
+            {/if}
+          </CardContent>
+          {#if editing}
           <CardFooter class="gap-4 [&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8">
             <Button variant="primary" size="sm" class="cyberpunk-skewed-sm" disabled={editSaving || !editDirty} onclick={saveEdit}>
               {editSaving ? 'Saving...' : 'Update'}
             </Button>
             <Button variant="secondary" size="sm" onclick={cancelEdit} disabled={editSaving}>Cancel</Button>
-          </CardFooter>
-        {:else if auth.can('volumes', 'update') && volume.isActive}
-          <CardFooter class="flex gap-2 [&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8">
-            <Button variant="destructive" size="sm" onclick={() => { deactivateOpen = true }}>Deactivate</Button>
-            <Button variant="outline" size="sm" onclick={() => dialog.confirm(
-              volume!.locked ? 'Unlock' : 'Lock',
-              `${volume!.locked ? 'Unlock' : 'Lock'} "${volume!.name}"?`,
-              () => volume!.locked ? store.unlockVolume(id) : store.lockVolume(id),
-            )}>{volume.locked ? 'Unlock' : 'Lock'}</Button>
-            {#if !auth.isUserRole}
+            </CardFooter>
+          {:else if auth.can('volumes', 'update') && volume.isActive}
+            <CardFooter
+              class="flex gap-2 [&_[data-slot=button]]:min-h-[44px] sm:[&_[data-slot=button]]:min-h-8"
+            >
+              <Button
+                variant="destructive"
+                size="sm"
+                onclick={() => {
+                  deactivateOpen = true;
+                }}
+              >Deactivate</Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onclick={() => dialog.confirm((volume!).locked ? 'Unlock' : 'Lock', `${(volume!).locked ? 'Unlock' : 'Lock'} "${(volume!).name}"?`, () => (volume!).locked ? store.unlockVolume(id) : store.lockVolume(id))}
+              >{volume.locked ? 'Unlock' : 'Lock'}</Button>
+
+              {#if !auth.isUserRole}
               <Button variant="outline" size="sm" onclick={() => { moveClusterOpen = true }}>Move Cluster</Button>
-            {/if}
-          </CardFooter>
-        {/if}
-      </Card>
+              {/if}
+            </CardFooter>
+          {/if}
+        </Card>
 
-    </div>
+      </div>
 
-    {#if volume.storageType === 'block'}
-      <Card cornerBrackets>
-        <CardHeader>
-          <div class="flex items-center gap-1">
-            <CardTitle>Copysets</CardTitle>
+      {#if volume.storageType === 'block'}
+        <Card cornerBrackets>
+          <CardHeader>
+            <div class="flex items-center gap-1">
+              <CardTitle>Copysets</CardTitle>
             <InfoTip text="A copyset provides High Availability (HA): two nodes holding identical copies." />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {#if copysetConfigLoading && !copysetConfig}
-            <p class="text-sm text-muted-foreground">Loading copysets…</p>
-          {:else if copysetConfig}
-            <div class="space-y-3">
-              <VolumeCopysetCountControl
-                targetCopysetCount={copysetConfig.targetCopysetCount}
-                copysetCount={copysetConfig.copysetIds.length}
-                canUpdate={!!canEdit}
-                onSave={handleCopysetConfigSave}
-              />
-              {#if copysetConfig.copysetIds.length > 0}
-                <Table>
-                  <caption class="sr-only">Copysets in this volume's working set</caption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead class="w-28">State</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {#each copysetConfig.copysetIds as cid (cid)}
-                      {@const c = volumeCopysetsById.get(cid)}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {#if copysetConfigLoading && !copysetConfig}
+              <p class="text-sm text-muted-foreground">Loading copysets…</p>
+            {:else if copysetConfig}
+              <div class="space-y-3">
+                <VolumeCopysetCountControl
+                  targetCopysetCount={copysetConfig.targetCopysetCount}
+                  copysetCount={copysetConfig.copysetIds.length}
+                  canUpdate={!!canEdit}
+                  onSave={handleCopysetConfigSave}
+                />
+                {#if copysetConfig.copysetIds.length > 0}
+                  <Table>
+                    <caption class="sr-only">Copysets in this volume's working set</caption>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell>
+                        <TableHead>Name</TableHead>
+                        <TableHead class="w-28">State</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {#each copysetConfig.copysetIds as cid (cid)}
+                        {@const c = volumeCopysetsById.get(cid)}
+                        <TableRow>
+                          <TableCell>
                           <a href={`/storages/${volume?.storage.id}/copysets/${cid}`}
                             class="inline-flex items-center gap-0.5 font-mono text-xs text-muted-foreground hover:text-primary hover:underline">
                             {c?.name || cid}<ArrowUpRight class="size-3" aria-hidden="true" />
-                          </a>
-                        </TableCell>
-                        <TableCell>
-                          {#if c}
-                            {#if isCopysetState(c.state)}
-                              <CopysetStateBadge state={c.state} />
+                            </a>
+                          </TableCell>
+                          <TableCell>
+                            {#if c}
+                              {#if isCopysetState(c.state)}
+                                <CopysetStateBadge state={c.state} />
+                              {:else}
+                                <Badge variant="destructive">{c.state}</Badge>
+                              {/if}
                             {:else}
-                              <Badge variant="destructive">{c.state}</Badge>
-                            {/if}
-                          {:else}
                             <Badge variant="outline" class={volumeCopysetsLoading ? 'animate-pulse' : ''}>{volumeCopysetsLoading ? 'loading' : 'unknown'}</Badge>
-                          {/if}
-                        </TableCell>
-                      </TableRow>
-                    {/each}
-                  </TableBody>
-                </Table>
-              {/if}
-            </div>
-          {:else}
+                            {/if}
+                          </TableCell>
+                        </TableRow>
+                      {/each}
+                    </TableBody>
+                  </Table>
+                {/if}
+              </div>
+            {:else}
             <div role="alert" class="flex items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
-              <TriangleAlert class="mt-0.5 size-4 shrink-0" />
-              <span>Failed to load copyset config.</span>
-            </div>
-          {/if}
-        </CardContent>
-      </Card>
-    {/if}
+                <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+                <span>Failed to load copyset config.</span>
+              </div>
+            {/if}
+          </CardContent>
+        </Card>
+      {/if}
 
-    <Card cornerBrackets>
-      <CardHeader>
-        <div class="flex items-center justify-between">
-          <CardTitle>Size History</CardTitle>
+      <Card cornerBrackets>
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <CardTitle>Size History</CardTitle>
           <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit">
             <div class="tech-grid absolute inset-0 pointer-events-none"></div>
             <div class="relative flex items-center gap-1.5" role="group" aria-label="Select size history range">
               {#each [['24h','24h'],['7d','7d'],['30d','30d'],['1y','1y']] as [val, label]}
                 <Button variant={sizeRange === val ? 'primary' : 'ghost'} size="sm"
-                  class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
-                  aria-pressed={sizeRange === val}
+                    class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                    aria-pressed={sizeRange === val}
                   onclick={() => sizeRange = val as SizeRange}>{label}</Button>
-              {/each}
+                {/each}
+              </div>
             </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {#if sizeLoading && sizePoints.length === 0}
-          <ListSkeleton rows={3} />
-        {:else}
-          <VolumeSizeHistoryChart points={sizePoints} />
-        {/if}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          {#if sizeLoading && sizePoints.length === 0}
+            <ListSkeleton rows={3} />
+          {:else}
+            <VolumeSizeHistoryChart points={sizePoints} />
+          {/if}
+        </CardContent>
+      </Card>
     </div>
   {:else if volume && activeTab === 'forks'}
     <div role="tabpanel" id="volume-tabpanel-forks" aria-labelledby="volume-tab-forks" tabindex={-1}>
-    <Card cornerBrackets>
-      <CardHeader>
+      <Card cornerBrackets>
+        <CardHeader>
         <div class="flex items-center justify-between flex-wrap gap-2">
-          <CardTitle>Forks ({forks.length})</CardTitle>
-          <div class="flex items-center gap-2 flex-wrap">
-          {#if forks.length > 1}
+            <CardTitle>Forks ({forks.length})</CardTitle>
+            <div class="flex items-center gap-2 flex-wrap">
+              {#if forks.length > 1}
             <div class="relative border border-border/30 rounded-sm px-3 py-2 w-fit hidden md:block">
               <div class="tech-grid absolute inset-0 pointer-events-none"></div>
               <div class="relative flex items-center gap-1.5" role="group" aria-label="Fork view">
                 <Button variant={forkView === 'list' ? 'primary' : 'ghost'} size="sm"
-                  class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
-                  aria-pressed={forkView === 'list'}
+                      class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                      aria-pressed={forkView === 'list'}
                   onclick={() => forkView = 'list'}>List</Button>
                 <Button variant={forkView === 'timeline' ? 'primary' : 'ghost'} size="sm"
-                  class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
-                  aria-pressed={forkView === 'timeline'}
+                      class="h-7 px-3 min-h-[44px] sm:min-h-0 text-xs font-mono justify-center"
+                      aria-pressed={forkView === 'timeline'}
                   onclick={() => forkView = 'timeline'}>Timeline</Button>
-              </div>
-            </div>
-          {/if}
-          {#if canEdit}
+                  </div>
+                </div>
+              {/if}
+              {#if canEdit}
             <Button variant="outline" size="sm" class="h-9 min-h-[44px] gap-1.5 text-xs" onclick={openCreateFork}>
               <Plus class="h-3.5 w-3.5" /> Create Fork
             </Button>
-          {/if}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {#if forksLoading}
-          <ListSkeleton rows={3} />
-        {:else if forks.length === 0}
-          <p class="text-sm text-muted-foreground">No forks</p>
-        {:else if forkView === 'list'}
-          {#snippet forkNode(node: ForkNode, depth: number, isLast: boolean)}
-            <div class="flex items-start gap-2 {depth > 0 ? 'ml-5' : ''} {node.status !== 'active' ? 'opacity-60' : ''}" role="listitem">
-              {#if depth > 0}
-                <span class="shrink-0 text-muted-foreground/40 font-mono text-sm select-none" aria-hidden="true">{isLast ? '└─' : '├─'}</span>
               {/if}
-              <div class="flex-1 min-w-0 py-0.5">
-                <div class="flex items-center gap-2 flex-wrap">
-                  <Badge variant={node.fid === 0 ? 'default' : 'outline'}>{node.name}</Badge>
-                  {#if node.status === 'pending_deletion'}
-                    <Badge variant="warning" class="text-sm">Pending Deletion (Restorable)</Badge>
-                  {:else if node.status === 'cleanup_in_progress'}
-                    <span class="inline-flex items-center gap-1">
-                      <Badge variant="destructive" class="text-sm">Deleting (No Recovery)</Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {#if forksLoading}
+            <ListSkeleton rows={3} />
+          {:else if forks.length === 0}
+            <p class="text-sm text-muted-foreground">No forks</p>
+          {:else if forkView === 'list'}
+            {#snippet forkNode(node: ForkNode, depth: number, isLast: boolean)}
+            <div class="flex items-start gap-2 {depth > 0 ? 'ml-5' : ''} {node.status !== 'active' ? 'opacity-60' : ''}" role="listitem">
+                {#if depth > 0}
+                <span class="shrink-0 text-muted-foreground/40 font-mono text-sm select-none" aria-hidden="true">{isLast ? '└─' : '├─'}</span>
+                {/if}
+                <div class="flex-1 min-w-0 py-0.5">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <Badge variant={node.fid === 0 ? 'default' : 'outline'}>{node.name}</Badge>
+                    {#if node.status === 'pending_deletion'}
+                      <Badge variant="warning" class="text-sm">Pending Deletion (Restorable)</Badge>
+                    {:else if node.status === 'cleanup_in_progress'}
+                      <span class="inline-flex items-center gap-1">
+                        <Badge variant="destructive" class="text-sm">Deleting (No Recovery)</Badge>
                       <InfoTip text="Cleanup is in progress. This fork cannot be restored." />
-                    </span>
-                  {/if}
-                  {#if node.fid !== 0 && node.snapshotTs}
+                      </span>
+                    {/if}
+                    {#if node.fid !== 0 && node.snapshotTs}
                     <span class="text-sm text-muted-foreground whitespace-nowrap">
                       snapshot of <span class="font-medium">{node.parentName}</span> @ <span class="font-mono">{formatTimestamp(node.snapshotTs / 1000)}</span>
-                    </span>
-                  {/if}
-                  {#if node.size > 0}
+                      </span>
+                    {/if}
+                    {#if node.size > 0}
                     <Badge variant="outline" class="text-sm px-1.5 py-0 font-mono">{formatBytes(node.size)}</Badge>
-                  {/if}
-                  {#if node.childrenCount > 0}
+                    {/if}
+                    {#if node.childrenCount > 0}
                     <Badge variant="secondary" class="text-sm px-1.5 py-0 inline-flex items-center gap-1"
-                      aria-label="{node.childrenCount} child fork{node.childrenCount === 1 ? '' : 's'}"
+                        aria-label="{node.childrenCount} child fork{node.childrenCount === 1 ? '' : 's'}"
                       title="{node.childrenCount} child fork{node.childrenCount === 1 ? '' : 's'}">
-                      <GitFork class="size-3" aria-hidden="true" />
-                      {node.childrenCount}
-                    </Badge>
+                        <GitFork class="size-3" aria-hidden="true" />
+                        {node.childrenCount}
+                      </Badge>
+                    {/if}
+                  </div>
+                  {#if node.fid !== 0}
+                  <div class="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
+                      {#if node.createdAt}
+                      <span>created <span class="font-mono">{formatRelative(node.createdAt / 1_000_000)}</span></span>
+                      {/if}
+                      {#if node.createdBy}
+                        <span title={`user#${node.createdBy}`}>by {(void userCache.rev, userCache.display(node.createdBy))}</span>
+                      {/if}
+                      {#if node.inactiveAt}
+                        <span class="text-warning">
+                        deleted <span class="font-mono">{formatRelative(node.inactiveAt / 1_000_000)}</span>
+                        </span>
+                      {/if}
+                    </div>
                   {/if}
                 </div>
-                {#if node.fid !== 0}
-                  <div class="flex items-center gap-2 mt-0.5 text-sm text-muted-foreground">
-                    {#if node.createdAt}
-                      <span>created <span class="font-mono">{formatRelative(node.createdAt / 1_000_000)}</span></span>
-                    {/if}
-                    {#if node.createdBy}
-                      <span title={`user#${node.createdBy}`}>by {void userCache.rev, userCache.display(node.createdBy)}</span>
-                    {/if}
-                    {#if node.inactiveAt}
-                      <span class="text-warning">
-                        deleted <span class="font-mono">{formatRelative(node.inactiveAt / 1_000_000)}</span>
-                      </span>
+                {#if node.fid !== 0 && canEdit && auth.can('volumes', 'delete')}
+                  <div class="flex items-center gap-1 shrink-0">
+                    {#if node.status === 'active'}
+                    <Button variant="ghost" size="sm" class="h-9 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 text-xs text-destructive hover:text-destructive"
+                        aria-label="Delete fork {node.name}"
+                      onclick={() => confirmDeleteFork(node)}>
+                      Delete
+                    </Button>
+                    {:else if node.status === 'pending_deletion'}
+                    <Button variant="ghost" size="sm" class="h-9 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 text-xs text-success hover:text-success"
+                        aria-label="Restore fork {node.name}"
+                      onclick={() => confirmRestoreFork(node)}>
+                      Restore
+                    </Button>
                     {/if}
                   </div>
                 {/if}
               </div>
-              {#if node.fid !== 0 && canEdit && auth.can('volumes', 'delete')}
-                <div class="flex items-center gap-1 shrink-0">
-                  {#if node.status === 'active'}
-                    <Button variant="ghost" size="sm" class="h-9 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 text-xs text-destructive hover:text-destructive"
-                      aria-label="Delete fork {node.name}"
-                      onclick={() => confirmDeleteFork(node)}>
-                      Delete
-                    </Button>
-                  {:else if node.status === 'pending_deletion'}
-                    <Button variant="ghost" size="sm" class="h-9 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 text-xs text-success hover:text-success"
-                      aria-label="Restore fork {node.name}"
-                      onclick={() => confirmRestoreFork(node)}>
-                      Restore
-                    </Button>
-                  {/if}
+              {#if node.children.length > 0}
+                <div
+                  class={depth > 0 && !isLast
+                    ? 'ml-5 border-l border-muted-foreground/20 pl-0'
+                    : depth > 0 ? 'ml-5' : ''}
+                  role="list"
+                  aria-label="{node.name} children"
+                >
+                  {#each node.children as child, i}
+                    {@render forkNode(child, depth + 1, i === node.children.length - 1)}
+                  {/each}
                 </div>
               {/if}
+            {/snippet}
+            {@const tree = forkTree}
+            <div role="list" aria-label="Fork hierarchy">
+              {#each tree as root, i}
+                {@render forkNode(root, 0, i === tree.length - 1)}
+              {/each}
             </div>
-            {#if node.children.length > 0}
-              <div class="{depth > 0 && !isLast ? 'ml-5 border-l border-muted-foreground/20 pl-0' : depth > 0 ? 'ml-5' : ''}" role="list" aria-label="{node.name} children">
-                {#each node.children as child, i}
-                  {@render forkNode(child, depth + 1, i === node.children.length - 1)}
-                {/each}
-              </div>
-            {/if}
-          {/snippet}
-          {@const tree = forkTree}
-          <div role="list" aria-label="Fork hierarchy">
-            {#each tree as root, i}
-              {@render forkNode(root, 0, i === tree.length - 1)}
-            {/each}
-          </div>
-        {:else}
-          {@const g = forkGraph}
-          {@const svgW = G_LEFT + G_LABEL + G_TIMELINE + G_RIGHT}
-          {@const svgH = G_TOP + g.totalRows * G_ROW + 8}
-          <div class="overflow-x-auto -mx-2">
+          {:else}
+            {@const g = forkGraph}
+            {@const svgW = G_LEFT + G_LABEL + G_TIMELINE + G_RIGHT}
+            {@const svgH = G_TOP + g.totalRows * G_ROW + 8}
+            <div class="overflow-x-auto -mx-2">
             <svg width={svgW} height={svgH} class="select-none" aria-label="Fork branch graph">
-              {#each g.rows as br}
-                {@const y = gRowY(br.row)}
-                {@const startX = br.fid === 0 ? G_LEFT + G_LABEL : gTimeX(br.branchNorm)}
+                {#each g.rows as br}
+                  {@const y = gRowY(br.row)}
+                  {@const startX = br.fid === 0 ? G_LEFT + G_LABEL : gTimeX(br.branchNorm)}
                 <line x1={startX} y1={y} x2={gNowX} y2={y}
                   stroke={br.color} stroke-width="3" stroke-linecap="round"
-                  opacity={br.status !== 'active' ? 0.35 : 1}
-                  stroke-dasharray={br.status !== 'active' ? '6 4' : 'none'} />
-                {#if br.status === 'active'}
-                  <polygon points="{gNowX + 8},{y} {gNowX},{y - 4} {gNowX},{y + 4}" fill={br.color} />
-                {:else}
-                  <circle cx={gNowX} cy={y} r="3" fill={br.color} opacity="0.5" />
-                {/if}
-                {#if br.fid !== 0}
-                  {@const bx = gTimeX(br.branchNorm)}
+                    opacity={br.status !== 'active' ? 0.35 : 1}
+                    stroke-dasharray={br.status !== 'active' ? '6 4' : 'none'}
+                  ></line>
+
+                  {#if br.status === 'active'}
+                    <polygon
+                      points="{gNowX + 8},{y} {gNowX},{y - 4} {gNowX},{y + 4}"
+                      fill={br.color}
+                    ></polygon>
+                  {:else}
+                    <circle
+                      cx={gNowX}
+                      cy={y}
+                      r="3"
+                      fill={br.color}
+                      opacity="0.5"
+                    ></circle>
+                  {/if}
+                  {#if br.fid !== 0}
+                    {@const bx = gTimeX(br.branchNorm)}
                   <path d={gBranchPath(br.parentRow, br.row, bx)}
                     fill="none" stroke={br.color} stroke-width="3" stroke-linecap="round"
-                    opacity={br.status !== 'active' ? 0.35 : 1}
-                    stroke-dasharray={br.status !== 'active' ? '6 4' : 'none'} />
-                  <circle cx={bx} cy={gRowY(br.parentRow)} r="4"
-                    fill={g.rowColorMap.get(br.parentRow) ?? 'var(--muted-foreground)'} stroke="var(--background)" stroke-width="2" />
-                  <circle cx={bx} cy={y} r={G_DOT}
-                    fill={br.color} stroke="var(--background)" stroke-width="2" />
-                  {@const above = br.row < br.parentRow}
+                      opacity={br.status !== 'active' ? 0.35 : 1}
+                      stroke-dasharray={br.status !== 'active' ? '6 4' : 'none'}
+                    ></path>
+
+                    <circle
+                      cx={bx}
+                      cy={gRowY(br.parentRow)}
+                      r="4"
+                      fill={g.rowColorMap.get(br.parentRow) ?? 'var(--muted-foreground)'}
+                      stroke="var(--background)"
+                      stroke-width="2"
+                    ></circle>
+
+                    <circle
+                      cx={bx}
+                      cy={y}
+                      r={G_DOT}
+                      fill={br.color}
+                      stroke="var(--background)"
+                      stroke-width="2"
+                    ></circle>
+
+                    {@const above = br.row < br.parentRow}
                   <text x={bx} y={above ? y - G_DOT - 6 : y + G_DOT + 16}
                     text-anchor="middle" dominant-baseline="auto"
                     fill={br.color} opacity="0.7"
                     class="font-mono text-sm">{formatShortDate(br.snapshotTs / 1000)}</text>
-                {:else}
-                  <circle cx={startX} cy={y} r={G_DOT + 1}
-                    fill={br.color} stroke="var(--background)" stroke-width="2" />
-                {/if}
+                  {:else}
+                    <circle
+                      cx={startX}
+                      cy={y}
+                      r={G_DOT + 1}
+                      fill={br.color}
+                      stroke="var(--background)"
+                      stroke-width="2"
+                    ></circle>
+                  {/if}
                 <text x={G_LEFT + G_LABEL - 12} y={y}
                   text-anchor="end" dominant-baseline="central"
-                  fill={br.color}
+                    fill={br.color}
                   class="font-semibold" style="font-size: 16px">{br.name}</text>
-                {#if br.fid !== 0}
+                  {#if br.fid !== 0}
                   <text x={gNowX + 14} y={y}
-                    dominant-baseline="central"
+                      dominant-baseline="central"
                     class="font-mono" style="font-size: 16px" fill="currentColor" opacity="0.55">{formatRelative(br.createdAt / 1_000_000)}{br.createdBy ? ` · ${(void userCache.rev, userCache.display(br.createdBy))}` : ''}{br.size > 0 ? ` · ${formatBytes(br.size)}` : ''}</text>
-                {:else if br.size > 0}
+                  {:else if br.size > 0}
                   <text x={gNowX + 14} y={y}
-                    dominant-baseline="central"
+                      dominant-baseline="central"
                     class="font-mono" style="font-size: 16px" fill="currentColor" opacity="0.55">{formatBytes(br.size)}</text>
-                {/if}
-              {/each}
-            </svg>
-          </div>
-        {/if}
-      </CardContent>
-    </Card>
+                  {/if}
+                {/each}
+              </svg>
+            </div>
+          {/if}
+        </CardContent>
+      </Card>
     </div>
   {:else if volume && activeTab === 'sessions'}
     <div role="tabpanel" id="volume-tabpanel-sessions" aria-labelledby="volume-tab-sessions" tabindex={-1}>
-    {#if auth.can('clientSessions', 'read')}
-      <Card>
-        <CardHeader>
-          <div class="flex items-center justify-between">
-            <CardTitle>Active Sessions ({sessionsTotal})</CardTitle>
+      {#if auth.can('clientSessions', 'read')}
+        <Card>
+          <CardHeader>
+            <div class="flex items-center justify-between">
+              <CardTitle>Active Sessions ({sessionsTotal})</CardTitle>
             <Button variant="outline" size="sm" class="text-sm font-normal text-muted-foreground" href="/sessions?volumeId={id}">
               View all sessions
             </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {#if sessionsLoading && volSessions.length === 0}
-            <TableSkeleton
-              header={sessionsHeaderRow}
-              caption="Loading active sessions"
-              rows={3}
-              cells={[
-                { width: 'w-32' },
-                { width: 'w-32', class: 'hidden md:table-cell' },
-                { width: 'w-16', class: 'hidden lg:table-cell' },
-                { width: 'w-16', height: 'h-5' },
-                { width: 'w-20', class: 'hidden md:table-cell' },
+            </div>
+          </CardHeader>
+          <CardContent>
+            {#if sessionsLoading && volSessions.length === 0}
+              <TableSkeleton
+                header={sessionsHeaderRow}
+                caption="Loading active sessions"
+                rows={3}
+                cells={[
+                  { width: 'w-32' },
+                  { width: 'w-32', class: 'hidden md:table-cell' },
+                  { width: 'w-16', class: 'hidden lg:table-cell' },
+                  { width: 'w-16', height: 'h-5' },
+                  { width: 'w-20', class: 'hidden md:table-cell' },
                 { width: 'w-20', class: 'hidden lg:table-cell' },
-              ]}
-            />
-          {:else if volSessions.length === 0}
-            <p class="text-sm text-muted-foreground">No active sessions</p>
-          {:else}
-            <Table containerLabel="Active sessions">
+                ]}
+              />
+            {:else if volSessions.length === 0}
+              <p class="text-sm text-muted-foreground">No active sessions</p>
+            {:else}
+              <Table containerLabel="Active sessions">
               <TableHeader>
                 {@render sessionsHeaderRow()}
               </TableHeader>
-              <TableBody>
-                {#each volSessions as session (session.id)}
-                  {@const st = formatSessionStatus(session.status)}
-                  <TableRow>
-                    <TableCell class="text-sm">
-                      <span class="font-medium">{formatClientType(session.clientType)}</span>
-                      {#if session.osVersion}
-                        <span class="text-muted-foreground ml-1">{session.osName} {session.osVersion}</span>
-                      {/if}
-                    </TableCell>
+                <TableBody>
+                  {#each volSessions as session (session.id)}
+                    {@const st = formatSessionStatus(session.status)}
+                    <TableRow>
+                      <TableCell class="text-sm">
+                        <span class="font-medium">{formatClientType(session.clientType)}</span>
+                        {#if session.osVersion}
+                          <span class="text-muted-foreground ml-1">{session.osName} {session.osVersion}</span>
+                        {/if}
+                      </TableCell>
                     <TableCell class="text-sm text-muted-foreground hidden md:table-cell font-mono">
                       {session.hostname || session.ipAddr}
                     </TableCell>
                     <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
                       {session.mountMode ?? '·'}
                     </TableCell>
-                    <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
+                      <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
                     <TableCell class="text-sm text-muted-foreground hidden md:table-cell">
                       {session.connectedAt ? formatDuration(session.connectedAt) : '·'}
                     </TableCell>
                     <TableCell class="text-sm text-muted-foreground hidden lg:table-cell">
                       {session.lastHeartbeat ? formatRelative(session.lastHeartbeat) : '·'}
                     </TableCell>
-                  </TableRow>
-                {/each}
-              </TableBody>
-            </Table>
-            {#if sessionsTotalPages > 1}
-              <Pagination currentPage={sessionsPage} totalPages={sessionsTotalPages} onPageChange={(p) => fetchVolumeSessions(p)} />
-            {/if}
-          {/if}
-        </CardContent>
-      </Card>
-      {#if grantsResult && showGrants}
-        <div class="mt-6"><ExclusiveGrantsPanel result={grantsResult} /></div>
-      {/if}
-    {:else}
-      <EmptyState title="Sessions restricted" description="Your role does not allow viewing client sessions for this volume." />
-    {/if}
-    </div>
-  {:else if volume && activeTab === 'apikeys'}
-    <div role="tabpanel" id="volume-tabpanel-apikeys" aria-labelledby="volume-tab-apikeys" tabindex={-1}>
-    {#if volume.isActive}
-      <Card>
-        <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
-        <CardContent class="space-y-4">
-          <fieldset class="space-y-3">
-            <legend class="text-sm font-semibold">Your API keys</legend>
-            {#if apiKeysLoading}
-              <TableSkeleton rows={2} caption="Loading API keys" header={apiKeysHeaderRow}
-                cells={[{ width: 'w-20' }, { width: 'w-40' }, { width: 'w-24', class: 'hidden sm:table-cell' }, { width: 'w-24' }, { width: 'w-16' }]} />
-            {:else if auth.userMountosUserId == null}
-              <p class="text-sm text-muted-foreground">Your dashboard account has no linked mountOS user, so it holds no API keys.</p>
-            {:else if !apiKeysKnown}
-              <div class="flex items-start gap-3">
-                <div role="alert" class="flex flex-1 items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
-                  <TriangleAlert class="mt-0.5 size-4 shrink-0" />
-                  <span>Could not load your API keys.</span>
-                </div>
-                <Button variant="outline" size="sm" onclick={fetchApiKeys}>Retry</Button>
-              </div>
-            {:else if apiKeys.length === 0}
-              <p class="text-sm text-muted-foreground">No active keys for your account on this volume.</p>
-            {:else}
-              <Table containerLabel="Your API keys">
-                <TableHeader>
-                  {@render apiKeysHeaderRow()}
-                </TableHeader>
-                <TableBody>
-                  {#each apiKeys as k (k.apiKey)}
-                    <TableRow>
-                      <TableCell class="font-medium">{k.name || '·'}</TableCell>
-                      <TableCell><code class="font-mono text-xs">{k.apiKey}</code></TableCell>
-                      <TableCell class="hidden sm:table-cell text-muted-foreground" title={k.createdAt ? formatTimestamp(new Date(k.createdAt).getTime()) : undefined}>{k.createdAt ? formatRelative(k.createdAt) : '·'}</TableCell>
-                      <TableCell class="text-muted-foreground" title={k.lastUsedAt ? formatTimestamp(new Date(k.lastUsedAt).getTime()) : undefined}>{k.lastUsedAt ? formatRelative(k.lastUsedAt) : 'never'}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" class="h-9 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 text-xs text-destructive hover:text-destructive"
-                          onclick={() => handleRevokeKey(k.apiKey, keyLabel(k))}>Revoke</Button>
-                      </TableCell>
                     </TableRow>
                   {/each}
                 </TableBody>
               </Table>
-              <p class="text-xs text-muted-foreground">Last used advances on authentication events and may lag actual use by up to an hour.</p>
+              {#if sessionsTotalPages > 1}
+              <Pagination currentPage={sessionsPage} totalPages={sessionsTotalPages} onPageChange={(p) => fetchVolumeSessions(p)} />
+              {/if}
             {/if}
-          </fieldset>
-          <Separator />
-          <fieldset class="space-y-3">
-            <legend class="text-sm font-semibold">Generate an API token</legend>
-            <div class="flex items-end gap-3 flex-wrap">
-              <div class="w-full max-w-64 space-y-1">
-                <Label for="api-key-user">User</Label>
-                <Input id="api-key-user" value={auth.username ?? auth.user?.name ?? 'current session'} readonly />
-              </div>
-              <div class="w-full max-w-64 space-y-1">
-                <Label for="api-key-name">Key name (optional)</Label>
-                <Input id="api-key-name" bind:value={newKeyName} maxlength={64} placeholder="e.g. laptop, ci-runner" />
-              </div>
-              <Button size="sm" class="shrink-0" aria-describedby="api-key-user" disabled={auth.userMountosUserId == null} onclick={generateKeys}>Generate</Button>
-            </div>
-            {#if auth.userMountosUserId == null}
-              <p class="text-xs text-muted-foreground">Your dashboard account has no linked mountOS user, so it cannot generate API keys.</p>
-            {:else}
-              <p class="text-xs text-muted-foreground">Mints an access key and secret pair bound to your logged-in account. Up to {API_KEY_LIMIT} keys can be active at once; generating another revokes your oldest key.</p>
-            {/if}
-          </fieldset>
-          {#if auth.can('volumes', 'update') && !auth.isUserRole}
+          </CardContent>
+        </Card>
+        {#if grantsResult && showGrants}
+          <div class="mt-6"><ExclusiveGrantsPanel result={grantsResult} /></div>
+        {/if}
+      {:else}
+      <EmptyState title="Sessions restricted" description="Your role does not allow viewing client sessions for this volume." />
+      {/if}
+    </div>
+  {:else if volume && activeTab === 'apikeys'}
+    <div role="tabpanel" id="volume-tabpanel-apikeys" aria-labelledby="volume-tab-apikeys" tabindex={-1}>
+      {#if volume.isActive}
+        <Card>
+          <CardHeader><CardTitle>API Keys</CardTitle></CardHeader>
+          <CardContent class="space-y-4">
+            <fieldset class="space-y-3">
+              <legend class="text-sm font-semibold">Your API keys</legend>
+              {#if apiKeysLoading}
+              <TableSkeleton rows={2} caption="Loading API keys" header={apiKeysHeaderRow}
+                cells={[{ width: 'w-20' }, { width: 'w-40' }, { width: 'w-24', class: 'hidden sm:table-cell' }, { width: 'w-24' }, { width: 'w-16' }]} />
+              {:else if auth.userMountosUserId == null}
+                <p class="text-sm text-muted-foreground">Your dashboard account has no linked mountOS user, so it holds no API keys.</p>
+              {:else if !apiKeysKnown}
+                <div class="flex items-start gap-3">
+                <div role="alert" class="flex flex-1 items-start gap-2 rounded-sm border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
+                    <TriangleAlert class="mt-0.5 size-4 shrink-0" />
+                    <span>Could not load your API keys.</span>
+                  </div>
+                  <Button variant="outline" size="sm" onclick={fetchApiKeys}>Retry</Button>
+                </div>
+              {:else if apiKeys.length === 0}
+                <p class="text-sm text-muted-foreground">No active keys for your account on this volume.</p>
+              {:else}
+                <Table containerLabel="Your API keys">
+                <TableHeader>
+                  {@render apiKeysHeaderRow()}
+                </TableHeader>
+                  <TableBody>
+                    {#each apiKeys as k (k.apiKey)}
+                      <TableRow>
+                        <TableCell class="font-medium">{k.name || '·'}</TableCell>
+                        <TableCell><code class="font-mono text-xs">{k.apiKey}</code></TableCell>
+                      <TableCell class="hidden sm:table-cell text-muted-foreground" title={k.createdAt ? formatTimestamp(new Date(k.createdAt).getTime()) : undefined}>{k.createdAt ? formatRelative(k.createdAt) : '·'}</TableCell>
+                      <TableCell class="text-muted-foreground" title={k.lastUsedAt ? formatTimestamp(new Date(k.lastUsedAt).getTime()) : undefined}>{k.lastUsedAt ? formatRelative(k.lastUsedAt) : 'never'}</TableCell>
+                        <TableCell>
+                        <Button variant="ghost" class="h-9 min-h-[44px] sm:min-h-0 min-w-[44px] sm:min-w-0 px-3 text-xs text-destructive hover:text-destructive"
+                          onclick={() => handleRevokeKey(k.apiKey, keyLabel(k))}>Revoke</Button>
+                        </TableCell>
+                      </TableRow>
+                    {/each}
+                  </TableBody>
+                </Table>
+                <p class="text-xs text-muted-foreground">Last used advances on authentication events and may lag actual use by up to an hour.</p>
+              {/if}
+            </fieldset>
             <Separator />
-            <div class="space-y-4 rounded-md bg-destructive/5 p-3">
-              <fieldset class="space-y-3">
-                <legend class="text-sm font-semibold">Revoke by User</legend>
-                <div class="flex items-end gap-3">
-                  <div class="w-full max-w-64 space-y-1">
-                    <Label for="revoke-user-id">User</Label>
-                    <Popover bind:open={userSelectOpen}>
-                      <PopoverTrigger>
-                        {#snippet child({ props })}
+            <fieldset class="space-y-3">
+              <legend class="text-sm font-semibold">Generate an API token</legend>
+              <div class="flex items-end gap-3 flex-wrap">
+                <div class="w-full max-w-64 space-y-1">
+                  <Label for="api-key-user">User</Label>
+                <Input id="api-key-user" value={auth.username ?? auth.user?.name ?? 'current session'} readonly />
+                </div>
+                <div class="w-full max-w-64 space-y-1">
+                  <Label for="api-key-name">Key name (optional)</Label>
+                <Input id="api-key-name" bind:value={newKeyName} maxlength={64} placeholder="e.g. laptop, ci-runner" />
+                </div>
+              <Button size="sm" class="shrink-0" aria-describedby="api-key-user" disabled={auth.userMountosUserId == null} onclick={generateKeys}>Generate</Button>
+              </div>
+              {#if auth.userMountosUserId == null}
+                <p class="text-xs text-muted-foreground">Your dashboard account has no linked mountOS user, so it cannot generate API keys.</p>
+              {:else}
+                <p class="text-xs text-muted-foreground">Mints an access key and secret pair bound to your logged-in account. Up to {API_KEY_LIMIT} keys can be active at once; generating another revokes your oldest key.</p>
+              {/if}
+            </fieldset>
+            {#if auth.can('volumes', 'update') && !auth.isUserRole}
+              <Separator />
+              <div class="space-y-4 rounded-md bg-destructive/5 p-3">
+                <fieldset class="space-y-3">
+                  <legend class="text-sm font-semibold">Revoke by User</legend>
+                  <div class="flex items-end gap-3">
+                    <div class="w-full max-w-64 space-y-1">
+                      <Label for="revoke-user-id">User</Label>
+                      <Popover bind:open={userSelectOpen}>
+                        <PopoverTrigger>
+                          {#snippet child({ props })}
                           <Button {...props} id="revoke-user-id" variant="outline" role="combobox" aria-expanded={userSelectOpen}
                             class={cn("w-full justify-between font-normal", !revokeUserId && "text-muted-foreground")}>
-                            {selectedUserLabel || 'Select user...'}
-                            <ChevronsUpDown class="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                          </Button>
-                        {/snippet}
-                      </PopoverTrigger>
-                      <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
-                        <Command shouldFilter={false}>
+                              {selectedUserLabel || 'Select user...'} 
+                              <ChevronsUpDown class="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                          {/snippet}
+                        </PopoverTrigger>
+                        <PopoverContent class="w-[--bits-popover-anchor-width] p-0">
+                          <Command shouldFilter={false}>
                           <CommandInput placeholder="Search users..." bind:value={userSearchQuery} />
-                          <CommandList>
-                            {#if userSearchLoading}
+                            <CommandList>
+                              {#if userSearchLoading}
                               <div class="flex items-center justify-center py-4">
                                 <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
                               </div>
-                            {:else if userOptions.length === 0}
-                              <CommandEmpty>{userSearchQuery ? 'No users found.' : 'Type to search users...'}</CommandEmpty>
-                            {:else}
-                              {#each userOptions as user}
+                              {:else if userOptions.length === 0}
+                                <CommandEmpty>{userSearchQuery ? 'No users found.' : 'Type to search users...'}</CommandEmpty>
+                              {:else}
+                                {#each userOptions as user}
                                 <CommandItem value={String(user.id)} onSelect={() => { revokeUserId = String(user.id); userSelectOpen = false }}>
                                   <Check class={cn("h-4 w-4", revokeUserId === String(user.id) ? "opacity-100" : "opacity-0")} />
-                                  <span>{user.username}</span>
-                                  <span class="ml-auto text-xs text-muted-foreground">{user.email}</span>
-                                </CommandItem>
-                              {/each}
-                            {/if}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                                    <span>{user.username}</span>
+                                    <span class="ml-auto text-xs text-muted-foreground">{user.email}</span>
+                                  </CommandItem>
+                                {/each}
+                              {/if}
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   <Button variant="destructive" size="sm" class="shrink-0" disabled={!revokeUserId} onclick={handleRevokeKeysByUser}>Revoke</Button>
-                </div>
-              </fieldset>
-              <Separator class="opacity-50" />
-              <fieldset class="space-y-3">
-                <legend class="text-sm font-semibold">Revoke API Key</legend>
-                <div class="flex items-end gap-3">
-                  <div class="w-full max-w-64 space-y-1">
-                    <Label for="revoke-key-id">API Key</Label>
-                    <Input id="revoke-key-id" bind:value={revokeKey} placeholder="API key to revoke" />
                   </div>
+                </fieldset>
+                <Separator class="opacity-50" />
+                <fieldset class="space-y-3">
+                  <legend class="text-sm font-semibold">Revoke API Key</legend>
+                  <div class="flex items-end gap-3">
+                    <div class="w-full max-w-64 space-y-1">
+                      <Label for="revoke-key-id">API Key</Label>
+                    <Input id="revoke-key-id" bind:value={revokeKey} placeholder="API key to revoke" />
+                    </div>
                   <Button variant="destructive" size="sm" class="shrink-0" disabled={!revokeKey} onclick={() => handleRevokeKey()}>Revoke</Button>
-                </div>
-              </fieldset>
-            </div>
-          {/if}
-        </CardContent>
-      </Card>
-    {:else if !volume.isActive}
+                  </div>
+                </fieldset>
+              </div>
+            {/if}
+          </CardContent>
+        </Card>
+      {:else if !volume.isActive}
       <EmptyState title="Volume deactivated" description="API tokens cannot be generated or rotated while the volume is deactivated." />
-    {:else}
+      {:else}
       <EmptyState title="API tokens restricted" description="Your role does not allow managing API tokens for this volume." />
-    {/if}
+      {/if}
     </div>
   {:else if volume}
     <div role="tabpanel" id="volume-tabpanel-overview" aria-labelledby="volume-tab-overview" tabindex={-1}>
@@ -1763,7 +1959,7 @@
           class="w-full max-w-none"
           label="Target cluster"
           placeholder="Select cluster…"
-          options={moveClusterCandidates.map(c => ({
+          options={moveClusterCandidates.map((c) => ({
             value: String(c.id),
             label: `${c.name} (${c.defaultCluster ? 'default' : 'non-default'})`,
           }))}
@@ -1867,7 +2063,8 @@
           options={forkParentOptions}
           value={createForkParent}
           placeholder="Select parent fork"
-          onchange={(v) => (createForkParent = v ?? 'main')} />
+          onchange={(v) => createForkParent = v ?? 'main'}
+        />
       </div>
       <div class="space-y-1.5">
         <Label for="create-fork-name" class="text-sm font-semibold">
@@ -1922,10 +2119,15 @@
       {#if forksLoading && createForkSanitized && !createForkNameError}
         <span class="mr-auto self-center text-xs text-muted-foreground">Checking existing forks…</span>
       {/if}
-      <Button variant="outline" onclick={() => createForkOpen = false}>Cancel</Button>
+
+      <Button
+        variant="outline"
+        onclick={() => createForkOpen = false}
+      >Cancel</Button>
+
       <Button
         variant="default"
-        disabled={createForkLoading || forksLoading || !createForkSanitized || !!createForkNameError || (createForkAsOfEnabled && (!createForkAsOfLocal || !!createForkAsOfError))}
+        disabled={createForkLoading || forksLoading || !createForkSanitized || !!createForkNameError || createForkAsOfEnabled && (!createForkAsOfLocal || !!createForkAsOfError)}
         onclick={handleCreateFork}
       >
         {#if createForkLoading}
@@ -1960,8 +2162,14 @@
               <code class="flex-1 font-mono text-sm break-all bg-muted/50 rounded-sm px-2.5 py-1.5 border select-all">{genResult.apiKey}</code>
               <button type="button"
                 class="shrink-0 size-11 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                onclick={() => copyToClipboard(genResult!.apiKey, 'key')} aria-label="Copy API key">
-                {#if copiedField === 'key'}<Check class="size-4 text-success" />{:else}<Copy class="size-4" />{/if}
+                onclick={() => copyToClipboard((genResult!).apiKey, 'key')}
+                aria-label="Copy API key"
+              >
+                {#if copiedField === 'key'}
+                  <Check class="size-4 text-success" />
+                {:else}
+                  <Copy class="size-4" />
+                {/if}
               </button>
             </div>
           </div>
@@ -1971,8 +2179,14 @@
               <code class="flex-1 font-mono text-sm break-all bg-muted/50 rounded-sm px-2.5 py-1.5 border select-all">{genResult.apiSecret}</code>
               <button type="button"
                 class="shrink-0 size-11 inline-flex items-center justify-center rounded-sm text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                onclick={() => copyToClipboard(genResult!.apiSecret, 'secret')} aria-label="Copy API secret">
-                {#if copiedField === 'secret'}<Check class="size-4 text-success" />{:else}<Copy class="size-4" />{/if}
+                onclick={() => copyToClipboard((genResult!).apiSecret, 'secret')}
+                aria-label="Copy API secret"
+              >
+                {#if copiedField === 'secret'}
+                  <Check class="size-4 text-success" />
+                {:else}
+                  <Copy class="size-4" />
+                {/if}
               </button>
             </div>
           </div>

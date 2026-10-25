@@ -1,9 +1,9 @@
-import type { ServiceAlert, AlertListOptions } from '$lib/core/api/types'
+import type { ServiceAlert, AlertListOptions } from '#lib/core/api/types.js'
 import { api } from './client.svelte'
-import { showWarningToast } from '$lib/core/utils/toast'
-import { playNotificationBeep } from '$lib/core/utils/sound'
-import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
-import { usePreferences } from '$lib/stores/preferences.svelte'
+import { showWarningToast } from '#lib/core/utils/toast.js'
+import { playNotificationBeep } from '#lib/core/utils/sound.js'
+import { createActivePoll, type ActivePoll } from '#lib/core/utils/activePoll.js'
+import { usePreferences } from '#lib/stores/preferences.svelte.js'
 
 const POLL_INTERVAL = 60_000
 const DISPLAY_PAGE_SIZE = 20

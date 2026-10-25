@@ -1,42 +1,42 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useStorages } from '$lib/core/stores/storages.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '$lib/components/ui/card'
-  import { Button } from '$lib/components/ui/button'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Separator } from '$lib/components/ui/separator'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import SecretInput from '$lib/components/ui/input/secret-input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import StatusBadge from '$lib/components/shared/StatusBadge.svelte'
-  import BucketTester from '$lib/components/shared/BucketTester.svelte'
-  import BlockCopysets from '$lib/components/shared/BlockCopysets.svelte'
-  import StorageVolumes from '$lib/components/shared/StorageVolumes.svelte'
-  import CompatibleStorages from '$lib/components/shared/CompatibleStorages.svelte'
-  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
-  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import { showErrorToast, showSuccessToast, handleApiError } from '$lib/core/utils/toast'
-  import { copyText } from '$lib/core/utils/clipboard'
-  import { formatBytes } from '$lib/core/utils/format'
-  import { useConfirmDialog } from '$lib/stores/confirm-dialog.svelte'
-  import ArrowLeft from '@lucide/svelte/icons/arrow-left'
-  import CopyIcon from '@lucide/svelte/icons/copy'
-  import CheckIcon from '@lucide/svelte/icons/check'
-  import PencilIcon from '@lucide/svelte/icons/pencil'
-  import FlaskConical from '@lucide/svelte/icons/flask-conical'
-  import Loader2 from '@lucide/svelte/icons/loader-2'
-  import DatabaseIcon from '@lucide/svelte/icons/database'
-  import ServerIcon from '@lucide/svelte/icons/server'
-  import Wrench from '@lucide/svelte/icons/wrench'
-  import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
-  import type { Storage, EditStorageRequest } from '$lib/core/api/types'
-  import { getProvider } from '$lib/core/utils/object-storage-providers'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useStorages } from '#lib/core/stores/storages.svelte.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '#lib/components/ui/card/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import { Separator } from '#lib/components/ui/separator/index.js';
+  import Input from '#lib/components/ui/input/input.svelte';
+  import SecretInput from '#lib/components/ui/input/secret-input.svelte';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import StatusBadge from '#lib/components/shared/StatusBadge.svelte';
+  import BucketTester from '#lib/components/shared/BucketTester.svelte';
+  import BlockCopysets from '#lib/components/shared/BlockCopysets.svelte';
+  import StorageVolumes from '#lib/components/shared/StorageVolumes.svelte';
+  import CompatibleStorages from '#lib/components/shared/CompatibleStorages.svelte';
+  import ConfirmDialog from '#lib/components/shared/ConfirmDialog.svelte';
+  import DetailSkeleton from '#lib/components/shared/DetailSkeleton.svelte';
+  import { showErrorToast, showSuccessToast, handleApiError } from '#lib/core/utils/toast.js';
+  import { copyText } from '#lib/core/utils/clipboard.js';
+  import { formatBytes } from '#lib/core/utils/format.js';
+  import { useConfirmDialog } from '#lib/stores/confirm-dialog.svelte.js';
+  import ArrowLeft from '@lucide/svelte/icons/arrow-left';
+  import CopyIcon from '@lucide/svelte/icons/copy';
+  import CheckIcon from '@lucide/svelte/icons/check';
+  import PencilIcon from '@lucide/svelte/icons/pencil';
+  import FlaskConical from '@lucide/svelte/icons/flask-conical';
+  import Loader2 from '@lucide/svelte/icons/loader-2';
+  import DatabaseIcon from '@lucide/svelte/icons/database';
+  import ServerIcon from '@lucide/svelte/icons/server';
+  import Wrench from '@lucide/svelte/icons/wrench';
+  import TriangleAlert from '@lucide/svelte/icons/triangle-alert';
+  import type { Storage, EditStorageRequest } from '#lib/core/api/types.js';
+  import { getProvider } from '#lib/core/utils/object-storage-providers.js';
 
-  const store = useStorages()
-  const auth = useAuth()
-  const id = $derived(Number($page.params.id))
+  const store = useStorages();
+  const auth = useAuth();
+  const id = $derived(Number(page.params.id));
 
   $effect(() => {
     if (!auth.loading && !auth.can('storages', 'read')) {
@@ -45,26 +45,25 @@
     }
   })
 
-  let storage = $state<Storage | null>(null)
-  let loading = $state(true)
-  let volumesRefreshKey = $state(0)
-  const dialog = useConfirmDialog(() => reload())
+  let storage = $state<Storage | null>(null);
+  let loading = $state(true);
+  let volumesRefreshKey = $state(0);
+  const dialog = useConfirmDialog(() => reload());
+  let editing = $state(false);
+  let editName = $state('');
+  let editAccessKey = $state('');
+  let editSecretKey = $state('');
+  const editAccessKeyLabel = $derived(getProvider(storage?.providerType ?? '')?.accessKeyLabel ?? 'Access Key');
+  const editSecretKeyLabel = $derived(getProvider(storage?.providerType ?? '')?.secretKeyLabel ?? 'Secret Key');
+  const editBucketLabel = $derived(getProvider(storage?.providerType ?? '')?.bucketLabel ?? 'Bucket');
+  const editRegionLabel = $derived(getProvider(storage?.providerType ?? '')?.regionLabel ?? 'Region');
 
-  let editing = $state(false)
-  let editName = $state('')
-  let editAccessKey = $state('')
-  let editSecretKey = $state('')
-
-  const editAccessKeyLabel = $derived(getProvider(storage?.providerType ?? '')?.accessKeyLabel ?? 'Access Key')
-  const editSecretKeyLabel = $derived(getProvider(storage?.providerType ?? '')?.secretKeyLabel ?? 'Secret Key')
-  const editBucketLabel = $derived(getProvider(storage?.providerType ?? '')?.bucketLabel ?? 'Bucket')
-  const editRegionLabel = $derived(getProvider(storage?.providerType ?? '')?.regionLabel ?? 'Region')
   // Disambiguate the provider's bucket region from the mountOS region field shown alongside it.
-  const providerRegionLabel = $derived(editRegionLabel === 'Region' ? 'Bucket Region' : editRegionLabel)
-  let editSubmitting = $state(false)
-  let credTestPassed = $state(false)
+  const providerRegionLabel = $derived(editRegionLabel === 'Region' ? 'Bucket Region' : editRegionLabel);
 
-  let bucketTesting = $state(false)
+  let editSubmitting = $state(false);
+  let credTestPassed = $state(false);
+  let bucketTesting = $state(false);
 
   async function runBucketTest() {
     if (!storage || bucketTesting) return
@@ -79,23 +78,35 @@
     }
   }
 
-  const credsChanged = $derived(!!(editAccessKey.trim() || editSecretKey.trim()))
-  const credsBothFilled = $derived(!credsChanged || (!!editAccessKey.trim() && !!editSecretKey.trim()))
-  const canSave = $derived(editName.trim() && !editSubmitting && credsBothFilled && (!credsChanged || credTestPassed))
+  const credsChanged = $derived(!!(editAccessKey.trim() || editSecretKey.trim()));
+  const credsBothFilled = $derived(!credsChanged || !!editAccessKey.trim() && !!editSecretKey.trim());
+  const canSave = $derived(editName.trim() && !editSubmitting && credsBothFilled && (!credsChanged || credTestPassed));
+  let fetchCtrl: AbortController | undefined;
 
-  let fetchCtrl: AbortController | undefined
   $effect(() => {
-    if (Number.isNaN(id)) { loading = false; return }
-    fetchCtrl?.abort()
-    fetchCtrl = new AbortController()
-    const ctrl = fetchCtrl
-    loading = true
-    store.getStorage(id, ctrl.signal)
-      .then(s => { if (!ctrl.signal.aborted) storage = s })
-      .catch(() => { if (!ctrl.signal.aborted) storage = null })
-      .finally(() => { if (!ctrl.signal.aborted) loading = false })
-    return () => ctrl.abort()
-  })
+    if (Number.isNaN(id)) {
+      loading = false;
+
+      return;
+    }
+
+    fetchCtrl?.abort();
+    fetchCtrl = new AbortController();
+
+    const ctrl = fetchCtrl;
+
+    loading = true;
+
+    store.getStorage(id, ctrl.signal).then((s) => {
+      if (!ctrl.signal.aborted) storage = s;
+    }).catch(() => {
+      if (!ctrl.signal.aborted) storage = null;
+    }).finally(() => {
+      if (!ctrl.signal.aborted) loading = false;
+    });
+
+    return () => ctrl.abort();
+  });
 
   async function reload() {
     storage = await store.getStorage(id)
@@ -160,18 +171,24 @@
     if (!storage || !auth.guard('storages', 'update')) return
     const next = !maintenanceOn
     dialog.confirm(
-      next ? 'Enable maintenance mode' : 'Disable maintenance mode',
+      next
+        ? 'Enable maintenance mode'
+        : 'Disable maintenance mode',
       next
         ? `Enable direct access on "${storage.name}"? Clients and gateways read the backing object store directly and fall back to blockserv only for objects not yet synced. Keep at least one blockserv instance running until it reports drain-ready (fully synced and no active clients streaming): stopping all instances early makes unsynced objects unreachable.`
         : `Disable direct access on "${storage.name}"? Clients and gateways will resume routing through blockserv. Ensure blockserv is running and healthy first.`,
       async () => {
         maintenanceSubmitting = true
         try {
-          await store.setDirectAccess(id, storage!.name, next)
-          showSuccessToast(next ? 'Maintenance mode enabled' : 'Maintenance mode disabled')
-        } catch (err: unknown) {
-          handleApiError(err, 'Failed to update maintenance mode')
-          throw err
+          await store.setDirectAccess(id, (storage!).name, next);
+
+          showSuccessToast(next
+            ? 'Maintenance mode enabled'
+            : 'Maintenance mode disabled');
+        } catch(err: unknown) {
+          handleApiError(err, 'Failed to update maintenance mode');
+
+          throw err;
         } finally {
           maintenanceSubmitting = false
         }
@@ -278,7 +295,7 @@
               <TriangleAlert class="size-4 shrink-0" aria-hidden="true" />
               <p>
                 <span class="font-medium">Maintenance mode is active.</span>
-                Clients and gateways read the backing object store directly and fall back to blockserv only for objects not yet synced. Keep at least one blockserv instance running until it reports drain&#8209;ready (fully synced and no active clients streaming): stopping all instances early makes unsynced objects unreachable.
+                Clients and gateways read the backing object store directly and fall back to blockserv only for objects not yet synced. Keep at least one blockserv instance running until it reports drain‑ready (fully synced and no active clients streaming): stopping all instances early makes unsynced objects unreachable.
               </p>
             </div>
           {/if}
@@ -337,8 +354,13 @@
               <div class="md:col-span-2">
                 <span class="text-sm uppercase tracking-wider font-semibold text-muted-foreground" title="Identifies the backing bucket/prefix; storages sharing this value can move volumes between them">Physical Fingerprint</span>
                 <div class="mt-1 flex items-center gap-2">
-                  <code class="min-w-0 break-all rounded-sm bg-muted px-2 py-1 font-mono text-xs">{storage.physicalFingerprint}</code>
-                  <button type="button" onclick={() => copyFingerprint(storage!.physicalFingerprint!)}
+                  <code
+                    class="min-w-0 break-all rounded-sm bg-muted px-2 py-1 font-mono text-xs"
+                  >{storage.physicalFingerprint}</code>
+
+                  <button
+                    type="button"
+                    onclick={() => copyFingerprint((storage!).physicalFingerprint!)}
                     class="shrink-0 inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 opacity-60 hover:opacity-100 hover:text-primary focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring rounded-sm transition-[color,opacity]"
                     title="Copy full fingerprint" aria-label="Copy full physical fingerprint">
                     {#if fingerprintCopied}<CheckIcon class="size-3.5 text-primary" aria-hidden="true" />{:else}<CopyIcon class="size-3.5" aria-hidden="true" />{/if}
@@ -383,17 +405,15 @@
             </Button>
           {/if}
           {#if storage.isActive && auth.can('storages', 'update')}
-            <Button variant="destructive" size="sm" onclick={() => {
-              if (!auth.guard('storages', 'update')) return
-              dialog.confirm(
-                'Deactivate',
-                `Permanently deactivate "${storage!.name}"? All volumes on this storage must be deactivated first.`,
-                () => store.deactivateStorage(id),
-                'destructive',
-              )
-            }}>
-              Deactivate
-            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onclick={() => {
+                if (!auth.guard('storages', 'update')) return;
+
+                dialog.confirm('Deactivate', `Permanently deactivate "${(storage!).name}"? All volumes on this storage must be deactivated first.`, () => store.deactivateStorage(id), 'destructive');
+              }}
+            >Deactivate</Button>
           {/if}
         </CardFooter>
       {/if}
@@ -404,9 +424,15 @@
         <StorageVolumes storageId={storage.id} accountId={storage.account.id} />
       {/key}
     {:else}
-      <BlockCopysets storageId={storage.id} regionId={storage.regionInfo.id} accountId={storage.account.id} directAccess={maintenanceOn}
-        canUpdate={auth.can('storages', 'update')} {volumesRefreshKey}
-        bind:addServerOpen />
+      <BlockCopysets
+        storageId={storage.id}
+        regionId={storage.regionInfo.id}
+        accountId={storage.account.id}
+        directAccess={maintenanceOn}
+        canUpdate={auth.can('storages', 'update')}
+        volumesRefreshKey={volumesRefreshKey}
+        bind:addServerOpen
+      />
     {/if}
 
     {#if storage.physicalFingerprint}

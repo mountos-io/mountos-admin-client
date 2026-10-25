@@ -1,50 +1,49 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { Button } from '$lib/components/ui/button'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { useRegions } from '$lib/core/stores/regions.svelte'
-  import { navigation } from '$lib/config/navigation'
-  import { features } from '$lib/config/features'
-  import * as Breadcrumb from '$lib/components/ui/breadcrumb'
-  import { Badge } from '$lib/components/ui/badge'
-  import Search from '@lucide/svelte/icons/search'
-  import PanelLeft from '@lucide/svelte/icons/panel-left'
-  import LogOut from '@lucide/svelte/icons/log-out'
-  import ShieldAlert from '@lucide/svelte/icons/shield-alert'
-  import AlertOctagon from '@lucide/svelte/icons/alert-octagon'
-  import ConfirmDialog from '$lib/components/shared/ConfirmDialog.svelte'
-  import { usePreferences } from '$lib/stores/preferences.svelte'
-  import { useLicense } from '$lib/core/stores/license.svelte'
-  import { useSettingsModal } from '$lib/stores/settings-modal.svelte'
-  import { isMacPlatform } from '$lib/utils'
+  import { page } from '$app/state';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { useAccounts } from '#lib/core/stores/accounts.svelte.js';
+  import { useRegions } from '#lib/core/stores/regions.svelte.js';
+  import { navigation } from '#lib/config/navigation.js';
+  import { features } from '#lib/config/features.js';
+  import * as Breadcrumb from '#lib/components/ui/breadcrumb/index.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import Search from '@lucide/svelte/icons/search';
+  import PanelLeft from '@lucide/svelte/icons/panel-left';
+  import LogOut from '@lucide/svelte/icons/log-out';
+  import ShieldAlert from '@lucide/svelte/icons/shield-alert';
+  import AlertOctagon from '@lucide/svelte/icons/alert-octagon';
+  import ConfirmDialog from '#lib/components/shared/ConfirmDialog.svelte';
+  import { usePreferences } from '#lib/stores/preferences.svelte.js';
+  import { useLicense } from '#lib/core/stores/license.svelte.js';
+  import { useSettingsModal } from '#lib/stores/settings-modal.svelte.js';
+  import { isMacPlatform } from '#lib/utils.js';
 
-  const auth = useAuth()
-  const accountStore = useAccounts()
-  const regionStore = useRegions()
-  const prefs = usePreferences()
-  const licenseStore = useLicense()
-  const settingsModal = useSettingsModal()
-  const modSymbol = isMacPlatform() ? '⌘' : 'Ctrl+'
-
-  const visibleNav = $derived(
-    navigation.filter(item => !item.feature || features[item.feature])
-  )
+  const auth = useAuth();
+  const accountStore = useAccounts();
+  const regionStore = useRegions();
+  const prefs = usePreferences();
+  const licenseStore = useLicense();
+  const settingsModal = useSettingsModal();
+  const modSymbol = isMacPlatform() ? '⌘' : 'Ctrl+';
+  const visibleNav = $derived(navigation.filter((item) => !item.feature || features[item.feature]));
 
   interface Crumb { label: string; href?: string }
 
   const crumbs = $derived.by((): Crumb[] => {
-    const pathname = $page.url.pathname
-    if (pathname === '/') return [{ label: 'Dashboard' }]
+    const pathname = page.url.pathname;
 
-    const parts = pathname.split('/').filter(Boolean)
-    const result: Crumb[] = [{ label: 'Dashboard', href: '/' }]
+    if (pathname === '/') return [{ label: 'Dashboard' }];
 
-    let accumulated = ''
+    const parts = pathname.split('/').filter(Boolean);
+    const result: Crumb[] = [{ label: 'Dashboard', href: '/' }];
+    let accumulated = '';
+
     for (let i = 0; i < parts.length; i++) {
-      accumulated += '/' + parts[i]
-      const navItem = visibleNav.find(n => n.href === accumulated)
-      const isLast = i === parts.length - 1
+      accumulated += '/' + parts[i];
+
+      const navItem = visibleNav.find((n) => n.href === accumulated);
+      const isLast = i === parts.length - 1;
 
       if (navItem) {
         result.push(isLast ? { label: navItem.label } : { label: navItem.label, href: navItem.href })
@@ -67,12 +66,12 @@
 
   function resolveIdLabel(parentSegment: string | undefined, id: number): string {
     if (parentSegment === 'accounts') {
-      const account = accountStore.accounts.find(a => a.id === id)
-      if (account) return account.name
+      const account = accountStore.accounts.find((a) => a.id === id);
+      if (account) return account.name;
     }
     if (parentSegment === 'regions' || parentSegment === 'nodes') {
-      const region = regionStore.regions.find(r => r.id === id)
-      if (region) return region.name
+      const region = regionStore.regions.find((r) => r.id === id);
+      if (region) return region.name;
     }
     return `#${id}`
   }
@@ -89,7 +88,9 @@
   <button
     bind:this={sidebarToggleRef}
     class="flex h-9 w-9 min-h-[44px] min-w-[44px] sm:min-h-9 sm:min-w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-    onclick={() => onToggleSidebar ? onToggleSidebar() : (prefs.sidebarCollapsed = !prefs.sidebarCollapsed)}
+    onclick={() => onToggleSidebar
+      ? onToggleSidebar()
+      : prefs.sidebarCollapsed = !prefs.sidebarCollapsed}
     aria-label="Toggle sidebar"
     aria-expanded={!prefs.sidebarCollapsed}
     title={`Toggle sidebar (${modSymbol}B)`}
@@ -143,9 +144,7 @@
       >
         <AlertOctagon class="size-3.5 text-destructive" aria-hidden="true" />
         <span aria-hidden="true">
-          <Badge variant="destructive">
-            Quota{cap > 0 ? ` ${Math.round((q.totalVolume / cap) * 100)}%` : ''}
-          </Badge>
+          <Badge variant="destructive">Quota{cap > 0 ? ` ${Math.round(q.totalVolume / cap * 100)}%` : ''}</Badge>
         </span>
       </button>
     {/if}

@@ -1,4 +1,4 @@
-import type { ClientSession, ClientSessionListOptions, ClientSessionStatus, SessionSummary } from '$lib/core/api/types'
+import type { ClientSession, ClientSessionListOptions, ClientSessionStatus, SessionSummary } from '#lib/core/api/types.js'
 import { api } from './client.svelte'
 
 const PAGE_SIZE = 20

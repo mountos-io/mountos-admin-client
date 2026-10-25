@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { GCWorkerEventBucket } from '$lib/core/api/types'
-  import { colorFor } from '$lib/core/utils/goalColor'
-  import { Input } from '$lib/components/ui/input'
+  import type { GCWorkerEventBucket } from '#lib/core/api/types.js'
+  import { colorFor } from '#lib/core/utils/goalColor.js'
+  import { Input } from '#lib/components/ui/input/index.js'
 
   let { buckets = [], bucketSeconds = 900, rangeMs }: { buckets: GCWorkerEventBucket[]; bucketSeconds?: number; rangeMs?: number } = $props()
 

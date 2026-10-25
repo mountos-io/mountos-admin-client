@@ -1,44 +1,44 @@
 <script lang="ts">
-  import { tick } from 'svelte'
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useClusters } from '$lib/core/stores/clusters.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import EmptyState from '$lib/components/shared/EmptyState.svelte'
-  import DetailSkeleton from '$lib/components/shared/DetailSkeleton.svelte'
-  import DeactivateClusterDialog from '$lib/components/shared/DeactivateClusterDialog.svelte'
-  import { formatRelative } from '$lib/core/utils/format'
-  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
-  import { copyText } from '$lib/core/utils/clipboard'
-  import Copy from '@lucide/svelte/icons/copy'
-  import { isClusterNameValid, clusterNameErrorMessage } from '$lib/core/utils/validation'
-  import type { MetadataCluster } from '$lib/core/api/types'
+  import { tick } from 'svelte';
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useClusters } from '#lib/core/stores/clusters.svelte.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Card, CardContent, CardHeader, CardTitle } from '#lib/components/ui/card/index.js';
+  import Input from '#lib/components/ui/input/input.svelte';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import EmptyState from '#lib/components/shared/EmptyState.svelte';
+  import DetailSkeleton from '#lib/components/shared/DetailSkeleton.svelte';
+  import DeactivateClusterDialog from '#lib/components/shared/DeactivateClusterDialog.svelte';
+  import { formatRelative } from '#lib/core/utils/format.js';
+  import { showSuccessToast, showErrorToast, handleApiError } from '#lib/core/utils/toast.js';
+  import { copyText } from '#lib/core/utils/clipboard.js';
+  import Copy from '@lucide/svelte/icons/copy';
+  import { isClusterNameValid, clusterNameErrorMessage } from '#lib/core/utils/validation.js';
+  import type { MetadataCluster } from '#lib/core/api/types.js';
 
-  const regionId = $derived(Number($page.params.regionId))
-  const clusterId = $derived(Number($page.params.clusterId))
-  const store = useClusters()
-  const auth = useAuth()
-
-  let cluster = $state<MetadataCluster | null>(null)
-  let loading = $state(false)
-  let editing = $state(false)
-  let nameDraft = $state('')
-  let renameSubmitting = $state(false)
-  let deactivateOpen = $state(false)
-  let nameInputEl = $state<HTMLInputElement | null>(null)
-
-  const renameError = $derived(clusterNameErrorMessage(nameDraft))
-  const renameValid = $derived(isClusterNameValid(nameDraft))
-  const renameUnchanged = $derived(!!cluster && nameDraft.trim() === cluster.name)
+  const regionId = $derived(Number(page.params.regionId));
+  const clusterId = $derived(Number(page.params.clusterId));
+  const store = useClusters();
+  const auth = useAuth();
+  let cluster = $state<MetadataCluster | null>(null);
+  let loading = $state(false);
+  let editing = $state(false);
+  let nameDraft = $state('');
+  let renameSubmitting = $state(false);
+  let deactivateOpen = $state(false);
+  let nameInputEl = $state<HTMLInputElement | null>(null);
+  const renameError = $derived(clusterNameErrorMessage(nameDraft));
+  const renameValid = $derived(isClusterNameValid(nameDraft));
+  const renameUnchanged = $derived(!!cluster && nameDraft.trim() === cluster.name);
 
   async function load() {
-    if (!regionId || !clusterId) return
-    loading = true
+    if (!regionId || !clusterId) return;
+
+    loading = true;
+
     try {
       cluster = await store.getCluster(regionId, clusterId)
       nameDraft = cluster.name
@@ -183,8 +183,7 @@
                 title="Copy Export ID" aria-label="Copy Export ID {cluster.exportId}"
                 class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 p-1.5 -m-1.5 text-muted-foreground hover:text-foreground transition-colors rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 onclick={async () => {
-                  if (await copyText(cluster!.exportId)) showSuccessToast('Copied to clipboard')
-                  else showErrorToast('Failed to copy')
+                  if (await copyText((cluster!).exportId)) showSuccessToast('Copied to clipboard'); else showErrorToast('Failed to copy');
                 }}
               >
                 <Copy class="size-3.5" aria-hidden="true" />

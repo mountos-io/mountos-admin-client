@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onDestroy } from 'svelte'
-  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Button } from '$lib/components/ui/button'
-  import { copyText } from '$lib/core/utils/clipboard'
-  import { formatDate } from '$lib/core/utils/format'
+  import { Card, CardContent, CardHeader, CardTitle } from '#lib/components/ui/card/index.js'
+  import { Badge } from '#lib/components/ui/badge/index.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { copyText } from '#lib/core/utils/clipboard.js'
+  import { formatDate } from '#lib/core/utils/format.js'
   import Copy from '@lucide/svelte/icons/copy'
   import Check from '@lucide/svelte/icons/check'
 

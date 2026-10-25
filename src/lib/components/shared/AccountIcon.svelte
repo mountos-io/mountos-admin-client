@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Account } from '$lib/core/api/types'
-  import { generateIdenticon } from '$lib/core/utils/identicon'
+  import type { Account } from '#lib/core/api/types.js'
+  import { generateIdenticon } from '#lib/core/utils/identicon.js'
 
   let { account, size = 32 }: { account: Account; size?: number } = $props()
 

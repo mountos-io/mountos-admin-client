@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { VolumeSizePoint } from '$lib/core/api/types'
-  import { formatBytes } from '$lib/core/utils/format'
+  import type { VolumeSizePoint } from '#lib/core/api/types.js'
+  import { formatBytes } from '#lib/core/utils/format.js'
 
   let { points = [] }: { points: VolumeSizePoint[] } = $props()
 

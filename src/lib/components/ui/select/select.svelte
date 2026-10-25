@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { cn } from '$lib/utils.js'
-  import { Popover, PopoverTrigger, PopoverContent } from '$lib/components/ui/popover'
+  import { cn } from '#lib/utils.js'
+  import { Popover, PopoverTrigger, PopoverContent } from '#lib/components/ui/popover/index.js'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import Check from '@lucide/svelte/icons/check'
 

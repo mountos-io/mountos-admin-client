@@ -1,12 +1,12 @@
 <script lang="ts">
   import { startAuthentication } from '@simplewebauthn/browser'
   import { goto } from '$app/navigation'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import { Separator } from '$lib/components/ui/separator'
+  import { useAuth } from '#lib/core/stores/auth.svelte.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#lib/components/ui/card/index.js'
+  import Input from '#lib/components/ui/input/input.svelte'
+  import Label from '#lib/components/ui/label/label.svelte'
+  import { Separator } from '#lib/components/ui/separator/index.js'
   import TotpSetupFlow from './TotpSetupFlow.svelte'
   import TriangleAlert from '@lucide/svelte/icons/triangle-alert'
 

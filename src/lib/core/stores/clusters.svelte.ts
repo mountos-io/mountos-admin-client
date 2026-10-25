@@ -3,7 +3,7 @@ import type {
   CreateMetadataClusterRequest,
   EditMetadataClusterRequest,
   SetMetadataClusterReadyRequest,
-} from '$lib/core/api/types'
+} from '#lib/core/api/types.js'
 import { api } from './client.svelte'
 
 // Per-region store. Multiple regions can be browsed in different tabs of the

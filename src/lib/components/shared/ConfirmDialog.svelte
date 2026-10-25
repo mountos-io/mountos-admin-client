@@ -1,7 +1,7 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog'
-  import { Button } from '$lib/components/ui/button'
-  import { handleApiError } from '$lib/core/utils/toast'
+  import * as Dialog from '#lib/components/ui/dialog/index.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { handleApiError } from '#lib/core/utils/toast.js'
   import type { Component } from 'svelte'
 
   let { open = $bindable(false), title, description, confirmLabel = 'Confirm', variant = 'default', icon, onConfirm }: {

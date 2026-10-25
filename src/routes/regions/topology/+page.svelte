@@ -1,14 +1,23 @@
 <script lang="ts">
-  import { Card, CardContent, CardHeader, CardTitle } from '$lib/components/ui/card'
-  import { Badge } from '$lib/components/ui/badge'
-  import { Button } from '$lib/components/ui/button'
-  import { Separator } from '$lib/components/ui/separator'
-  import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '$lib/components/ui/table'
-  import { onMount } from 'svelte'
-  import { browser } from '$app/environment'
+  import { Card, CardContent, CardHeader, CardTitle } from '#lib/components/ui/card/index.js';
+  import { Badge } from '#lib/components/ui/badge/index.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Separator } from '#lib/components/ui/separator/index.js';
 
-  type NodeStatus = 'active' | 'draining' | 'inactive'
-  type ViewMode = 'rack' | 'matrix' | 'raft'
+  import {
+    Table,
+    TableHeader,
+    TableBody,
+    TableRow,
+    TableHead,
+    TableCell
+  } from '#lib/components/ui/table/index.js';
+
+  import { onMount } from 'svelte';
+  import { browser } from '$app/env';
+
+  type NodeStatus = 'active' | 'draining' | 'inactive';
+  type ViewMode = 'rack' | 'matrix' | 'raft';
 
   interface DemoNode {
     nodeId: string
@@ -33,13 +42,20 @@
   // gate the heartbeat pings on this flag explicitly.
   let reduceMotion = $state(false)
   onMount(() => {
-    if (!browser) return
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
-    reduceMotion = mq.matches
-    const onChange = (e: MediaQueryListEvent) => { reduceMotion = e.matches }
-    mq.addEventListener('change', onChange)
-    return () => mq.removeEventListener('change', onChange)
-  })
+    if (!browser) return;
+
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    reduceMotion = mq.matches;
+
+    const onChange = (e: MediaQueryListEvent) => {
+      reduceMotion = e.matches;
+    };
+
+    mq.addEventListener('change', onChange);
+
+    return () => mq.removeEventListener('change', onChange);
+  });
 
   function toggleRaft(name: string) {
     selectedRaft = selectedRaft === name ? null : name
@@ -60,21 +76,160 @@
   const region = { name: 'us-east-1', isActive: true }
 
   const nodes: DemoNode[] = [
-    { nodeId: 'meta-node-1', serviceType: 'meta', advertiseAddr: '10.0.1.1:9000', httpAddr: '10.0.1.1:8080', status: 'active', lastHeartbeat: '2026-03-13T10:25:00Z', isActive: true, raftGroup: 'meta-raft', isRaftLeader: true },
-    { nodeId: 'blob-node-1', serviceType: 'blob', advertiseAddr: '10.0.1.1:9000', httpAddr: '10.0.1.1:8081', status: 'active', lastHeartbeat: '2026-03-13T10:25:12Z', isActive: true, raftGroup: 'blob-raft' },
-    { nodeId: 'coord-node-1', serviceType: 'coordinator', advertiseAddr: '10.0.1.1:9000', httpAddr: '10.0.1.1:8082', status: 'active', lastHeartbeat: '2026-03-13T10:24:50Z', isActive: true, raftGroup: 'coord-raft', isRaftLeader: true },
-    { nodeId: 'gw-node-1', serviceType: 'gateway', advertiseAddr: '10.0.1.1:9000', httpAddr: '10.0.1.1:8083', status: 'active', lastHeartbeat: '2026-03-13T10:25:30Z', isActive: true },
-    { nodeId: 'meta-node-2', serviceType: 'meta', advertiseAddr: '10.0.1.2:9000', httpAddr: '10.0.1.2:8080', status: 'active', lastHeartbeat: '2026-03-13T10:25:05Z', isActive: true, raftGroup: 'meta-raft' },
-    { nodeId: 'blob-node-2', serviceType: 'blob', advertiseAddr: '10.0.1.2:9000', httpAddr: '10.0.1.2:8081', status: 'active', lastHeartbeat: '2026-03-13T10:25:18Z', isActive: true, raftGroup: 'blob-raft', isRaftLeader: true },
-    { nodeId: 'coord-node-2', serviceType: 'coordinator', advertiseAddr: '10.0.1.2:9000', httpAddr: '10.0.1.2:8082', status: 'active', lastHeartbeat: '2026-03-13T10:25:02Z', isActive: true, raftGroup: 'coord-raft' },
-    { nodeId: 'gw-node-2', serviceType: 'gateway', advertiseAddr: '10.0.1.2:9000', httpAddr: '10.0.1.2:8083', status: 'active', lastHeartbeat: '2026-03-13T10:25:28Z', isActive: true },
-    { nodeId: 'meta-node-3', serviceType: 'meta', advertiseAddr: '10.0.1.3:9000', httpAddr: '10.0.1.3:8080', status: 'active', lastHeartbeat: '2026-03-13T10:24:45Z', isActive: true, raftGroup: 'meta-raft' },
-    { nodeId: 'blob-node-3', serviceType: 'blob', advertiseAddr: '10.0.1.3:9000', httpAddr: '10.0.1.3:8081', status: 'active', lastHeartbeat: '2026-03-13T10:25:08Z', isActive: true, raftGroup: 'blob-raft' },
-    { nodeId: 'coord-node-3', serviceType: 'coordinator', advertiseAddr: '10.0.1.3:9000', httpAddr: '10.0.1.3:8082', status: 'active', lastHeartbeat: '2026-03-13T10:24:55Z', isActive: true, raftGroup: 'coord-raft' },
-    { nodeId: 'meta-node-4', serviceType: 'meta', advertiseAddr: '10.0.2.1:9000', httpAddr: '10.0.2.1:8080', status: 'draining', lastHeartbeat: '2026-03-13T10:20:00Z', isActive: true, raftGroup: 'meta-raft' },
-    { nodeId: 'blob-node-4', serviceType: 'blob', advertiseAddr: '10.0.2.1:9000', httpAddr: '10.0.2.1:8081', status: 'active', lastHeartbeat: '2026-03-13T10:25:15Z', isActive: true, raftGroup: 'blob-raft' },
-    { nodeId: 'gw-node-3', serviceType: 'gateway', advertiseAddr: '10.0.2.1:9000', httpAddr: '10.0.2.1:8083', status: 'inactive', lastHeartbeat: '2026-03-13T08:30:00Z', isActive: false },
-  ]
+    {
+      nodeId: 'meta-node-1',
+      serviceType: 'meta',
+      advertiseAddr: '10.0.1.1:9000',
+      httpAddr: '10.0.1.1:8080',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:25:00Z',
+      isActive: true,
+      raftGroup: 'meta-raft',
+      isRaftLeader: true
+    },
+
+    {
+      nodeId: 'blob-node-1',
+      serviceType: 'blob',
+      advertiseAddr: '10.0.1.1:9000',
+      httpAddr: '10.0.1.1:8081',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:25:12Z',
+      isActive: true,
+      raftGroup: 'blob-raft'
+    },
+
+    {
+      nodeId: 'coord-node-1',
+      serviceType: 'coordinator',
+      advertiseAddr: '10.0.1.1:9000',
+      httpAddr: '10.0.1.1:8082',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:24:50Z',
+      isActive: true,
+      raftGroup: 'coord-raft',
+      isRaftLeader: true
+    },
+
+    {
+      nodeId: 'gw-node-1',
+      serviceType: 'gateway',
+      advertiseAddr: '10.0.1.1:9000',
+      httpAddr: '10.0.1.1:8083',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:25:30Z',
+      isActive: true
+    },
+
+    {
+      nodeId: 'meta-node-2',
+      serviceType: 'meta',
+      advertiseAddr: '10.0.1.2:9000',
+      httpAddr: '10.0.1.2:8080',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:25:05Z',
+      isActive: true,
+      raftGroup: 'meta-raft'
+    },
+
+    {
+      nodeId: 'blob-node-2',
+      serviceType: 'blob',
+      advertiseAddr: '10.0.1.2:9000',
+      httpAddr: '10.0.1.2:8081',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:25:18Z',
+      isActive: true,
+      raftGroup: 'blob-raft',
+      isRaftLeader: true
+    },
+
+    {
+      nodeId: 'coord-node-2',
+      serviceType: 'coordinator',
+      advertiseAddr: '10.0.1.2:9000',
+      httpAddr: '10.0.1.2:8082',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:25:02Z',
+      isActive: true,
+      raftGroup: 'coord-raft'
+    },
+
+    {
+      nodeId: 'gw-node-2',
+      serviceType: 'gateway',
+      advertiseAddr: '10.0.1.2:9000',
+      httpAddr: '10.0.1.2:8083',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:25:28Z',
+      isActive: true
+    },
+
+    {
+      nodeId: 'meta-node-3',
+      serviceType: 'meta',
+      advertiseAddr: '10.0.1.3:9000',
+      httpAddr: '10.0.1.3:8080',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:24:45Z',
+      isActive: true,
+      raftGroup: 'meta-raft'
+    },
+
+    {
+      nodeId: 'blob-node-3',
+      serviceType: 'blob',
+      advertiseAddr: '10.0.1.3:9000',
+      httpAddr: '10.0.1.3:8081',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:25:08Z',
+      isActive: true,
+      raftGroup: 'blob-raft'
+    },
+
+    {
+      nodeId: 'coord-node-3',
+      serviceType: 'coordinator',
+      advertiseAddr: '10.0.1.3:9000',
+      httpAddr: '10.0.1.3:8082',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:24:55Z',
+      isActive: true,
+      raftGroup: 'coord-raft'
+    },
+
+    {
+      nodeId: 'meta-node-4',
+      serviceType: 'meta',
+      advertiseAddr: '10.0.2.1:9000',
+      httpAddr: '10.0.2.1:8080',
+      status: 'draining',
+      lastHeartbeat: '2026-03-13T10:20:00Z',
+      isActive: true,
+      raftGroup: 'meta-raft'
+    },
+
+    {
+      nodeId: 'blob-node-4',
+      serviceType: 'blob',
+      advertiseAddr: '10.0.2.1:9000',
+      httpAddr: '10.0.2.1:8081',
+      status: 'active',
+      lastHeartbeat: '2026-03-13T10:25:15Z',
+      isActive: true,
+      raftGroup: 'blob-raft'
+    },
+
+    {
+      nodeId: 'gw-node-3',
+      serviceType: 'gateway',
+      advertiseAddr: '10.0.2.1:9000',
+      httpAddr: '10.0.2.1:8083',
+      status: 'inactive',
+      lastHeartbeat: '2026-03-13T08:30:00Z',
+      isActive: false
+    }
+  ];
 
   const racks = $derived.by(() => {
     const map = new Map<string, DemoNode[]>()
@@ -87,19 +242,19 @@
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([addr, rackNodes], i) => {
         const sorted = rackNodes.sort((a, b) => a.serviceType.localeCompare(b.serviceType))
-        return {
-          name: `rack-${i + 1}`,
-          address: addr,
-          nodes: sorted,
-          total: sorted.length,
-          active: sorted.filter(n => n.status === 'active').length,
-          draining: sorted.filter(n => n.status === 'draining').length,
-          inactive: sorted.filter(n => !n.isActive).length,
-        }
-      })
-  })
+      return {
+        name: `rack-${i + 1}`,
+        address: addr,
+        nodes: sorted,
+        total: sorted.length,
+        active: sorted.filter((n) => n.status === 'active').length,
+        draining: sorted.filter((n) => n.status === 'draining').length,
+        inactive: sorted.filter((n) => !n.isActive).length
+      };
+    });
+  });
 
-  const serviceTypes = $derived([...new Set(nodes.map(n => n.serviceType))].sort())
+  const serviceTypes = $derived([...new Set(nodes.map((n) => n.serviceType))].sort());
 
   const raftGroups = $derived.by(() => {
     const groups = new Map<string, DemoNode[]>()
@@ -110,53 +265,62 @@
       groups.set(node.raftGroup, list)
     }
     return [...groups.entries()].map(([name, members]) => ({
-      name, ...RAFT_STYLES[name], members,
-      leader: members.find(m => m.isRaftLeader),
-      count: members.length,
-    }))
-  })
+      name,
+      ...RAFT_STYLES[name],
+      members,
+      leader: members.find((m) => m.isRaftLeader),
+      count: members.length
+    }));
+  });
 
-  const statelessNodes = $derived(nodes.filter(n => !n.raftGroup))
+  const statelessNodes = $derived(nodes.filter((n) => !n.raftGroup));
 
   // SVG topology layout
   const topo = $derived.by(() => {
-    const padL = 105, padT = 65, padR = 45, padB = 50
-    const colGap = 175, rowGap = 85
-    const rc = racks.length, sc = serviceTypes.length
-    const w = padL + (rc - 1) * colGap + padR
-    const h = padT + (sc - 1) * rowGap + padB
-    const rx = racks.map((_, i) => padL + i * colGap)
-    const svcRows = serviceTypes.map((st, i) => ({ type: st, y: padT + i * rowGap }))
-    const sy: Record<string, number> = Object.fromEntries(svcRows.map(r => [r.type, r.y]))
+    const padL = 105, padT = 65, padR = 45, padB = 50;
+    const colGap = 175, rowGap = 85;
+    const rc = racks.length, sc = serviceTypes.length;
+    const w = padL + (rc - 1) * colGap + padR;
+    const h = padT + (sc - 1) * rowGap + padB;
+    const rx = racks.map((_, i) => padL + i * colGap);
+    const svcRows = serviceTypes.map((st, i) => ({ type: st, y: padT + i * rowGap }));
+    const sy: Record<string, number> = Object.fromEntries(svcRows.map((r) => [r.type, r.y]));
 
-    const npos = nodes
-      .map(node => {
-        const ri = racks.findIndex(r => r.address === node.advertiseAddr)
-        return ri >= 0 && sy[node.serviceType] != null
-          ? { node, x: rx[ri], y: sy[node.serviceType] }
-          : null
-      })
-      .filter((p): p is { node: DemoNode; x: number; y: number } => p !== null)
+    const npos = nodes.map((node) => {
+      const ri = racks.findIndex((r) => r.address === node.advertiseAddr);
 
-    const conns: Array<{ path: string; color: string; group: string }> = []
+      return ri >= 0 && sy[node.serviceType] != null ? { node, x: rx[ri], y: sy[node.serviceType] } : null;
+    }).filter((p): p is { node: DemoNode; x: number; y: number } => p !== null);
+
+    const conns: Array<{ path: string; color: string; group: string }> = [];
+
     for (const g of raftGroups) {
-      if (!g.leader) continue
-      const lp = npos.find(p => p.node.nodeId === g.leader!.nodeId)
-      if (!lp) continue
+      if (!g.leader) continue;
+      const lp = npos.find((p) => p.node.nodeId === (g.leader!).nodeId);
+      if (!lp) continue;
       for (const m of g.members) {
-        if (m.nodeId === g.leader!.nodeId) continue
-        const mp = npos.find(p => p.node.nodeId === m.nodeId)
-        if (!mp) continue
-        const dx = Math.abs(mp.x - lp.x)
-        const arc = -Math.min(dx * 0.2, 40)
-        const mx = (mp.x + lp.x) / 2
-        conns.push({ path: `M${mp.x},${mp.y} Q${mx},${mp.y + arc} ${lp.x},${lp.y}`, color: g.color, group: g.name })
+        if (m.nodeId === (g.leader!).nodeId) continue;
+
+        const mp = npos.find((p) => p.node.nodeId === m.nodeId);
+
+        if (!mp) continue;
+
+        const dx = Math.abs(mp.x - lp.x);
+        const arc = -Math.min(dx * 0.2, 40);
+        const mx = (mp.x + lp.x) / 2;
+
+        conns.push({
+          path: `M${mp.x},${mp.y} Q${mx},${mp.y + arc} ${lp.x},${lp.y}`,
+          color: g.color,
+          group: g.name
+        });
       }
     }
-    return { w, h, rx, svcRows, npos, conns }
-  })
 
-  const activeFilter = $derived(selectedRaft ?? hoverRaft)
+    return { w, h, rx, svcRows, npos, conns };
+  });
+
+  const activeFilter = $derived(selectedRaft ?? hoverRaft);
 
   function nodeOpacity(node?: DemoNode): number {
     if (!node || !activeFilter) return 1
@@ -173,22 +337,27 @@
   }
 
   function matrixNode(svc: string, addr: string) {
-    return nodes.find(n => n.serviceType === svc && n.advertiseAddr === addr)
+    return nodes.find((n) => n.serviceType === svc && n.advertiseAddr === addr);
   }
 
   function rackForAddr(addr: string) {
-    return racks.find(r => r.address === addr)?.name ?? addr
+    return racks.find((r) => r.address === addr)?.name ?? addr;
   }
 
-  function enterNode(node: DemoNode) { if (node.raftGroup) hoverRaft = node.raftGroup }
-  function leaveNode() { hoverRaft = null }
+  function enterNode(node: DemoNode) {
+    if (node.raftGroup) hoverRaft = node.raftGroup;
+  }
+
+  function leaveNode() {
+    hoverRaft = null;
+  }
 
   const stats = {
     total: nodes.length,
-    active: nodes.filter(n => n.status === 'active').length,
-    draining: nodes.filter(n => n.status === 'draining').length,
-    inactive: nodes.filter(n => !n.isActive).length,
-  }
+    active: nodes.filter((n) => n.status === 'active').length,
+    draining: nodes.filter((n) => n.status === 'draining').length,
+    inactive: nodes.filter((n) => !n.isActive).length
+  };
 </script>
 
 <svelte:head><title>Topology · mountOS Admin</title></svelte:head>
@@ -281,10 +450,27 @@
                 <span style:color={STATUS_COLORS.inactive}>{rack.inactive} inactive</span>
               {/if}
             </div>
-            <div class="flex h-1 w-full overflow-hidden rounded-sm bg-muted">
-              {#if rack.active > 0}<div style="width: {(rack.active / rack.total) * 100}%; background: {STATUS_COLORS.active}"></div>{/if}
-              {#if rack.draining > 0}<div style="width: {(rack.draining / rack.total) * 100}%; background: {STATUS_COLORS.draining}"></div>{/if}
-              {#if rack.inactive > 0}<div style="width: {(rack.inactive / rack.total) * 100}%; background: {STATUS_COLORS.inactive}"></div>{/if}
+
+            <div
+              class="flex h-1 w-full overflow-hidden rounded-sm bg-muted"
+            >
+              {#if rack.active > 0}
+                <div
+                  style="width: {rack.active / rack.total * 100}%; background: {STATUS_COLORS.active}"
+                ></div>
+              {/if}
+
+              {#if rack.draining > 0}
+                <div
+                  style="width: {rack.draining / rack.total * 100}%; background: {STATUS_COLORS.draining}"
+                ></div>
+              {/if}
+
+              {#if rack.inactive > 0}
+                <div
+                  style="width: {rack.inactive / rack.total * 100}%; background: {STATUS_COLORS.inactive}"
+                ></div>
+              {/if}
             </div>
           </CardHeader>
           <CardContent class="pt-0">
@@ -399,44 +585,99 @@
       >
         <defs>
           <!-- Tech grid -->
-          <pattern id="tgrid" width="24" height="24" patternUnits="userSpaceOnUse">
-            <path d="M 24 0 L 0 0 0 24" fill="none" stroke="var(--color-foreground)" stroke-width="0.3" stroke-opacity="0.05" />
+
+          <pattern
+            id="tgrid"
+            width="24"
+            height="24"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 24 0 L 0 0 0 24"
+              fill="none"
+              stroke="var(--color-foreground)"
+              stroke-width="0.3"
+              stroke-opacity="0.05"
+            ></path>
           </pattern>
           <!-- Glow filter -->
           <filter id="glow">
-            <feGaussianBlur stdDeviation="5" result="b" />
-            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            <feGaussianBlur stdDeviation="5" result="b"></feGaussianBlur>
+
+            <feMerge>
+              <feMergeNode in="b"></feMergeNode>
+              <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
           </filter>
           <filter id="glow-soft">
-            <feGaussianBlur stdDeviation="3" result="b" />
-            <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+            <feGaussianBlur stdDeviation="3" result="b"></feGaussianBlur>
+
+            <feMerge>
+              <feMergeNode in="b"></feMergeNode>
+              <feMergeNode in="SourceGraphic"></feMergeNode>
+            </feMerge>
           </filter>
         </defs>
 
         <!-- Background grid pattern -->
-        <rect width="100%" height="100%" fill="url(#tgrid)" />
+        <rect width="100%" height="100%" fill="url(#tgrid)"></rect>
 
         <!-- Dashed guide lines -->
         {#each topo.svcRows as row}
-          <line x1="70" y1={row.y} x2={topo.w - 20} y2={row.y}
-            stroke="var(--color-border)" stroke-opacity="0.25" stroke-dasharray="3 6" />
+          <line
+            x1="70"
+            y1={row.y}
+            x2={topo.w - 20}
+            y2={row.y}
+            stroke="var(--color-border)"
+            stroke-opacity="0.25"
+            stroke-dasharray="3 6"
+          ></line>
         {/each}
         {#each topo.rx as x}
-          <line x1={x} y1="52" x2={x} y2={topo.h - 15}
-            stroke="var(--color-border)" stroke-opacity="0.25" stroke-dasharray="3 6" />
+          <line
+            x1={x}
+            y1="52"
+            x2={x}
+            y2={topo.h - 15}
+            stroke="var(--color-border)"
+            stroke-opacity="0.25"
+            stroke-dasharray="3 6"
+          ></line>
         {/each}
 
         <!-- Rack column pillars -->
         {#each racks as rack, i}
           <rect
-            x={topo.rx[i] - 68} y="8" width="136" height={topo.h - 16}
-            rx="3" fill="var(--color-foreground)" fill-opacity="0.02"
-            stroke="var(--color-border)" stroke-opacity="0.12" stroke-width="0.5"
-          />
-          <text x={topo.rx[i]} y="28" text-anchor="middle"
-            font-size="11" font-weight="600" fill="var(--color-foreground)">{rack.name}</text>
-          <text x={topo.rx[i]} y="43" text-anchor="middle"
-            font-size="8.5" font-family="ui-monospace, monospace" fill="var(--color-muted-foreground)">{rack.address}</text>
+            x={topo.rx[i] - 68}
+            y="8"
+            width="136"
+            height={topo.h - 16}
+            rx="3"
+            fill="var(--color-foreground)"
+            fill-opacity="0.02"
+            stroke="var(--color-border)"
+            stroke-opacity="0.12"
+            stroke-width="0.5"
+          ></rect>
+
+          <text
+            x={topo.rx[i]}
+            y="28"
+            text-anchor="middle"
+            font-size="11"
+            font-weight="600"
+            fill="var(--color-foreground)"
+          >{rack.name}</text>
+
+          <text
+            x={topo.rx[i]}
+            y="43"
+            text-anchor="middle"
+            font-size="8.5"
+            font-family="ui-monospace, monospace"
+            fill="var(--color-muted-foreground)"
+          >{rack.address}</text>
         {/each}
 
         <!-- Service row labels -->
@@ -447,13 +688,25 @@
         <!-- RAFT connections (glow + animated dash) -->
         {#each topo.conns as conn}
           {@const dim = activeFilter !== null && activeFilter !== conn.group}
-          <path d={conn.path} fill="none"
-            stroke={conn.color} stroke-width="8" opacity={dim ? 0.01 : 0.1}
-            filter={dim ? undefined : 'url(#glow-soft)'} />
-          <path d={conn.path} fill="none"
-            stroke={conn.color} stroke-width={dim ? 0.7 : 1.5}
-            stroke-dasharray="6 3" opacity={dim ? 0.08 : 0.75}
-            class="conn-flow" />
+
+          <path
+            d={conn.path}
+            fill="none"
+            stroke={conn.color}
+            stroke-width="8"
+            opacity={dim ? 0.01 : 0.1}
+            filter={dim ? undefined : 'url(#glow-soft)'}
+          ></path>
+
+          <path
+            d={conn.path}
+            fill="none"
+            stroke={conn.color}
+            stroke-width={dim ? 0.7 : 1.5}
+            stroke-dasharray="6 3"
+            opacity={dim ? 0.08 : 0.75}
+            class="conn-flow"
+          ></path>
         {/each}
 
         <!-- Nodes -->
@@ -474,26 +727,64 @@
           >
             <!-- Outer RAFT ring -->
             {#if rstyle}
-              <circle cx={x} cy={y} r={r + 7} fill="none"
-                stroke={rstyle.color} stroke-width={node.isRaftLeader ? 2.5 : 1}
-                opacity={node.isRaftLeader ? 0.8 : 0.2} />
+              <circle
+                cx={x}
+                cy={y}
+                r={r + 7}
+                fill="none"
+                stroke={rstyle.color}
+                stroke-width={node.isRaftLeader ? 2.5 : 1}
+                opacity={node.isRaftLeader ? 0.8 : 0.2}
+              ></circle>
             {/if}
 
             <!-- Leader outer glow -->
             {#if node.isRaftLeader && rstyle && !dim}
-              <circle cx={x} cy={y} r={r + 3} fill={rstyle.color} opacity="0.15"
-                filter="url(#glow)" class="leader-glow-svg" />
+              <circle
+                cx={x}
+                cy={y}
+                r={r + 3}
+                fill={rstyle.color}
+                opacity="0.15"
+                filter="url(#glow)"
+                class="leader-glow-svg"
+              ></circle>
             {/if}
 
             <!-- Main status circle -->
-            <circle cx={x} cy={y} r={r} fill={STATUS_COLORS[node.status]} />
+
+            <circle
+              cx={x}
+              cy={y}
+              r={r}
+              fill={STATUS_COLORS[node.status]}
+            ></circle>
 
             <!-- Active heartbeat ping (omitted under reduced motion) -->
             {#if node.status === 'active' && !dim && !reduceMotion}
-              <circle cx={x} cy={y} r={r} fill="none"
-                stroke={STATUS_COLORS.active} stroke-width="1">
-                <animate attributeName="r" from="{r}" to="{r + 14}" dur="2.5s" repeatCount="indefinite" />
-                <animate attributeName="opacity" from="0.45" to="0" dur="2.5s" repeatCount="indefinite" />
+              <circle
+                cx={x}
+                cy={y}
+                r={r}
+                fill="none"
+                stroke={STATUS_COLORS.active}
+                stroke-width="1"
+              >
+                <animate
+                  attributeName="r"
+                  from={r}
+                  to={r + 14}
+                  dur="2.5s"
+                  repeatCount="indefinite"
+                ></animate>
+
+                <animate
+                  attributeName="opacity"
+                  from="0.45"
+                  to="0"
+                  dur="2.5s"
+                  repeatCount="indefinite"
+                ></animate>
               </circle>
             {/if}
 
@@ -516,7 +807,14 @@
             {/if}
 
             <!-- Invisible hover target; parent <g> handles interactivity -->
-            <circle cx={x} cy={y} r="24" fill="transparent" aria-hidden="true" />
+
+            <circle
+              cx={x}
+              cy={y}
+              r="24"
+              fill="transparent"
+              aria-hidden="true"
+            ></circle>
           </g>
         {/each}
       </svg>

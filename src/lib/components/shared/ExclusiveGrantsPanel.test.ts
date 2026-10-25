@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/svelte'
 import ExclusiveGrantsPanel from './ExclusiveGrantsPanel.svelte'
-import type { ExclusiveGrant, ExclusiveGrantsResponse } from '$lib/core/api/types'
+import type { ExclusiveGrant, ExclusiveGrantsResponse } from '#lib/core/api/types.js'
 
 const grant = (over: Partial<ExclusiveGrant> = {}): ExclusiveGrant => ({
-  sessionId: '1', sessionName: 'host-a', holderIp: '10.0.0.5', path: '/data', scopeInode: '7',
+  sessionId: '1', sessionName: 'host-a', fork: '', holderIp: '10.0.0.5', path: '/data', scopeInode: '7',
   kind: 'tree', state: 'active', windowSeconds: 30, sinceUnixMs: 1, role: 'primary', standbyPosition: 0,
   durability: 'writethrough', holderEpoch: 1, live: true, lastRenewAgeMs: 400, lastSeenAgeMs: 2500,
   takeOverText: 'took over 3 s ago', ...over,

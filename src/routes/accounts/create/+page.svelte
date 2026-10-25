@@ -1,14 +1,14 @@
 <script lang="ts">
   import { goto } from '$app/navigation'
-  import { useAccounts } from '$lib/core/stores/accounts.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { usePreferences } from '$lib/stores/preferences.svelte'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
-  import { debounce } from '$lib/utils'
+  import { useAccounts } from '#lib/core/stores/accounts.svelte.js'
+  import { useAuth } from '#lib/core/stores/auth.svelte.js'
+  import { usePreferences } from '#lib/stores/preferences.svelte.js'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#lib/components/ui/card/index.js'
+  import Input from '#lib/components/ui/input/input.svelte'
+  import Label from '#lib/components/ui/label/label.svelte'
+  import { showSuccessToast, showErrorToast, handleApiError } from '#lib/core/utils/toast.js'
+  import { debounce } from '#lib/utils.js'
 
   const accountStore = useAccounts()
   const auth = useAuth()

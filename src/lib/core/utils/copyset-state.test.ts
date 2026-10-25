@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { COPYSET_STATE_LABEL, COPYSET_STATE_VARIANT, COPYSET_STATE_TITLE } from './copyset-state'
-import type { CopysetState } from '$lib/core/api/types'
+import type { CopysetState } from '#lib/core/api/types.js'
 
 const STATES: CopysetState[] = ['active', 'draining', 'synced_drained', 'retired']
 

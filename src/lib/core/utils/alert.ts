@@ -1,7 +1,7 @@
 import ShieldAlert from '@lucide/svelte/icons/shield-alert'
 import AlertTriangle from '@lucide/svelte/icons/triangle-alert'
 import Info from '@lucide/svelte/icons/info'
-import { TIME_RANGES, CATEGORIES } from '$lib/core/stores/alerts.svelte'
+import { TIME_RANGES, CATEGORIES } from '#lib/core/stores/alerts.svelte.js'
 
 export function severityBadgeVariant(severity: number): 'destructive' | 'warning' | 'default' {
   if (severity === 2) return 'destructive'

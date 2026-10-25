@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
-import { TokenSigner, signDashboardUser } from '@mountos-io/admin-sdk'
+import { TokenSigner, requestTarget, signDashboardUser } from '@mountos-io/admin-sdk'
 import type { DashboardUser } from '@mountos-io/admin-sdk'
 import type { AdminUser } from './types'
 import { ROLE } from './types'
@@ -172,13 +172,14 @@ proxy.all('/api/v1/*', async (c) => {
     }
     if (body) headers['Content-Type'] = 'application/json'
 
+    const upstreamUrl = `${APPSERV_URL}${upstreamPath}${url.search}`
     if (adminUser) {
       headers['X-MountOS-Dashboard-User'] = await signDashboardUser(
-        adminUser as DashboardUser, DASHBOARD_USER_HMAC_KEY
+        adminUser as DashboardUser, DASHBOARD_USER_HMAC_KEY, method, requestTarget(upstreamUrl)
       )
     }
 
-    const res = await fetch(`${APPSERV_URL}${upstreamPath}${url.search}`, { method, headers, body })
+    const res = await fetch(upstreamUrl, { method, headers, body })
 
     // appserv always replies JSON; a non-JSON body means an infra-level error
     // (gateway 502/504 HTML, plaintext). Detect JSON by parsing the body, not by

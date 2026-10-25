@@ -1,4 +1,4 @@
-import type { BadgeVariant } from '$lib/components/ui/badge'
+import type { BadgeVariant } from '#lib/components/ui/badge/index.js'
 
 export const VOLUME_TYPE_OPTIONS = [
   { value: 'general', label: 'General' },

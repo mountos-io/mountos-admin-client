@@ -1,18 +1,18 @@
 <script lang="ts">
-  import { page } from '$app/stores'
-  import { goto } from '$app/navigation'
-  import { useClusters } from '$lib/core/stores/clusters.svelte'
-  import { useAuth } from '$lib/core/stores/auth.svelte'
-  import { Button } from '$lib/components/ui/button'
-  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '$lib/components/ui/card'
-  import Input from '$lib/components/ui/input/input.svelte'
-  import Label from '$lib/components/ui/label/label.svelte'
-  import { showSuccessToast, showErrorToast, handleApiError } from '$lib/core/utils/toast'
-  import { isClusterNameValid, clusterNameErrorMessage } from '$lib/core/utils/validation'
+  import { page } from '$app/state';
+  import { goto } from '$app/navigation';
+  import { useClusters } from '#lib/core/stores/clusters.svelte.js';
+  import { useAuth } from '#lib/core/stores/auth.svelte.js';
+  import { Button } from '#lib/components/ui/button/index.js';
+  import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '#lib/components/ui/card/index.js';
+  import Input from '#lib/components/ui/input/input.svelte';
+  import Label from '#lib/components/ui/label/label.svelte';
+  import { showSuccessToast, showErrorToast, handleApiError } from '#lib/core/utils/toast.js';
+  import { isClusterNameValid, clusterNameErrorMessage } from '#lib/core/utils/validation.js';
 
-  const regionId = $derived(Number($page.params.regionId))
-  const store = useClusters()
-  const auth = useAuth()
+  const regionId = $derived(Number(page.params.regionId));
+  const store = useClusters();
+  const auth = useAuth();
 
   $effect(() => {
     if (!auth.loading && auth.isUserRole) {
@@ -21,11 +21,10 @@
     }
   })
 
-  let name = $state('')
-  let submitting = $state(false)
-
-  const nameValid = $derived(isClusterNameValid(name))
-  const nameError = $derived(clusterNameErrorMessage(name))
+  let name = $state('');
+  let submitting = $state(false);
+  const nameValid = $derived(isClusterNameValid(name));
+  const nameError = $derived(clusterNameErrorMessage(name));
 
   async function handleSubmit(e: Event) {
     e.preventDefault()

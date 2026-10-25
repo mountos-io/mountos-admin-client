@@ -1,5 +1,7 @@
 import { defineConfig } from 'vite'
 import { sveltekit } from '@sveltejs/kit/vite'
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte'
+import adapter from '@sveltejs/adapter-static'
 import tailwindcss from '@tailwindcss/vite'
 
 const certDir = '.certs'
@@ -11,7 +13,13 @@ const loadCerts = async () => {
 }
 
 export default defineConfig(async () => ({
-  plugins: [tailwindcss(), sveltekit()],
+  plugins: [
+    tailwindcss(),
+    sveltekit({
+      preprocess: vitePreprocess(),
+      adapter: adapter({ fallback: 'index.html' }),
+    }),
+  ],
   // Drop third-party @license comment blocks from the minified client JS. The
   // notices are consolidated into build/THIRD-PARTY-NOTICES.txt at build time.
   esbuild: {

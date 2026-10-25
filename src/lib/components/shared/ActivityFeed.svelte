@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Button } from '$lib/components/ui/button'
-  import { formatRelative } from '$lib/core/utils/format'
-  import { getSubjectMeta } from '$lib/core/utils/subjects'
-  import type { AuditLog } from '$lib/core/api/types'
+  import { Button } from '#lib/components/ui/button/index.js'
+  import { formatRelative } from '#lib/core/utils/format.js'
+  import { getSubjectMeta } from '#lib/core/utils/subjects.js'
+  import type { AuditLog } from '#lib/core/api/types.js'
   import ChevronDown from '@lucide/svelte/icons/chevron-down'
   import XCircle from '@lucide/svelte/icons/x-circle'
 

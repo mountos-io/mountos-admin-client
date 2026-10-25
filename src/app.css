@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 @import "tw-animate-css";
-@import "$lib/styles/corner-brackets.css";
-@import "$lib/styles/toast.css";
-@import "$lib/styles/session-metrics.css";
+@import "./lib/styles/corner-brackets.css";
+@import "./lib/styles/toast.css";
+@import "./lib/styles/session-metrics.css";
 
 @custom-variant dark (&:is(.dark *));
 

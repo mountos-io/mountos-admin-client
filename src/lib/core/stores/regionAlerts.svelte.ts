@@ -1,6 +1,6 @@
-import type { AlertCountResponse, RegionAlert, RegionAlertListOptions } from '$lib/core/api/types'
+import type { AlertCountResponse, RegionAlert, RegionAlertListOptions } from '#lib/core/api/types.js'
 import { api } from './client.svelte'
-import { createActivePoll, type ActivePoll } from '$lib/core/utils/activePoll'
+import { createActivePoll, type ActivePoll } from '#lib/core/utils/activePoll.js'
 import { TIME_RANGES } from './alerts.svelte'
 
 export type { AlertCountResponse, RegionAlert }

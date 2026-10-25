@@ -10,23 +10,23 @@ const { createStorage, gotoMock, fetchRegions } = vi.hoisted(() => ({
 }))
 
 vi.mock('$app/navigation', () => ({ goto: gotoMock }))
-vi.mock('$app/stores', () => ({
-  page: readable({ url: new URL('http://localhost/storages/create?regionId=7'), params: {} }),
+vi.mock('$app/state', () => ({
+  page: { url: new URL('http://localhost/storages/create?regionId=7'), params: {} },
 }))
 
-vi.mock('$lib/core/stores/storages.svelte', () => ({
+vi.mock('#lib/core/stores/storages.svelte.js', () => ({
   useStorages: () => ({ createStorage }),
 }))
-vi.mock('$lib/core/stores/regions.svelte', () => ({
+vi.mock('#lib/core/stores/regions.svelte.js', () => ({
   useRegions: () => ({ regions: [{ id: 7, name: 'us-east' }], fetchRegions }),
 }))
-vi.mock('$lib/core/stores/accounts.svelte', () => ({
+vi.mock('#lib/core/stores/accounts.svelte.js', () => ({
   useAccounts: () => ({ selectedAccountId: 1 }),
 }))
-vi.mock('$lib/core/stores/auth.svelte', () => ({
+vi.mock('#lib/core/stores/auth.svelte.js', () => ({
   useAuth: () => ({ loading: false, can: () => true, isUserRole: false }),
 }))
-vi.mock('$lib/core/utils/toast', () => ({
+vi.mock('#lib/core/utils/toast.js', () => ({
   showSuccessToast: vi.fn(),
   showErrorToast: vi.fn(),
   handleApiError: vi.fn(),

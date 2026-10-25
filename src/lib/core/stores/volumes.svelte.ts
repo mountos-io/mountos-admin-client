@@ -2,7 +2,7 @@ import type {
   Volume, CreateVolumeRequest, EditVolumeRequest,
   DeactivateVolumeRequest, GenerateVolumeAPIKeysRequest, UpdateVolumeQuotaRequest,
   CreateVolumeForkRequest, DeleteVolumeForkRequest, RestoreVolumeForkRequest,
-} from '$lib/core/api/types'
+} from '#lib/core/api/types.js'
 import { api } from './client.svelte'
 
 let volumes = $state<Volume[]>([])
