@@ -51,6 +51,29 @@
   const s3Ceiling = $derived(sv(sections, 'Block S3 Floor', 's3_degraded_limit_max'))
   const s3Throttled = $derived(s3Ceiling > 0 && s3Limit > 0 && s3Limit < s3Ceiling)
 
+  // Hedged reads: a slow S3 floor GET gets a second request and the first answer wins.
+  // hedge_mode values: 0 is off, 1 is shadow (no second request is sent, so the sent-hedge counters stay zero), 2 is on.
+  // The shadow counters are absent on an older blockserv, so the shadow rows stay hidden then.
+  const hasHedge = $derived(sections.some((s) => s.name === 'Hedged Reads'))
+  const hedgeMode = $derived(sv(sections, 'Hedged Reads', 'hedge_mode'))
+  const hedgeCapPct = $derived(sv(sections, 'Hedged Reads', 'hedge_max_ratio_pct'))
+  const hedgePrimary = $derived(sv(sections, 'Hedged Reads', 'hedge_primary_total'))
+  const hedgeLaunched = $derived(sv(sections, 'Hedged Reads', 'hedge_launched_total'))
+  const hedgeWinRate = $derived(sv(sections, 'Hedged Reads', 'hedge_win_rate'))
+  const hedgeSuppressedBudget = $derived(sv(sections, 'Hedged Reads', 'hedge_suppressed_budget_total'))
+  const hedgeBytes = $derived(sv(sections, 'Hedged Reads', 'hedge_requested_bytes_total'))
+  const hasShadowCounters = $derived(
+    !!sections.find((s) => s.name === 'Hedged Reads')?.scalars.some((x) => x.name === 'hedge_shadow_would_launch_total')
+  )
+  const hedgeWouldLaunch = $derived(sv(sections, 'Hedged Reads', 'hedge_shadow_would_launch_total'))
+  const hedgeWouldBytes = $derived(sv(sections, 'Hedged Reads', 'hedge_shadow_would_bytes_total'))
+  const hedgeWouldShare = $derived(hedgePrimary > 0 ? hedgeWouldLaunch / hedgePrimary : 0)
+  const hedgeShare = $derived(hedgePrimary > 0 ? hedgeLaunched / hedgePrimary : 0)
+  // Few hedges win when the slow reads are not a storage stall. Judge the rate only after enough hedges.
+  const HEDGE_MIN_SAMPLE = 50
+  const HEDGE_WIN_WARN = 0.2
+  const hedgeLowWin = $derived(hedgeMode === 2 && hedgeLaunched >= HEDGE_MIN_SAMPLE && hedgeWinRate < HEDGE_WIN_WARN)
+
   type Sev = { color: string; variant: 'success' | 'warning' | 'destructive'; label: string }
 
   const replication = $derived.by<Sev>(() => {
@@ -165,6 +188,62 @@
         {@render latencyTile('PUT', s3Put)}
       </div>
     </div>
+
+    {#if hasHedge}
+      <div class="h-px bg-border/60"></div>
+
+      <!-- Hedged reads: second request for a slow S3 floor GET -->
+      <div class="space-y-1.5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-sm font-mono text-muted-foreground tracking-wider uppercase inline-flex items-center gap-1 whitespace-nowrap">
+            Hedged Reads
+            <InfoTip text={"A slow read from object storage gets a second request. The first answer wins and the other request is cancelled.\n\n• **Hedged:** Share of reads that got a second request. The cap is set by `S3_HEDGE_PCT`.\n• **Won by hedge:** Share of second requests that finished first. A low value means the slow reads are not a storage stall.\n• **Budget-limited:** Slow reads that got no second request because the cap was reached.\n• **Extra egress:** Upper bound of the bytes the second requests asked for.\n\nIn **Shadow** mode no second request is sent.\n• **Would hedge:** Reads that would have got a second request, and their share of all reads.\n• **Would add egress:** Upper bound of the bytes those second requests would have asked for."} width={420} />
+          </span>
+          <Badge variant={hedgeMode === 2 ? 'success' : 'secondary'}>
+            {hedgeMode === 2 ? `On, cap ${hedgeCapPct}%` : hedgeMode === 1 ? `Shadow, cap ${hedgeCapPct}%` : 'Off'}
+          </Badge>
+        </div>
+        {#if hedgeMode === 0}
+          <p class="text-sm font-mono text-muted-foreground">Every floor read is sent once. Set S3_HEDGE_PCT to turn hedging on.</p>
+        {:else}
+          {#if hedgeMode === 1 && !hasShadowCounters}
+            <p class="text-sm font-mono text-muted-foreground">Shadow mode. No second request is sent.</p>
+          {/if}
+          <div class="grid gap-y-1 text-sm font-mono">
+            {#if hedgeMode === 2}
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Hedged</span>
+                <span class="tabular-nums">{fmtNum(hedgeLaunched)} <span class="text-muted-foreground">({fmtRatio(hedgeShare)})</span></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Won by hedge</span>
+                <span class="tabular-nums" style="color: {hedgeLowWin ? 'var(--warning)' : 'inherit'}">{hedgeLaunched > 0 ? fmtRatio(hedgeWinRate) : '-'}{hedgeLowWin ? ' (low)' : ''}</span>
+              </div>
+            {/if}
+            <div class="flex justify-between">
+              <span class="text-muted-foreground">Budget-limited</span>
+              <span class="tabular-nums">{fmtNum(hedgeSuppressedBudget)}</span>
+            </div>
+            {#if hedgeMode === 1 && hasShadowCounters}
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Would hedge</span>
+                <span class="tabular-nums">{fmtNum(hedgeWouldLaunch)} <span class="text-muted-foreground">({fmtRatio(hedgeWouldShare)})</span></span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Would add egress</span>
+                <span class="tabular-nums">{formatBytes(hedgeWouldBytes)}</span>
+              </div>
+            {/if}
+            {#if hedgeMode === 2}
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Extra egress</span>
+                <span class="tabular-nums">{formatBytes(hedgeBytes)}</span>
+              </div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
 
     {#if hasHA}
       <div class="h-px bg-border/60"></div>
